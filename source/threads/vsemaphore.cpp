@@ -22,9 +22,9 @@ VSemaphore::~VSemaphore()
     (void) VSemaphore::semaphoreDestroy(&mSemaphore);
     }
 
-void VSemaphore::wait(VMutex* ownedMutex)
+void VSemaphore::wait(VMutex* ownedMutex, Vs64 timeoutMilliseconds)
     {
-    if (! VSemaphore::semaphoreWait(&mSemaphore, ownedMutex->mutex()))
+    if (! VSemaphore::semaphoreWait(&mSemaphore, ownedMutex->mutex(), timeoutMilliseconds))
         throw VException("VSemaphore::lock unable to wait on semaphore.");
     }
 

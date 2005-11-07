@@ -58,6 +58,7 @@ class VListenerThread : public VThread
         
         @param    name                a name for the thread, useful for debugging purposes
         @param    deleteSelfAtEnd        @see VThread
+        @param    createDetached        @see VThread
         @param    manager                the object that receives notifications for this thread, or NULL
         @param    portNumber            the port number to listen on
         @param    socketFactory        a factory for creating a VSocket for each
@@ -67,7 +68,7 @@ class VListenerThread : public VThread
         @param    initiallyListening    true if the thread should be listening when it first starts;
                                     false means it won't listen until you call startListening()
         */
-        VListenerThread(const VString& name, bool deleteSelfAtEnd, VManagementInterface* manager, int portNumber, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, bool initiallyListening=true);
+        VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, bool initiallyListening=true);
         /**
         Destructor.
         */

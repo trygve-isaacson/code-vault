@@ -220,17 +220,33 @@ class VBinaryIOStream : public VIOStream
         */
         bool    readBool();
         /**
-        Reads a VString value from the stream.
+        Reads a VString value from the stream, assuming it is prefaced by
+        dynamically-sized length indicator as done in writeString.
         @param    s    a VString to format
         */
         void    readString(VString& s);
         /**
-        Reads a VString value from the stream, using a more natural syntax
-        than readString(s), but incurring the overhead of creating two
-        temporary copies instead of zero.
+        Reads a VString value from the stream, assuming it is prefaced by
+        dynamically-sized length indicator as done in writeString, using a
+        more natural syntax than readString(s), but incurring the overhead
+        of creating two temporary copies instead of zero.
         @return    the VString value
         */
         VString readString();
+        /**
+        Reads a VString value from the stream, assuming it is prefaced by
+        a 32-bit length indicator as done in writeString32.
+        @param    s    a VString to format
+        */
+        void    readString32(VString& s);
+        /**
+        Reads a VString value from the stream, assuming it is prefaced by
+        a 32-bit length indicator as done in writeString32, using a
+        more natural syntax than readString(s), but incurring the overhead
+        of creating two temporary copies instead of zero.
+        @return    the VString value
+        */
+        VString readString32();
         /**
         Reads a VInstant value from the stream.
         @param    i    a VInstant to set
@@ -308,10 +324,17 @@ class VBinaryIOStream : public VIOStream
         */
         void    writeBool(bool i);
         /**
-        Writes a VString value to the stream.
+        Writes a VString value to the stream prefaced by dynamically-sized length indicator.
+        The length indicator is 1 byte for strings of length 252 or less, and is larger if
+        the string length needs more bytes to be represented.
         @param    s    the VString
         */
         void    writeString(const VString& s);
+        /**
+        Writes a VString value to the stream prefaced by a 32-bit length indicator.
+        @param    s    the VString
+        */
+        void    writeString32(const VString& s);
         /**
         Writes a VInstant value to the stream.
         @param    i    the VInstant

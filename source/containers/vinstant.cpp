@@ -8,6 +8,7 @@ http://www.bombaydigital.com/
 
 #include "vinstant.h"
 
+#include "vchar.h"
 #include "vstring.h"
 #include "vexception.h"
 
@@ -25,6 +26,23 @@ mDayOfWeek(0)
     }
 
 // VInstant ------------------------------------------------------------------
+
+const VString VInstant::kUTCTimeZoneID("UTC");
+const VString VInstant::kLocalTimeZoneID; // empty string means local time zone
+
+MRemoteTimeZoneConverter* VInstant::gRemoteTimeZoneConverter = NULL;
+
+// static
+void VInstant::setRemoteTimeZoneConverter(MRemoteTimeZoneConverter* converter)
+    {
+    gRemoteTimeZoneConverter = converter;
+    }
+
+// static
+MRemoteTimeZoneConverter* VInstant::getRemoteTimeZoneConverter()
+    {
+    return gRemoteTimeZoneConverter;
+    }
 
 VInstant::VInstant()
     {
@@ -315,22 +333,26 @@ void VInstant::setStreamValues(Vs32 kind, Vs64 value)
     ASSERT_INVARIANT();
     }
 
-void VInstant::getValues(VDate& date, VTimeOfDay& timeOfDay, bool inLocalTime) const
+void VInstant::getValues(VDate& date, VTimeOfDay& timeOfDay, const VString& timeZoneID) const
     {
     ASSERT_INVARIANT();
 
     VInstantStruct    when;
     
-    if (inLocalTime)
+    if (timeZoneID == kLocalTimeZoneID)
         VInstant::platform_offsetToLocalStruct(mValue, when);
-    else
+    else if (timeZoneID == kUTCTimeZoneID)
         VInstant::platform_offsetToUTCStruct(mValue, when);
+    else if (gRemoteTimeZoneConverter == NULL)
+        throw VException("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars());
+    else
+        gRemoteTimeZoneConverter->offsetToRTZStruct(mValue, timeZoneID, when);
     
     date.set(when.mYear, when.mMonth, when.mDay);
     timeOfDay.set(when.mHour, when.mMinute, when.mSecond);
     }
 
-void VInstant::setValues(const VDate& date, const VTimeOfDay& timeOfDay, bool inLocalTime)
+void VInstant::setValues(const VDate& date, const VTimeOfDay& timeOfDay, const VString& timeZoneID)
     {
     ASSERT_INVARIANT();
     
@@ -338,38 +360,50 @@ void VInstant::setValues(const VDate& date, const VTimeOfDay& timeOfDay, bool in
 
     mKind = kActualValue;
     
-    if (inLocalTime)
+    if (timeZoneID == kLocalTimeZoneID)
         mValue = VInstant::platform_offsetFromLocalStruct(when);
-    else
+    else if (timeZoneID == kUTCTimeZoneID)
         mValue = VInstant::platform_offsetFromUTCStruct(when);
+    else if (gRemoteTimeZoneConverter == NULL)
+        throw VException("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars());
+    else
+        mValue = gRemoteTimeZoneConverter->offsetFromRTZStruct(timeZoneID, when);
 
     ASSERT_INVARIANT();
     }
 
-void VInstant::getDate(VDate& date, bool inLocalTime) const
+void VInstant::getDate(VDate& date, const VString& timeZoneID) const
     {
     ASSERT_INVARIANT();
     
     VInstantStruct    when;
     
-    if (inLocalTime)
+    if (timeZoneID == kLocalTimeZoneID)
         VInstant::platform_offsetToLocalStruct(mValue, when);
-    else
+    else if (timeZoneID == kUTCTimeZoneID)
         VInstant::platform_offsetToUTCStruct(mValue, when);
+    else if (gRemoteTimeZoneConverter == NULL)
+        throw VException("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars());
+    else
+        gRemoteTimeZoneConverter->offsetToRTZStruct(mValue, timeZoneID, when);
     
     date.set(when.mYear, when.mMonth, when.mDay);
     }
 
-void VInstant::getTimeOfDay(VTimeOfDay& timeOfDay, bool inLocalTime) const
+void VInstant::getTimeOfDay(VTimeOfDay& timeOfDay, const VString& timeZoneID) const
     {
     ASSERT_INVARIANT();
 
     VInstantStruct    when;
     
-    if (inLocalTime)
+    if (timeZoneID == kLocalTimeZoneID)
         VInstant::platform_offsetToLocalStruct(mValue, when);
-    else
+    else if (timeZoneID == kUTCTimeZoneID)
         VInstant::platform_offsetToUTCStruct(mValue, when);
+    else if (gRemoteTimeZoneConverter == NULL)
+        throw VException("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars());
+    else
+        gRemoteTimeZoneConverter->offsetToRTZStruct(mValue, timeZoneID, when);
     
     timeOfDay.set(when.mHour, when.mMinute, when.mSecond);
     }
@@ -581,7 +615,9 @@ Vs64 VInstant::snapshotDelta(Vs64 snapshotValue)
 
 // VDate ---------------------------------------------------------------------
 
-VDate::VDate(bool inLocalTime)
+const VChar VDate::kLocalDateSeparator('/');
+
+VDate::VDate(const VString& timeZoneID)
     {
     // First, satisfy the invariant since we'll call set() via VInstant::getDate().
     mYear = 1970;    // may as well make it 0 UTC to start
@@ -589,21 +625,20 @@ VDate::VDate(bool inLocalTime)
     mDay = 1;
 
     VInstant    now;
-    now.getDate(*this, inLocalTime);
-    mDateSep = '/';
+    now.getDate(*this, timeZoneID);
 
     ASSERT_INVARIANT();
     }
 
 VDate::VDate(int inYear, int inMonth, int inDay)
     {
-    // First, satisfy the invariant since we'll call set().
-    mYear = 1970;    // may as well make it 0 UTC to start
-    mMonth = 1;
-    mDay = 1;
+    if ((inMonth < 1) || (inMonth > 12) ||
+        (inDay   < 1) || (inDay   > 31))
+        throw VRangeException(VString("VDate: %d-%02d-%02d is an invalid value.", inYear, inMonth, inDay));
 
-    VDate::set(inYear, inMonth, inDay);
-    mDateSep = '/';
+    mYear = inYear;
+    mMonth = inMonth;
+    mDay = inDay;
 
     ASSERT_INVARIANT();
     }
@@ -654,6 +689,10 @@ int VDate::dayOfWeek() const
 void VDate::set(int inYear, int inMonth, int inDay)
     {
     ASSERT_INVARIANT();
+    
+    if ((inMonth < 1) || (inMonth > 12) ||
+        (inDay   < 1) || (inDay   > 31))
+        throw VRangeException(VString("VDate::set: %d-%02d-%02d is an invalid value.", inYear, inMonth, inDay));
 
     mYear = inYear;
     mMonth = inMonth;
@@ -673,7 +712,9 @@ void VDate::assertInvariant() const
 
 // VTimeOfDay ----------------------------------------------------------------
 
-VTimeOfDay::VTimeOfDay(bool inLocalTime)
+const VChar VTimeOfDay::kLocalTimeSeparator(':');
+
+VTimeOfDay::VTimeOfDay(const VString& timeZoneID)
     {
     // First, satisfy the invariant since we'll call set() via VInstant::getTimeOfDay().
     mHour = 0;
@@ -681,19 +722,21 @@ VTimeOfDay::VTimeOfDay(bool inLocalTime)
     mSecond = 0;
 
     VInstant    now;
-    now.getTimeOfDay(*this, inLocalTime);
+    now.getTimeOfDay(*this, timeZoneID);
 
     ASSERT_INVARIANT();
     }
 
 VTimeOfDay::VTimeOfDay(int inHour, int inMinute, int inSecond)
     {
-    // First, satisfy the invariant since we'll call set().
-    mHour = 0;
-    mMinute = 0;
-    mSecond = 0;
+    if ((inHour   < 0) || (inHour   > 23) ||
+        (inMinute < 0) || (inMinute > 59) ||
+        (inSecond < 0) || (inSecond > 59))
+        throw VRangeException(VString("VTimeOfDay: %02d:%02d:%02d is an invalid value.", inHour, inMinute, inSecond));
 
-    VTimeOfDay::set(inHour, inMinute, inSecond);
+    mHour = inHour;
+    mMinute = inMinute;
+    mSecond = inSecond;
 
     ASSERT_INVARIANT();
     }
@@ -722,6 +765,11 @@ int VTimeOfDay::second() const
 void VTimeOfDay::set(int inHour, int inMinute, int inSecond)
     {
     ASSERT_INVARIANT();
+
+    if ((inHour   < 0) || (inHour   > 23) ||
+        (inMinute < 0) || (inMinute > 59) ||
+        (inSecond < 0) || (inSecond > 59))
+        throw VRangeException(VString("VTimeOfDay::set: %02d:%02d:%02d is an invalid value.", inHour, inMinute, inSecond));
 
     mHour = inHour;
     mMinute = inMinute;

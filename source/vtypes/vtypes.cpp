@@ -90,20 +90,28 @@ void Vassert(bool expression, const char* file, int line)
             std::cout << "Assertion Failure at " << file << " line " << line << std::endl;
 // FIXME: If we get here while logging, this could deadlock on the VLogger mutex. If we want
 // to log the assertion safely, we need to ensure we're not being called from VLogger.
-//            VLogger::getLogger("default")->log(VLogger::kFatal, file, line, "Assertion Failure.");
+//            VLogger::getDefaultLogger()->log(VLogger::kFatal, file, line, "Assertion Failure.");
             }
         catch (...) {}
         
-#ifdef VCOMPILER_MSVC
-        assert(expression);
-#else
-    #ifdef VTARGET_CARBON
-        assert(expression);
-    #else
+#ifndef VCOMPILER_MSVC
         //lint -e421 "Caution -- function 'abort(void)' is considered dangerous [MISRA Rule 126]"
         __assert(false, file, line);
-    #endif
+#else
+        assert(expression);
 #endif
         }
+    }
+
+/*
+We don't conditionally compile this according to V_DEBUG_STATIC_INITIALIZATION_TRACE;
+rather, we always compile it, so that you have the option of turning it on per-file
+instead of all-or-nothing. We let the linker decide whether anyone calls it.
+*/
+
+int Vtrace(const char* fileName, int lineNumber)
+    {
+    std::cout << "Static Initialization @ " << fileName << ":" << lineNumber << std::endl;
+    return 0;
     }
 

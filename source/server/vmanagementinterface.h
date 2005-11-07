@@ -56,7 +56,7 @@ class VManagementInterface
         virtual void threadEnded(VThread* thread) = 0;
         
         /**
-        Notifies the interface of a new listener thread thread whose run()
+        Notifies the interface of a new listener thread whose runListening()
         is underway and is about to start listening. The concrete class
         might typically add the thread pointer to a vector. The thread
         pointer is guaranteed to be valid until the interface is notified
@@ -68,6 +68,18 @@ class VManagementInterface
         */
         virtual void listenerStarting(VListenerThread* listener) = 0;
         /**
+        Notifies the interface of a listener thread whose runListening() has
+        failed. This is typically due to the port being in use, and indicates
+        the inability to listen on the port. The concrete class might typically
+        decide to stop the listener thread (so it doesn't keep trying to listen)
+        and shut down the server (since this may indicate a failure to start
+        up properly). This notification will occur between calls to
+        listenerStarting() and listenerEnded().
+        @param    thread    the thread that failed to listen
+        */
+        virtual void listenerFailed(VListenerThread* listener, const VString& message) = 0;
+        /**
+        Notifies the interface of a listener thread whose runListening() has just
         Notifies the interface of a listener thread whose run() has just
         reached its end. The concrete class might typically remove the
         thread pointer from a vector. Upon return from this notification,

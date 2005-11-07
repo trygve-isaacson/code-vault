@@ -192,4 +192,20 @@ extern time_t timegm(struct tm* t);
 // contain conditional code for address resolution, we just define it here.
 typedef unsigned long in_addr_t;
 
+#ifdef DEFINE_V_MINMAXABS
+
+#define V_MIN(a, b) ((a) > (b) ? (b) : (a))    ///< Macro for getting min of compatible values when standard functions / templates are not available.
+#define V_MAX(a, b) ((a) > (b) ? (a) : (b))    ///< Macro for getting max of compatible values when standard functions / templates are not available.
+#define V_ABS(a) ((a) < 0 ? (-(a)) : (a))    ///< Macro for getting abs of an integer value when standard functions / templates are not available.
+#define V_FABS(a) ((a) < 0 ? (-(a)) : (a))    ///< Macro for getting abs of a floating point value when standard functions / templates are not available.
+
+#else
+
+#define V_MIN(a, b) std::min(a, b)    ///< Macro for getting min of compatible values using standard function template.
+#define V_MAX(a, b) std::max(a, b)    ///< Macro for getting max of compatible values using standard function template.
+#define V_ABS(a) std::abs(a)        ///< Macro for getting abs of an integer value using standard function template.
+#define V_FABS(a) std::fabs(a)        ///< Macro for getting abs of a floating point value using standard function template.
+
+#endif /* DEFINE_V_MINMAXABS */
+
 #endif /* vtypes_platform_h */

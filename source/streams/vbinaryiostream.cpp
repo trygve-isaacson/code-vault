@@ -158,6 +158,29 @@ VString VBinaryIOStream::readString()
     return s;
     }
 
+void VBinaryIOStream::readString32(VString& s)
+    {
+    Vs32    length = this->readS32();
+    
+    s.preflight((int) length);
+    this->readGuaranteed(reinterpret_cast<Vu8*> (s.buffer()), length);
+    s.postflight((int) length);
+    }
+
+VString VBinaryIOStream::readString32()
+    {
+    /*
+    Note that this API is far less efficient than the one above, because
+    it incurs TWO copies instead of none -- one when a temporary VString
+    is created by the compiler to hold the return value, and one when
+    that temporary VString is copied to the caller's lvalue.
+    */
+
+    VString    s;
+    this->readString32(s);
+    return s;
+    }
+
 void VBinaryIOStream::readInstant(VInstant& i)
     {
     Vs32    kind = this->readS32();
@@ -298,6 +321,12 @@ void VBinaryIOStream::writeBool(bool i)
 void VBinaryIOStream::writeString(const VString& s)
     {
     this->writeDynamicCount((Vs64) s.length());
+    (void) this->write(reinterpret_cast<Vu8*> (s.chars()), static_cast<Vs64> (s.length()));
+    }
+
+void VBinaryIOStream::writeString32(const VString& s)
+    {
+    this->writeS32((Vs32) s.length());
     (void) this->write(reinterpret_cast<Vu8*> (s.chars()), static_cast<Vs64> (s.length()));
     }
 

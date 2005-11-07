@@ -95,6 +95,30 @@ void VStringUnit::run()
     this->test(! s.endsWith("abcdefghijklmnopqrstuvwxyz"), "! endsWith literal 2");
     this->test(! s.endsWith('x'), "! endsWith char");
     
+    // Test empty string constant behavior.
+    this->test(VString::kEmptyString.isEmpty(), "kEmptyString is empty");
+    this->test(VString::kEmptyString.length() == 0, "kEmptyString length is zero");
+    this->test(VString::kEmptyString == "", "kEmptyString equals empty string literal");
+    s.format("A%sB", VString::kEmptyString.chars());
+    this->test(s == "AB", "kEmptyString is empty formatting element");
+    s = "";
+    this->test(s == VString::kEmptyString, "kEmptyString equals an empty VString");
+    VString newlyConstructedString;
+    this->test(newlyConstructedString == VString::kEmptyString, "kEmptyString equals a new constructed VString");
+
+    // Test assigning empty strings into non-empty strings.
+    s = "foo";
+    s = newlyConstructedString;
+    this->test(s.isEmpty(), "Assign empty VString&");
+    s = &newlyConstructedString;
+    this->test(s.isEmpty(), "Assign empty VString*");
+    s = (VString*) NULL;
+    this->test(s.isEmpty(), "Assign NULL VString*");
+    s = "";
+    this->test(s.isEmpty(), "Assign empty char*");
+    s = (char*) NULL;
+    this->test(s.isEmpty(), "Assign NULL char*");
+        
     // Test re-assignment and non-shared memory.
     VString    a("a");
     VString    b("b");
@@ -215,16 +239,16 @@ void VStringUnit::run()
     this->test(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
     
     // Test inserts on an empty string.
-    s = "";
+    s = VString::kEmptyString;
     s.insert('x');
     this->test(s, "x", "insert test 9");
-    s = "";
+    s = VString::kEmptyString;
     s.insert("ABC");
     this->test(s, "ABC", "insert test 10");
-    s = "";
+    s = VString::kEmptyString;
     s.insert('x', 5);    // this will also test out-of-bounds handling (currently it forces in-bounds; I think an exception would be better)
     this->test(s, "x", "insert test 9");
-    s = "";
+    s = VString::kEmptyString;
     s.insert("ABC", 5);    // this will also test out-of-bounds handling (currently it forces in-bounds; I think an exception would be better)
     this->test(s, "ABC", "insert test 10");
     
@@ -271,10 +295,10 @@ void VStringUnit::run()
     this->test(s, "This string had leading and trailing whitespace.", "trim test 4");
     s = "    ";
     s.trim();
-    this->test(s, "", "trim test 5");
+    this->test(s, VString::kEmptyString, "trim test 5");
     s = "";
     s.trim();
-    this->test(s, "", "trim test 6");
+    this->test(s, VString::kEmptyString, "trim test 6");
     
     int    numCreatures;
     s = "one fish, two fish, red fish, blue fish, fishfishfish";
@@ -291,26 +315,34 @@ void VStringUnit::run()
     this->test(s, "one bird, two bird, red bird, blue bird, birdbirdbird", "replace test 3a");
     this->test(numCreatures == 7, "replace test 3b");
     // Test replacing with empty string.
-    numCreatures = s.replace("bird", "");
+    numCreatures = s.replace("bird", VString::kEmptyString);
     this->test(s, "one , two , red , blue , ", "replace test 4a");
     this->test(numCreatures == 7, "replace test 4b");
     // Test string-not-found.
     numCreatures = s.replace("dogs", "cats");
     this->test(s, "one , two , red , blue , ", "replace test 5a");
     this->test(numCreatures == 0, "replace test 5b");
-    // Test finding and empty string.
-    numCreatures = s.replace("", "uh-oh");
+    // Test finding an empty string. Should never "find" an empty string.
+    numCreatures = s.replace(VString::kEmptyString, "uh-oh");
     this->test(s, "one , two , red , blue , ", "replace test 6a");
     this->test(numCreatures == 0, "replace test 6b");
+    // Test replace method with char parameters, search char in string.
+    numCreatures = s.replace(VChar('e'), VChar('E'));
+    this->test(s, "onE , two , rEd , bluE , ", "replace test 7a");
+    this->test(numCreatures == 3, "replace test 7b");
+    // Test replace method with char parameters, search char not in string.
+    numCreatures = s.replace(VChar('k'), VChar('K'));
+    this->test(s, "onE , two , rEd , bluE , ", "replace test 8a");
+    this->test(numCreatures == 0, "replace test 8b");
     // Test array operator assignment.
     s[0] = 'O';
     s[6] = 'T';
     s[12] = 'R';
     s[18] = 'B';
-    this->test(s, "One , Two , Red , Blue , ", "array operator assignment");
+    this->test(s, "OnE , Two , REd , BluE , ", "array operator assignment");
     s.set(20, 'e');
     s.set(21, 'u');
-    this->test(s, "One , Two , Red , Bleu , ", "set() assignment");
+    this->test(s, "OnE , Two , REd , Bleu , ", "set() assignment");
 
     // Test operator= conversions.
     // For each integer size/kind, we make sure to test unsigned, "big" unsigned (too big for signed), negative, and postive.
@@ -380,7 +412,7 @@ void VStringUnit::run()
     
     s = "foo";
     this->test(! s.isEmpty(), "not is empty");
-    s = "";
+    s = VString::kEmptyString;
     this->test(s.isEmpty(), "is empty");
     
     s = "hello";

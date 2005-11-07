@@ -133,7 +133,7 @@ bool VMemoryStream::seek(Vs64 inOffset, int whence)
     
         while (oldEOF < mEOFOffset)
             {
-            *(mBuffer + mIOOffset) = '\0';
+            *(mBuffer + mIOOffset) = 0;
             oldEOF++;
             }
             

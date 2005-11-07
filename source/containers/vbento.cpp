@@ -13,12 +13,12 @@ http://www.bombaydigital.com/
 #include "vhex.h"
 
 VBentoAttribute::VBentoAttribute()
-: mName("uninitialized"), mDataType("")
+: mName("uninitialized"), mDataType(VString::kEmptyString)
     {
     }
 
 VBentoAttribute::VBentoAttribute(VBinaryIOStream& stream, const VString& inDataType)
-: mName(""), mDataType(inDataType)
+: mName(VString::kEmptyString), mDataType(inDataType)
     {
     stream.readString(mName);
     }
@@ -280,7 +280,7 @@ void VBentoNode::writeToStream(VTextIOStream& stream, int indentLevel) const
 
     if (numChildNodes != 0)
         {
-        s = "";
+        s = VString::kEmptyString;
 
         for (int i = 0; i < indentLevel; ++i)
             s += ' ';

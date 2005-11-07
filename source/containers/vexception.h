@@ -180,9 +180,40 @@ class VEOFException : public VException
         */
         VEOFException(const char* errorMessage) : VException(errorMessage) {}
         /**
+        Constructs the exception with default error code and VString message.
+        @param    errorString    the error message
+        */
+        VEOFException(const VString& errorString) : VException(errorString) {}
+        /**
         Destructor.
         */
         virtual ~VEOFException() throw() {}
+    };
+
+/**
+VRangeException is a VException that indicates that a value is outside the
+valid range of data. For example, when you instantiate a VDate or call its
+set() function with a bad month or day value, it will throw a VRangeException
+rather than asserting.
+*/
+class VRangeException : public VException
+    {
+    public:
+    
+        /**
+        Constructs the exception with an error message.
+        @param    errorMessage    the message
+        */
+        VRangeException(const char* errorMessage) : VException(errorMessage) {}
+        /**
+        Constructs the exception with default error code and VString message.
+        @param    errorString    the error message
+        */
+        VRangeException(const VString& errorString) : VException(errorString) {}
+        /**
+        Destructor.
+        */
+        virtual ~VRangeException() throw() {}
     };
 
 /**
@@ -198,6 +229,11 @@ class VUnimplementedException : public VException
         @param    errorMessage    the message
         */
         VUnimplementedException(const char* errorMessage) : VException(errorMessage) {}
+        /**
+        Constructs the exception with default error code and VString message.
+        @param    errorString    the error message
+        */
+        VUnimplementedException(const VString& errorString) : VException(errorString) {}
         /**
         Destructor.
         */

@@ -10,6 +10,8 @@ http://www.bombaydigital.com/
 
 #include "vexception.h"
 
+V_STATIC_INIT_TRACE
+    
 // VClassFactory -------------------------------------------------------------
 
 VClassFactory::VClassFactory(const VString& classID)

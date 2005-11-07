@@ -16,8 +16,8 @@ http://www.bombaydigital.com/
 #include "vlogger.h"
 #include <algorithm>
 
-VListenerThread::VListenerThread(const VString& name, bool deleteAtEnd, VManagementInterface* manager, int portNumber, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, bool initiallyListening)
-: VThread(name, deleteAtEnd, manager)
+VListenerThread::VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, bool initiallyListening)
+: VThread(name, deleteSelfAtEnd, createDetached, manager)
     {
     mPortNumber = portNumber;
     mShouldListen = initiallyListening;
@@ -27,7 +27,7 @@ VListenerThread::VListenerThread(const VString& name, bool deleteAtEnd, VManagem
 
 VListenerThread::~VListenerThread()
     {
-    VLogger::getLogger("default")->log(VLogger::kDebug, NULL, 0, "VListenerThread '%s' ended.", mName.chars());
+    VLOGGER_DEBUG(VString("VListenerThread '%s' ended.", mName.chars()));
     }
 
 void VListenerThread::run()
@@ -140,11 +140,23 @@ void VListenerThread::runListening()
         }
     catch (VException& ex)
         {
-        VLogger::getLogger("default")->log(VLogger::kError, NULL, 0, "VListenerThread '%s' runListening() caught exception #%d '%s'.", mName.chars(), ex.getError(), ex.what());
+        mShouldListen = false;
+
+        VString    message("VListenerThread '%s' runListening() caught exception #%d '%s'.", mName.chars(), ex.getError(), ex.what());
+        VLOGGER_ERROR(message);
+
+        if (mManager != NULL)
+            mManager->listenerFailed(this, message);
         }
     catch (...)
         {
-        VLogger::getLogger("default")->log(VLogger::kError, NULL, 0, "VListenerThread '%s' runListening() caught unknown exception '%s'.", mName.chars());
+        mShouldListen = false;
+
+        VString message("VListenerThread '%s' runListening() caught unknown exception '%s'.", mName.chars());
+        VLOGGER_ERROR(message);
+
+        if (mManager != NULL)
+            mManager->listenerFailed(this, message);
         }
 
     delete listenerSocket;

@@ -9,7 +9,7 @@ http://www.bombaydigital.com/
 
 /** @file */
 
-#include "vthread.h"
+#include "vthread_platform.h"
 
 /**
     @ingroup vthread

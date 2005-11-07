@@ -11,7 +11,7 @@ http://www.bombaydigital.com/
 #include "vlistenerthread.h"
 
 VSocketThread::VSocketThread(const VString& name, VSocket* socket, VListenerThread* ownerThread)
-: VThread(name, kDeleteSelfAtEnd, (ownerThread == NULL) ? NULL : ownerThread->getManagementInterface())
+: VThread(name, kDeleteSelfAtEnd, kCreateThreadDetached, (ownerThread == NULL) ? NULL : ownerThread->getManagementInterface())
     {
     mSocket = socket;
     mOwnerThread = ownerThread;
@@ -20,7 +20,14 @@ VSocketThread::VSocketThread(const VString& name, VSocket* socket, VListenerThre
 VSocketThread::~VSocketThread()
     {
     if (mOwnerThread != NULL)
-        mOwnerThread->socketThreadEnded(this);
+        {
+        // Prevent all exceptions from escaping destructor.
+        try
+            {
+            mOwnerThread->socketThreadEnded(this);
+            }
+        catch (...) {}
+        }
 
     delete mSocket;    // socket will close itself on deletion
     }

@@ -26,7 +26,7 @@ void VExceptionUnit::run()
 
     VException    ex1;
     this->test((ex1.getError() == VException::kGenericError) &&
-                VString(ex1.what()) == "",
+                VString(ex1.what()).isEmpty(),
                 "constructor 1");
 
     VException    ex2(-2, "ex2");

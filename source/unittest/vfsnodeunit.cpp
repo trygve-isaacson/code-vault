@@ -43,24 +43,24 @@ void VFSNodeUnit::run()
     VFSNode    testTextFileNode;
     testDirDeeper.getChildNode("test_text_file.txt", testTextFileNode);
 
-    this->_testTextFileIO("Buffered Text IO starts...", testTextFileNode, true);
+    this->_testTextFileIO("starting Buffered Text IO tests", testTextFileNode, true);
     (void) testTextFileNode.rm();
-    this->test(! testTextFileNode.exists(), "...buffered text file removed");
+    this->test(! testTextFileNode.exists(), "buffered text file removed");
     
-    this->_testTextFileIO("Unbuffered Text IO starts...", testTextFileNode, false);
+    this->_testTextFileIO("starting Unbuffered Text IO tests", testTextFileNode, false);
     (void) testTextFileNode.rm();
-    this->test(! testTextFileNode.exists(), "...unbuffered text file removed");
+    this->test(! testTextFileNode.exists(), "unbuffered text file removed");
     
     VFSNode    testBinaryFileNode;
     testDirDeeper.getChildNode("test_binary_file", testBinaryFileNode);
 
-    this->_testBinaryFileIO("Buffered Binary IO starts...", testBinaryFileNode, true);
+    this->_testBinaryFileIO("starting Buffered Binary IO tests", testBinaryFileNode, true);
     (void) testBinaryFileNode.rm();
-    this->test(! testBinaryFileNode.exists(), "...buffered binary file removed");
+    this->test(! testBinaryFileNode.exists(), "buffered binary file removed");
     
-    this->_testBinaryFileIO("Unbuffered Binary IO starts...", testBinaryFileNode, false);
+    this->_testBinaryFileIO("starting Unbuffered Binary IO tests", testBinaryFileNode, false);
     (void) testBinaryFileNode.rm();
-    this->test(! testBinaryFileNode.exists(), "...unbuffered binary file removed");
+    this->test(! testBinaryFileNode.exists(), "unbuffered binary file removed");
     
     // Done with exercising file i/o and streams. Clean up our litter.
     
@@ -84,7 +84,7 @@ void VFSNodeUnit::run()
 void VFSNodeUnit::_testTextFileIO(const VString& seriesLabel, VFSNode& node, bool buffered)
     {
     // This output line is just to mark which kind of file i/o we're doing:
-    this->test(true, seriesLabel);
+    this->logStatus(seriesLabel);
 
     // This is a slightly ugly way of parameterizing whether we are doing
     // buffered or unbuffered i/o. Better than having 2 copies of this whole function?
@@ -151,7 +151,7 @@ void VFSNodeUnit::_testTextFileIO(const VString& seriesLabel, VFSNode& node, boo
 void VFSNodeUnit::_testBinaryFileIO(const VString& seriesLabel, VFSNode& node, bool buffered)
     {
     // This output line is just to mark which kind of file i/o we're doing:
-    this->test(true, seriesLabel);
+    this->logStatus(seriesLabel);
 
     // This is a slightly ugly way of parameterizing whether we are doing
     // buffered or unbuffered i/o. Better than having 2 copies of this whole function?

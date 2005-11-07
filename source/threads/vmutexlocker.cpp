@@ -9,6 +9,7 @@ http://www.bombaydigital.com/
 #include "vmutexlocker.h"
 
 #include "vmutex.h"
+#include "vthread.h"
 
 VMutexLocker::VMutexLocker(VMutex* inMutex, bool lockInitially)
     {
@@ -22,7 +23,14 @@ VMutexLocker::VMutexLocker(VMutex* inMutex, bool lockInitially)
 VMutexLocker::~VMutexLocker()
     {
     if (this->isLocked())
-        this->unlock();
+        {
+        // Prevent all exceptions from escaping destructor.
+        try
+            {
+            this->unlock();
+            }
+        catch (...) {}
+        }
         
     mMutex = NULL;
     }
@@ -43,5 +51,12 @@ void VMutexLocker::unlock()
         mMutex->unlock();
         mIsLocked = false;
         }
+    }
+
+void VMutexLocker::yield()
+    {
+    this->unlock();
+    VThread::yield();
+    this->lock();
     }
 

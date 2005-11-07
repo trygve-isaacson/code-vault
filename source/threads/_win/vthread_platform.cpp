@@ -15,7 +15,7 @@ http://www.bombaydigital.com/
 // VThread platform-specific functions ---------------------------------------
 
 // static
-bool VThread::threadCreate(ThreadID* threadID, threadMainFunction threadMainProcPtr, void* threadArgument)
+bool VThread::threadCreate(ThreadID* threadID, bool /*createDetached*/, threadMainFunction threadMainProcPtr, void* threadArgument)
     {
 #ifdef __MWERKS__
     unsigned int    id;
@@ -54,6 +54,9 @@ void VThread::threadDetach(ThreadID /*threadID*/)
 ThreadID VThread::threadSelf() 
     {
     // FIXME: tbd - Investigate the APIs "GetCurrentThreadId()" and "GetCurrentThread()"
+    // It seems that GetCurrentThreadId() does not return the same value as
+    // what _beginThread gave us.
+    // Nor does GetCurrentThread() and DuplicateHandle() as suggested in the Win SDK docs.
     return -1;
     }
 
@@ -126,9 +129,10 @@ bool VSemaphore::semaphoreDestroy(Semaphore* semaphore)
     }
 
 // static
-bool VSemaphore::semaphoreWait(Semaphore* semaphore, Mutex* /*mutex*/)
+bool VSemaphore::semaphoreWait(Semaphore* semaphore, Mutex* /*mutex*/, Vs64 timeoutMilliseconds)
     {
-    DWORD    result = WaitForSingleObject(*semaphore, INFINITE);    // waits until the semaphore's count is > 0, then decrements it
+    DWORD    timeoutMillisecondsDWORD = (timeoutMilliseconds == 0) ? INFINITE : ((DWORD) timeoutMilliseconds);
+    DWORD    result = WaitForSingleObject(*semaphore, timeoutMillisecondsDWORD);    // waits until the semaphore's count is > 0, then decrements it
     return (result != WAIT_FAILED);
     }
 

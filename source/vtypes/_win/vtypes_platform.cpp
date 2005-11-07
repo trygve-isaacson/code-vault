@@ -12,12 +12,14 @@ http://www.bombaydigital.com/
 #include "vmutexlocker.h"
 #include "vstring.h"
 
+V_STATIC_INIT_TRACE
+    
 static void getCurrentTZ(VString& tz)
     {
     char*    tzEnvString = getenv("TZ");
     
     if (tzEnvString == NULL)
-        tz = "";
+        tz = VString::kEmptyString;
     else
         tz = tzEnvString;
     }

@@ -9,6 +9,8 @@ http://www.bombaydigital.com/
 #include "vthread.h"
 #include "vmutex.h"
 #include "vsemaphore.h"
+#include "vlogger.h"
+#include "vinstant.h"
 
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -16,9 +18,58 @@ http://www.bombaydigital.com/
 // VThread platform-specific functions ---------------------------------------
 
 // static
-bool VThread::threadCreate(ThreadID* threadID, threadMainFunction threadMainProcPtr, void* threadArgument)
+bool VThread::threadCreate(ThreadID* threadID, bool createDetached, threadMainFunction threadMainProcPtr, void* threadArgument)
     {
-    return (::pthread_create(threadID, NULL, threadMainProcPtr, threadArgument) == 0);
+    int                result;
+    pthread_attr_t    threadAttributes;
+    
+    result = ::pthread_attr_init(&threadAttributes);
+    
+    // FIXME: Throwing an exception here would be preferable. Check calling code
+    // to see if it can deal with that.
+    if (result != 0)
+        {
+        VLOGGER_ERROR(VString("VThread::threadCreate: pthread_attr_init returned %d (%s).", result, ::strerror(result)));
+        return false;
+        }
+
+    result = ::pthread_attr_setdetachstate(&threadAttributes, createDetached ? PTHREAD_CREATE_DETACHED : PTHREAD_CREATE_JOINABLE);
+    
+    // FIXME: Throwing an exception here would be preferable.
+    if (result != 0)
+        {
+        VLOGGER_ERROR(VString("VThread::threadCreate: pthread_attr_setdetachstate returned %d (%s).", result, ::strerror(result)));
+        return false;
+        }
+
+    result = ::pthread_create(threadID, &threadAttributes, threadMainProcPtr, threadArgument);
+    
+    // FIXME: Throwing an exception here would be preferable.
+    if (result != 0)
+        {
+        // Usually this means we have hit the limit of threads allowed per process.
+        // Log our statistics. Maybe we have a thread handle leak.
+        int numVThreads;
+        int numThreadMains;
+        int numVThreadsCreated;
+        int numThreadMainsStarted;
+        int numVThreadsDestructed;
+        int numThreadMainsCompleted;
+        
+        VThread::getThreadStatistics(numVThreads, numThreadMains, numVThreadsCreated, numThreadMainsStarted, numVThreadsDestructed, numThreadMainsCompleted);
+
+        VLOGGER_ERROR(VString("VThread::threadCreate: pthread_create returned %d (%s).", result, ::strerror(result)));
+        VLOGGER_ERROR(VString(" VThread::smNumVThreads             = %d", numVThreads));
+        VLOGGER_ERROR(VString(" VThread::smNumThreadMains          = %d", numThreadMains));
+        VLOGGER_ERROR(VString(" VThread::smNumVThreadsCreated      = %d", numVThreadsCreated));
+        VLOGGER_ERROR(VString(" VThread::smNumThreadMainsStarted   = %d", numThreadMainsStarted));
+        VLOGGER_ERROR(VString(" VThread::smNumVThreadsDestructed   = %d", numVThreadsDestructed));
+        VLOGGER_ERROR(VString(" VThread::smNumThreadMainsCompleted = %d", numThreadMainsCompleted));
+        }
+
+    (void) ::pthread_attr_destroy(&threadAttributes);
+
+    return (result == 0);
     }
 
 // static
@@ -114,9 +165,23 @@ bool VSemaphore::semaphoreDestroy(Semaphore* semaphore)
     }
 
 // static
-bool VSemaphore::semaphoreWait(Semaphore* semaphore, Mutex* mutex)
+bool VSemaphore::semaphoreWait(Semaphore* semaphore, Mutex* mutex, Vs64 timeoutMilliseconds)
     {
-    return (pthread_cond_wait(semaphore, mutex) == 0);
+    if (timeoutMilliseconds == 0)
+        return (pthread_cond_wait(semaphore, mutex) == 0);
+
+    VInstant now;
+    Vs64 timeoutWhen = now.getValue() + timeoutMilliseconds;
+    
+    struct timespec    timeoutSpec;
+    
+    // Convert milliseconds to seconds.nanoseconds. e.g., 1234ms = 1sec + 234,000,000ns
+    timeoutSpec.tv_sec = (time_t) (timeoutWhen / CONST_S64(1000));
+    timeoutSpec.tv_nsec = (time_t) (CONST_S64(1000000) * (timeoutWhen % CONST_S64(1000)));
+
+    int result = pthread_cond_timedwait(semaphore, mutex, &timeoutSpec);
+    
+    return (result == 0) || (result == ETIMEDOUT);
     }
 
 // static

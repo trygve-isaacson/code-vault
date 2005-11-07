@@ -30,7 +30,7 @@ void VUnit::runUnit(VUnit& unit, VTextIOStream* xmlOutputStream)
         }
     catch (...)
         {
-        unit.logExceptionalEnd(xmlOutputStream, "");
+        unit.logExceptionalEnd(xmlOutputStream, VString::kEmptyString);
         throw;
         }
 
@@ -54,12 +54,14 @@ VUnit::~VUnit()
 
 void VUnit::logStart()
     {
-    this->logMessage(VString("[status ] %s : starting.", mName.chars()));
+    this->logStatus("starting.");
+//    this->logMessage(VString("[status ] %s : starting.", mName.chars()));
     }
 
 void VUnit::logNormalEnd(VTextIOStream* xmlOutputStream)
     {
-    this->logMessage(VString("[status ] %s : ended.", mName.chars()));
+    this->logStatus("ended.");
+//    this->logMessage(VString("[status ] %s : ended.", mName.chars()));
     this->logResults(xmlOutputStream);
     }
 
@@ -78,7 +80,7 @@ void VUnit::logResults(VTextIOStream* xmlOutputStream)
     this->logMessage(VString("[results] %s : tests passed: %d", mName.chars(), mNumSuccessfulTests));
     this->logMessage(VString("[results] %s : tests failed: %d", mName.chars(), mNumFailedTests));
     this->logMessage(VString("[results] %s : summary: %s", mName.chars(), (this->success() ? "SUCCESS" : "FAILURE")));
-    this->logMessage("");            // Blank line to increase readability
+    this->logMessage(VString::kEmptyString);    // Blank line to increase readability
     
     this->logXMLResults(xmlOutputStream);
     }
@@ -98,6 +100,11 @@ void VUnit::test(bool success, const VString& description)
 void VUnit::test(const VString& a, const VString& b, const VString& description)
     {
     this->test(a == b, description);
+    }
+
+void VUnit::logStatus(const VString& description)
+    {
+    this->logMessage(VString("[status ] %s : %s", mName.chars(), description.chars()));
     }
 
 void VUnit::logMessage(const VString& message)

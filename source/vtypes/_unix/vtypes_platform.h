@@ -38,8 +38,27 @@ http://www.bombaydigital.com/
     #include <math.h>
 
     // On HPUX, std::abs(float) is not defined. For now, we can revert to macro style.
+    // FIXME: do this more selectively rather than all-or-nothing below; just do V_FABS
+    // rather than all 4 macros.
     #define DEFINE_V_MINMAXABS
 #endif
+
+#ifdef DEFINE_V_MINMAXABS
+
+#define V_MIN(a, b) ((a) > (b) ? (b) : (a))    ///< Macro for getting min of compatible values when standard functions / templates are not available.
+#define V_MAX(a, b) ((a) > (b) ? (a) : (b))    ///< Macro for getting max of compatible values when standard functions / templates are not available.
+#define V_ABS(a) ((a) < 0 ? (-(a)) : (a))    ///< Macro for getting abs of an integer value when standard functions / templates are not available.
+#define V_FABS(a) ((a) < 0 ? (-(a)) : (a))    ///< Macro for getting abs of a floating point value when standard functions / templates are not available.
+
+#else
+
+#define V_MIN(a, b) std::min(a, b)    ///< Macro for getting min of compatible values using standard function template.
+#define V_MAX(a, b) std::max(a, b)    ///< Macro for getting max of compatible values using standard function template.
+#define V_ABS(a) std::abs(a)        ///< Macro for getting abs of an integer value using standard function template.
+#define V_FABS(a) std::fabs(a)        ///< Macro for getting abs of a floating point value using standard function template.
+
+#endif /* DEFINE_V_MINMAXABS */
+
 
 #define V_HAVE_REENTRANT_TIME    // we can and should use the _r versions of time.h calls
 

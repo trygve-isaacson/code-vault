@@ -28,7 +28,7 @@ class TestThreadClass : public VThread
     };
 
 TestThreadClass::TestThreadClass(int numSecondsToSleep, int numIterations, bool* boolToSetOnCompletion, TestThreadClass** thisPtrToNull) :
-VThread("TestThreadClass", thisPtrToNull != NULL, NULL),
+VThread("TestThreadClass", thisPtrToNull != NULL, kCreateThreadJoinable, NULL),
 mNumSecondsToSleep(numSecondsToSleep),
 mNumIterations(numIterations),
 mBoolToSetOnCompletion(boolToSetOnCompletion),

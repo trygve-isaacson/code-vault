@@ -215,32 +215,9 @@ so that plain C code and C wrapper APIs don't have to be written differently
 
 #endif /* end of bool/true/false definitions for C */
 
-/*
-It is very convenient to have min/max/abs macros, so long as you use
-them with compatible types. These are provided conditionally in case
-your compiler/library don't support std::min(), std::max(), std::abs().
-Normally they just use the standard function templates.
-*/
-
-#ifdef DEFINE_V_MINMAXABS
-
-#define V_MIN(a, b) ((a) > (b) ? (b) : (a))    ///< Macro for getting min of compatible values even if standard function templates are not available.
-#define V_MAX(a, b) ((a) > (b) ? (a) : (b))    ///< Macro for getting max of compatible values even if standard function templates are not available.
-#define V_ABS(a) ((a) < 0 ? (-(a)) : (a))    ///< Macro for getting abs of value even if standard function templates are not available.
-
-#else
-
-#define V_MIN(a, b) std::min(a, b)    ///< Macro for getting min of compatible values even if standard function templates are not available.
-#define V_MAX(a, b) std::max(a, b)    ///< Macro for getting max of compatible values even if standard function templates are not available.
-
-/* In CodeWarrior 8.3 MSL abs() is not in "std". */
-#ifdef VLIBRARY_METROWERKS
-#define V_ABS(a) abs(a)                ///< Macro for getting abs of value even if standard function templates are not available.
-#else
-#define V_ABS(a) std::abs(a)        ///< Macro for getting abs of value even if standard function templates are not available.
-#endif
-
-#endif
+// The V_MIN, V_MAX, and V_ABS definitions are now contained in each
+// platform's vtypes_platform.h file, because their definitions have become
+// highly tailored to compatibility quirks of each development platform.
 
 /*
 It easiest to define limit macros here as well.
@@ -354,13 +331,11 @@ and doing something different in that compiler.
 inline void Vmemcpy(Vu8* to, Vu8* from, int length) { ::memcpy(to, (char*) from, (VSizeType) length); }
 
 /**
-This macro and function provide a wrapper to assert. It allows you to place a
-breakpoint in the function when using a debugger, in order to see where the
-assertion is occurring. So normally you should use the V_ASSERT macro instead
-of the assert macro, and put a breakpoint in Vassert if you are in debug mode
-and want to hit a breakpoint upon assertion failure.
-FIXME: Need to figure out equivalent thing on MSVC++, because it does not have
-the __assert call that is available with gcc. For now, map to assert for VC++.
+The V_ASSERT macro and Vassert function provide assertion and assertion breakpoint
+support. Normally you should use the V_ASSERT macro instead of the compiler-specific
+assert macro, and put a breakpoint in Vassert if you are in debug mode and want to
+hit a breakpoint upon assertion failure. The macro is a no-op in a release build, so
+it has no runtime cost in a release build.
 @param    expression    the expression that if false will cause an assertion failure
 @param    file        the name of the source file that is asserting
 @param    line        the line number in the source file that is asserting
@@ -368,9 +343,21 @@ the __assert call that is available with gcc. For now, map to assert for VC++.
 extern void Vassert(bool expression, const char* file, int line);
 
 #ifdef V_DEBUG
-#define V_ASSERT(expression) Vassert(expression, __FILE__, __LINE__)
+// This inline wrapper eliminates function call overhead for successful assertions.
+inline void VassertWrapper(bool expression, const char* file, int line) { if (!expression) Vassert(expression, file, line); }
+#define V_ASSERT(expression) VassertWrapper(expression, __FILE__, __LINE__)
 #else
 #define V_ASSERT(expression) ((void) 0)
+#endif
+
+// Uncomment this define to get a trace of static initialization through the macro below.
+//define V_DEBUG_STATIC_INITIALIZATION_TRACE 1
+
+#ifdef V_DEBUG_STATIC_INITIALIZATION_TRACE
+extern int Vtrace(const char* fileName, int lineNumber);
+#define V_STATIC_INIT_TRACE static int staticVtrace = Vtrace(__FILE__, __LINE__);
+#else
+#define V_STATIC_INIT_TRACE
 #endif
 
 #endif /* vtypes_h */

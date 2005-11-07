@@ -12,6 +12,7 @@ http://www.bombaydigital.com/
 #include "vthread_platform.h"
 
 #include "vstring.h"
+#include "vmutex.h"
 
 class VManagementInterface;
 
@@ -97,7 +98,8 @@ of threads and then runs until they have all completed or been killed; the
 server's main thread simply joins to each thread, and this causes it to
 block on each join() call until that thread has finished. This is far better
 than cycling through a while loop waiting until you notice that all of your
-thread objects have been removed.
+thread objects have been removed. Pass kCreateThreadJoinable for
+createDetached in the constructor to make the thread joinable.
         
 There is no safe way to remotely "force-kill" another thread. You can only
 stop() it and let it notice that it has been stopped. As noted above, if you
@@ -129,9 +131,14 @@ information.
 class VThread
     {
     public:
-    
+
+        // Constants to pass for VThread constructor deleteSelfAtEnd parameter:
         static const bool kDeleteSelfAtEnd = true;        ///< The thread main deletes the VThread at end.
         static const bool kDontDeleteSelfAtEnd = false;    ///< The thread main does not delete the VThread at end.
+    
+        // Constants to pass for VThread constructor createDetached parameter:
+        static const bool kCreateThreadDetached = true;        ///< The thread will be created in detached state.
+        static const bool kCreateThreadJoinable = false;    ///< The thread will be created in joinable state.
     
         /**
         Constructs the thread object in stopped state.
@@ -143,9 +150,14 @@ class VThread
                                 example, by joining to it in a non-threadsafe way); if you
                                 use kDontDeleteSelfAtEnd, you need to delete the VThread after
                                 it has finished running.
+        @param    createDetached    true to create the thread in detached state; false if not.
+                                Generally, if you aren't joining to a thread, it should be
+                                detached, and vice-versa. If a non-detached, non-joined
+                                thread ends, it will leak system resources (depending on
+                                the platform implementation).
         @param    manager            the object that receives notifications for this thread, or NULL
         */
-        VThread(const VString& name, bool deleteSelfAtEnd, VManagementInterface* manager);
+        VThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager);
         /**
         Destructor.
         */
@@ -231,6 +243,12 @@ class VThread
         */
         static void* threadMain(void* arg);
         
+        /**
+        Returns thread statistics counters for debugging/diagnostic purposes.
+        @see the statistics fields comments for meaning of each value
+        */
+        static void getThreadStatistics(int& numVThreads, int& numThreadMains, int& numVThreadsCreated, int& numThreadMainsStarted, int& numVThreadsDestructed, int& numThreadMainsCompleted);
+
         /* PLATFORM-SPECIFIC STATIC FUNCTIONS --------------------------------
         The remaining functions defined here are the low-level interfaces to
         the platform-specific threading APIs. These are implemented in each
@@ -243,11 +261,12 @@ class VThread
         Starts up a new running thread.
         Wrapper on Unix for pthread_create.
         @param    threadID            pointer to where to return the new thread's ID
+        @param    createDetached        true to create the thread in detached state; false if not.
         @param    threadMainProcPtr    the thread main function that will be invoked
         @param    threadArgument        the argument to be passed to the thread main
         @return true on success; false if there was an error creating the thread
         */
-        static bool threadCreate(ThreadID* threadID, threadMainFunction threadMainProcPtr, void* threadArgument);
+        static bool threadCreate(ThreadID* threadID, bool createDetached, threadMainFunction threadMainProcPtr, void* threadArgument);
 
         /**
         Terminates the current thread. This could be called from anywhere, but
@@ -306,15 +325,35 @@ class VThread
         facilities available.
         */
         static void yield();
-
+        
     protected:
     
         bool                    mIsDeleted;        ///< For debugging purposes it's useful to detect when an attempt is made to delete a thread twice.
         VString                    mName;            ///< For debugging purposes it's very useful to give each thread a name.
         bool                    mDeleteAtEnd;    ///< True if threadMain should delete this obj when it returns from run().
+        bool                    mCreateDetached;///< True if the thread is created in detached state.
         VManagementInterface*    mManager;        ///< The VManagementInterface that manages us, or NULL.
         ThreadID                mThreadID;        ///< The OS-specific thread ID value.
         bool                    mIsRunning;        ///< The running state of the thread (@see isRunning()).
+    
+        // These static members track and control the existence of threads we create.
+        static int        smNumVThreads;                ///< The number of VThread objects that currently exist.
+        static int        smNumThreadMains;            ///< The number of VThread::main() functions currently underway.
+        static int        smNumVThreadsCreated;        ///< The total number of VThread objects ever created.
+        static int        smNumThreadMainsStarted;    ///< The total number of VThread::main() functions ever entered.
+        static int        smNumVThreadsDestructed;    ///< The total number of VThread objects ever destructed.
+        static int        smNumThreadMainsCompleted;    ///< The total number of VThread::main() functions ever completed.
+
+        /**
+        Defines the actions indicated in calls to updateThreadStats.
+        */
+        enum eThreadAction { eCreated, eDestroyed, eMainStarted, eMainCompleted };
+
+        /**
+        Updates the thread statistics based on the specified action happening.
+        @param    action    what happened (@see eThreadAction)
+        */
+        static void    updateThreadStatistics(eThreadAction action);
     };
 
 #endif /* vthread_h */

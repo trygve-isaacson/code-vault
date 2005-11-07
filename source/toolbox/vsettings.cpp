@@ -13,6 +13,8 @@ http://www.bombaydigital.com/
 #include "vtextiostream.h"
 #include "vchar.h"
 
+V_STATIC_INIT_TRACE
+    
 #undef strlen
 
 // VSettingsNode ------------------------------------------------------------------
@@ -308,12 +310,12 @@ const char    VSettingsNode::kPathDelimiterChar = '/';
 // VSettings ----------------------------------------------------------------------
 
 VSettings::VSettings()
-: VSettingsNode(NULL, "")
+: VSettingsNode(NULL, VString::kEmptyString)
     {
     }
 
 VSettings::VSettings(VTextIOStream& inputStream)
-: VSettingsNode(NULL, "")
+: VSettingsNode(NULL, VString::kEmptyString)
     {
     VSettings::readFromStream(inputStream);
     }
@@ -353,7 +355,7 @@ void VSettings::debugPrint()
     
     while (lengthRemaining > 0)
         {
-        s = "";
+        s = VString::kEmptyString;
         
         char    c = *buffer;
         ++buffer;
@@ -511,7 +513,7 @@ void VSettings::splitPathFirst(const VString& path, VString& nextNodeName, VStri
     path.getSubstring(nextNodeName, 0, dotLocation);
     
     if (dotLocation == -1)    // no dot found
-        outRemainder = "";
+        outRemainder = VString::kEmptyString;
     else
         path.getSubstring(outRemainder, dotLocation + 1);
     }
@@ -524,7 +526,7 @@ void VSettings::splitPathLast(const VString& path, VString& leadingPath, VString
     int    dotLocation = path.lastIndexOf(kPathDelimiterChar);
     
     if (dotLocation == -1)    // no dot found
-        leadingPath = "";
+        leadingPath = VString::kEmptyString;
     else
         path.getSubstring(leadingPath, 0, dotLocation);
 
@@ -1216,7 +1218,7 @@ void VSettingsXMLParser::parseLine()
 
 void VSettingsXMLParser::resetElement()
     {
-    mElement = "";
+    mElement = VString::kEmptyString;
     }
 
 void VSettingsXMLParser::accumulate(const VChar& c)

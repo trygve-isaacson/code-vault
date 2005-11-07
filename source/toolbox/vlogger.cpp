@@ -13,7 +13,11 @@ http://www.bombaydigital.com/
 #include "vmemorystream.h"
 #include "vhex.h"
 
+V_STATIC_INIT_TRACE
+    
 // VLogger -------------------------------------------------------------------
+
+const VString VLogger::kDefaultLoggerName; // empty string by definition
 
 typedef VLoggerList::const_iterator const_VLoggerIterator;
 typedef VLoggerList::iterator VLoggerIterator;
@@ -21,6 +25,17 @@ typedef VLoggerList::iterator VLoggerIterator;
 VLoggerList VLogger::smLoggers;
 VLogger* VLogger::smDefaultLogger = NULL;
 VMutex VLogger::smLoggersMutex;
+
+// static
+VLogger* VLogger::getDefaultLogger()
+    {
+    // Install one if there isn't one yet.
+    
+    if (smDefaultLogger == NULL)
+        VLogger::installDefaultLogger();
+
+    return smDefaultLogger;
+    }
 
 // static
 VLogger* VLogger::getLogger(const VString& name)
@@ -42,13 +57,8 @@ VLogger* VLogger::getLogger(const VString& name)
             ++i;
             }
         }
-    
-    // Return default logger -- install one if there isn't one yet.
-    
-    if (smDefaultLogger == NULL)
-        VLogger::installDefaultLogger();
-
-    return smDefaultLogger;
+        
+    return VLogger::getDefaultLogger();
     }
 
 // static
@@ -59,6 +69,11 @@ void VLogger::installLogger(VLogger* logger)
     for (VLoggerIterator i = smLoggers.begin(); i != smLoggers.end(); ++i)
         {
         VLogger*    existingLogger = (*i);
+        
+        // Protect agains caller accidentally installing the same logger object twice.
+        // Otherwise, we'll end up deleting the object being installed.
+        if (existingLogger == logger)
+            return;
         
         if (existingLogger->mName == logger->mName)
             {
@@ -175,6 +190,21 @@ void VLogger::log(int logLevel, const char* file, int line, const char* inFormat
         }
     }
 
+void VLogger::log(int logLevel, const char* inFormat, ...)
+{
+    if (this->isEnabledFor(logLevel))
+    {
+        va_list    args;
+        va_start(args, inFormat);
+
+        VMutexLocker    locker(&mMutex);    // ensure multiple threads don't intertwine their log messages
+        this->emit(logLevel, NULL, 0, inFormat, args);
+
+        va_end(args);
+    }
+}
+
+
 void VLogger::logHexDump(int logLevel, const VString& message, const Vu8* buffer, Vs64 length)
     {
     // Short circuit immediately if the detail level is too high.
@@ -248,7 +278,8 @@ void VLogger::vaFormat(VString& stringToFormat, int logLevel, const char* file, 
     VString    levelName;
     VLogger::getLevelName(logLevel, levelName);
 
-    if ((logLevel < kDebug) || (file == NULL))
+    // If there's file/line number info, then always show it.
+    if (/*(logLevel < kDebug) || */(file == NULL))
         stringToFormat.format("%s [%s] %s", timeStampString.chars(), levelName.chars(), message.chars());
     else
         stringToFormat.format("%s [%s] @ %s line %d: %s", timeStampString.chars(), levelName.chars(), file, line, message.chars());
@@ -285,8 +316,8 @@ void VLogger::getLevelName(int logLevel, VString& name)
 
 // VSuppressionLogger ---------------------------------------------------------------
 
-VSuppressionLogger::VSuppressionLogger() :
-VLogger(kOff, "VSuppressionLogger")
+VSuppressionLogger::VSuppressionLogger(const VString& name) :
+VLogger(kOff, name)
     {
     }
 
@@ -304,7 +335,7 @@ mOutputStream(mFileStream)
     mFileStream.openReadWrite();
     mFileStream.seek(CONST_S64(0), SEEK_END);
 
-    mOutputStream.writeLine("");
+    mOutputStream.writeLine(VString::kEmptyString);
     }
 
 void VFileLogger::emitRawLine(const VString& line)
@@ -332,12 +363,11 @@ void VCoutLogger::emitRawLine(const VString& line)
 VInterceptLogger::VInterceptLogger(int logLevel, const VString& name) :
 VLogger(logLevel, name)
     {
-    lastLoggedMessage = "";
     }
 
 bool VInterceptLogger::sawExpectedMessage(const VString& inMessage)
     {
-    return (lastLoggedMessage.compare(inMessage) == 0);
+    return (mLastLoggedMessage == inMessage);
     }
 
 
@@ -350,5 +380,8 @@ void VInterceptLogger::emit(int /*logLevel*/, const char* /*file*/, int /*line*/
 
 void VInterceptLogger::emitRawLine(const VString& line)
     {
-    lastLoggedMessage = line;
+    mLastLoggedMessage = line;
     }
+
+// VFileTCPLogger ---------------------------------------------------------------
+

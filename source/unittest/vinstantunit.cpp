@@ -158,7 +158,7 @@ void VInstantUnit::run()
     VTimeOfDay    utc0Time(0, 0, 0);
     VInstant    utc0Instant;
     
-    utc0Instant.setValues(utc0Date, utc0Time, false);
+    utc0Instant.setValues(utc0Date, utc0Time, VInstant::kUTCTimeZoneID);
     this->test(utc0Instant.getValue() == CONST_S64(0), "utc epoch base");
     
     // A little debugging code here:
@@ -166,11 +166,11 @@ void VInstantUnit::run()
     // 24 hours after that? (Let's avoid pre-1970 values for Windows compatibility.)
     VInstant utc0Plus1Instant = utc0Instant;
     utc0Plus1Instant += CONST_S64(86400000); // one day of milliseconds
-    utc0Plus1Instant.getValues(utc0Date, utc0Time, false); // see what that is in Greenwich (should be 1970 Jan 2 00:00:00)
-    utc0Plus1Instant.getValues(utc0Date, utc0Time, true); // see what that is in local time (should be 1970 Jan 2 00:00:00 minus local time zone delta)
+    utc0Plus1Instant.getValues(utc0Date, utc0Time, VInstant::kUTCTimeZoneID); // see what that is in Greenwich (should be 1970 Jan 2 00:00:00)
+    utc0Plus1Instant.getValues(utc0Date, utc0Time, VInstant::kLocalTimeZoneID); // see what that is in local time (should be 1970 Jan 2 00:00:00 minus local time zone delta)
     VDate        utc1Date(1970, 1, 2);
     VTimeOfDay    utc1Time(0, 0, 0);
-    utc0Plus1Instant.setValues(utc1Date, utc1Time, false); // see if setting Jan 2 UTC works out to 86400000 
+    utc0Plus1Instant.setValues(utc1Date, utc1Time, VInstant::kUTCTimeZoneID); // see if setting Jan 2 UTC works out to 86400000 
     
     // Create a date and time, specified in both local and gm.
     VDate        july_14_2004(2004, 7, 14);
@@ -178,16 +178,16 @@ void VInstantUnit::run()
     VInstant    july_14_2004_noon_local;
     VInstant    july_14_2004_noon_utc;
     
-    july_14_2004_noon_local.setValues(july_14_2004, noon, true);
-    july_14_2004_noon_utc.setValues(july_14_2004, noon, false);
+    july_14_2004_noon_local.setValues(july_14_2004, noon, VInstant::kLocalTimeZoneID);
+    july_14_2004_noon_utc.setValues(july_14_2004, noon, VInstant::kUTCTimeZoneID);
     
     VDate        dateLocal;
     VTimeOfDay    noonLocal;
     VDate        dateUTC;
     VTimeOfDay    noonUTC;
     
-    july_14_2004_noon_utc.getValues(dateLocal, noonLocal, true);
-    july_14_2004_noon_utc.getValues(dateUTC, noonUTC, false);
+    july_14_2004_noon_utc.getValues(dateLocal, noonLocal, VInstant::kLocalTimeZoneID);
+    july_14_2004_noon_utc.getValues(dateUTC, noonUTC, VInstant::kUTCTimeZoneID);
     // If you're testing this in Pacific time, dateLocal/noonLocal vs. dateUTC/noonUTC
     // should differ by 8 hours in the winter (standard), 7 hours in the summer (daylight).
     
@@ -221,16 +221,16 @@ void VInstantUnit::run()
     
     VDate        dateLocalFromLocal;
     VTimeOfDay    timeLocalFromLocal;
-    july_14_2004_noon_local.getValues(dateLocalFromLocal, timeLocalFromLocal, true);
+    july_14_2004_noon_local.getValues(dateLocalFromLocal, timeLocalFromLocal, VInstant::kLocalTimeZoneID);
     this->test((dateLocalFromLocal == july_14_2004) && (timeLocalFromLocal == noon), "local conversion cycle");
 
     VDate        dateUTCFromUTC;
     VTimeOfDay    timeUTCFromUTC;
-    july_14_2004_noon_utc.getValues(dateUTCFromUTC, timeUTCFromUTC, false);
+    july_14_2004_noon_utc.getValues(dateUTCFromUTC, timeUTCFromUTC, VInstant::kUTCTimeZoneID);
     this->test((dateUTCFromUTC == july_14_2004) && (timeUTCFromUTC == noon), "utc conversion cycle 1");
 
-    july_14_2004_noon_utc.getDate(dateUTCFromUTC, false);
-    july_14_2004_noon_utc.getTimeOfDay(timeUTCFromUTC, false);
+    july_14_2004_noon_utc.getDate(dateUTCFromUTC, VInstant::kUTCTimeZoneID);
+    july_14_2004_noon_utc.getTimeOfDay(timeUTCFromUTC, VInstant::kUTCTimeZoneID);
     this->test((dateUTCFromUTC == july_14_2004) && (timeUTCFromUTC == noon), "utc conversion cycle 2");
 
     this->test((dateUTCFromUTC.year() == 2004) &&

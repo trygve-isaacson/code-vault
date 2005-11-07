@@ -12,26 +12,47 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vmanagementinterface.h"
 #include "vlogger.h"
+#include "vmutexlocker.h"
 
-VThread::VThread(const VString& name, bool deleteAtEnd, VManagementInterface* manager) :
+int VThread::smNumVThreads = 0;
+int VThread::smNumThreadMains = 0;
+int VThread::smNumVThreadsCreated = 0;
+int VThread::smNumThreadMainsStarted = 0;
+int VThread::smNumVThreadsDestructed = 0;
+int VThread::smNumThreadMainsCompleted = 0;
+
+// If we just declare this as an object, not a pointer, static initialization order
+// problems can occur. This form ensures it is NULL until properly constructed.
+static VMutex* gThreadStatsMutex = new VMutex();
+
+VThread::VThread(const VString& name, bool deleteAtEnd, bool createDetached, VManagementInterface* manager) :
 mIsDeleted(false),
 mName(name),
 mDeleteAtEnd(deleteAtEnd),
+mCreateDetached(createDetached),
 mManager(manager),
 mThreadID((ThreadID) -1),
 mIsRunning(false)
     {
+    VThread::updateThreadStatistics(VThread::eCreated);
     }
 
 VThread::~VThread()
     {
     // Detect repeat deletion bug. Can't refer to mName because it's been deleted.
     if (mIsDeleted)
-        VLogger::getLogger("default")->log(VLogger::kError, NULL, 0, "Thread delete on already-deleted thread @0x%08X.", this);
+        VLOGGER_ERROR(VString("Thread delete on already-deleted thread @0x%08X.", this));
 
     mIsDeleted = true;
     mIsRunning = false;
     mThreadID = (ThreadID) -1;
+
+    // Prevent all exceptions from escaping destructor.
+    try
+        {
+        VThread::updateThreadStatistics(VThread::eDestroyed);
+        }
+    catch (...) {}
     }
 
 void VThread::start()
@@ -41,7 +62,7 @@ void VThread::start()
 
     mIsRunning = true;
     
-    if (! VThread::threadCreate(&mThreadID, VThread::threadMain, (void*) this))
+    if (!VThread::threadCreate(&mThreadID, mCreateDetached, VThread::threadMain, (void*) this))
         {
         mIsRunning = false;
         throw VException("VThread::start failed to start thread.");
@@ -65,6 +86,8 @@ bool VThread::isRunning() const
 
 bool VThread::join()
     {
+    // FIXME: could complain here if mCreateDetached is true.
+
     if (! mIsRunning || (mThreadID == (ThreadID) -1))
         return true;    // never started, or was stopped, so we're done
     else
@@ -93,9 +116,13 @@ void VThread::setName(const VString& threadName)
 
 void* VThread::threadMain(void* arg)
     {
+    VThread::updateThreadStatistics(VThread::eMainStarted);
+
     VThread*    thread = static_cast<VThread*> (arg);
     VString        threadName = thread->name();
+    
     bool        deleteAtEnd = thread->getDeleteAtEnd();
+    
     VManagementInterface*    manager = thread->getManagementInterface();
 
 #ifdef VPLATFORM_WIN
@@ -111,15 +138,15 @@ void* VThread::threadMain(void* arg)
         }
     catch (VException& ex)
         {
-        VLogger::getLogger("default")->log(VLogger::kError, NULL, 0, "Thread '%s' main caught exception #%d '%s'.", threadName.chars(), ex.getError(), ex.what());
+        VLOGGER_ERROR(VString("Thread '%s' main caught exception #%d '%s'.", threadName.chars(), ex.getError(), ex.what()));
         }
     catch (std::exception& ex)
         {
-        VLogger::getLogger("default")->log(VLogger::kError, NULL, 0, "Thread '%s' main caught exception '%s'.", threadName.chars(), ex.what());
+        VLOGGER_ERROR(VString("Thread '%s' main caught exception '%s'.", threadName.chars(), ex.what()));
         }
     catch (...)
         {
-        VLogger::getLogger("default")->log(VLogger::kError, NULL, 0, "Thread '%s' main caught unknown exception.", threadName.chars());
+        VLOGGER_ERROR(VString("Thread '%s' main caught unknown exception.", threadName.chars()));
         }
 
     // Let's be bulletproof even on this notification -- use try/catch.
@@ -128,17 +155,63 @@ void* VThread::threadMain(void* arg)
         if (manager != NULL)
             manager->threadEnded(thread);
         }
-    catch (...) {}
+    catch (...) 
+        {
+        VLOGGER_ERROR(VString("Thread '%s' main caught exception notifying manager of thread end.", threadName.chars()));
+        }
 
 #ifdef VPLATFORM_WIN
     SetEvent((HANDLE) thread->threadID());    // signal on this thread, so join()ers unblock
 #endif
-    
+
+
+//    VThread::threadExit(); NO! This should only be called for abnormal thread exit.
+
     if (deleteAtEnd)
         delete thread;
 
-    VThread::threadExit();
-    
+    VThread::updateThreadStatistics(VThread::eMainCompleted);
+
     return NULL;
     }
+
+// static
+void VThread::updateThreadStatistics(eThreadAction action)
+    {
+    VMutexLocker locker(gThreadStatsMutex);
+
+    switch (action)
+        {
+        case VThread::eCreated:
+            ++VThread::smNumVThreads;
+            ++VThread::smNumVThreadsCreated;
+            break;
+        case VThread::eDestroyed:
+            --VThread::smNumVThreads;
+            ++VThread::smNumVThreadsDestructed;
+            break;
+        case VThread::eMainStarted:
+            ++VThread::smNumThreadMains;
+            ++VThread::smNumThreadMainsStarted;
+            break;
+        case VThread::eMainCompleted:
+            --VThread::smNumThreadMains;
+            ++VThread::smNumThreadMainsCompleted;
+            break;
+        }
+    }
+
+// static
+void VThread::getThreadStatistics(int& numVThreads, int& numThreadMains, int& numVThreadsCreated, int& numThreadMainsStarted, int& numVThreadsDestructed, int& numThreadMainsCompleted)
+    {
+    VMutexLocker locker(gThreadStatsMutex);
+    
+    numVThreads = smNumVThreads;
+    numThreadMains = smNumThreadMains;
+    numVThreadsCreated = smNumVThreadsCreated;
+    numThreadMainsStarted = smNumThreadMainsStarted;
+    numVThreadsDestructed = smNumVThreadsDestructed;
+    numThreadMainsCompleted = smNumThreadMainsCompleted;
+    }
+
 

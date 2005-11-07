@@ -10,6 +10,8 @@ http://www.bombaydigital.com/
 
 #include "vexception.h"
 
+V_STATIC_INIT_TRACE
+    
 // This is to force our staticInit to be called at startup.
 bool VSocket::smStaticInited = VSocket::staticInit();
 
@@ -37,6 +39,7 @@ VSocket::VSocket()
 
 VSocket::~VSocket()
     {
+    // Note: base class destructor does a close() of the socket if it is open.
     }
 
 void VSocket::connect()
@@ -105,7 +108,7 @@ void VSocket::listen()
 
 int VSocket::available()
     {
-    u_long    numBytesAvailable;
+    u_long    numBytesAvailable = 0;
     
     int    result = ::ioctlsocket(mSockID, FIONREAD, &numBytesAvailable);
     

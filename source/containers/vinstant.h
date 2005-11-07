@@ -11,6 +11,7 @@ http://www.bombaydigital.com/
 
 #include "vtypes.h"
 
+class VChar;
 class VString;
 class VDate;
 class VTimeOfDay;
@@ -33,6 +34,50 @@ class VInstantStruct
         int mDayOfWeek;    ///< See enum in VInstant: kSunday=0..kSaturday=6.
     };
 
+/**
+You can provide a callback interface for VInstant to allow for converting
+to and from "remote time zones" (RTZ). Currently the built-in code of VInstant
+(using OS-provided functions) can only convert between UTC and the local
+time zone.
+
+To implement remote time zone conversion, implement this interface, and
+call VInstant::setRemoteTimeZoneConverter(). Then you can pass RTZ specifiers
+to the VInstant APIs that allow them, and VInstant will call back to
+the installed RTZ converter interface.
+*/
+class MRemoteTimeZoneConverter
+    {
+    public:
+    
+        MRemoteTimeZoneConverter() {}
+        virtual ~MRemoteTimeZoneConverter() {}
+
+        /**
+        Converts an offset (ms from 1970 UTC, same as VInstant "value") to
+        a broken-down calendar time in the specified time zone. This function
+        should throw a VException if the time zone ID is invalid.
+        @param    offset        a number milliseconds since UTC 1970 00:00:00.000
+        @param    timeZoneID    a time zone ID string (e.g., PST, EST, etc.) from
+                            the set of strings supported by the converter
+        @param    when        a structure that will be filled to contain the
+                            y/m/d/h/m/s for the specified UTC offset as seen in
+                            the specified time zone
+        */
+        virtual void offsetToRTZStruct(Vs64 offset, const VString& timeZoneID, VInstantStruct& when) = 0;
+        /**
+        Converts a broken-down calendar time, interpreted in the specified
+        time zone, to an offset (ms from 1970 UTC, same as VInstant "value").
+        This function should throw a VException if the time zone ID is invalid.
+        @param    timeZoneID    a time zone ID string (e.g., PST, EST, etc.) from
+                            the set of strings supported by the converter
+        @param    when        a structure containing y/m/d/h/m/s values in the
+                            specified time zone
+        @return the number milliseconds since UTC 1970 00:00:00.000 that the
+                            time represents as interpreted in the specified
+                            time zone
+        */
+        virtual Vs64 offsetFromRTZStruct(const VString& timeZoneID, const VInstantStruct& when) = 0;
+    };
 
 /**
 A VInstant is an object that represents an instant in time regardless of the
@@ -62,6 +107,30 @@ class VInstant
 
             kNumKinds            ///< (Used internally.)
             };
+
+        /** Constant for use with functions that take a timeZoneID parameter,
+        indicating the time conversion is for UTC. */
+        static const VString kUTCTimeZoneID;
+        /** Constant for use with functions that take a timeZoneID parameter,
+        indicating the time conversion is for the local time zone. */
+        static const VString kLocalTimeZoneID;
+        
+        /**
+        Installs a Remote Time Zone Converter, that VInstant will use for functions
+        that take a timeZoneID, if that parameter is not UTC or the local time zone.
+        These functions include getValues(), setValues(), getDate(), getTimeOfDay(),
+        as well as the constructors for the Date and TimeOfDay classes. The caller
+        still owns the converter; VInstant will not delete it. You can pass NULL to
+        disable use of RTZ conversion (by default, no converter is installed).
+        */
+        static void setRemoteTimeZoneConverter(MRemoteTimeZoneConverter* converter);
+        /**
+        Returns the currently installed Remote Time Zone Converter, which may be
+        NULL. You might use this to delete the old converter if you are installing
+        a new one. VInstant uses whatever converter is installed (if it's not NULL)
+        at the time it needs it.
+        */
+        static MRemoteTimeZoneConverter* getRemoteTimeZoneConverter();
     
         /**
         Creates an instant to represent the current time.
@@ -250,31 +319,52 @@ class VInstant
         void    setStreamValues(Vs32 kind, Vs64 value);
         /**
         Returns a VDate and VTimeOfDay to represent the instant, either in
-        UTC or local time.
+        UTC or local time, or in a remote time zone (if an RTZ converter has
+        been installed). Throws an exception if you specify RTZ conversion
+        and there is no converter installed.
         @param    date        the VDate to set
         @param    timeOfDay    the VTimeOfDay to set
-        @param    inLocalTime    if true, the values are given in local time rather than UTC
+        @param    timeZoneID    specifies which time zone the strings should be given in
+                            (default is kUTCTimeZoneID; kLocalTimeZoneID is the usual
+                            other choice, but other time zone IDs may be passed if an
+                            RTZ converter has been installed)
         */
-        void    getValues(VDate& date, VTimeOfDay& timeOfDay, bool inLocalTime=false) const;
+        void    getValues(VDate& date, VTimeOfDay& timeOfDay, const VString& timeZoneID=kUTCTimeZoneID) const;
         /**
-        Sets the instant from a VDate and VTimeOfDay, either in UTC or local time.
+        Sets the instant from a VDate and VTimeOfDay, either in UTC or local time,
+        or in a remote time zone (if an RTZ converter has been installed). Throws an
+        exception if you specify RTZ conversion and there is no converter installed.
         @param    date        the date to use
         @param    timeOfDay    the time of day to use
-        @param    inLocalTime    if true, the date & time of day are presumed to be in local time rather than UTC
+        @param    timeZoneID    specifies which time zone in which the supplied date and
+                            time are presumed to be
+                            (default is kUTCTimeZoneID; kLocalTimeZoneID is the usual
+                            other choice, but other time zone IDs may be passed if an
+                            RTZ converter has been installed)
         */
-        void    setValues(const VDate& date, const VTimeOfDay& timeOfDay, bool inLocalTime=false);
+        void    setValues(const VDate& date, const VTimeOfDay& timeOfDay, const VString& timeZoneID=kUTCTimeZoneID);
         /**
-        Returns the VDate for the instant, either in UTC or local time.
+        Returns the VDate for the instant, either in UTC or local time, or in a remote
+        time zone (if an RTZ converter has been installed). Throws an exception if you
+        specify RTZ conversion and there is no converter installed.
         @param    date        the VDate to set
-        @param    inLocalTime    if true, the value is given in local time rather than UTC
+        @param    timeZoneID    specifies which time zone the strings should be given in
+                            (default is kUTCTimeZoneID; kLocalTimeZoneID is the usual
+                            other choice, but other time zone IDs may be passed if an
+                            RTZ converter has been installed)
         */
-        void    getDate(VDate& date, bool inLocalTime=false) const;
+        void    getDate(VDate& date, const VString& timeZoneID=kUTCTimeZoneID) const;
         /**
-        Returns the VTimeOfDay for represent the instant, either in UTC or local time.
+        Returns the VTimeOfDay for represent the instant, either in UTC or local time,
+        or in a remote time zone (if an RTZ converter has been installed). Throws an
+        exception if you specify RTZ conversion and there is no converter installed.
         @param    timeOfDay    the VTimeOfDay to set
-        @param    inLocalTime    if true, the value is given in local time rather than UTC
+        @param    timeZoneID    specifies which time zone the strings should be given in
+                            (default is kUTCTimeZoneID; kLocalTimeZoneID is the usual
+                            other choice, but other time zone IDs may be passed if an
+                            RTZ converter has been installed)
         */
-        void    getTimeOfDay(VTimeOfDay& timeOfDay, bool inLocalTime=false) const;
+        void    getTimeOfDay(VTimeOfDay& timeOfDay, const VString& timeZoneID=kUTCTimeZoneID) const;
         /**
         Returns the local offset in milliseconds, of the local time zone, at the instant
         in time represented by this VInstant. For locales west of GMT, this value is
@@ -430,6 +520,8 @@ class VInstant
         @return a clock value representing "now" in milliseconds, base undefined
         */
         static Vs64 platform_snapshot();
+        
+        static MRemoteTimeZoneConverter* gRemoteTimeZoneConverter; ///< The converter for RTZ conversion, or NULL.
 
         friend class VInstantUnit;    // Let unit test validate our internal APIs.
 
@@ -446,10 +538,14 @@ class VDate
         Constructs a date from the current instant.
         By default the date will use the local time zone, but you
         can specify that you want the date of the current instant
-        in UTC terms.
-        @param    inLocalTime    if true, the date is the local date
+        in UTC or a remote time zone. Throws an exception if you
+        specify RTZ conversion and there is no converter installed.
+        @param    timeZoneID    specifies which time zone the y/m/d should be given in
+                            (default is kLocalTimeZoneID; kUTCTimeZoneID is the usual
+                            other choice, but other time zone IDs may be passed if an
+                            RTZ converter has been installed for VInstant)
         */
-        VDate(bool inLocalTime=true);
+        VDate(const VString& timeZoneID=VInstant::kLocalTimeZoneID);
         /**
         Constructs a date from specified values.
         @param    year    the year
@@ -490,10 +586,16 @@ class VDate
         @param    day        the day of the month (1 to 31)
         */
         void    set(int inYear, int inMonth, int inDay);
+        
+        // These static functions can be extended in the future to
+        // return values based on the locale.
+        
         /**
-        Returns the localized separator.
+        Returns the date separator for the locale.
+        (Currently just returns a slash.)
+        @return the date separator character constant
         */
-        char getLocalDateSeparator() const { return mDateSep; }
+        static const VChar& getLocalDateSeparator() { return kLocalDateSeparator; }
         
         enum {
             kYMD,        ///< Year/Month/Day
@@ -503,7 +605,13 @@ class VDate
             kDYM,        ///< Day/Year/Month
             kDMY,        ///< Day/Month/Year
             };
-        int getLocalDateOrder() const { return kMDY; }
+        
+        /**
+        Returns the date string element order for the locale.
+        (Currently just returns a kMDY.)
+        @return the date string format order
+        */
+        static int getLocalDateOrder() { return kMDY; }
         
         enum {
             kSunday = 0,
@@ -526,7 +634,7 @@ class VDate
         int    mMonth;    ///< The month (1 to 12).
         int    mDay;    ///< The day of the month (1 to 31).
         
-        char mDateSep;    ///< The character to separate M/D/Y
+        static const VChar kLocalDateSeparator;    ///< The character to separate M/D/Y
     };
 
 /**
@@ -541,10 +649,14 @@ class VTimeOfDay
         Constructs a time of day from the current instant.
         By default the date will use the local time zone, but you
         can specify that you want the value of the current instant
-        in UTC terms.
-        @param    inLocalTime    if true, the time is the local time
+        in UTC or a remote time zone. Throws an exception if you
+        specify RTZ conversion and there is no converter installed.
+        @param    timeZoneID    specifies which time zone the h/m/s should be given in
+                            (default is kLocalTimeZoneID; kUTCTimeZoneID is the usual
+                            other choice, but other time zone IDs may be passed if an
+                            RTZ converter has been installed for VInstant)
         */
-        VTimeOfDay(bool inLocalTime=true);
+        VTimeOfDay(const VString& timeZoneID=VInstant::kLocalTimeZoneID);
         /**
         Constructs a time of day from specified values.
         @param    hour    the hour of day (0 to 23)
@@ -580,7 +692,15 @@ class VTimeOfDay
         */
         void    set(int inHour, int inMinute, int inSecond);
 
-        char getLocalTimeSeparator() { return ':'; }
+        // These static functions can be extended in the future to
+        // return values based on the locale.
+        
+        /**
+        Returns the time separator for the locale.
+        (Currently just returns a colon.)
+        @return the time separator character constant
+        */
+        static const VChar& getLocalTimeSeparator() { return kLocalTimeSeparator; }
         
         friend inline bool operator==(const VTimeOfDay& t1, const VTimeOfDay& t2);
 
@@ -592,7 +712,8 @@ class VTimeOfDay
         int    mHour;        ///< The hour of day (0 to 23).
         int    mMinute;    ///< The minute of the hour (0 to 59).
         int    mSecond;    ///< The second of the minute (0 to 59).
-        char mTimeSep;    ///< The character to separate HH:MM:SS
+        
+        static const VChar kLocalTimeSeparator;    ///< The character to separate HH:MM:SS
     };
 
 inline bool    operator==(const VInstant& i1, const VInstant& i2) { return (i1.mKind == i2.mKind) && (i1.mValue == i2.mValue); }

@@ -103,6 +103,13 @@ class VMutexLocker
         @return a pointer to the VMutex object (may be NULL)
         */
         VMutex*    mutex() { return mMutex; }
+        /**
+        Yields the current thread with the mutex unlocked; that is, this function
+        unlocks the mutex, yields the current thread, and re-locks the mutex
+        before returning. This can be used to make a thread that has a lock
+        more "cooperative" with other threads that are competing for the same lock.
+        */
+        void    yield();
     
     protected:
     

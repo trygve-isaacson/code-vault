@@ -15,6 +15,8 @@ http://www.bombaydigital.com/
 #include "vmutex.h"
 #include "vmutexlocker.h"
 #endif
+
+V_STATIC_INIT_TRACE
     
 //SN 10/8/04 : CR 22227 & CR 22266 - make sure we get value in acceptable boundry.
 #define SAFE_LEN(val,max)((val > max) ? max : val)
@@ -55,6 +57,14 @@ http://www.bombaydigital.com/
 
 #undef strlen
 #undef strcmp
+
+/*
+The "empty string" constant constructs to an empty string.
+When you want to pass "" to a function that takes a "const VString&" parameter,
+it's much more efficient to pass the kEmptyString because it avoids
+constructing a temporary empty VString object on the fly.
+*/
+const VString VString::kEmptyString;
 
 VString::VString()
     {
@@ -160,8 +170,13 @@ VString& VString::operator=(const VString& s)
     if (this != &s)
         {
         int theLength = s.length();
-        this->preflight(theLength);
-        s.copyToBuffer(mBuffer);
+        
+        if (theLength != 0)
+            {
+            this->preflight(theLength);
+            s.copyToBuffer(mBuffer);
+            }
+
         this->setLength(theLength);
         }
     
@@ -179,8 +194,13 @@ VString& VString::operator=(const VString* s)
     else if (this != s)
         {
         int theLength = s->length();
-        this->preflight(theLength);
-        s->copyToBuffer(mBuffer);
+        
+        if (theLength != 0)
+            {
+            this->preflight(theLength);
+            s->copyToBuffer(mBuffer);
+            }
+
         this->setLength(theLength);
         }
     
@@ -232,12 +252,21 @@ VString& VString::operator=(const char* s)
     {
     ASSERT_INVARIANT();
 
-    int    theLength = static_cast<int> (::strlen(s));
+    if (s == NULL)
+        this->setLength(0);
+    else
+        {
+        int    theLength = static_cast<int> (::strlen(s));
 
-    this->preflight(theLength);
-    //lint -e668 "Possibly passing a null pointer to function"
-    ::memcpy(mBuffer, s, static_cast<VSizeType> (theLength));    // faster than strcpy?
-    this->setLength(theLength);
+        if (theLength != 0)
+            {
+            this->preflight(theLength);
+            //lint -e668 "Possibly passing a null pointer to function"
+            ::memcpy(mBuffer, s, static_cast<VSizeType> (theLength));    // faster than strcpy?
+            }
+
+        this->setLength(theLength);
+        }
     
     ASSERT_INVARIANT();
 
@@ -561,7 +590,7 @@ void VString::readFromIStream(std::istream& in)
     {
     ASSERT_INVARIANT();
 
-    *this = "";
+    *this = VString::kEmptyString;
     
     this->appendFromIStream(in);
     
@@ -691,6 +720,13 @@ bool VString::isEmpty() const
     ASSERT_INVARIANT();
 
     return mStringLength == 0;
+    }
+
+bool VString::isNotEmpty() const
+    {
+    ASSERT_INVARIANT();
+
+    return mStringLength != 0;
     }
 
 VChar VString::at(int i) const
@@ -1015,7 +1051,10 @@ int VString::replace(const VChar& searchChar, const VChar& replacementChar)
         for (int i = 0; i < mStringLength; ++i)
             {
             if (mBuffer[i] == match)
+                {
                 mBuffer[i] = replacement;
+                ++numReplacements;
+                }
             }
 
     ASSERT_INVARIANT();

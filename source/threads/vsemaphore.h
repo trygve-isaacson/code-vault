@@ -44,8 +44,10 @@ class VSemaphore
         Waits until the semaphore is signaled by another thread.
         @param    ownedMutex    the mutex that the caller has already
                             acquired the lock for
+        @param    timeoutMilliseconds    zero for no timeout; otherwise, the number of
+                            milliseconds after which to timeout
         */
-        void wait(VMutex* ownedMutex);
+        void wait(VMutex* ownedMutex, Vs64 timeoutMilliseconds=0);
         /**
         Signals the semaphore; if one or more other threads is waiting on
         the semaphore, exactly one of them will become unblocked by its
@@ -82,9 +84,11 @@ class VSemaphore
         @param    mutex        pointer to a locked platform mutex that the calling
                             thread had acquired; this function unlocks it while
                             waiting and locks it upon return
-        @return true on success; false on failure
+        @param    timeoutMilliseconds    zero for no timeout; otherwise, the number of
+                            milliseconds after which to timeout
+        @return true on success; false on failure; timeout is considered success
         */
-        static bool semaphoreWait(Semaphore* semaphore, Mutex* mutex);
+        static bool semaphoreWait(Semaphore* semaphore, Mutex* mutex, Vs64 timeoutMilliseconds);
 
         /**
         Signals the platform semaphore value.

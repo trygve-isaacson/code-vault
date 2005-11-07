@@ -17,17 +17,17 @@ void VSocketBase::getLocalHostIPAddress(VString& ipAddress)
     int        result = ::gethostname(name, 255);
 
     if (result != 0)
-        throw VException("VSocket::getHostName() failed on gethostname with result %d, errno=%s", result, ::strerror(errno));
+        throw VException("VSocketBase::getLocalHostIPAddress: gethostname returned %d (errno %d = %s)", result, (int) errno, ::strerror(errno));
 
     struct hostent* ent = ::gethostbyname(name);
     
     if (ent == NULL)
-        throw VException("VSocket::getHostName() failed on gethostbyname with null.");
+        throw VException("VSocketBase::getLocalHostIPAddress: gethostbyname returned null (h_errno %d)", (int) h_errno);
 
     in_addr        addr;
     
     if (ent->h_addr_list[0] == NULL)
-        throw VException("VSocket::getHostName() failed on gethostbyname with no address entries.");
+        throw VException("VSocketBase::getLocalHostIPAddress: no address entries.");
 
     addr.s_addr = *((in_addr_t*) (ent->h_addr_list[0]));
     

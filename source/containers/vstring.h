@@ -61,6 +61,8 @@ class VString
     {
     public:
     
+        static const VString kEmptyString; ///< An empty string. More efficient to use than "" as a const VString& parameter.
+    
         /**
         Constructs an empty string.
         */
@@ -332,6 +334,11 @@ class VString
         @return true if the string length is zero
         */
         bool    isEmpty() const;
+        /**
+        Returns true if the string length is non-zero.
+        @return true if the string length is non-zero
+        */
+        bool    isNotEmpty() const;
         /**
         Returns the character at the specified index.
         If the index is out of range, a VException is thrown.
