@@ -71,9 +71,8 @@ typedef    _BSD_WCHAR_T_    wchar_t;
 #define V_BYTESWAP_HTONF_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
 #define V_BYTESWAP_NTOHF_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
 
-#ifdef VLIBRARY_METROWERKS
-#define V_EFFICIENT_SPRINTF
-#endif
+// Both CodeWarrior and GCC (4.0 at least) provide gettimeofday(), which uses UTC-based values.
+#define V_INSTANT_SNAPSHOT_IS_UTC    // platform_snapshot() gives us a UTC time suitable for platform_now()
 
 /*
 The following conditional instructions are for compatibility when compiling using
@@ -152,5 +151,17 @@ of which headers dominate.
     #endif
 
 #endif /* VLIBRARY_METROWERKS */
+
+// I'm not yet turning this on for GCC on 10.3 until verified.
+// Once verified, I can get rid of both of these ifdefs, and
+// always define V_EFFICIENT_SPRINTF.
+
+#ifdef VLIBRARY_METROWERKS
+#define V_EFFICIENT_SPRINTF
+#endif
+
+#ifdef MAC_OS_X_VERSION_10_4
+#define V_EFFICIENT_SPRINTF
+#endif
 
 #endif /* vtypes_platform_h */

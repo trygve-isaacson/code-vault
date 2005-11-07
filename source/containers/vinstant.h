@@ -31,6 +31,7 @@ class VInstantStruct
         int    mHour;        ///< The hour of day (0 to 23).
         int    mMinute;    ///< The minute of the hour (0 to 59).
         int    mSecond;    ///< The second of the minute (0 to 59).
+        int mMillisecond;///< The millisecond within the second (0 to 999).
         int mDayOfWeek;    ///< See enum in VInstant: kSunday=0..kSaturday=6.
     };
 
@@ -137,10 +138,22 @@ class VInstant
         */
         VInstant();
         /**
+        Creates an instant to represent a particular time value.
+        @param    kind    the instant kind
+        @see    VInstant::kActualValue
+        @see    VInstant::kInfinitePast
+        @see    VInstant::kInfiniteFuture
+        @see    VInstant::kNeverOccurred
+        @param    value    for a kind of kActualValue, the time value in ms since UTC 1970 00:00:00.000 (negative values
+                represent earlier instants in time); otherwise, pass zero for
+                consistency's sake.
+        */
+        VInstant(int kind, Vs64 value);
+        /**
         Creates an instant to represent a given Unix time_t.
         @param    time    the Unix time_t value to use
         */
-        VInstant(time_t inTime);
+        explicit VInstant(time_t inTime);
         /**
         Destructor.
         */
@@ -662,8 +675,9 @@ class VTimeOfDay
         @param    hour    the hour of day (0 to 23)
         @param    minute    the minute of the hour (0 to 59)
         @param    second    the second of the minute (0 to 59)
+        @param    millisecond    the millisecond of the second (0 to 999)
         */
-        VTimeOfDay(int inHour, int inMinute, int inSecond);
+        VTimeOfDay(int inHour, int inMinute, int inSecond, int inMillisecond);
         /**
         Destructor.
         */
@@ -685,12 +699,18 @@ class VTimeOfDay
         */
         int     second() const;
         /**
+        Returns the millisecond of the second.
+        @return the second (0 to 999)
+        */
+        int     millisecond() const;
+        /**
         Sets the time of day from specified values.
         @param    hour    the hour of day (0 to 23)
         @param    minute    the minute of the hour (0 to 59)
         @param    second    the second of the minute (1 to 59)
+        @param    millisecond    the millisecond of the second (0 to 999)
         */
-        void    set(int inHour, int inMinute, int inSecond);
+        void    set(int inHour, int inMinute, int inSecond, int inMillisecond);
 
         // These static functions can be extended in the future to
         // return values based on the locale.
@@ -712,6 +732,7 @@ class VTimeOfDay
         int    mHour;        ///< The hour of day (0 to 23).
         int    mMinute;    ///< The minute of the hour (0 to 59).
         int    mSecond;    ///< The second of the minute (0 to 59).
+        int    mMillisecond;///< The millisecond of the second (0 to 999).
         
         static const VChar kLocalTimeSeparator;    ///< The character to separate HH:MM:SS
     };
@@ -725,6 +746,6 @@ inline bool    operator<(const VInstant& i1, const VInstant& i2) { if (VInstant:
 inline Vs64 operator-(const VInstant& i1, const VInstant& i2) { return i1.mValue - i2.mValue; }
 
 inline bool operator==(const VDate& d1, const VDate& d2) { return (d1.mYear == d2.mYear) && (d1.mMonth == d2.mMonth) && (d1.mDay == d2.mDay); }
-inline bool operator==(const VTimeOfDay& t1, const VTimeOfDay& t2) { return (t1.mHour == t2.mHour) && (t1.mMinute == t2.mMinute) && (t1.mSecond == t2.mSecond); }
+inline bool operator==(const VTimeOfDay& t1, const VTimeOfDay& t2) { return (t1.mHour == t2.mHour) && (t1.mMinute == t2.mMinute) && (t1.mSecond == t2.mSecond) && (t1.mMillisecond == t2.mMillisecond); }
 
 #endif /* vinstant_h */

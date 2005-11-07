@@ -15,6 +15,7 @@ This set of includes is enough to pull in all vault header files.
 #include "vlogger.h"
 #include "vsettings.h"
 #include "vclassregistry.h"
+#include "vsingleton.h"
 #include "vsemaphore.h"
 #include "vmutexlocker.h"
 #include "vsocketstream.h"

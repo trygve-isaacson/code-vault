@@ -30,6 +30,14 @@ VListenerThread::~VListenerThread()
     VLOGGER_DEBUG(VString("VListenerThread '%s' ended.", mName.chars()));
     }
 
+void VListenerThread::stop()
+    {
+    this->stopListening();
+    this->stopAllSocketThreads();
+
+    VThread::stop();
+    }
+
 void VListenerThread::run()
     {
     while (this->isRunning())

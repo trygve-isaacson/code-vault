@@ -50,7 +50,7 @@ static void _setTMStructFromInstantStruct(const VInstantStruct& when, struct tm&
     fields.tm_isdst = -1;
     }
 
-static void _setInstantStructFromTMStruct(const struct tm& fields, VInstantStruct& when)
+static void _setInstantStructFromTMStruct(const struct tm& fields, int millisecond, VInstantStruct& when)
     {
     when.mYear = fields.tm_year + 1900;    // tm_year field is years since 1900
     when.mMonth = fields.tm_mon + 1;    // tm_mon field is 0..11
@@ -58,14 +58,25 @@ static void _setInstantStructFromTMStruct(const struct tm& fields, VInstantStruc
     when.mHour = fields.tm_hour;
     when.mMinute = fields.tm_min;
     when.mSecond = fields.tm_sec;
+    when.mMillisecond = millisecond;
     when.mDayOfWeek = fields.tm_wday;
     }
 
 // static
 Vs64 VInstant::platform_now()
     {
+#ifdef V_INSTANT_SNAPSHOT_IS_UTC
+
+    // This means we can get millisecond resolution for VInstant values.
+    return VInstant::platform_snapshot();
+
+#else
+
+    // This means we can only get second resolution for VInstant values.
     //lint -e418 -e421 "Passing null pointer to function 'time(long *)'"
     return CONST_S64(1000) * static_cast<Vs64>(::time(NULL));
+
+#endif /* V_INSTANT_SNAPSHOT_IS_UTC */
     }
 
 // static
@@ -82,6 +93,9 @@ Vs64 VInstant::platform_offsetFromLocalStruct(const VInstantStruct& when)
         result += _getMSLLocalTimeZoneOffsetMilliseconds();
 #endif
         
+    // tm struct has no milliseconds, so restore input value milliseconds
+    result += (Vs64) when.mMillisecond;
+    
     return result;
     }
 
@@ -121,6 +135,10 @@ Vs64 VInstant::platform_offsetFromUTCStruct(const VInstantStruct& when)
     time_t delta = utct - loct;            // get the actual delta (hmmm, what if it spans a ST/DST crossover?)
 
     result -= (delta * 1000);
+
+    // tm struct has no milliseconds, so restore input value milliseconds
+    result += (Vs64) when.mMillisecond;
+    
     return result;
     }
 
@@ -135,6 +153,9 @@ Vs64 VInstant::platform_offsetFromUTCStruct(const VInstantStruct& when)
 
     //lint -e421 "Caution -- function 'mktime(struct tm *)' is considered dangerous [MISRA Rule 127]"
     Vs64    result = CONST_S64(1000) * static_cast<Vs64> (::timegm(&fields));
+    
+    // tm struct has no milliseconds, so restore input value milliseconds
+    result += (Vs64) when.mMillisecond;
     
     return result;
     }
@@ -153,7 +174,7 @@ void VInstant::platform_offsetToLocalStruct(Vs64 offset, VInstantStruct& when)
 
     VInstant::threadsafe_localtime(static_cast<time_t> (offset / 1000), &fields);
     
-    _setInstantStructFromTMStruct(fields, when);
+    _setInstantStructFromTMStruct(fields, (int) (offset % 1000), when);
     }
 
 // static
@@ -164,7 +185,7 @@ void VInstant::platform_offsetToUTCStruct(Vs64 offset, VInstantStruct& when)
 
     VInstant::threadsafe_gmtime(static_cast<time_t> (offset / 1000), &fields);
     
-    _setInstantStructFromTMStruct(fields, when);
+    _setInstantStructFromTMStruct(fields, (int) (offset % 1000), when);
     }
 
 // static
@@ -173,6 +194,7 @@ Vs64 VInstant::platform_snapshot()
     struct timeval tv;
     (void) ::gettimeofday(&tv, NULL);
     
-    return (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+    // We need to be careful to cast to Vs64 or we risk truncation to 32 bits.
+    return (((Vs64) (tv.tv_sec)) * CONST_S64(1000)) + (Vs64) (tv.tv_usec / 1000);
     }
 

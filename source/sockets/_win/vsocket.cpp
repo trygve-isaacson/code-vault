@@ -115,6 +115,33 @@ int VSocket::available()
     if (result != 0)
         throw VException("VSocket::available failed on socket %d, result=%d, error=%s.", mSockID, result, ::strerror(errno));
     
+    if (numBytesAvailable == 0)
+        {
+        //set the socket to be non blocking.
+        u_long argp = 1;
+        ::ioctlsocket(mSockID, FIONBIO, &argp);
+
+        //See if there is any data in the buffer.
+        result = ::recv(mSockID, NULL, 0 , MSG_PEEK);
+
+        //restore the blocking
+        argp = 1;
+        ::ioctlsocket(mSockID, FIONBIO, &argp);
+
+        switch (result)
+            {
+            case 0:
+            case WSAECONNRESET:
+                throw VEOFException("VSocket::available: socket is now available.");
+                break;
+            case SOCKET_ERROR:
+                throw VException("VSocket::available failed on socket %d, result=%d, error=%s.", mSockID, result, ::strerror(errno));
+                break;
+            default:
+                break;
+            }
+        }
+
     return (int) numBytesAvailable;
     }
 

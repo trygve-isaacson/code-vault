@@ -155,7 +155,7 @@ void VInstantUnit::run()
     
     // First let's validate that we get the expected value for UTC zero time.
     VDate        utc0Date(1970, 1, 1);
-    VTimeOfDay    utc0Time(0, 0, 0);
+    VTimeOfDay    utc0Time(0, 0, 0, 0);
     VInstant    utc0Instant;
     
     utc0Instant.setValues(utc0Date, utc0Time, VInstant::kUTCTimeZoneID);
@@ -169,12 +169,12 @@ void VInstantUnit::run()
     utc0Plus1Instant.getValues(utc0Date, utc0Time, VInstant::kUTCTimeZoneID); // see what that is in Greenwich (should be 1970 Jan 2 00:00:00)
     utc0Plus1Instant.getValues(utc0Date, utc0Time, VInstant::kLocalTimeZoneID); // see what that is in local time (should be 1970 Jan 2 00:00:00 minus local time zone delta)
     VDate        utc1Date(1970, 1, 2);
-    VTimeOfDay    utc1Time(0, 0, 0);
+    VTimeOfDay    utc1Time(0, 0, 0, 0);
     utc0Plus1Instant.setValues(utc1Date, utc1Time, VInstant::kUTCTimeZoneID); // see if setting Jan 2 UTC works out to 86400000 
     
     // Create a date and time, specified in both local and gm.
     VDate        july_14_2004(2004, 7, 14);
-    VTimeOfDay    noon(12, 0, 0);
+    VTimeOfDay    noon(12, 0, 0, 0);
     VInstant    july_14_2004_noon_local;
     VInstant    july_14_2004_noon_utc;
     

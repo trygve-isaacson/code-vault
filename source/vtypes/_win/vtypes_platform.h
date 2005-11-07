@@ -185,6 +185,9 @@ typedef int mode_t;
 /* #define S_ISDIR(x) ... Would need equivalent for stat.mode on Win32, see VFSNode::isDirectory() */
 #endif
 
+// On Windows, we implement snapshot using _ftime64(), which is UTC-based.
+#define V_INSTANT_SNAPSHOT_IS_UTC	// platform_snapshot() gives us a UTC time suitable for platform_now()
+
 // We have to implement timegm() because there's no equivalent Win32 function.
 extern time_t timegm(struct tm* t);
 

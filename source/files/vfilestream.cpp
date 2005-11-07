@@ -16,12 +16,12 @@ http://www.bombaydigital.com/
 #define OPEN_CREATE_PERMISSIONS        (S_IRWXO | S_IRWXG | S_IRWXU)
 
 VFileStream::VFileStream()
+: mFile(-1)
     {
-    mFile = -1;
     }
 
 VFileStream::VFileStream(const VFSNode& node)
-: mNode(node)
+: mNode(node), mFile(-1)
     {
     node.getName(mName);
     }

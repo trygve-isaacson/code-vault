@@ -7,10 +7,11 @@ http://www.bombaydigital.com/
 /** @file */
 
 #include "vinstant.h"
-
 #include "vchar.h"
 #include "vstring.h"
 #include "vexception.h"
+
+#undef sscanf
 
 // VInstantStruct ------------------------------------------------------------
 
@@ -21,6 +22,7 @@ mDay(date.day()),
 mHour(timeOfDay.hour()),
 mMinute(timeOfDay.minute()),
 mSecond(timeOfDay.second()),
+mMillisecond(timeOfDay.millisecond()),
 mDayOfWeek(0)
     {
     }
@@ -51,6 +53,14 @@ VInstant::VInstant()
 
     VInstant::setNow();
     
+    ASSERT_INVARIANT();
+    }
+
+VInstant::VInstant(int kind, Vs64 value)
+    {
+    mKind = kind;
+    mValue = value;
+
     ASSERT_INVARIANT();
     }
 
@@ -149,11 +159,11 @@ void VInstant::getUTCString(VString& s, bool fileNameSafe) const
             VInstant::platform_offsetToUTCStruct(mValue, when);
 
             if (fileNameSafe)
-                s.format("%d%02d%02d%02d%02d%02d",
-                    when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond);
+                s.format("%d%02d%02d%02d%02d%02d%03d",
+                    when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
             else
-                s.format("%d-%02d-%02d %02d:%02d:%02d UTC",
-                    when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond);
+                s.format("%d-%02d-%02d %02d:%02d:%02d.%03d UTC",
+                    when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
             }
             break;
         }
@@ -185,8 +195,9 @@ void VInstant::setUTCString(const VString& s)
         mKind = kActualValue;
 
         VInstantStruct when;
+        when.mDayOfWeek = 0;
         
-        ::sscanf(s, "%d-%02d-%02d %02d:%02d:%02d UTC", &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond);
+        ::sscanf(s, "%d-%02d-%02d %02d:%02d:%02d.%03d UTC", &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
         
         mValue = VInstant::platform_offsetFromUTCStruct(when);
         }
@@ -220,11 +231,11 @@ void VInstant::getLocalString(VString& s, bool fileNameSafe) const
             VInstant::platform_offsetToLocalStruct(mValue, when);
 
             if (fileNameSafe)
-                s.format("%d%02d%02d%02d%02d%02d",
-                    when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond);
+                s.format("%d%02d%02d%02d%02d%02d%03d",
+                    when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
             else
-                s.format("%d-%02d-%02d %02d:%02d:%02d",
-                    when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond);
+                s.format("%d-%02d-%02d %02d:%02d:%02d.%03d",
+                    when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
             }
             break;
         }
@@ -254,8 +265,9 @@ void VInstant::setLocalString(const VString& s)
         mKind = kActualValue;
 
         VInstantStruct when;
+        when.mDayOfWeek = 0;
         
-        ::sscanf(s, "%d-%02d-%02d %02d:%02d:%02d UTC", &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond);
+        ::sscanf(s, "%d-%02d-%02d %02d:%02d:%02d.%03d UTC", &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
         
         mValue = VInstant::platform_offsetFromLocalStruct(when);
         }
@@ -349,7 +361,7 @@ void VInstant::getValues(VDate& date, VTimeOfDay& timeOfDay, const VString& time
         gRemoteTimeZoneConverter->offsetToRTZStruct(mValue, timeZoneID, when);
     
     date.set(when.mYear, when.mMonth, when.mDay);
-    timeOfDay.set(when.mHour, when.mMinute, when.mSecond);
+    timeOfDay.set(when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
     }
 
 void VInstant::setValues(const VDate& date, const VTimeOfDay& timeOfDay, const VString& timeZoneID)
@@ -405,7 +417,7 @@ void VInstant::getTimeOfDay(VTimeOfDay& timeOfDay, const VString& timeZoneID) co
     else
         gRemoteTimeZoneConverter->offsetToRTZStruct(mValue, timeZoneID, when);
     
-    timeOfDay.set(when.mHour, when.mMinute, when.mSecond);
+    timeOfDay.set(when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
     }
 
 static const int kSecondsPerDay = 86400;
@@ -426,6 +438,8 @@ Vs64 VInstant::getLocalOffsetMilliseconds() const
     // Now we have two structs for the instant.
     // A little math will tell us the difference in h/m/s.
     // We know the delta cannot be more than 24 hours.
+    // No need to worry about milliseconds; time zone offset resolutions are only in minutes.
+    // (We could presumably even ignore the seconds for that matter.)
     int deltaSeconds;
     int    localSecondsOfDay = (3600 * localStruct.mHour) + (60 * localStruct.mMinute) + localStruct.mSecond;
     int    utcSecondsOfDay = (3600 * utcStruct.mHour) + (60 * utcStruct.mMinute) + utcStruct.mSecond;
@@ -676,6 +690,7 @@ int VDate::dayOfWeek() const
     when.mHour = 12;    // noon, smack dab in middle of day
     when.mMinute = 0;
     when.mSecond = 0;
+    when.mMillisecond = 0;
     
     // First get the UTC offset of that UTC date.
     Vs64    offset = VInstant::platform_offsetFromUTCStruct(when);
@@ -720,6 +735,7 @@ VTimeOfDay::VTimeOfDay(const VString& timeZoneID)
     mHour = 0;
     mMinute = 0;
     mSecond = 0;
+    mMillisecond = 0;
 
     VInstant    now;
     now.getTimeOfDay(*this, timeZoneID);
@@ -727,16 +743,18 @@ VTimeOfDay::VTimeOfDay(const VString& timeZoneID)
     ASSERT_INVARIANT();
     }
 
-VTimeOfDay::VTimeOfDay(int inHour, int inMinute, int inSecond)
+VTimeOfDay::VTimeOfDay(int inHour, int inMinute, int inSecond, int inMillisecond)
     {
     if ((inHour   < 0) || (inHour   > 23) ||
         (inMinute < 0) || (inMinute > 59) ||
-        (inSecond < 0) || (inSecond > 59))
-        throw VRangeException(VString("VTimeOfDay: %02d:%02d:%02d is an invalid value.", inHour, inMinute, inSecond));
+        (inSecond < 0) || (inSecond > 59) ||
+        (inMillisecond < 0) || (inMillisecond > 999))
+        throw VRangeException(VString("VTimeOfDay: %02d:%02d:%02d.%03d is an invalid value.", inHour, inMinute, inSecond, inMillisecond));
 
     mHour = inHour;
     mMinute = inMinute;
     mSecond = inSecond;
+    mMillisecond = inMillisecond;
 
     ASSERT_INVARIANT();
     }
@@ -762,18 +780,27 @@ int VTimeOfDay::second() const
     return mSecond;
     }
 
-void VTimeOfDay::set(int inHour, int inMinute, int inSecond)
+int VTimeOfDay::millisecond() const
+    {
+    ASSERT_INVARIANT();
+
+    return mMillisecond;
+    }
+
+void VTimeOfDay::set(int inHour, int inMinute, int inSecond, int inMillisecond)
     {
     ASSERT_INVARIANT();
 
     if ((inHour   < 0) || (inHour   > 23) ||
         (inMinute < 0) || (inMinute > 59) ||
-        (inSecond < 0) || (inSecond > 59))
-        throw VRangeException(VString("VTimeOfDay::set: %02d:%02d:%02d is an invalid value.", inHour, inMinute, inSecond));
+        (inSecond < 0) || (inSecond > 59) ||
+        (inMillisecond < 0) || (inMillisecond > 999))
+        throw VRangeException(VString("VTimeOfDay::set: %02d:%02d:%02d.%03d is an invalid value.", inHour, inMinute, inSecond, inMillisecond));
 
     mHour = inHour;
     mMinute = inMinute;
     mSecond = inSecond;
+    mMillisecond = inMillisecond;
 
     ASSERT_INVARIANT();
     }
@@ -787,5 +814,7 @@ void VTimeOfDay::assertInvariant() const
     V_ASSERT(mMinute < 60);
     V_ASSERT(mSecond >= 0);
     V_ASSERT(mSecond < 60);
+    V_ASSERT(mMillisecond >= 0);
+    V_ASSERT(mMillisecond < 1000);
     }
 

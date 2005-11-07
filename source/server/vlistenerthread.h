@@ -75,6 +75,12 @@ class VListenerThread : public VThread
         virtual ~VListenerThread();
         
         /**
+        Stops the thread; for VListenerThread this also stops listening
+        and stops the socket threads (threads running connections established
+        from this listener).
+        */
+        virtual void stop();
+        /**
         Run method, listens and then goes into a loop that accepts incoming
         connections until the thread has been externally stopped.
         
