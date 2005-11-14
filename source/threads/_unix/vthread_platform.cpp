@@ -18,7 +18,7 @@ http://www.bombaydigital.com/
 // VThread platform-specific functions ---------------------------------------
 
 // static
-bool VThread::threadCreate(ThreadID* threadID, bool createDetached, threadMainFunction threadMainProcPtr, void* threadArgument)
+bool VThread::threadCreate(VThreadID_Type* threadID, bool createDetached, threadMainFunction threadMainProcPtr, void* threadArgument)
     {
     int                result;
     pthread_attr_t    threadAttributes;
@@ -79,19 +79,19 @@ void VThread::threadExit()
     }
     
 // static
-bool VThread::threadJoin(ThreadID threadID, void** value)
+bool VThread::threadJoin(VThreadID_Type threadID, void** value)
     {
     return (::pthread_join(threadID, value) == 0);
     }
 
 // static
-void VThread::threadDetach(ThreadID threadID)
+void VThread::threadDetach(VThreadID_Type threadID)
     { 
     ::pthread_detach(threadID);
     }
     
 // static
-ThreadID VThread::threadSelf() 
+VThreadID_Type VThread::threadSelf() 
     {
     return ::pthread_self();
     }
@@ -127,25 +127,25 @@ void VThread::yield()
 // VMutex platform-specific functions ----------------------------------------
 
 // static
-bool VMutex::mutexInit(Mutex* mutex)
+bool VMutex::mutexInit(VMutex_Type* mutex)
     {
     return (::pthread_mutex_init(mutex, NULL) == 0);
     }
 
 // static
-void VMutex::mutexDestroy(Mutex* mutex)
+void VMutex::mutexDestroy(VMutex_Type* mutex)
     {
     (void) ::pthread_mutex_destroy(mutex);
     }
 
 // static
-bool VMutex::mutexLock(Mutex* mutex)
+bool VMutex::mutexLock(VMutex_Type* mutex)
     {
     return (::pthread_mutex_lock(mutex) == 0);
     }
 
 // static
-bool VMutex::mutexUnlock(Mutex* mutex)
+bool VMutex::mutexUnlock(VMutex_Type* mutex)
     {
     return (::pthread_mutex_unlock(mutex) == 0);
     }
@@ -153,19 +153,19 @@ bool VMutex::mutexUnlock(Mutex* mutex)
 // VSemaphore platform-specific functions ------------------------------------
 
 // static
-bool VSemaphore::semaphoreInit(Semaphore* semaphore)
+bool VSemaphore::semaphoreInit(VSemaphore_Type* semaphore)
     {
     return (pthread_cond_init(semaphore, NULL) == 0);
     }
 
 // static
-bool VSemaphore::semaphoreDestroy(Semaphore* semaphore)
+bool VSemaphore::semaphoreDestroy(VSemaphore_Type* semaphore)
     {
     return (pthread_cond_destroy(semaphore) == 0);
     }
 
 // static
-bool VSemaphore::semaphoreWait(Semaphore* semaphore, Mutex* mutex, Vs64 timeoutMilliseconds)
+bool VSemaphore::semaphoreWait(VSemaphore_Type* semaphore, VMutex_Type* mutex, Vs64 timeoutMilliseconds)
     {
     if (timeoutMilliseconds == 0)
         return (pthread_cond_wait(semaphore, mutex) == 0);
@@ -185,13 +185,13 @@ bool VSemaphore::semaphoreWait(Semaphore* semaphore, Mutex* mutex, Vs64 timeoutM
     }
 
 // static
-bool VSemaphore::semaphoreSignal(Semaphore* semaphore)
+bool VSemaphore::semaphoreSignal(VSemaphore_Type* semaphore)
     {
     return (pthread_cond_signal(semaphore) == 0);
     }
 
 // static
-bool VSemaphore::semaphoreBroadcast(Semaphore* semaphore)
+bool VSemaphore::semaphoreBroadcast(VSemaphore_Type* semaphore)
     {
     return (pthread_cond_broadcast(semaphore) == 0);
     }

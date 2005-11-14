@@ -15,10 +15,12 @@ extern "C" {
 #include <pthread.h>
 }
 
-typedef pthread_t        ThreadID;
-typedef pthread_cond_t    Semaphore;
-typedef pthread_mutex_t    Mutex;
-typedef struct timespec Timeout;
+// We define our own names here so that we are independent of the platform names,
+// and don't conflict with any similarly-named platform typedefs (such as "ThreadID").
+typedef pthread_t        VThreadID_Type;
+typedef pthread_cond_t    VSemaphore_Type;
+typedef pthread_mutex_t    VMutex_Type;
+typedef struct timespec VTimeout_Type;
 
 #endif /* vthread_platform_h */
 

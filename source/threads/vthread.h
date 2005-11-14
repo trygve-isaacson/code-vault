@@ -190,7 +190,7 @@ class VThread
         for supplying to OS-specific thread functions.
         @return    the thread ID
         */
-        ThreadID threadID() const;
+        VThreadID_Type threadID() const;
         /**
         Returns true if the thread should still be running, false if it has
         been set to stop and should return from its run() method. Also returns
@@ -266,7 +266,7 @@ class VThread
         @param    threadArgument        the argument to be passed to the thread main
         @return true on success; false if there was an error creating the thread
         */
-        static bool threadCreate(ThreadID* threadID, bool createDetached, threadMainFunction threadMainProcPtr, void* threadArgument);
+        static bool threadCreate(VThreadID_Type* threadID, bool createDetached, threadMainFunction threadMainProcPtr, void* threadArgument);
 
         /**
         Terminates the current thread. This could be called from anywhere, but
@@ -284,7 +284,7 @@ class VThread
         @param    exitValue    pointer to storage for thread exit value
         @return true on success; false on failure
         */
-        static bool threadJoin(ThreadID threadID, void** value);
+        static bool threadJoin(VThreadID_Type threadID, void** value);
         
         /**
         Marks the specified thread's storage to be reclaimed when the thread terminates.
@@ -292,14 +292,14 @@ class VThread
         Wrapper on Unix for pthread_detach.
         @param    threadID    ID of the thread to detach
         */
-        static void threadDetach(ThreadID threadID);
+        static void threadDetach(VThreadID_Type threadID);
 
         /**
         Returns the ID of the currently executing thread (the caller's thread).
         Wrapper on Unix for pthread_self.
         @return the current thread ID
         */
-        static ThreadID threadSelf();
+        static VThreadID_Type threadSelf();
         
         /**
         Sets the current thread's priority, specifying the Unix nice level.
@@ -333,7 +333,7 @@ class VThread
         bool                    mDeleteAtEnd;    ///< True if threadMain should delete this obj when it returns from run().
         bool                    mCreateDetached;///< True if the thread is created in detached state.
         VManagementInterface*    mManager;        ///< The VManagementInterface that manages us, or NULL.
-        ThreadID                mThreadID;        ///< The OS-specific thread ID value.
+        VThreadID_Type            mThreadID;        ///< The OS-specific thread ID value.
         bool                    mIsRunning;        ///< The running state of the thread (@see isRunning()).
     
         // These static members track and control the existence of threads we create.

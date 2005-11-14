@@ -8,6 +8,7 @@ http://www.bombaydigital.com/
 
 #include "vstringunit.h"
 #include "vchar.h"
+#include "vexception.h"
 
 VStringUnit::VStringUnit(bool logOnSuccess, bool throwOnError)
 : VUnit("VStringUnit", logOnSuccess, throwOnError)
@@ -139,7 +140,7 @@ void VStringUnit::run()
     // Test copying out.
     char    testBuffer[256];    // Largest legal Pascal string buffer.
     VString    testSource("This text should be copied out.");
-    testSource.copyToBuffer(testBuffer);
+    testSource.copyToBuffer(testBuffer, 256);
     VString    testTarget(testBuffer);
     this->test(testTarget, "This text should be copied out.", "copy to chars");
     // Test copying in.
@@ -454,5 +455,67 @@ void VStringUnit::run()
     this->test(region1.regionMatches(7, region3, 0, 3), "regionMatches 2");
     this->test(! region1.regionMatches(7, region3, 0, 4), "! regionMatches 1");
     this->test(! region2.regionMatches(0, region3, 0, 3), "! regionMatches 2");
+    
+    // This set of tests covers valid and invalid input to postflight and thus _setLength.
+    VString rangeTester;
+    rangeTester.postflight(0); // should succeed since no buffer is necessary
+    this->test(true, "postflight 0 for null buffer");
+    
+    try
+        {
+        rangeTester.postflight(-1); // should throw a VRangeException
+        this->test(false, "postflight -1 exception for null buffer");
+        }
+    catch (const VRangeException& ex)
+        {
+        this->test(true, "postflight -1 exception for null buffer");
+        }
+    
+    try
+        {
+        rangeTester.postflight(1); // should throw a VRangeException
+        this->test(false, "postflight >0 exception for null buffer");
+        }
+    catch (const VRangeException& ex)
+        {
+        this->test(true, "postflight >0 exception for null buffer");
+        }
+    
+    rangeTester.preflight(3); // just enough room for "abc"
+    strcpy(rangeTester.buffer(), "abc");
+    try
+        {
+        rangeTester.postflight(4); // should throw a VRangeException
+        this->test(false, "postflight >=mBufferLength exception");
+        }
+    catch (const VRangeException& ex)
+        {
+        this->test(true, "postflight >=mBufferLength exception");
+        }
+
+    rangeTester.postflight(3); // should succeed
+    this->test(true, "postflight mBufferLength-1");
+
+    // These tests cover invalid input to preflight.
+    try
+        {
+        rangeTester.preflight(-1); // should throw a VRangeException
+        this->test(false, "preflight <0 exception");
+        }
+    catch (const VRangeException& ex)
+        {
+        this->test(true, "preflight <0 exception");
+        }
+    
+    try
+        {
+        rangeTester.preflight(INT_MAX); // should throw a VRangeException
+        this->test(false, "preflight INT_MAX exception");
+        }
+    catch (const VRangeException& ex)
+        {
+        this->test(true, "preflight INT_MAX exception");
+        }
+    
     }
 

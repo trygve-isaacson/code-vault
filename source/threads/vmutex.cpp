@@ -38,7 +38,7 @@ void VMutex::unlock()
         throw VException("VMutex::unlock unable to unlock mutex.");
     }
 
-Mutex* VMutex::mutex()
+VMutex_Type* VMutex::mutex()
     {
     return &mMutex;
     }

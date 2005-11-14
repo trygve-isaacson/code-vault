@@ -31,7 +31,7 @@ mName(name),
 mDeleteAtEnd(deleteAtEnd),
 mCreateDetached(createDetached),
 mManager(manager),
-mThreadID((ThreadID) -1),
+mThreadID((VThreadID_Type) -1),
 mIsRunning(false)
     {
     VThread::updateThreadStatistics(VThread::eCreated);
@@ -45,7 +45,7 @@ VThread::~VThread()
 
     mIsDeleted = true;
     mIsRunning = false;
-    mThreadID = (ThreadID) -1;
+    mThreadID = (VThreadID_Type) -1;
 
     // Prevent all exceptions from escaping destructor.
     try
@@ -74,7 +74,7 @@ void VThread::stop()
     mIsRunning = false;
     }
 
-ThreadID VThread::threadID() const
+VThreadID_Type VThread::threadID() const
     {
     return mThreadID;
     }
@@ -88,7 +88,7 @@ bool VThread::join()
     {
     // FIXME: could complain here if mCreateDetached is true.
 
-    if (! mIsRunning || (mThreadID == (ThreadID) -1))
+    if (! mIsRunning || (mThreadID == (VThreadID_Type) -1))
         return true;    // never started, or was stopped, so we're done
     else
         return VThread::threadJoin(mThreadID, NULL);

@@ -80,7 +80,6 @@ class VManagementInterface
         virtual void listenerFailed(VListenerThread* listener, const VString& message) = 0;
         /**
         Notifies the interface of a listener thread whose runListening() has just
-        Notifies the interface of a listener thread whose run() has just
         reached its end. The concrete class might typically remove the
         thread pointer from a vector. Upon return from this notification,
         the interface must not reference the thread object if the thread's

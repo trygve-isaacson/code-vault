@@ -74,6 +74,9 @@ typedef    _BSD_WCHAR_T_    wchar_t;
 // Both CodeWarrior and GCC (4.0 at least) provide gettimeofday(), which uses UTC-based values.
 #define V_INSTANT_SNAPSHOT_IS_UTC    // platform_snapshot() gives us a UTC time suitable for platform_now()
 
+// @todo This will need to be conditional for building non-CF code.
+#define VAULT_CORE_FOUNDATION_SUPPORT
+
 /*
 The following conditional instructions are for compatibility when compiling using
 CodeWarrior 8.3 with the Mac OS X 10.4 (Tiger) developer tools. There are some symbol

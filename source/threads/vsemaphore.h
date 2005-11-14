@@ -67,7 +67,7 @@ class VSemaphore
         @param    semaphore    pointer to the platform semaphore
         @return true on success; false on failure
         */
-        static bool semaphoreInit(Semaphore* semaphore);
+        static bool semaphoreInit(VSemaphore_Type* semaphore);
 
         /**
         Destroys the platform semaphore value.
@@ -75,7 +75,7 @@ class VSemaphore
         @param    semaphore    pointer to the platform semaphore
         @return true on success; false on failure
         */
-        static bool semaphoreDestroy(Semaphore* semaphore);
+        static bool semaphoreDestroy(VSemaphore_Type* semaphore);
         
         /**
         Waits on the platform semaphore value.
@@ -88,7 +88,7 @@ class VSemaphore
                             milliseconds after which to timeout
         @return true on success; false on failure; timeout is considered success
         */
-        static bool semaphoreWait(Semaphore* semaphore, Mutex* mutex, Vs64 timeoutMilliseconds);
+        static bool semaphoreWait(VSemaphore_Type* semaphore, VMutex_Type* mutex, Vs64 timeoutMilliseconds);
 
         /**
         Signals the platform semaphore value.
@@ -96,7 +96,7 @@ class VSemaphore
         @param    semaphore    pointer to the platform semaphore
         @return true on success; false on failure
         */
-        static bool semaphoreSignal(Semaphore* semaphore);
+        static bool semaphoreSignal(VSemaphore_Type* semaphore);
 
         /**
         Broadcasts a signal the platform semaphore value; all threads waiting
@@ -105,11 +105,11 @@ class VSemaphore
         @param    semaphore    pointer to the platform semaphore
         @return true on success; false on failure
         */
-        static bool semaphoreBroadcast(Semaphore* semaphore);
+        static bool semaphoreBroadcast(VSemaphore_Type* semaphore);
 
     protected:
     
-        Semaphore    mSemaphore;        ///< The OS semaphore handle.
+        VSemaphore_Type    mSemaphore;        ///< The OS semaphore handle.
     };
 
 #endif /* vsemaphore_h */

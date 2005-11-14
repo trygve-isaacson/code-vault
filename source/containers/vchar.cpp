@@ -8,19 +8,19 @@ http://www.bombaydigital.com/
 
 #include "vchar.h"
 
-VChar::VChar()
+VChar::VChar() :
+mValue(0)
     {
-    mValue = 0;
     }
 
-VChar::VChar(char c)
+VChar::VChar(char c) :
+mValue(c)
     {
-    mValue = c;
     }
 
-VChar::VChar(int i)
+VChar::VChar(int i) :
+mValue(static_cast<char>(i))
     {
-    mValue = static_cast<char> (i);
     }
 
 VChar& VChar::operator=(char c)
@@ -47,7 +47,7 @@ VChar VChar::lowerCase() const
 
 void VChar::toLowerCase()
     {
-    mValue = static_cast<char> (::tolower(mValue));
+    mValue = static_cast<char>(::tolower(mValue));
     }
 
 bool VChar::isUpperCase() const
@@ -62,7 +62,7 @@ VChar VChar::upperCase() const
 
 void VChar::toUpperCase()
     {
-    mValue = static_cast<char> (::toupper(mValue));
+    mValue = static_cast<char>(::toupper(mValue));
     }
 
 char VChar::charValue() const
@@ -84,7 +84,7 @@ void VChar::set(char c)
 
 void VChar::set(int i)
     {
-    mValue = static_cast<char> (i);
+    mValue = static_cast<char>(i);
     }
 
 VChar::operator char() const

@@ -10,7 +10,9 @@ http://www.bombaydigital.com/
 /** @file */
 
 #include "vmutex.h"
+#include "vbinaryiostream.h"
 #include "vbufferedfilestream.h"
+#include "vsocketstream.h"
 #include "vtextiostream.h"
 
 #include <vector>
@@ -22,45 +24,45 @@ class VString;
 */
 
 // These macros make it easier to emit log messages without as much verbose typing.
+// Each macro has two versions: one using the default logger, one using a named logger.
 
-/** Emits a message at kFatal level. */
-#define VLOGGER_FATAL(loggername, message) (VLogger::getLogger(loggername))->log(VLogger::kFatal, NULL, 0, message)
-/** Emits a message at kError level. */
-#define VLOGGER_ERROR(loggername, message) (VLogger::getLogger(loggername))->log(VLogger::kError, NULL, 0, message)
-/** Emits a message at xxxxxx level. */
-#define VLOGGER_FATAL(loggername, message) (VLogger::getLogger(loggername))->log(VLogger::xxxxxx, NULL, 0, message)
-/** Emits a message at xxxxxx level. */
-#define VLOGGER_FATAL(loggername, message) (VLogger::getLogger(loggername))->log(VLogger::xxxxxx, NULL, 0, message)
-/** Emits a message at xxxxxx level. */
-#define VLOGGER_FATAL(loggername, message) (VLogger::getLogger(loggername))->log(VLogger::xxxxxx, NULL, 0, message)
-/** Emits a message at xxxxxx level. */
-#define VLOGGER_FATAL(loggername, message) (VLogger::getLogger(loggername))->log(VLogger::xxxxxx, NULL, 0, message)
+/** Emits a message at kFatal level to the default logger. */
+#define VLOGGER_FATAL(message) VLogger::getDefaultLogger()->log(VLogger::kFatal, NULL, 0, message)
+/** Emits a message at kError level to the default logger. */
+#define VLOGGER_ERROR(message) VLogger::getDefaultLogger()->log(VLogger::kError, NULL, 0, message)
+/** Emits a message at kWarn level to the default logger. */
+#define VLOGGER_WARN(message) VLogger::getDefaultLogger()->log(VLogger::kWarn, NULL, 0, message)
+/** Emits a message at kInfo level to the default logger. */
+#define VLOGGER_INFO(message) VLogger::getDefaultLogger()->log(VLogger::kInfo, NULL, 0, message)
+/** Emits a message at kDebug level to the default logger. */
+#define VLOGGER_DEBUG(message) VLogger::getDefaultLogger()->log(VLogger::kDebug, NULL, 0, message)
+/** Emits a message at kTrace level to the default logger. */
+#define VLOGGER_TRACE(message) VLogger::getDefaultLogger()->log(VLogger::kTrace, NULL, 0, message)
+/** Emits a message at a specified level to the default logger. */
+#define VLOGGER_LEVEL(level, message) VLogger::getDefaultLogger()->log(level, NULL, 0, message)
+/** Emits a message at a specified level, including file and line number, to the default logger. */
+#define VLOGGER_LINE(level, message) VLogger::getDefaultLogger()->log(level, __FILE__, __LINE__, message)
+/** Emits a hex dump at a specified level to the default logger. */
+#define VLOGGER_HEXDUMP(level, message, buffer, length) VLogger::getDefaultLogger()->logHexDump(level, message, buffer, length)
 
-/*
-These are the macros you should use when logging to a named logger.
-We use macros to allow inclusion of __FILE__ and __LINE__ information.
-You can call getLogger() and the logger's log() function with the
-file parameter NULL to suppress the file and line information.
-*/
-#ifndef _MSC_VER /* FIXME: they still don't support this in VC7 */
-#define VLOGGER_FATAL(loggername, format, ...) (VLogger::getLogger(loggername))->log(VLogger::kFatal, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define VLOGGER_ERROR(loggername, format, ...) (VLogger::getLogger(loggername))->log(VLogger::kError, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define VLOGGER_WARN(loggername, format, ...) (VLogger::getLogger(loggername))->log(VLogger::kWarn, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define VLOGGER_INFO(loggername, format, ...) (VLogger::getLogger(loggername))->log(VLogger::kInfo, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define VLOGGER_DEBUG(loggername, format, ...) (VLogger::getLogger(loggername))->log(VLogger::kDebug, __FILE__, __LINE__, format, ##__VA_ARGS__)
-
-/*
-These are the macros you should use when logging to a particular logger object.
-We use macros to allow inclusion of __FILE__ and __LINE__ information.
-You can call getLogger() and the logger's log() function with the
-file parameter NULL to suppress the file and line information.
-*/
-#define VLOGGER_PTR_FATAL(logger, format, ...) (logger)->log(VLogger::kFatal, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define VLOGGER_PTR_ERROR(logger, format, ...) (logger)->log(VLogger::kError, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define VLOGGER_PTR_WARN(logger, format, ...) (logger)->log(VLogger::kWarn, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define VLOGGER_PTR_INFO(logger, format, ...) (logger)->log(VLogger::kInfo, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#define VLOGGER_PTR_DEBUG(logger, format, ...) (logger)->log(VLogger::kDebug, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#endif
+/** Emits a message at kFatal level to the default logger. */
+#define VLOGGER_NAMED_FATAL(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kFatal, NULL, 0, message)
+/** Emits a message at kError level to the default logger. */
+#define VLOGGER_NAMED_ERROR(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kError, NULL, 0, message)
+/** Emits a message at kWarn level to the default logger. */
+#define VLOGGER_NAMED_WARN(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kWarn, NULL, 0, message)
+/** Emits a message at kInfo level to the default logger. */
+#define VLOGGER_NAMED_INFO(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kInfo, NULL, 0, message)
+/** Emits a message at kDebug level to the default logger. */
+#define VLOGGER_NAMED_DEBUG(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kDebug, NULL, 0, message)
+/** Emits a message at kTrace level to the default logger. */
+#define VLOGGER_NAMED_TRACE(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kTrace, NULL, 0, message)
+/** Emits a message at a specified level to the default logger. */
+#define VLOGGER_NAMED_LEVEL(loggername, level, message) VLogger::getLogger(loggername)->log(level, NULL, 0, message)
+/** Emits a message at a specified level, including file and line number, to the default logger. */
+#define VLOGGER_NAMED_LINE(loggername, level, message) VLogger::getLogger(loggername)->log(level, __FILE__, __LINE__, message)
+/** Emits a hex dump at a specified level to the default logger. */
+#define VLOGGER_NAMED_HEXDUMP(loggername, level, message, buffer, length) VLogger::getLogger(loggername)->logHexDump(level, message, buffer, length)
 
 class VLogger;
 typedef std::vector<VLogger*> VLoggerList;
@@ -80,9 +82,17 @@ class VLogger
     public:
     
         /**
+        Returns the default logger, creating it if necessary.
+        Because this function always returns a pointer
+        to a valid logger object, you don't need to check for NULL.
+        @return the specified logger, or the default logger if not found
+        */
+        static VLogger* getDefaultLogger();
+        /**
         Returns the named logger, or the default logger if there is no logger
         with the specified name. Because this function always returns a pointer
-        to a valid logger object, you don't need to check for NULL.
+        to a valid logger object, you don't need to check for NULL. (It will
+        create and install a default logger if necessary as a failsafe.)
         @param    name    the name of the logger to access
         @return the specified logger, or the default logger if not found
         */
@@ -153,6 +163,8 @@ class VLogger
         @param    ...            variable arguments for the formatting string
         */
         void log(int logLevel, const char* file, int line, const char* inFormat, ...);
+        void log(int logLevel, const char* inFormat, ...);
+
         /**
         Logs the specified message as if separately logged, followed by a hex
         dump of a buffer, if the log level is appropriate.
@@ -208,6 +220,8 @@ class VLogger
         CLASS_CONST(int, kDebug, 80);    ///< Level of detail to add fine-grained status messages.
         CLASS_CONST(int, kTrace, 100);    ///< Level of detail to add trace-level messages.
         CLASS_CONST(int, kAll, 100);    ///< Level of detail to output all messages.
+        
+        static const VString kDefaultLoggerName;
         
     protected:
 
@@ -310,8 +324,9 @@ class VSuppressionLogger : public VLogger
     
         /**
         Constructs a new suppression logger object.
+        @param    name    the name of the logger, used for finding by name
         */
-        VSuppressionLogger();
+        VSuppressionLogger(const VString& name);
         /**
         Destructor.
         */
@@ -394,14 +409,14 @@ class VInterceptLogger : public VLogger
         virtual ~VInterceptLogger() {}
 
         bool sawExpectedMessage(const VString& inMessage);
-        const VString& getLastMessage() { return lastLoggedMessage; }
+        const VString& getLastMessage() const { return mLastLoggedMessage; }
         
     protected:
         virtual void emit(int logLevel, const char* file, int line, const char* inFormat, va_list args);
         virtual void emitRawLine(const VString& line);
         
     private:
-        VString lastLoggedMessage;
+        VString mLastLoggedMessage;
     };
 
 

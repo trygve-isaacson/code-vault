@@ -15,13 +15,13 @@ http://www.bombaydigital.com/
 // VThread platform-specific functions ---------------------------------------
 
 // static
-bool VThread::threadCreate(ThreadID* threadID, bool /*createDetached*/, threadMainFunction threadMainProcPtr, void* threadArgument)
+bool VThread::threadCreate(VThreadID_Type* threadID, bool /*createDetached*/, threadMainFunction threadMainProcPtr, void* threadArgument)
     {
 #ifdef __MWERKS__
     unsigned int    id;
-    *threadID = (ThreadID) _beginthreadex((void*) NULL, (unsigned int) 0, (Win32ThreadMainFunctionEx) threadMainProcPtr, threadArgument, (unsigned int) 0, &id);
+    *threadID = (VThreadID_Type) _beginthreadex((void*) NULL, (unsigned int) 0, (Win32ThreadMainFunctionEx) threadMainProcPtr, threadArgument, (unsigned int) 0, &id);
 #else
-    *threadID = (ThreadID) _beginthread((Win32ThreadMainFunction) threadMainProcPtr, (unsigned int) 0, threadArgument);
+    *threadID = (VThreadID_Type) _beginthread((Win32ThreadMainFunction) threadMainProcPtr, (unsigned int) 0, threadArgument);
 #endif
 
     return ((*threadID != 0) && (*threadID != -1));
@@ -37,7 +37,7 @@ void VThread::threadExit()
     }
 
 // static
-bool VThread::threadJoin(ThreadID threadID, void** /*value*/)
+bool VThread::threadJoin(VThreadID_Type threadID, void** /*value*/)
     {
     // FIXME: investigate the API "GetExitCodeThread()"
     WaitForSingleObject((HANDLE) threadID, INFINITE);
@@ -45,13 +45,13 @@ bool VThread::threadJoin(ThreadID threadID, void** /*value*/)
     }
 
 // static
-void VThread::threadDetach(ThreadID /*threadID*/)
+void VThread::threadDetach(VThreadID_Type /*threadID*/)
     { 
     // FIXME: tbd - Is there any Windows call necessary?
     }
     
 // static
-ThreadID VThread::threadSelf() 
+VThreadID_Type VThread::threadSelf() 
     {
     // FIXME: tbd - Investigate the APIs "GetCurrentThreadId()" and "GetCurrentThread()"
     // It seems that GetCurrentThreadId() does not return the same value as
@@ -84,27 +84,27 @@ void VThread::yield()
 // VMutex platform-specific functions ----------------------------------------
 
 // static
-bool VMutex::mutexInit(Mutex* mutex)
+bool VMutex::mutexInit(VMutex_Type* mutex)
     {
     InitializeCriticalSection(mutex);
     return true;
     }
 
 // static
-void VMutex::mutexDestroy(Mutex* mutex)
+void VMutex::mutexDestroy(VMutex_Type* mutex)
     {
     DeleteCriticalSection(mutex);
     }
 
 // static
-bool VMutex::mutexLock(Mutex* mutex)
+bool VMutex::mutexLock(VMutex_Type* mutex)
     {
     EnterCriticalSection(mutex);
     return true;
     }
 
 // static
-bool VMutex::mutexUnlock(Mutex* mutex)
+bool VMutex::mutexUnlock(VMutex_Type* mutex)
     {
     LeaveCriticalSection(mutex);
     return true;
@@ -115,21 +115,21 @@ bool VMutex::mutexUnlock(Mutex* mutex)
 #define kSemaphoreMaxCount    0x7FFFFFFF
 
 // static
-bool VSemaphore::semaphoreInit(Semaphore* semaphore)
+bool VSemaphore::semaphoreInit(VSemaphore_Type* semaphore)
     {
     *semaphore = CreateSemaphore(NULL, 0, kSemaphoreMaxCount, NULL);
     return (*semaphore != NULL);
     }
 
 // static
-bool VSemaphore::semaphoreDestroy(Semaphore* semaphore)
+bool VSemaphore::semaphoreDestroy(VSemaphore_Type* semaphore)
     {
     CloseHandle(*semaphore);
     return true;
     }
 
 // static
-bool VSemaphore::semaphoreWait(Semaphore* semaphore, Mutex* /*mutex*/, Vs64 timeoutMilliseconds)
+bool VSemaphore::semaphoreWait(VSemaphore_Type* semaphore, VMutex_Type* /*mutex*/, Vs64 timeoutMilliseconds)
     {
     DWORD    timeoutMillisecondsDWORD = (timeoutMilliseconds == 0) ? INFINITE : ((DWORD) timeoutMilliseconds);
     DWORD    result = WaitForSingleObject(*semaphore, timeoutMillisecondsDWORD);    // waits until the semaphore's count is > 0, then decrements it
@@ -137,14 +137,14 @@ bool VSemaphore::semaphoreWait(Semaphore* semaphore, Mutex* /*mutex*/, Vs64 time
     }
 
 // static
-bool VSemaphore::semaphoreSignal(Semaphore* semaphore)
+bool VSemaphore::semaphoreSignal(VSemaphore_Type* semaphore)
     {
     BOOL    result = ReleaseSemaphore(*semaphore, 1, NULL);    // increases the semaphore's "count" by 1
     return (result != 0);
     }
 
 // static
-bool VSemaphore::semaphoreBroadcast(Semaphore* /*semaphore*/)
+bool VSemaphore::semaphoreBroadcast(VSemaphore_Type* /*semaphore*/)
     {
     // FIXME: How can this be done on Windows?
     return false;

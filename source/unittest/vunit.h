@@ -124,6 +124,13 @@ class VUnit
         */
         virtual void test(bool success, const VString& description);
         /**
+        Compares two strings for equality as the test evaluation.
+        @param    a            a string
+        @param    b            another string
+        @param    description    the text to log that describes the test
+        */
+        virtual void test(const VString& a, const VString& b, const VString& description);
+        /**
         Logs an informational message to the unit test log, with a "[status ]"
         prefix. This does not affect the test counters.
         @param    description    the text to log that describes the status

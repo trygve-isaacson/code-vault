@@ -18,13 +18,13 @@ http://www.bombaydigital.com/
 #include "vtypes_platform.h"
 
 #ifdef __MWERKS__
-typedef ULONG                ThreadID;
+typedef ULONG                VThreadID_Type;
 #else
-typedef uintptr_t            ThreadID;
+typedef uintptr_t            VThreadID_Type;
 #endif
-typedef HANDLE                Semaphore;
-typedef CRITICAL_SECTION    Mutex;
-typedef long                Timeout;
+typedef HANDLE                VSemaphore_Type;
+typedef CRITICAL_SECTION    VMutex_Type;
+typedef long                VTimeout_Type;
 
 typedef void (*Win32ThreadMainFunction)(void* arg);
 typedef unsigned (__stdcall *Win32ThreadMainFunctionEx)(void* arg);

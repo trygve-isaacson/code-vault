@@ -65,7 +65,7 @@ class VMutex
         Returns a pointer to the raw OS mutex handle.
         @return    a pointer to the raw OS mutex handle
         */
-        Mutex* mutex();
+        VMutex_Type* mutex();
     
         /* PLATFORM-SPECIFIC STATIC FUNCTIONS --------------------------------
         The remaining functions defined here are the low-level interfaces to
@@ -79,33 +79,33 @@ class VMutex
         @param    mutex    pointer to the platform mutex
         @return true on success; false on failure
         */
-        static bool mutexInit(Mutex* mutex);
+        static bool mutexInit(VMutex_Type* mutex);
         
         /**
         Destroys the platform mutex value.
         Wrapper on Unix for pthread_mutex_destroy.
         @param    mutex    pointer to the platform mutex
         */
-        static void mutexDestroy(Mutex* mutex);
+        static void mutexDestroy(VMutex_Type* mutex);
         
         /**
         Locks the platform mutex value.
         Wrapper on Unix for pthread_mutex_lock.
         @return true on success; false on failure
         */
-        static bool mutexLock(Mutex* mutex);
+        static bool mutexLock(VMutex_Type* mutex);
 
         /**
         Unlocks the platform mutex value.
         Wrapper on Unix for pthread_mutex_unlock.
         @return true on success; false on failure
         */
-        static bool mutexUnlock(Mutex* mutex);
+        static bool mutexUnlock(VMutex_Type* mutex);
 
     private:
     
-        Mutex    mMutex;        ///< The OS mutex handle.
-        bool    mIsLocked;    ///< True if this object has the mutex lock.
+        VMutex_Type    mMutex;        ///< The OS mutex handle.
+        bool        mIsLocked;    ///< True if this object has the mutex lock.
     };
 
 #endif /* vmutex_h */

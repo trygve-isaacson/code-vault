@@ -144,7 +144,7 @@ class VException : public std::exception
         int            getError() const;
         
         CLASS_CONST(int, kGenericError, -1);    ///< The default error code.
-    
+
     private:
     
         /** Asserts if any invariant is broken. */
@@ -240,5 +240,33 @@ class VUnimplementedException : public VException
         virtual ~VUnimplementedException() throw() {}
     };
 
+#ifdef VAULT_CORE_FOUNDATION_SUPPORT
+/**
+VOSStatusException is provided for exceptions caused by non-zero OSStatus
+values returned by Mac OS API functions.
+*/
+class VOSStatusException : public VException
+    {
+    public:
+        
+        /**
+        Throws a VOSStatusException if err is non-zero; the error value is used for the
+        VException error code.
+        */
+        static void throwIfError(OSStatus err, const VString& message) { if (0 != err) throw VOSStatusException(err, message); }
+        
+        /**
+        Constructs the exception with the OSStatus value. The value is
+        stored in the VException error code.
+        @param err the error code
+        */
+        VOSStatusException(OSStatus err, const VString& message) : VException(static_cast<int>(err), message) {}
+        /**
+        Destructor.
+        */
+        virtual ~VOSStatusException() throw() {}
+    };
+    
+#endif /* VAULT_CORE_FOUNDATION_SUPPORT */
 
 #endif /* vexception_h */

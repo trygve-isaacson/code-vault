@@ -104,6 +104,13 @@ class VString
         */
         VString(const QString& s);
 #endif
+#ifdef VAULT_CORE_FOUNDATION_SUPPORT
+        /**
+        Constructs a string from a CFStringRef.
+        @param    s    the CFStringRef to copy
+        */
+        VString(const CFStringRef& s);
+#endif
         /**
         Destructor.
         */
@@ -122,9 +129,16 @@ class VString
 #ifdef VAULT_QT_SUPPORT
         /**
         Copy constructor from QString.
-        @param    s    the string to copy
+        @param    s    the QString to copy
         */
         VString& operator=(const QString& s);
+#endif
+#ifdef VAULT_CORE_FOUNDATION_SUPPORT
+        /**
+        Copy constructor from CFStringRef.
+        @param    s    the CFStringRef to copy
+        */
+        VString& operator=(const CFStringRef& s);
 #endif
         /**
         Assigns the string from a character.
@@ -399,6 +413,15 @@ class VString
         */
         QString qstring() const;
 #endif
+#ifdef VAULT_CORE_FOUNDATION_SUPPORT
+        /**
+        Returns a CFStringRef built from the VString. The returned
+        CFStringRef must be released at some point by the caller since it is a
+        new object.
+        @return    the CFStringRef
+        */
+        CFStringRef cfstring() const;
+#endif
         /**
         Returns true if this string is equal to the specified string,
         ignoring case, using strcmp semantics.
@@ -553,7 +576,7 @@ class VString
         @param    startIndex    index of the first char to copy, inclusive
         @param    endIndex    index of the last char to copy, exclusive (end-start is the length)
         */
-        void    getSubstring(VString& toString, int startIndex = 0, int endIndex = -1) const;
+        void    getSubstring(VString& toString, int startIndex/* = 0*/, int endIndex=-1) const;
         /**
         Makes a substring of this string in place (contrast with getSubsring(),
         which puts the substring into a different object). The start index
@@ -569,7 +592,7 @@ class VString
         @param    startIndex    index of the first char to copy, inclusive
         @param    endIndex    index of the last char to copy, exclusive (end-start is the length)
         */
-        void    substringInPlace(int startIndex = 0, int endIndex = -1);
+        void    substringInPlace(int startIndex/* = 0*/, int endIndex=-1);
         /**
         Strips leading and trailing whitespace from the string.
         Whitespace as implemented here is defined as ASCII byte
@@ -581,15 +604,21 @@ class VString
         terminator byte. The caller is responsible for making sure that the
         buffer is big enough to hold 1 + this->length() bytes.
         @param    toBuffer    the char buffer to copy into
+        @param  bufferSize  the length of the target buffer (so we can verify capacity)
         */
-        void    copyToBuffer(char* toBuffer, int sizeofBuffer=LONG_MAX) const;
+        void    copyToBuffer(char* toBuffer, int bufferSize/*=LONG_MAX*/) const; // FIXME: I don't like this implicit parameter.
         /**
         Sets the string by copying a number of characters from the source buffer.
         @param    fromBuffer    the char buffer to copy from
         @param    startIndex    the offset in the buffer to start from, inclusive
-        @param    endIndex    the offset in the buffer to stop at, exclusive (end-start is the length)
+        @param    endIndex    the offset in the buffer to stop at, exclusive (end-start is the length);
+                            -1 indicates to use strlen on the fromBuffer and use that to locate the end
+                            of the buffer, and copy up to there; if endIndex is less than startIndex
+                            (including after calling strlen via the -1 parameter), we effectively copy an empty string
+        previously, default value endIndex==LONG_MAX meant to calculate strlen(fromBuffer) as endIndex; let's use -1 for that,
+        because assuming the source is null terminated etc. is sketchy; make the caller be explicit
         */
-        void    copyFromBuffer(const char* fromBuffer, int startIndex=0, int endIndex=LONG_MAX);
+        void    copyFromBuffer(const char* fromBuffer, int startIndex/*=0*/, int endIndex/*=LONG_MAX*/); // FIXME: I don't like this implicit parameter.
         /**
         Copies the string's chars to the specified Pascal string buffer, using
         the Pascal string format (length byte plus data). The caller is responsible
@@ -603,6 +632,21 @@ class VString
         @param    pascalBuffer    the Pascal string buffer to copy from
         */
         void    copyFromPascalString(const char* pascalBuffer);
+        /**
+        Sets the string from a "four character code". The input is simply a 32-bit integer
+        whose 4 bytes are treated as ASCII characters (most significant byte becomes the
+        first character of the string, etc.). An exception is thrown if any of the
+        input bytes is zero, since that would cause a null terminator byte to be part of the
+        string's character data.
+        */
+        void    setFourCharacterCode(Vu32 fourCharacterCode);
+        /**
+        Returns the "four character code" represented by the string. The first four characters
+        of the string are used to compose a 32-bit integer (the first character of the string
+        becomes the most significant byte, etc.). If the string has fewer than 4 characters,
+        the result is padded out to 4 characters with spaces (0x20).
+        */
+        Vu32    getFourCharacterCode() const;
         /**
         Vararg format method used by the sprintf method, and also available
         if you have a vararg API that needs to then format a string.
@@ -662,8 +706,7 @@ class VString
         
     private:
 
-        void initialize();
-        void setLength(int stringLength);
+        void _setLength(int stringLength);
     
         /** Asserts if any invariant is broken. */
         void assertInvariant() const;
@@ -675,7 +718,7 @@ class VString
         @param    formatText    the format text
         @param    args        the argument list
         */
-        static int determineSprintfLength(const char* formatText, va_list args);
+        static int _determineSprintfLength(const char* formatText, va_list args);
     
         int        mStringLength;    ///< The length of the string.
         int        mBufferLength;    ///< The length of the buffer (at least 1 longer than the string).
@@ -689,9 +732,9 @@ buffer that is protected by a mutex that we can use instead. See
 VString::determineSprintfLength().
 */
 #ifndef V_EFFICIENT_SPRINTF
-        CLASS_CONST(int, kSprintfBufferSize, 32768);            ///< Size of the static printf buffer used when efficient sprintf is not available.
-        static char        smSprintfBuffer[kSprintfBufferSize];    ///< A static buffer used when efficient sprintf is not available.
-        static VMutex*    smSprintfBufferMutex;                    ///< Mutex to protect the static buffer from multiple threads.
+        static const int kSprintfBufferSize = 32768;            ///< Size of the static printf buffer used when efficient sprintf is not available.
+        static char        gSprintfBuffer[kSprintfBufferSize];     ///< A static buffer used when efficient sprintf is not available.
+        static VMutex*    gSprintfBufferMutex;                    ///< Mutex to protect the static buffer from multiple threads.
 #endif
     };
 
