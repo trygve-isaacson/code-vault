@@ -610,15 +610,13 @@ class VString
         /**
         Sets the string by copying a number of characters from the source buffer.
         @param    fromBuffer    the char buffer to copy from
-        @param    startIndex    the offset in the buffer to start from, inclusive
-        @param    endIndex    the offset in the buffer to stop at, exclusive (end-start is the length);
-                            -1 indicates to use strlen on the fromBuffer and use that to locate the end
-                            of the buffer, and copy up to there; if endIndex is less than startIndex
-                            (including after calling strlen via the -1 parameter), we effectively copy an empty string
-        previously, default value endIndex==LONG_MAX meant to calculate strlen(fromBuffer) as endIndex; let's use -1 for that,
-        because assuming the source is null terminated etc. is sketchy; make the caller be explicit
+        @param    startIndex    the offset in the buffer to start from, inclusive (0 starts at first character)
+        @param    endIndex    the offset in the buffer to stop at, exclusive (end-start is the length,
+                              thus strlen(fromBuffer) will copy to the last character).
+                              In Code Vault 2.3.2, LONG_MAX was a magic value for this parameter; now you
+                              should pass the desired length explicitly.
         */
-        void    copyFromBuffer(const char* fromBuffer, int startIndex/*=0*/, int endIndex/*=LONG_MAX*/); // FIXME: I don't like this implicit parameter.
+        void    copyFromBuffer(const char* fromBuffer, int startIndex, int endIndex);
         /**
         Copies the string's chars to the specified Pascal string buffer, using
         the Pascal string format (length byte plus data). The caller is responsible

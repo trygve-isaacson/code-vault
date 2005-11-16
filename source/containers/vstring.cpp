@@ -1333,8 +1333,9 @@ void VString::copyFromBuffer(const char* fromBuffer, int startIndex, int endInde
     if (startIndex < 0)
         throw VRangeException(VString("VString::copyFromBuffer: out of range start index %d.", startIndex));
     
-    if (endIndex == -1)
-        endIndex = ::strlen(fromBuffer);
+    // Flag improper usage based on 2.3.2 semantics:
+    if (endIndex == LONG_MAX)
+        throw VRangeException("VString::copyFromBuffer: deprecated use of LONG_MAX endIndex parameter.");
     
     // We allow endIndex to be less than startIndex, and compensate for that
     if (endIndex < startIndex)

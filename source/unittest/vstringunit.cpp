@@ -517,5 +517,17 @@ void VStringUnit::run()
         this->test(true, "preflight INT_MAX exception");
         }
     
+    // This test covers a desired exception for deprecated API use.
+    try
+        {
+        VString x;
+        x.copyFromBuffer("hello", 0, LONG_MAX); // Passing LONG_MAX is now bad.
+        this->test(false, "copyFromBuffer with LONG_MAX exception");
+        }
+    catch (const VRangeException& ex)
+        {
+        this->test(true, "copyFromBuffer with LONG_MAX exception");
+        }
+    
     }
 

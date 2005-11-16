@@ -100,7 +100,7 @@ void VFSNode::getName(VString& name) const
     {
     // The following works even if lastIndexOf returns -1 "not found",
     // because we add 1 to get the correct startIndex parameter.
-    name.copyFromBuffer(mPath.chars(), mPath.lastIndexOf('/') + 1, -1);
+    name.copyFromBuffer(mPath.chars(), mPath.lastIndexOf('/') + 1, mPath.length());
     }
 
 void VFSNode::getParentPath(VString& parentPath) const
