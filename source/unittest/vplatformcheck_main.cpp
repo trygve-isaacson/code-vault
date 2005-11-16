@@ -6,6 +6,8 @@ http://www.bombaydigital.com/
 
 #include "vault.h"
 
+#include "vunitrunall.h"
+
 class App
     {
     public:
@@ -66,6 +68,14 @@ App::~App()
 void App::run()
     {
     this->_runPlatformCheck();
+    
+    bool success;
+    int numSuccessfulTests;
+    int numFailedTests;
+    runAllVUnitTests(false, true, false, success, numSuccessfulTests, numFailedTests, NULL);
+    
+    if (!success)
+        mResult = -1;
     }
 
 void App::_runPlatformCheck()
@@ -97,6 +107,7 @@ void App::_runEfficientSprintfCheck()
         {
 #ifdef V_EFFICIENT_SPRINTF
         std::cout << "ERROR: Efficient snprintf is not available on this platform, but V_EFFICIENT_SPRINTF is defined. You need to fix the vtypes_platform.h for this platform; otherwise, VString formatting may crash." << std::endl;
+        mResult = -1;
 #else
         std::cout << "SUCCESS: Efficient snprintf is not available on this platform, and V_EFFICIENT_SPRINTF is correctly undefined. The vtypes_platform.h for this platform is OK." << std::endl;
 #endif
@@ -139,6 +150,7 @@ void App::_runByteswapCheck()
         // We're big endian.
 #ifdef VBYTESWAP_NEEDED
         std::cout << "ERROR: This platform is big-endian, but VBYTESWAP_NEEDED is defined. You need to fix the vtypes_platform.h for this platform, or stream byte ordering will be wrong." << std::endl;
+        mResult = -1;
 #else
         std::cout << "SUCCESS: This platform is big-endian, and VBYTESWAP_NEEDED is correctly undefined. The vtypes_platform.h for this platform is OK." << std::endl;
 #endif
@@ -153,6 +165,7 @@ void App::_runByteswapCheck()
         std::cout << "SUCCESS: This platform is little-endian, and VBYTESWAP_NEEDED is correctly defined. The vtypes_platform.h for this platform is OK." << std::endl;
 #else
         std::cout << "ERROR: This platform is little-endian, but VBYTESWAP_NEEDED is undefined. You need to fix the vtypes_platform.h for this platform, or stream byte ordering will be wrong." << std::endl;
+        mResult = -1;
 #endif
         }
     else
@@ -162,6 +175,7 @@ void App::_runByteswapCheck()
         std::cout << "WARNING: This platform is neither big- nor little-endian, and VBYTESWAP_NEEDED is correctly defined. You need to verify that vtypes_platform.h for this platform does swapping correctly." << std::endl;
 #else
         std::cout << "ERROR: This platform is neither big- nor little-endian, but VBYTESWAP_NEEDED is undefined. You need to fix the vtypes_platform.h for this platform, or stream byte ordering will be wrong." << std::endl;
+        mResult = -1;
 #endif
         }
 
@@ -197,47 +211,74 @@ void App::_runMinMaxAbsCheck()
     if (V_ABS(s8_low) == s8_high)
         std::cout << "SUCCESS: V_ABS for Vs8 works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_ABS for Vs8 does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (V_ABS(s16_low) == s16_high)
         std::cout << "SUCCESS: V_ABS for Vs16 works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_ABS for Vs16 does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (V_ABS(s32_low) == s32_high)
         std::cout << "SUCCESS: V_ABS for Vs32 works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_ABS for Vs32 does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (V_ABS(s64_low) == s64_high)
         std::cout << "SUCCESS: V_ABS for Vs64 works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_ABS for Vs64 does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (V_ABS(int_low) == int_high)
         std::cout << "SUCCESS: V_ABS for int works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_ABS for int does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (V_FABS(float_low) == float_high)
         std::cout << "SUCCESS: V_FABS for float works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_FABS for float does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (V_FABS(double_low) == double_high)
         std::cout << "SUCCESS: V_FABS for double works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_FABS for double does not work." << std::endl;
+        mResult = -1;
+        }
 
     if (V_ABS(intT_low) == intT_high)
         std::cout << "SUCCESS: V_ABS for int typedef works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_ABS for int typedef does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (V_ABS(Vs32T_low) == Vs32T_high)
         std::cout << "SUCCESS: V_ABS for Vs32 typedef works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_ABS for Vs32 typedef does not work." << std::endl;
+        mResult = -1;
+        }
     
     Vs8        s8_min = V_MIN(s8_low, s8_high);
     Vs8        s8_max = V_MAX(s8_low, s8_high);
@@ -261,92 +302,146 @@ void App::_runMinMaxAbsCheck()
     if (s8_min == s8_low)
         std::cout << "SUCCESS: V_MIN for Vs8 works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MIN for Vs8 does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (s8_max == s8_high)
         std::cout << "SUCCESS: V_MAX for Vs8 works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MAX for Vs8 does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (s16_min == s16_low)
         std::cout << "SUCCESS: V_MIN for Vs16 works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MIN for Vs16 does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (s16_max == s16_high)
         std::cout << "SUCCESS: V_MAX for Vs16 works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MAX for Vs16 does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (s32_min == s32_low)
         std::cout << "SUCCESS: V_MIN for Vs32 works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MIN for Vs32 does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (s32_max == s32_high)
         std::cout << "SUCCESS: V_MAX for Vs32 works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MAX for Vs32 does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (s64_min == s64_low)
         std::cout << "SUCCESS: V_MIN for Vs64 works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MIN for Vs64 does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (s64_max == s64_high)
         std::cout << "SUCCESS: V_MAX for Vs64 works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MAX for Vs64 does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (int_min == int_low)
         std::cout << "SUCCESS: V_MIN for int works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MIN for int does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (int_max == int_high)
         std::cout << "SUCCESS: V_MAX for int works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MAX for int does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (float_min == float_low)
         std::cout << "SUCCESS: V_MIN for float works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MIN for float does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (float_max == float_high)
         std::cout << "SUCCESS: V_MAX for float works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MAX for float does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (double_min == double_low)
         std::cout << "SUCCESS: V_MIN for double works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MIN for double does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (double_max == double_high)
         std::cout << "SUCCESS: V_MAX for double works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MAX for double does not work." << std::endl;
+        mResult = -1;
+        }
 
     if (intT_min == intT_low)
         std::cout << "SUCCESS: V_MIN for int typedef works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MIN for int typedef does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (intT_max == intT_high)
         std::cout << "SUCCESS: V_MAX for int typedef works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MAX for int typedef does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (Vs32T_min == Vs32T_low)
         std::cout << "SUCCESS: V_MIN for Vs32 typedef works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MIN for Vs32 typedef does not work." << std::endl;
+        mResult = -1;
+        }
     
     if (Vs32T_max == Vs32T_high)
         std::cout << "SUCCESS: V_MAX for Vs32 typedef works." << std::endl;
     else
+        {
         std::cout << "ERROR: V_MAX for Vs32 typedef does not work." << std::endl;
+        mResult = -1;
+        }
     
     }
 
@@ -380,6 +475,7 @@ void App::_runTimeCheck()
         {
 #ifdef V_INSTANT_SNAPSHOT_IS_UTC
         std::cout << "ERROR: This platform does NOT do UTC-based time snapshots, but V_INSTANT_SNAPSHOT_IS_UTC is defined. You need to fix the vtypes_platform.h for this platform; otherwise, VInstant values will be incorrect." << std::endl;
+        mResult = -1;
 #else
         std::cout << "SUCCESS: This platform does NOT do UTC-based time snapshots, and V_INSTANT_SNAPSHOT_IS_UTC is correctly undefined. The vtypes_platform.h for this platform is OK." << std::endl;
 #endif /* V_INSTANT_SNAPSHOT_IS_UTC */
