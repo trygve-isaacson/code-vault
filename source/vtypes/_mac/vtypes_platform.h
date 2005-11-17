@@ -11,6 +11,8 @@ http://www.bombaydigital.com/
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdarg.h>
+#include <fcntl.h>
 
 #define _BSD_WCHAR_T_DEFINED_
 #ifdef _lint
@@ -51,25 +53,58 @@ typedef    _BSD_WCHAR_T_    wchar_t;
 #undef FD_ZERO
 #define FD_ZERO(p) memset(p, 0, sizeof(*(p)))
 
-#define V_BYTESWAP_HTONS_GET(x)            /*lint -save -e522*/ (x) /*lint -restore */
-#define V_BYTESWAP_NTOHS_GET(x)            /*lint -save -e522*/ (x) /*lint -restore */
-#define V_BYTESWAP_HTONS_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
-#define V_BYTESWAP_NTOHS_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
+/*
+The proprocessor macros __BIG_ENDIAN__ and __LITTLE_ENDIAN__ are defined by GCC,
+which allows us to get the byte ordering right. In order to rely less on the
+existence of these on early versions of GCC, let's just check for the newer
+condition, __LITTLE_ENDIAN__ Mac on Intel.
+*/
+#if __LITTLE_ENDIAN__
+	#define VBYTESWAP_NEEDED
 
-#define V_BYTESWAP_HTONL_GET(x)            /*lint -save -e522*/ (x) /*lint -restore */
-#define V_BYTESWAP_NTOHL_GET(x)            /*lint -save -e522*/ (x) /*lint -restore */
-#define V_BYTESWAP_HTONL_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
-#define V_BYTESWAP_NTOHL_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
+	#define V_BYTESWAP_HTONS_GET(x)			VbyteSwap16((Vu16) x)
+	#define V_BYTESWAP_NTOHS_GET(x)			VbyteSwap16((Vu16) x)
+	#define V_BYTESWAP_HTONS_IN_PLACE(x)	((x) = (VbyteSwap16((Vu16) x)))
+	#define V_BYTESWAP_NTOHS_IN_PLACE(x)	((x) = (VbyteSwap16((Vu16) x)))
 
-#define V_BYTESWAP_HTON64_GET(x)        /*lint -save -e522*/ (x) /*lint -restore */
-#define V_BYTESWAP_NTOH64_GET(x)        /*lint -save -e522*/ (x) /*lint -restore */
-#define V_BYTESWAP_HTON64_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
-#define V_BYTESWAP_NTOH64_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
+	#define V_BYTESWAP_HTONL_GET(x)			VbyteSwap32((Vu32) x)
+	#define V_BYTESWAP_NTOHL_GET(x)			VbyteSwap32((Vu32) x)
+	#define V_BYTESWAP_HTONL_IN_PLACE(x)	((x) = (VbyteSwap32((Vu32) x)))
+	#define V_BYTESWAP_NTOHL_IN_PLACE(x)	((x) = (VbyteSwap32((Vu32) x)))
 
-#define V_BYTESWAP_HTONF_GET(x)            /*lint -save -e522*/ (x) /*lint -restore */
-#define V_BYTESWAP_NTOHF_GET(x)            /*lint -save -e522*/ (x) /*lint -restore */
-#define V_BYTESWAP_HTONF_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
-#define V_BYTESWAP_NTOHF_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
+	#define V_BYTESWAP_HTON64_GET(x)		VbyteSwap64((Vu64) x)
+	#define V_BYTESWAP_NTOH64_GET(x)		VbyteSwap64((Vu64) x)
+	#define V_BYTESWAP_HTON64_IN_PLACE(x)	((x) = (VbyteSwap64((Vu64) x)))
+	#define V_BYTESWAP_NTOH64_IN_PLACE(x)	((x) = (VbyteSwap64((Vu64) x)))
+
+	#define V_BYTESWAP_HTONF_GET(x)			VbyteSwapFloat((VFloat) x)
+	#define V_BYTESWAP_NTOHF_GET(x)			VbyteSwapFloat((VFloat) x)
+	#define V_BYTESWAP_HTONF_IN_PLACE(x)	((x) = (VbyteSwapFloat((VFloat) x)))
+	#define V_BYTESWAP_NTOHF_IN_PLACE(x)	((x) = (VbyteSwapFloat((VFloat) x)))
+
+#else
+
+    #define V_BYTESWAP_HTONS_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHS_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_HTONS_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHS_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
+
+    #define V_BYTESWAP_HTONL_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHL_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_HTONL_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHL_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
+
+    #define V_BYTESWAP_HTON64_GET(x)		/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOH64_GET(x)		/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_HTON64_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOH64_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
+
+    #define V_BYTESWAP_HTONF_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHF_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_HTONF_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHF_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
+
+#endif
 
 // Both CodeWarrior and GCC (4.0 at least) provide gettimeofday(), which uses UTC-based values.
 #define V_INSTANT_SNAPSHOT_IS_UTC    // platform_snapshot() gives us a UTC time suitable for platform_now()
@@ -166,5 +201,47 @@ of which headers dominate.
 #ifdef MAC_OS_X_VERSION_10_4
 #define V_EFFICIENT_SPRINTF
 #endif
+
+/*
+These are the custom uniform definitions of system-level functions that behave
+slightly differently on each compiler/library/OS platform. These are declared
+in each platform's header file in a way that works with that platform.
+*/
+namespace vault {
+
+inline int putenv(char* env) { return ::putenv(env); }
+inline char* getenv(const char* name) { return ::getenv(name); }
+inline ssize_t read(int fd, void* buffer, size_t numBytes) { return ::read(fd, buffer, numBytes); }
+inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::write(fd, buffer, numBytes); }
+inline off_t lseek(int fd, off_t offset, int whence) { return ::lseek(fd, offset, whence); }
+inline int close(int fd) { return ::close(fd); }
+inline int mkdir(const char* path, mode_t mode) { return ::mkdir(path, mode); }
+inline int rmdir(const char* path) { return ::rmdir(path); }
+inline int unlink(const char* path) { return ::unlink(path); }
+
+inline int snprintf(char* buffer, size_t length, const char* format, ...)
+    {
+    va_list	args;
+    va_start(args, format);
+    int result = ::snprintf(buffer, length, format, args);
+    va_end(args);
+    return result;
+    }
+
+inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args)
+    {
+    return ::vsnprintf(buffer, length, format, args);
+    }
+
+inline int open(const char* path, int flags, ...)
+    {
+    va_list	args;
+    va_start(args, flags);
+    int result = ::open(path, flags, args);
+    va_end(args);
+    return result;
+    }
+
+}
 
 #endif /* vtypes_platform_h */

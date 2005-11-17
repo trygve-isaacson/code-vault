@@ -291,11 +291,7 @@ ssize_t VFileStream::threadsafe_read(int fd, void* buffer, size_t numBytes)
 
     while (! done)
         {
-#ifdef VPLATFORM_WIN
-        result = ::read(fd, buffer, (unsigned int) numBytes);
-#else
-        result = ::read(fd, buffer, numBytes);
-#endif
+		result = vault::read(fd, buffer, numBytes);
         
         if ((result != (ssize_t) -1) || (errno != EINTR))
             done = true;
@@ -314,11 +310,7 @@ ssize_t VFileStream::threadsafe_write(int fd, const void* buffer, size_t numByte
 
     while (! done)
         {
-#ifdef VPLATFORM_WIN
-        result = ::write(fd, buffer, (unsigned int) numBytes);
-#else
-        result = ::write(fd, buffer, numBytes);
-#endif
+		result = vault::write(fd, buffer, numBytes);
         
         if ((result != (ssize_t) -1) || (errno != EINTR))
             done = true;
@@ -337,7 +329,7 @@ off_t VFileStream::threadsafe_lseek(int fd, off_t inOffset, int whence)
 
     while (! done)
         {
-        result = ::lseek(fd, inOffset, whence);
+		result = vault::lseek(fd, inOffset, whence);
         
         if ((result != (off_t) -1) || (errno != EINTR))
             done = true;
@@ -356,7 +348,7 @@ int VFileStream::threadsafe_close(int fd)
 
     while (! done)
         {
-        result = ::close(fd);
+		result = vault::close(fd);
         
         if ((result == 0) || (errno != EINTR))
             done = true;

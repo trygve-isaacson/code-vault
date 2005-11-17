@@ -1389,7 +1389,7 @@ void VString::setFourCharacterCode(Vu32 fourCharacterCode)
     for (int i = 0; i < 4; ++i)
         {
         int bitsToShift = 8 * (3-i);
-        Vu8 byteValue = (fourCharacterCode & (0x000000FF << bitsToShift)) >> bitsToShift;
+        Vu8 byteValue = static_cast<Vu8>((fourCharacterCode & (static_cast<Vu32>(0x000000FF) << bitsToShift)) >> bitsToShift);
         codeChars[i] = byteValue;
         
         if (codeChars[i] == 0)
@@ -1512,7 +1512,7 @@ void VString::vaFormat(const char* formatText, va_list args)
     
         this->preflight(newStringLength);
     
-        (void) ::vsnprintf(mBuffer, static_cast<VSizeType> (mBufferLength), formatText, args);
+        (void) vault::vsnprintf(mBuffer, static_cast<VSizeType> (mBufferLength), formatText, args);
     
         va_end(args);
 
@@ -1555,19 +1555,22 @@ int VString::_determineSprintfLength(const char* formatText, va_list args)
     {
 #ifdef V_EFFICIENT_SPRINTF
     /*
-    This does not work on all platforms' implementations of vsnprintf.
-    It works on BSD, but the SUSV2 spec language implies different behavior.
-    The goal here is simply to determine how large the vsnprintf'd string would
-    be, without actually allocating a big ol' buffer to find out.
+    The following optimization does not work on all platforms.
+    The SUSV2 definition of vsnprintf does NOT indicate that this is
+    the behavior; however, on many platforms, if the string is too large
+    for the output buffer, the function returns the would-be buffer size.
+    When this behavior is available, we use it to our advantage. We set
+    V_EFFICIENT_SPRINTF in the platform header if we can do this. The
+    platform check code will tell us whether the platform supports it.
     */
     char    oneByteBuffer = 0;
-    int        theLength = ::vsnprintf(&oneByteBuffer, 1, formatText, args);
+    int        theLength = vault::vsnprintf(&oneByteBuffer, 1, formatText, args);
 #else
     if (VString::gSprintfBufferMutex == NULL)
         VString::gSprintfBufferMutex = new VMutex();
 
     VMutexLocker    locker(VString::gSprintfBufferMutex);
-    int        theLength = ::vsnprintf(gSprintfBuffer, kSprintfBufferSize, formatText, args);
+    int        theLength = vault::vsnprintf(gSprintfBuffer, kSprintfBufferSize, formatText, args);
 #endif
 
     va_end(args);

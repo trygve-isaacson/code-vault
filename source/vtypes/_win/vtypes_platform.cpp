@@ -16,7 +16,7 @@ V_STATIC_INIT_TRACE
     
 static void getCurrentTZ(VString& tz)
     {
-    char*    tzEnvString = getenv("TZ");
+	char*    tzEnvString = vault::getenv("TZ");
     
     if (tzEnvString == NULL)
         tz = VString::kEmptyString;
@@ -28,7 +28,7 @@ static void setCurrentTZ(const VString& tz)
     {
     VString    envString("TZ=%s", tz.chars());
 
-    putenv(envString);
+	vault::putenv(envString);
     }
 
 //    extern "C" __time64_t __cdecl _mkgmtime64(struct tm* tb);

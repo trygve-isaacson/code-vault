@@ -24,6 +24,7 @@ documented are:
 1200 - version 6 SP4 (a little old now but very widely used)
 1300 - version 7 (a.k.a. "2003" or ".NET")
 1310 - version 7.1 (patch/update to version 7)
+1400 - version 8.0 (a.k.a. "2005")
 
 Versions prior to 7 (1300) are really awful due to their lack of
 support for some basic common standard C++ constructs. Therefore,
@@ -51,9 +52,17 @@ needed.
 
 #ifdef _MSC_VER
 #define VCOMPILER_MSVC
-    #if _MSC_VER < 1300
-    #define VCOMPILER_MSVC_6_CRIPPLED
-    #endif
+
+	#if _MSC_VER < 1300
+	#define VCOMPILER_MSVC_6_CRIPPLED
+	#endif
+
+    // For the moment, turn off the new 8.0 library deprecation stuff.
+    // Later, we can change the code to conditionally use the newer
+    // function names, depending on the compiler version.
+	#if _MSC_VER >= 1400
+	#define _CRT_SECURE_NO_DEPRECATE
+	#endif
 #endif
 
 // The Code Vault does not currently support Unicode strings.
@@ -210,5 +219,75 @@ typedef unsigned long in_addr_t;
 #define V_FABS(a) std::fabs(a)        ///< Macro for getting abs of a floating point value using standard function template.
 
 #endif /* DEFINE_V_MINMAXABS */
+
+/*
+These are the custom uniform definitions of system-level functions that behave
+slightly differently on each compiler/library/OS platform. These are declared
+in each platform's header file in a way that works with that platform.
+*/
+namespace vault {
+
+// For a few of these functions, the VC++ version does not have the same parameter list
+// as the normal POSIX function, either in number of parameters or their types.
+
+#if _MSC_VER >= 1400
+// VC++ 8.0 makes many of these function names start with an underscore.
+
+inline int putenv(char* env) { return ::_putenv(env); }
+inline char* getenv(const char* name) { return ::getenv(name); }
+inline ssize_t read(int fd, void* buffer, size_t numBytes) { return ::_read(fd, buffer, static_cast<unsigned int>(numBytes)); }
+inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::_write(fd, buffer, static_cast<unsigned int>(numBytes)); }
+inline off_t lseek(int fd, off_t offset, int whence) { return ::_lseek(fd, offset, whence); }
+inline int open(const char* path, int flags, ...) { return ::_open(path, flags, 0); }
+inline int close(int fd) { return ::_close(fd); }
+inline int mkdir(const char* path, mode_t /*mode*/) { return ::_mkdir(path); }
+inline int rmdir(const char* path) { return ::_rmdir(path); }
+inline int unlink(const char* path) { return ::_unlink(path); }
+
+inline int snprintf(char* buffer, size_t length, const char* format, ...)
+    {
+    va_list	args;
+    va_start(args, format);
+    int result = ::_snprintf(buffer, length, format, args);
+    va_end(args);
+    return result;
+    }
+
+inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args)
+    {
+    return ::_vsnprintf(buffer, length, format, args);
+    }
+
+#else
+// VC++ versions prior to 8.0; a few of the function names start with an underscore.
+
+inline int putenv(char* env) { return ::putenv(env); }
+inline char* getenv(const char* name) { return ::getenv(name); }
+inline ssize_t read(int fd, void* buffer, size_t numBytes) { return ::read(fd, buffer, static_cast<unsigned int>(numBytes)); }
+inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::write(fd, buffer, static_cast<unsigned int>(numBytes)); }
+inline off_t lseek(int fd, off_t offset, int whence) { return ::lseek(fd, offset, whence); }
+inline int open(const char* path, int flags, ...) { return ::_open(path, flags, 0); }
+inline int close(int fd) { return ::close(fd); }
+inline int mkdir(const char* path, mode_t /*mode*/) { return ::mkdir(path); }
+inline int rmdir(const char* path) { return ::_rmdir(path); }
+inline int unlink(const char* path) { return ::unlink(path); }
+
+inline int snprintf(char* buffer, size_t length, const char* format, ...)
+    {
+    va_list	args;
+    va_start(args, format);
+    int result = ::snprintf(buffer, length, format, args);
+    va_end(args);
+    return result;
+    }
+
+inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args)
+    {
+    return ::_vsnprintf(buffer, length, format, args);
+    }
+
+#endif
+
+}
 
 #endif /* vtypes_platform_h */

@@ -466,7 +466,7 @@ void VStringUnit::run()
         rangeTester.postflight(-1); // should throw a VRangeException
         this->test(false, "postflight -1 exception for null buffer");
         }
-    catch (const VRangeException& ex)
+    catch (const VRangeException& /*ex*/)
         {
         this->test(true, "postflight -1 exception for null buffer");
         }
@@ -476,7 +476,7 @@ void VStringUnit::run()
         rangeTester.postflight(1); // should throw a VRangeException
         this->test(false, "postflight >0 exception for null buffer");
         }
-    catch (const VRangeException& ex)
+    catch (const VRangeException& /*ex*/)
         {
         this->test(true, "postflight >0 exception for null buffer");
         }
@@ -488,7 +488,7 @@ void VStringUnit::run()
         rangeTester.postflight(4); // should throw a VRangeException
         this->test(false, "postflight >=mBufferLength exception");
         }
-    catch (const VRangeException& ex)
+    catch (const VRangeException& /*ex*/)
         {
         this->test(true, "postflight >=mBufferLength exception");
         }
@@ -502,7 +502,7 @@ void VStringUnit::run()
         rangeTester.preflight(-1); // should throw a VRangeException
         this->test(false, "preflight <0 exception");
         }
-    catch (const VRangeException& ex)
+    catch (const VRangeException& /*ex*/)
         {
         this->test(true, "preflight <0 exception");
         }
@@ -512,7 +512,7 @@ void VStringUnit::run()
         rangeTester.preflight(INT_MAX); // should throw a VRangeException
         this->test(false, "preflight INT_MAX exception");
         }
-    catch (const VRangeException& ex)
+    catch (const VRangeException& /*ex*/)
         {
         this->test(true, "preflight INT_MAX exception");
         }
@@ -524,7 +524,7 @@ void VStringUnit::run()
         x.copyFromBuffer("hello", 0, LONG_MAX); // Passing LONG_MAX is now bad.
         this->test(false, "copyFromBuffer with LONG_MAX exception");
         }
-    catch (const VRangeException& ex)
+    catch (const VRangeException& /*ex*/)
         {
         this->test(true, "copyFromBuffer with LONG_MAX exception");
         }

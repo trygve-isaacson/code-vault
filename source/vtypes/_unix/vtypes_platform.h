@@ -68,9 +68,7 @@ http://www.bombaydigital.com/
 /*
 Some Unix platforms do not define the byte order macros and definitions
 that are defined in BSD's <machine/endian.h>, so we define them here in
-that case. The reason we do it in a more complicated way for Unix is that
-on Windows we are always X86 (little endian) and on Mac we are always
-68K or PPC (big endian) but Unixen run on various platforms so it varies.
+that case.
 */
 
 /* In case BYTE_ORDER stuff from <machine/endian.h> is not defined, we'll
@@ -141,5 +139,47 @@ actually call the swapping functions. If not, the macros do nothing.
 #ifndef VPLATFORM_UNIX_HPUX
     #define V_EFFICIENT_SPRINTF
 #endif
+
+/*
+These are the custom uniform definitions of system-level functions that behave
+slightly differently on each compiler/library/OS platform. These are declared
+in each platform's header file in a way that works with that platform.
+*/
+namespace vault {
+
+inline int putenv(char* env) { return ::putenv(env); }
+inline char* getenv(const char* name) { return ::getenv(name); }
+inline ssize_t read(int fd, void* buffer, size_t numBytes) { return ::read(fd, buffer, numBytes); }
+inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::write(fd, buffer, numBytes); }
+inline off_t lseek(int fd, off_t offset, int whence) { return ::lseek(fd, offset, whence); }
+inline int close(int fd) { return ::close(fd); }
+inline int mkdir(const char* path, mode_t mode) { return ::mkdir(path, mode); }
+inline int rmdir(const char* path) { return ::rmdir(path); }
+inline int unlink(const char* path) { return ::unlink(path); }
+
+inline int snprintf(char* buffer, size_t length, const char* format, ...)
+    {
+    va_list	args;
+    va_start(args, format);
+    int result = ::snprintf(buffer, length, format, args);
+    va_end(args);
+    return result;
+    }
+
+inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args)
+    {
+    return ::vsnprintf(buffer, length, format, args);
+    }
+
+inline int open(const char* path, int flags, ...)
+    {
+    va_list	args;
+    va_start(args, flags);
+    int result = ::open(path, flags, args);
+    va_end(args);
+    return result;
+    }
+
+}
 
 #endif /* vtypes_platform_h */

@@ -60,7 +60,7 @@ VSocket* VListenerSocket::accept()
         //lint -e573 Signed-unsigned mix with divide"
         FD_SET(mSockID, &readset);
 
-        result = ::select(mSockID + 1, &readset, NULL, NULL, &timeout);
+        result = ::select(static_cast<int>(mSockID + 1), &readset, NULL, NULL, &timeout);
 
         if (result == -1)
             {

@@ -379,12 +379,7 @@ int VFSNode::threadsafe_mkdir(const char* inPath, mode_t mode)
     
     while (! done)
         {
-#ifdef VPLATFORM_WIN
-        mode = 0;    // avoid compiler warning for unused argument
-        result = ::mkdir(inPath);
-#else
-        result = ::mkdir(inPath, mode);
-#endif
+		result = vault::mkdir(inPath, mode);
         
         if ((result == 0) || (errno != EINTR))
             done = true;
@@ -441,7 +436,7 @@ int VFSNode::threadsafe_unlink(const char* inPath)
 
     while (! done)
         {
-        result = ::unlink(inPath);
+		result = vault::unlink(inPath);
         
         if ((result == 0) || (errno != EINTR))
             done = true;
@@ -460,7 +455,7 @@ int VFSNode::threadsafe_rmdir(const char* inPath)
 
     while (! done)
         {
-        result = ::rmdir(inPath);
+		result = vault::rmdir(inPath);
         
         if ((result == 0) || (errno != EINTR))
             done = true;

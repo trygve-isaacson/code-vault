@@ -50,6 +50,11 @@ int main(int argc, char** argv)
         {
         std::cout << "ERROR: Caught STL exception: '" << ex.what() << "'\n";
         }
+
+    if (result == 0)
+        std::cout << "SUCCESS: Platform check completed with result 0." << std::endl;
+    else
+        std::cout << "ERROR: Platform check completed with result " << result << "." << std::endl;
     
     return result;
     }
@@ -86,6 +91,18 @@ void App::_runPlatformCheck()
     this->_runTimeCheck();
     }
 
+static int _wrap_vsnprintf(char* dest, size_t count, const char* formatText, ...)
+    {
+ 	va_list	args;
+	va_start(args, formatText);
+
+	int result = vault::vsnprintf(dest, count, formatText, args);
+
+	va_end(args);
+	
+	return result;
+    }
+
 void App::_runEfficientSprintfCheck()
     {
     char    oneByteBuffer = 0;
@@ -93,7 +110,7 @@ void App::_runEfficientSprintfCheck()
     char    stackCheck2 = 0;
     char    stackCheck3 = 0;
     char    stackCheck4 = 0;
-    int        theLength = ::snprintf(&oneByteBuffer, 1, "%s%s%s%s%s", "a", "b", "c", "d", "e");
+    int        theLength = _wrap_vsnprintf(&oneByteBuffer, 1, "%s%s%s%s%s", "a", "b", "c", "d", "e");
     
     if (theLength == 5 && stackCheck1 == 0 && stackCheck2 == 0 && stackCheck3 == 0 && stackCheck4 == 0)
         {

@@ -277,7 +277,7 @@ void VSocket::connectStandard()
         if (result != 0)
             {
             // Connect failed.
-            ::close(sockID);
+            vault::close(sockID);
             throw VException("VSocket::connectStandard failed on socket %d, errno=%s", sockID, ::strerror(errno));
             }
         }
@@ -309,14 +309,14 @@ void VSocket::listenStandard()
     result = ::bind(listenSockID, (const sockaddr*) &info, infoLength);
     if (result != 0)
         {
-        ::close(listenSockID);
+        vault::close(listenSockID);
         throw VException("VSocket::listenStandard bind() for port %d failed on socket %d with result %d, errno=%s", mPortNumber, listenSockID, result, ::strerror(errno));
         }
 
     (void) ::listen(listenSockID, mListenBacklog);
     if (result != 0)
         {
-        ::close(listenSockID);
+        vault::close(listenSockID);
         throw VException("VSocket::listenStandard listen() failed on socket %d with result %d, errno=%s", listenSockID, result, ::strerror(errno));
         }
 
@@ -386,7 +386,7 @@ void VSocket_listenEnhanced()
             break;
             }
 
-        ::close(listenSockID);
+        vault::close(listenSockID);
 
         } while ((res = res->ai_next) != NULL);
 
@@ -450,7 +450,7 @@ void VSocket::listenEnhanced()
 
         // Error on this interface, we'll try the next one.
         lastError.format("VSocket::listenEnhanced bind() failed on socket %d with result %d, errno=%s", listenSockID, result, ::strerror(errno));
-        ::close(listenSockID);
+        vault::close(listenSockID);
 
         } while ((res = res->ai_next) != NULL);
 
@@ -466,7 +466,7 @@ void VSocket::listenEnhanced()
 
     if (result != 0)
         {
-        ::close(listenSockID);
+        vault::close(listenSockID);
         throw VException("VSocket::listenEnhanced listen() failed on socket %d with result %d, errno=%s", listenSockID, result, ::strerror(errno));
         }
 
@@ -520,7 +520,7 @@ VSockID    VSocket::tcpConnectWAddrInfo(struct addrinfo * const resInput)
         if (::connect(sockID, res->ai_addr, res->ai_addrlen) == 0)
             break; /* success */
 
-        ::close(sockID);
+        vault::close(sockID);
         } while((res = res->ai_next) != NULL);
 
     if (res == NULL)

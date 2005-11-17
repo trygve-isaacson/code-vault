@@ -101,7 +101,7 @@ void VSocketBase::close()
 #ifdef VPLATFORM_WIN
         ::closesocket(mSockID);
 #else
-        ::close(mSockID);
+        vault::close(mSockID);
 #endif
         mSockID = kNoSockID;
         }
