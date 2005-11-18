@@ -270,9 +270,9 @@ int VFileStream::threadsafe_open(const char* path, int flags)
     while (! done)
         {
         if (flags == WRITE_CREATE_MODE)
-            fd = ::open(path, WRITE_CREATE_MODE, OPEN_CREATE_PERMISSIONS);
+            fd = vault::open(path, WRITE_CREATE_MODE, OPEN_CREATE_PERMISSIONS);
         else
-            fd = ::open(path, flags);
+            fd = vault::open(path, flags, 0);
         
         if ((fd != -1) || (errno != EINTR))
             done = true;
