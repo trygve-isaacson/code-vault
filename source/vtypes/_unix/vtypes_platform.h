@@ -21,6 +21,8 @@ http://www.bombaydigital.com/
 #include <time.h>
 #include <string.h>
 #include <limits.h>
+#include <stdarg.h>
+#include <fcntl.h>
 
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
