@@ -1513,8 +1513,6 @@ void VString::vaFormat(const char* formatText, va_list args)
         this->preflight(newStringLength);
     
         (void) vault::vsnprintf(mBuffer, static_cast<VSizeType> (mBufferLength), formatText, args);
-    
-        va_end(args);
 
         this->_setLength(newStringLength); // could call postflight, but would do extra assertion check
         }

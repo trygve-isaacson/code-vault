@@ -238,7 +238,7 @@ inline char* getenv(const char* name) { return ::getenv(name); }
 inline ssize_t read(int fd, void* buffer, size_t numBytes) { return ::_read(fd, buffer, static_cast<unsigned int>(numBytes)); }
 inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::_write(fd, buffer, static_cast<unsigned int>(numBytes)); }
 inline off_t lseek(int fd, off_t offset, int whence) { return ::_lseek(fd, offset, whence); }
-inline int open(const char* path, int flags, mode_t /*mode*/) { return ::_open(path, flags, 0); }
+inline int open(const char* path, int flags, mode_t mode) { return ::_open(path, flags, mode); }
 inline int close(int fd) { return ::_close(fd); }
 inline int mkdir(const char* path, mode_t /*mode*/) { return ::_mkdir(path); }
 inline int rmdir(const char* path) { return ::_rmdir(path); }
@@ -262,7 +262,7 @@ inline char* getenv(const char* name) { return ::getenv(name); }
 inline ssize_t read(int fd, void* buffer, size_t numBytes) { return ::read(fd, buffer, static_cast<unsigned int>(numBytes)); }
 inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::write(fd, buffer, static_cast<unsigned int>(numBytes)); }
 inline off_t lseek(int fd, off_t offset, int whence) { return ::lseek(fd, offset, whence); }
-inline int open(const char* path, int flags, mode_t /*mode*/) { return ::_open(path, flags, 0); }
+inline int open(const char* path, int flags, mode_t mode) { return ::_open(path, flags, mode); }
 inline int close(int fd) { return ::close(fd); }
 inline int mkdir(const char* path, mode_t /*mode*/) { return ::mkdir(path); }
 inline int rmdir(const char* path) { return ::_rmdir(path); }

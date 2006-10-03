@@ -48,6 +48,16 @@ typedef    _BSD_WCHAR_T_    wchar_t;
 #define V_HAVE_REENTRANT_TIME    // we can and should use the _r versions of time.h calls
 #endif
 
+// @todo This will need to be conditional or chooseable for building non-CF code.
+#define WANT_VAULT_CORE_FOUNDATION_SUPPORT
+
+#ifndef VCOMPILER_CODEWARRIOR
+#ifdef WANT_VAULT_CORE_FOUNDATION_SUPPORT
+#define VAULT_CORE_FOUNDATION_SUPPORT
+#include <CoreFoundation/CFString.h>
+#endif
+#endif
+
 #define O_BINARY        0x8000        ///< Macro to define O_BINARY mode, which is not in the standard headers.
 
 #undef FD_ZERO
@@ -108,9 +118,6 @@ condition, __LITTLE_ENDIAN__ Mac on Intel.
 
 // Both CodeWarrior and GCC (4.0 at least) provide gettimeofday(), which uses UTC-based values.
 #define V_INSTANT_SNAPSHOT_IS_UTC    // platform_snapshot() gives us a UTC time suitable for platform_now()
-
-// @todo This will need to be conditional for building non-CF code.
-#define VAULT_CORE_FOUNDATION_SUPPORT
 
 /*
 The following conditional instructions are for compatibility when compiling using
@@ -228,11 +235,6 @@ inline int snprintf(char* buffer, size_t length, const char* format, ...)
     int result = ::snprintf(buffer, length, format, args);
     va_end(args);
     return result;
-    }
-
-inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args)
-    {
-    int result = ::vsnprintf(buffer, length, format, args);
     }
 
 }
