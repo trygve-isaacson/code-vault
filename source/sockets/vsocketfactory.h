@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -36,10 +36,10 @@ class VSocketFactory
         /**
         Creates a VSocket object and calls its init() method with the
         specified socket id.
-        @param    sockID    the socket id to pass to init()
+        @param    socketID    the socket id to pass to init()
         @return    the new VSocket object
         */
-        virtual VSocket* createSocket(VSockID sockID);
+        virtual VSocket* createSocket(VSocketID socketID);
         /**
         Creates a VSocket object and calls its init() method with the
         specified host name and port number.

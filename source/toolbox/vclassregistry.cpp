@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -14,8 +14,8 @@ V_STATIC_INIT_TRACE
     
 // VClassFactory -------------------------------------------------------------
 
-VClassFactory::VClassFactory(const VString& classID)
-: mClassID(classID)
+VClassFactory::VClassFactory(const VString& classID) :
+mClassID(classID)
     {
     }
 
@@ -32,7 +32,7 @@ void VClassFactory::getClassID(VString& classID) const
 // VClassRegistry ------------------------------------------------------------
 
 // static
-VClassRegistry* VClassRegistry::smRegistry = NULL;
+VClassRegistry* VClassRegistry::gRegistry = NULL;
 
 // static
 VClassRegistry* VClassRegistry::registry()
@@ -42,11 +42,11 @@ VClassRegistry* VClassRegistry::registry()
     // We're using the "create on first use" idiom here.
     if (! initialized)
         {
-        smRegistry = new VClassRegistry();
+        gRegistry = new VClassRegistry();
         initialized = true;
         }
     
-    return smRegistry;
+    return gRegistry;
     }
 
 VClassRegistry::VClassRegistry()

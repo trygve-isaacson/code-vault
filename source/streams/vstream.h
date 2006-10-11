@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -398,40 +398,40 @@ class VStream
         from that buffer (for example, a file or socket stream).
         @return    the i/o buffer pointer, or NULL
         */
-        virtual Vu8*    getReadIOPtr() const;
+        virtual Vu8*    _getReadIOPtr() const;
         /**
         Returns a pointer to the current write i/o position in the stream's buffer,
         or NULL if the stream does not have a buffer or support direct copying
         to that buffer (for example, a file or socket stream).
         @return    the i/o buffer pointer, or NULL
         */
-        virtual Vu8*    getWriteIOPtr() const;
+        virtual Vu8*    _getWriteIOPtr() const;
         /**
         Returns the number of bytes available for reading from the stream's
         buffer, or zero by default for streams without buffers.
         @param    numBytesToRead    the number of bytes that will be read
         @return    the number of bytes available to read, or zero
         */
-        virtual Vs64    prepareToRead(Vs64 numBytesToRead) const;
+        virtual Vs64    _prepareToRead(Vs64 numBytesToRead) const;
         /**
         Preflights the stream's buffer so that it can have the specified
         number of bytes written to it subsequently. Throws a VException
         if the buffer cannot be expanded to accomodate the data.
         @param    numBytesToWrite    the number of bytes that will be written
         */
-        virtual void    prepareToWrite(Vs64 numBytesToWrite);
+        virtual void    _prepareToWrite(Vs64 numBytesToWrite);
         /**
         Postflights a copy by advancing the i/o offset to reflect
         the specified number of bytes having just been read.
         @param    numBytesRead    the number of bytes that were previously read
         */
-        virtual void    finishRead(Vs64 numBytesRead);
+        virtual void    _finishRead(Vs64 numBytesRead);
         /**
         Postflights a copy by advancing the i/o offset to reflect
         the specified number of bytes having just been written.
         @param    numBytesWritten    the number of bytes that were previously written
         */
-        virtual void    finishWrite(Vs64 numBytesWritten);
+        virtual void    _finishWrite(Vs64 numBytesWritten);
         
         VString    mName;    ///< A name for use when debugging stream.
     };

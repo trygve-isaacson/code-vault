@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -16,13 +16,15 @@ http://www.bombaydigital.com/
 #include "vlogger.h"
 #include <algorithm>
 
-VListenerThread::VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, bool initiallyListening)
-: VThread(name, deleteSelfAtEnd, createDetached, manager)
+VListenerThread::VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, bool initiallyListening) :
+VThread(name, deleteSelfAtEnd, createDetached, manager),
+mPortNumber(portNumber),
+mShouldListen(initiallyListening),
+mSocketFactory(socketFactory),
+mThreadFactory(threadFactory)
+// mSocketThreads constructs to empty
+// mSocketThreadsMutex constructs to unlocked
     {
-    mPortNumber = portNumber;
-    mShouldListen = initiallyListening;
-    mSocketFactory = socketFactory;
-    mThreadFactory = threadFactory;
     }
 
 VListenerThread::~VListenerThread()
@@ -43,9 +45,9 @@ void VListenerThread::run()
     while (this->isRunning())
         {
         if (mShouldListen)
-            this->runListening();
+            this->_runListening();
         else
-            VThread::sleepMilliseconds(5000); // this value limits how quickly we can be shut down
+            VThread::sleep(5 * VDuration::SECOND()); // this value limits how quickly we can be shut down
         }
     }
 
@@ -80,7 +82,7 @@ VSocketInfoVector VListenerThread::enumerateActiveSockets()
     return info;
     }
 
-void VListenerThread::stopSocketThread(VSockID sockID, int localPortNumber)
+void VListenerThread::stopSocketThread(VSocketID socketID, int localPortNumber)
     {
     bool                found = false;
     VMutexLocker        locker(&mSocketThreadsMutex);
@@ -90,7 +92,7 @@ void VListenerThread::stopSocketThread(VSockID sockID, int localPortNumber)
         VSocketThread*    thread = mSocketThreads[i];
         VSocket*        socket = thread->socket();
 
-        if ((socket->getSockID() == sockID) &&
+        if ((socket->getSockID() == socketID) &&
             (socket->getPortNumber() == localPortNumber))
             {
             found = true;
@@ -99,7 +101,7 @@ void VListenerThread::stopSocketThread(VSockID sockID, int localPortNumber)
         }
     
     if (! found)
-        throw VException("VListenerThread::stopSocketThread did not find a socket with id %d and port %d.", sockID, localPortNumber);
+        throw VException("VListenerThread::stopSocketThread did not find a socket with id %d and port %d.", socketID, localPortNumber);
     }
 
 void VListenerThread::stopAllSocketThreads()
@@ -114,7 +116,7 @@ void VListenerThread::stopAllSocketThreads()
         }
     }
 
-void VListenerThread::runListening()
+void VListenerThread::_runListening()
     {
     VListenerSocket*    listenerSocket = NULL;
 
@@ -150,7 +152,7 @@ void VListenerThread::runListening()
         {
         mShouldListen = false;
 
-        VString    message("VListenerThread '%s' runListening() caught exception #%d '%s'.", mName.chars(), ex.getError(), ex.what());
+        VString    message("VListenerThread '%s' _runListening() caught exception #%d '%s'.", mName.chars(), ex.getError(), ex.what());
         VLOGGER_ERROR(message);
 
         if (mManager != NULL)
@@ -160,7 +162,7 @@ void VListenerThread::runListening()
         {
         mShouldListen = false;
 
-        VString message("VListenerThread '%s' runListening() caught unknown exception '%s'.", mName.chars());
+        VString message("VListenerThread '%s' _runListening() caught unknown exception '%s'.", mName.chars());
         VLOGGER_ERROR(message);
 
         if (mManager != NULL)

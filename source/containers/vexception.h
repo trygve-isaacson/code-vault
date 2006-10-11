@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -94,6 +94,13 @@ class VException : public std::exception
         */
         VException();
         /**
+        Constructs a copy of another VException. Note that if the mErrorMessage
+        is non-null, both objects will share a (const char*) value, which neither
+        deletes on destruction since it is owned by the caller.
+        @param  other   the exception to copy
+        */
+        VException(const VException& other);
+        /**
         Constructs a VException with error code and static message.
         @param    error            the error code
         @param    errorMessage    a static error message
@@ -127,12 +134,23 @@ class VException : public std::exception
         */
         VException(const VString& errorString);
         /**
-        Destructor.
+        Destructor. The throw() declaration is required to satisfy the
+        base class std::exception definition.
         */
         virtual ~VException() throw();
         
         /**
+        Assignment operator. Note that if the mErrorMessage
+        is non-null, both objects will share a (const char*) value, which neither
+        deletes on destruction since it is owned by the caller.
+        @param  other   the exception to copy
+        */
+        VException& operator=(const VException& other);
+
+        /**
         Override of the base class method for extracting the message.
+        The throw() declaration is required to satisfy the base class std::exception
+        definition.
         @return the error message
         */
         virtual const char* what() const throw();
@@ -143,7 +161,7 @@ class VException : public std::exception
         */
         int            getError() const;
         
-        CLASS_CONST(int, kGenericError, -1);    ///< The default error code.
+        static const int kGenericError = -1;    ///< The default error code.
 
     private:
     
@@ -152,7 +170,7 @@ class VException : public std::exception
         
         /** Called by each ctor to make for a convenient place to set a
         breakpoint that will be hit on any exception. */
-        static void breakpointLocation();
+        static void _breakpointLocation();
 
         int            mError;            ///< The error code.
         VString        mErrorString;    ///< The error string if NOT supplied as const char*.

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -19,9 +19,24 @@ V_STATIC_INIT_TRACE
 
 // VSettingsNode ------------------------------------------------------------------
 
-VSettingsNode::VSettingsNode(VSettingsTag* parent, const VString& name)
-: mParent(parent), mName(name)
+VSettingsNode::VSettingsNode(VSettingsTag* parent, const VString& name) :
+mParent(parent),
+mName(name)
     {
+    }
+
+VSettingsNode::VSettingsNode(const VSettingsNode& other) :
+mParent(other.mParent),
+mName(other.mName)
+    {
+    }
+
+VSettingsNode& VSettingsNode::operator=(const VSettingsNode& other)
+    {
+    mParent = other.mParent;
+    mName = other.mName;
+    
+    return *this;
     }
 
 const VSettingsNode* VSettingsNode::findNode(const VString& path) const
@@ -36,12 +51,12 @@ const VSettingsNode* VSettingsNode::findNode(const VString& path) const
 
     if (theRemainder.isEmpty())
         {
-        VSettingsAttribute*    attribute = this->findAttribute(nextNodeName);
+        VSettingsAttribute*    attribute = this->_findAttribute(nextNodeName);
         if (attribute != NULL)
             return attribute;
         }
 
-    VSettingsTag*    child = this->findChildTag(nextNodeName);
+    VSettingsTag*    child = this->_findChildTag(nextNodeName);
     if (child != NULL)
         return child->findNode(theRemainder);
     else
@@ -230,15 +245,15 @@ void VSettingsNode::add(const VString& path, bool hasValue, const VString& value
     
     if (theRemainder.isEmpty())
         {
-        this->addLeafValue(nextNodeName, hasValue, value);
+        this->_addLeafValue(nextNodeName, hasValue, value);
         }
     else
         {
-        VSettingsTag*    child = this->findChildTag(nextNodeName);
+        VSettingsTag*    child = this->_findChildTag(nextNodeName);
         if (child == NULL)
             {
             // If there's an attribute, need to move it down as a child tag.
-            VSettingsAttribute*    attribute = this->findAttribute(nextNodeName);
+            VSettingsAttribute*    attribute = this->_findAttribute(nextNodeName);
             if (attribute != NULL)
                 {
                 child = new VSettingsTag(dynamic_cast<VSettingsTag*>(this), nextNodeName);
@@ -248,7 +263,7 @@ void VSettingsNode::add(const VString& path, bool hasValue, const VString& value
                 attribute->getStringValue(attributeValue);
                 child->addChildNode(new VSettingsCDATA(dynamic_cast<VSettingsTag*>(this), attributeValue));
 
-                this->removeAttribute(attribute);
+                this->_removeAttribute(attribute);
                 delete attribute;
                 }
             }
@@ -289,12 +304,12 @@ VSettingsTag* VSettingsNode::getParent()
     return mParent;
     }
 
-void VSettingsNode::addLeafValue(const VString& name, bool /*hasValue*/, const VString& value)
+void VSettingsNode::_addLeafValue(const VString& name, bool /*hasValue*/, const VString& value)
     {
     VString    thisPath;
     this->getPath(thisPath);
 
-    throw VException("VSettingsNode::addLeafValue (%s, %s) called for invalid object at '%s'", name.chars(), value.chars(), thisPath.chars());
+    throw VException("VSettingsNode::_addLeafValue (%s, %s) called for invalid object at '%s'", name.chars(), value.chars(), thisPath.chars());
     }
 
 void VSettingsNode::throwNotFound(const VString& dataKind, const VString& missingTrail) const
@@ -309,13 +324,15 @@ const char    VSettingsNode::kPathDelimiterChar = '/';
 
 // VSettings ----------------------------------------------------------------------
 
-VSettings::VSettings()
-: VSettingsNode(NULL, VString::kEmptyString)
+VSettings::VSettings() :
+VSettingsNode(NULL, VString::kEmptyString)
+// mNodes constructs to empty
     {
     }
 
-VSettings::VSettings(VTextIOStream& inputStream)
-: VSettingsNode(NULL, VString::kEmptyString)
+VSettings::VSettings(VTextIOStream& inputStream) :
+VSettingsNode(NULL, VString::kEmptyString)
+// mNodes constructs to empty
     {
     VSettings::readFromStream(inputStream);
     }
@@ -386,7 +403,7 @@ void VSettings::debugPrint()
     
     VSettings::splitPathFirst(path, nextNodeName, theRemainder);
     
-    VSettingsTag*    child = this->findChildTag(nextNodeName);
+    VSettingsTag*    child = this->_findChildTag(nextNodeName);
     if (child != NULL)
         return child->findNode(theRemainder);
     else
@@ -533,7 +550,7 @@ void VSettings::splitPathLast(const VString& path, VString& leadingPath, VString
     path.getSubstring(lastNode, dotLocation + 1);
     }
 
-VSettingsTag* VSettings::findChildTag(const VString& name) const
+VSettingsTag* VSettings::_findChildTag(const VString& name) const
     {
     for (VSizeType i = 0; i < mNodes.size(); ++i)
         if (mNodes[i]->isNamed(name))
@@ -542,7 +559,7 @@ VSettingsTag* VSettings::findChildTag(const VString& name) const
     return NULL;
     }
 
-void VSettings::addLeafValue(const VString& name, bool /*hasValue*/, const VString& value)
+void VSettings::_addLeafValue(const VString& name, bool /*hasValue*/, const VString& value)
     {
     VString    tagName(name);
 
@@ -561,8 +578,10 @@ void VSettings::addLeafValue(const VString& name, bool /*hasValue*/, const VStri
 
 // VSettingsTag ------------------------------------------------------------------
 
-VSettingsTag::VSettingsTag(VSettingsTag* parent, const VString& name)
-: VSettingsNode(parent, name)
+VSettingsTag::VSettingsTag(VSettingsTag* parent, const VString& name) :
+VSettingsNode(parent, name)
+// mAttributes constructs to empty
+// mChildNodes constructs to empty
     {
     }
 
@@ -724,7 +743,7 @@ void VSettingsTag::addChildNode(VSettingsNode* node)
 
 int VSettingsTag::getIntValue() const
     {
-    VSettingsNode*    cdataNode = this->findChildTag("<cdata>");
+    VSettingsNode*    cdataNode = this->_findChildTag("<cdata>");
     
     if (cdataNode != NULL)
         return cdataNode->getIntValue();
@@ -737,7 +756,7 @@ int VSettingsTag::getIntValue() const
 
 bool VSettingsTag::getBooleanValue() const
     {
-    VSettingsNode*    cdataNode = this->findChildTag("<cdata>");
+    VSettingsNode*    cdataNode = this->_findChildTag("<cdata>");
     
     if (cdataNode != NULL)
         return cdataNode->getBooleanValue();
@@ -750,7 +769,7 @@ bool VSettingsTag::getBooleanValue() const
 
 void VSettingsTag::getStringValue(VString& value) const
     {
-    VSettingsNode*    cdataNode = this->findChildTag("<cdata>");
+    VSettingsNode*    cdataNode = this->_findChildTag("<cdata>");
     
     if (cdataNode != NULL)
         cdataNode->getStringValue(value);
@@ -760,7 +779,7 @@ void VSettingsTag::getStringValue(VString& value) const
 
 void VSettingsTag::setLiteral(const VString& value)
     {
-    VSettingsNode*    cdataNode = this->findChildTag("<cdata>");
+    VSettingsNode*    cdataNode = this->_findChildTag("<cdata>");
     
     if (cdataNode != NULL)
         cdataNode->setLiteral(value);
@@ -768,7 +787,7 @@ void VSettingsTag::setLiteral(const VString& value)
         this->throwNotFound("String", "<cdata>");
     }
 
-VSettingsAttribute* VSettingsTag::findAttribute(const VString& name) const
+VSettingsAttribute* VSettingsTag::_findAttribute(const VString& name) const
     {
     for (VSizeType i = 0; i < mAttributes.size(); ++i)
         if (mAttributes[i]->isNamed(name))
@@ -777,7 +796,7 @@ VSettingsAttribute* VSettingsTag::findAttribute(const VString& name) const
     return NULL;
     }
 
-VSettingsTag* VSettingsTag::findChildTag(const VString& name) const
+VSettingsTag* VSettingsTag::_findChildTag(const VString& name) const
     {
     if (name.endsWith(']'))
         {
@@ -801,7 +820,7 @@ VSettingsTag* VSettingsTag::findChildTag(const VString& name) const
     return NULL;
     }
 
-void VSettingsTag::addLeafValue(const VString& name, bool hasValue, const VString& value)
+void VSettingsTag::_addLeafValue(const VString& name, bool hasValue, const VString& value)
     {
     if (hasValue)
         this->addAttribute(new VSettingsAttribute(this, name, value));
@@ -809,7 +828,7 @@ void VSettingsTag::addLeafValue(const VString& name, bool hasValue, const VStrin
         this->addAttribute(new VSettingsAttribute(this, name));
     }
 
-void VSettingsTag::removeAttribute(VSettingsAttribute* attribute)
+void VSettingsTag::_removeAttribute(VSettingsAttribute* attribute)
     {
     for (VSizeType i = 0; i < mAttributes.size(); ++i)
         if (mAttributes[i] == attribute)
@@ -818,16 +837,18 @@ void VSettingsTag::removeAttribute(VSettingsAttribute* attribute)
 
 // VSettingsAttribute ------------------------------------------------------------
 
-VSettingsAttribute::VSettingsAttribute(VSettingsTag* parent, const VString& name, const VString& value)
-: VSettingsNode(parent, name), mValue(value)
+VSettingsAttribute::VSettingsAttribute(VSettingsTag* parent, const VString& name, const VString& value) :
+VSettingsNode(parent, name),
+mHasValue(true),
+mValue(value)
     {
-    mHasValue = true;
     }
 
-VSettingsAttribute::VSettingsAttribute(VSettingsTag* parent, const VString& name)
-: VSettingsNode(parent, name)
+VSettingsAttribute::VSettingsAttribute(VSettingsTag* parent, const VString& name) :
+VSettingsNode(parent, name),
+mHasValue(false)
+// mValue constructs to empty string
     {
-    mHasValue = false;
     }
 
 void VSettingsAttribute::writeToStream(VTextIOStream& outputStream, int /*indentLevel*/)
@@ -872,8 +893,9 @@ bool VSettingsAttribute::hasValue() const
 
 // VSettingsCDATA ------------------------------------------------------------
 
-VSettingsCDATA::VSettingsCDATA(VSettingsTag* parent, const VString& cdata)
-: VSettingsNode(parent, "<cdata>"), mCDATA(cdata)
+VSettingsCDATA::VSettingsCDATA(VSettingsTag* parent, const VString& cdata) :
+VSettingsNode(parent, "<cdata>"),
+mCDATA(cdata)
     {
     }
 
@@ -910,14 +932,17 @@ void VSettingsCDATA::setLiteral(const VString& value)
 
 // VSettingsXMLParser --------------------------------------------------------
 
-VSettingsXMLParser::VSettingsXMLParser(VTextIOStream& inputStream, VSettingsNodePtrVector* nodes)
-: mInputStream(inputStream)
+VSettingsXMLParser::VSettingsXMLParser(VTextIOStream& inputStream, VSettingsNodePtrVector* nodes) :
+mInputStream(inputStream),
+mNodes(nodes),
+// mCurrentLine constructs to empty string
+mCurrentLineNumber(0),
+mCurrentColumnNumber(0),
+mParserState(kReady),
+// mElement constructs to empty string
+mCurrentTag(NULL)
+// mPendingAttributeName constructs to empty string
     {
-    mNodes = nodes;
-    mCurrentLineNumber = 0;
-    mCurrentColumnNumber = 0;
-    mParserState = kReady;
-    mCurrentTag = NULL;
     }
 
 void VSettingsXMLParser::parse()

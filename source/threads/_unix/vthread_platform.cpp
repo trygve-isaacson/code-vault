@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -103,10 +103,11 @@ bool VThread::setPriority(int nice)
     }
 
 // static
-void VThread::sleepMilliseconds(int milliseconds)
+void VThread::sleep(const VDuration& interval)
     {
+    int milliseconds = static_cast<int>(interval.getDurationMilliseconds());
     struct timeval timeout;
-    timeout.tv_sec = milliseconds / 1000;
+    timeout.tv_sec = interval.getDurationSeconds();
     timeout.tv_usec = (milliseconds % 1000) * 1000;
 
     (void) ::select(1, NULL, NULL, NULL, &timeout); // 1 means file descriptor [0], will just timeout
@@ -118,7 +119,7 @@ void VThread::yield()
 #ifdef sun
     // On Solaris there is no yield function.
     // Simulate by sleeping for 1ms. How to improve?
-    VThread::sleepMilliseconds(1);
+    VThread::sleep(VDuration::MILLISECOND());
 #else
     ::sched_yield(); 
 #endif
@@ -165,19 +166,22 @@ bool VSemaphore::semaphoreDestroy(VSemaphore_Type* semaphore)
     }
 
 // static
-bool VSemaphore::semaphoreWait(VSemaphore_Type* semaphore, VMutex_Type* mutex, Vs64 timeoutMilliseconds)
+bool VSemaphore::semaphoreWait(VSemaphore_Type* semaphore, VMutex_Type* mutex, const VDuration& timeoutInterval)
     {
-    if (timeoutMilliseconds == 0)
+    if (timeoutInterval == VDuration::ZERO())
         return (pthread_cond_wait(semaphore, mutex) == 0);
 
+    // The timespec is an absolute time (base is 1970 UTC), not an
+    // offset from the current time.
     VInstant now;
-    Vs64 timeoutWhen = now.getValue() + timeoutMilliseconds;
+    VInstant timeoutWhen = now + timeoutInterval;
+    Vs64     timeoutValue = timeoutWhen.getValue();
     
-    struct timespec    timeoutSpec;
+    struct timespec timeoutSpec;
     
     // Convert milliseconds to seconds.nanoseconds. e.g., 1234ms = 1sec + 234,000,000ns
-    timeoutSpec.tv_sec = (time_t) (timeoutWhen / CONST_S64(1000));
-    timeoutSpec.tv_nsec = (time_t) (CONST_S64(1000000) * (timeoutWhen % CONST_S64(1000)));
+    timeoutSpec.tv_sec = static_cast<time_t>(timeoutValue / CONST_S64(1000));
+    timeoutSpec.tv_nsec = static_cast<time_t>(CONST_S64(1000000) * (timeoutValue % CONST_S64(1000)));
 
     int result = pthread_cond_timedwait(semaphore, mutex, &timeoutSpec);
     

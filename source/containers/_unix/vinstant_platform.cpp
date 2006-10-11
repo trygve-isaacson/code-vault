@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -63,24 +63,24 @@ static void _setInstantStructFromTMStruct(const struct tm& fields, int milliseco
     }
 
 // static
-Vs64 VInstant::platform_now()
+Vs64 VInstant::_platform_now()
     {
 #ifdef V_INSTANT_SNAPSHOT_IS_UTC
 
     // This means we can get millisecond resolution for VInstant values.
-    return VInstant::platform_snapshot();
+    return VInstant::_platform_snapshot();
 
 #else
 
     // This means we can only get second resolution for VInstant values.
     //lint -e418 -e421 "Passing null pointer to function 'time(long *)'"
-    return CONST_S64(1000) * static_cast<Vs64>(::time(NULL));
+    return (CONST_S64(1000) * static_cast<Vs64>(::time(NULL))) + VInstant::gSimulatedClockOffset;
 
 #endif /* V_INSTANT_SNAPSHOT_IS_UTC */
     }
 
 // static
-Vs64 VInstant::platform_offsetFromLocalStruct(const VInstantStruct& when)
+Vs64 VInstant::_platform_offsetFromLocalStruct(const VInstantStruct& when)
     {
     struct tm    fields;
     
@@ -105,7 +105,7 @@ Vs64 VInstant::platform_offsetFromLocalStruct(const VInstantStruct& when)
 // This is like what we have to do on Windows.
 
 // static
-Vs64 VInstant::platform_offsetFromUTCStruct(const VInstantStruct& when)
+Vs64 VInstant::_platform_offsetFromUTCStruct(const VInstantStruct& when)
     {
     struct tm    fields;
 
@@ -145,7 +145,7 @@ Vs64 VInstant::platform_offsetFromUTCStruct(const VInstantStruct& when)
 #else
 
 // static
-Vs64 VInstant::platform_offsetFromUTCStruct(const VInstantStruct& when)
+Vs64 VInstant::_platform_offsetFromUTCStruct(const VInstantStruct& when)
     {
     struct tm    fields;
 
@@ -163,7 +163,7 @@ Vs64 VInstant::platform_offsetFromUTCStruct(const VInstantStruct& when)
 #endif
 
 // static
-void VInstant::platform_offsetToLocalStruct(Vs64 offset, VInstantStruct& when)
+void VInstant::_platform_offsetToLocalStruct(Vs64 offset, VInstantStruct& when)
     {
     struct tm    fields;
     ::memset(&fields, 0, sizeof(fields));
@@ -178,7 +178,7 @@ void VInstant::platform_offsetToLocalStruct(Vs64 offset, VInstantStruct& when)
     }
 
 // static
-void VInstant::platform_offsetToUTCStruct(Vs64 offset, VInstantStruct& when)
+void VInstant::_platform_offsetToUTCStruct(Vs64 offset, VInstantStruct& when)
     {
     struct tm    fields;
     ::memset(&fields, 0, sizeof(fields));
@@ -189,12 +189,12 @@ void VInstant::platform_offsetToUTCStruct(Vs64 offset, VInstantStruct& when)
     }
 
 // static
-Vs64 VInstant::platform_snapshot()
+Vs64 VInstant::_platform_snapshot()
     {
     struct timeval tv;
     (void) ::gettimeofday(&tv, NULL);
     
     // We need to be careful to cast to Vs64 or we risk truncation to 32 bits.
-    return (((Vs64) (tv.tv_sec)) * CONST_S64(1000)) + (Vs64) (tv.tv_usec / 1000);
+    return (((Vs64) (tv.tv_sec)) * CONST_S64(1000)) + (Vs64) (tv.tv_usec / 1000) + VInstant::gSimulatedClockOffset;
     }
 

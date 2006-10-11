@@ -1,44 +1,61 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
 /** @file */
 
-#include "vfilestream.h"
+#include "vdirectiofilestream.h"
 
 #include "vexception.h"
 
-#define READ_ONLY_MODE                (O_RDONLY | O_BINARY)
-#define READWRITE_MODE                (O_RDWR | O_CREAT | O_BINARY)
-#define WRITE_CREATE_MODE            (O_WRONLY | O_CREAT | O_BINARY)
-#define OPEN_CREATE_PERMISSIONS        (S_IRWXO | S_IRWXG | S_IRWXU)
+#define READ_ONLY_MODE          (O_RDONLY | O_BINARY)
+#define READWRITE_MODE          (O_RDWR | O_CREAT | O_BINARY)
+#define WRITE_CREATE_MODE       (O_WRONLY | O_CREAT | O_TRUNC | O_BINARY) // Added O_TRUNC which should zero the file upon creation/opening
+#define OPEN_CREATE_PERMISSIONS (S_IRWXO | S_IRWXG | S_IRWXU)
 
-VFileStream::VFileStream()
-: mFile(-1)
+VDirectIOFileStream::VDirectIOFileStream() :
+VAbstractFileStream(),
+mFile(-1),
+mCloseOnDestruct(true)
     {
     }
 
-VFileStream::VFileStream(const VFSNode& node)
-: mNode(node), mFile(-1)
+VDirectIOFileStream::VDirectIOFileStream(const VFSNode& node) :
+VAbstractFileStream(node),
+mFile(-1),
+mCloseOnDestruct(true)
     {
-    node.getName(mName);
     }
 
-VFileStream::~VFileStream()
+VDirectIOFileStream::VDirectIOFileStream(int fd, bool closeOnDestruct) :
+VAbstractFileStream(),
+mFile(fd),
+mCloseOnDestruct(closeOnDestruct)
     {
-    VFileStream::close();
     }
 
-void VFileStream::openReadOnly()
+VDirectIOFileStream::~VDirectIOFileStream()
     {
-    mFile = VFileStream::threadsafe_open(mNode.path(), READ_ONLY_MODE);
+    if (mCloseOnDestruct)
+        VDirectIOFileStream::close();
+    }
+
+void VDirectIOFileStream::setFile(int fd, bool closeOnDestruct)
+    {
+    mFile = fd;
+    mCloseOnDestruct = closeOnDestruct;
+    }
+
+void VDirectIOFileStream::openReadOnly()
+    {
+    mFile = VDirectIOFileStream::_wrap_open(mNode.getPath(), READ_ONLY_MODE);
     
-    this->throwIfOpenFailed("VFileStream::openReadOnly", mNode.path());
+    this->_throwIfOpenFailed("VDirectIOFileStream::openReadOnly", mNode.getPath());
     }
 
-void VFileStream::openReadWrite()
+void VDirectIOFileStream::openReadWrite()
     {
     /*
     The semantics of ::fopen() and ::open() run counter to the normal desire
@@ -47,49 +64,33 @@ void VFileStream::openReadWrite()
     existence first, and then open it exactly the way we intend.
     */
 
-    mFile = VFileStream::threadsafe_open(mNode.path(), mNode.exists() ? READWRITE_MODE : WRITE_CREATE_MODE);
+    mFile = VDirectIOFileStream::_wrap_open(mNode.getPath(), mNode.exists() ? READWRITE_MODE : WRITE_CREATE_MODE);
     
-    this->throwIfOpenFailed("VFileStream::openReadWrite", mNode.path());
+    this->_throwIfOpenFailed("VDirectIOFileStream::openReadWrite", mNode.getPath());
     }
 
-void VFileStream::openWrite()
+void VDirectIOFileStream::openWrite()
     {
-    mFile = VFileStream::threadsafe_open(mNode.path(), WRITE_CREATE_MODE);
+    mFile = VDirectIOFileStream::_wrap_open(mNode.getPath(), WRITE_CREATE_MODE);
     
-    this->throwIfOpenFailed("VFileStream::openWrite", mNode.path());
+    this->_throwIfOpenFailed("VDirectIOFileStream::openWrite", mNode.getPath());
     }
 
-void VFileStream::setNode(const VFSNode& node)
-    {
-    VString    path;
-    
-    node.getPath(path);
-    mNode.setPath(path);
-
-    node.getName(mName);
-    }
-
-const VFSNode& VFileStream::getNode() const
-    {
-    return mNode;
-    }
-
-
-bool VFileStream::isOpen() const
+bool VDirectIOFileStream::isOpen() const
     {
     return (mFile != -1);
     }
 
-void VFileStream::close()
+void VDirectIOFileStream::close()
     {
     if (this->isOpen())
         {
-        (void) VFileStream::threadsafe_close(mFile);
+        (void) VDirectIOFileStream::_wrap_close(mFile);
         mFile = -1;
         }
     }
 
-Vs64 VFileStream::read(Vu8* targetBuffer, Vs64 numBytesToRead)
+Vs64 VDirectIOFileStream::read(Vu8* targetBuffer, Vs64 numBytesToRead)
     {
     /*
     Most of the work here is to deal with the fact that we are providing
@@ -118,7 +119,7 @@ Vs64 VFileStream::read(Vu8* targetBuffer, Vs64 numBytesToRead)
             requestCount = static_cast<size_t> (numBytesRemaining);
             }
 
-        actualCount = static_cast<size_t> (VFileStream::threadsafe_read(mFile, targetBuffer + numBytesRead, requestCount));
+        actualCount = static_cast<size_t> (VDirectIOFileStream::_wrap_read(mFile, targetBuffer + numBytesRead, requestCount));
 
         numBytesRead += actualCount;
         numBytesRemaining -= actualCount;
@@ -128,7 +129,7 @@ Vs64 VFileStream::read(Vu8* targetBuffer, Vs64 numBytesToRead)
     return numBytesRead;
     }
 
-Vs64 VFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite)
+Vs64 VDirectIOFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite)
     {
     /*
     Most of the work here is to deal with the fact that we are providing
@@ -157,7 +158,7 @@ Vs64 VFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite)
             requestCount = static_cast<size_t> (numBytesRemaining);
             }
 
-        actualCount = static_cast<size_t> (VFileStream::threadsafe_write(mFile, buffer + numBytesWritten, requestCount));
+        actualCount = static_cast<size_t> (VDirectIOFileStream::_wrap_write(mFile, buffer + numBytesWritten, requestCount));
 
         numBytesWritten += actualCount;
         numBytesRemaining -= actualCount;
@@ -169,18 +170,18 @@ Vs64 VFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite)
         VString    path;
         mNode.getPath(path);
 
-        throw VException(errno, "VFileStream::write to '%s' only wrote %lld of %lld requested bytes.", path.chars(), numBytesWritten, numBytesToWrite);
+        throw VException(errno, "VDirectIOFileStream::write to '%s' only wrote %lld of %lld requested bytes.", path.chars(), numBytesWritten, numBytesToWrite);
         }
 
     return numBytesWritten;
     }
 
-void VFileStream::flush()
+void VDirectIOFileStream::flush()
     {
     // Unbuffered file writes have no flush mechanism since they are not buffered.
     }
 
-bool VFileStream::skip(Vs64 numBytesToSkip)
+bool VDirectIOFileStream::skip(Vs64 numBytesToSkip)
     {
     /*
     Most of the work here is to deal with the fact that we are providing
@@ -197,7 +198,7 @@ bool VFileStream::skip(Vs64 numBytesToSkip)
     
     // FIXME: If needsSizeConversion is false, just do a seek w/o the excess baggage here.
     // Also, we can set it to false if the actual size fits in 31 bits, as in VStream::copyMemory.
-    // FIXME: This calls VFileStream::seek below, which is not as savvy as this--should it be?
+    // FIXME: This calls VDirectIOFileStream::seek below, which is not as savvy as this--should it be?
     do
         {
         if (needsSizeConversion)
@@ -218,33 +219,27 @@ bool VFileStream::skip(Vs64 numBytesToSkip)
     return success;
     }
 
-bool VFileStream::seek(Vs64 inOffset, int whence)
+bool VDirectIOFileStream::seek(Vs64 inOffset, int whence)
     {
     // FIXME: need to deal with Vs64-to-off_t conversion
-    return (VFileStream::threadsafe_lseek(mFile, static_cast<off_t> (inOffset), whence) == 0);
+    return (VDirectIOFileStream::_wrap_lseek(mFile, static_cast<off_t> (inOffset), whence) == 0);
     }
 
-Vs64 VFileStream::offset() const
+Vs64 VDirectIOFileStream::offset() const
     {
-    return VFileStream::threadsafe_lseek(mFile, static_cast<off_t> (0), SEEK_CUR);
+    return VDirectIOFileStream::_wrap_lseek(mFile, static_cast<off_t> (0), SEEK_CUR);
     }
 
-Vs64 VFileStream::available() const
+Vs64 VDirectIOFileStream::available() const
     {
     Vs64    currentOffset = this->offset();
     Vs64    eofOffset;
     
-    const_cast<VFileStream*>(this)->seek(0, SEEK_END);
+    const_cast<VDirectIOFileStream*>(this)->seek(0, SEEK_END);
     eofOffset = this->offset();
-    const_cast<VFileStream*>(this)->seek(currentOffset, SEEK_SET);    // restore original position
+    const_cast<VDirectIOFileStream*>(this)->seek(currentOffset, SEEK_SET);    // restore original position
     
     return eofOffset - currentOffset;
-    }
-
-void VFileStream::throwIfOpenFailed(const VString& failedMethod, const VString& path)
-    {
-    if (! this->isOpen())
-        throw VException(errno, "%s failed to open '%s'. Error %d (%s).", failedMethod.chars(), path.chars(), errno, ::strerror(errno));
     }
 
 // This a useful place to put a breakpoint when things aren't going as planned.
@@ -259,7 +254,7 @@ static void _debugCheck(bool success)
     }
 
 // static
-int VFileStream::threadsafe_open(const char* path, int flags)
+int VDirectIOFileStream::_wrap_open(const char* path, int flags)
     {
     if ((path == NULL) || (path[0] == 0))
         return -1;
@@ -284,14 +279,14 @@ int VFileStream::threadsafe_open(const char* path, int flags)
     }
 
 // static
-ssize_t VFileStream::threadsafe_read(int fd, void* buffer, size_t numBytes)
+ssize_t VDirectIOFileStream::_wrap_read(int fd, void* buffer, size_t numBytes)
     {
     ssize_t    result;
     bool    done = false;
 
     while (! done)
         {
-		result = vault::read(fd, buffer, numBytes);
+        result = vault::read(fd, buffer, numBytes);
         
         if ((result != (ssize_t) -1) || (errno != EINTR))
             done = true;
@@ -303,14 +298,14 @@ ssize_t VFileStream::threadsafe_read(int fd, void* buffer, size_t numBytes)
     }
 
 // static
-ssize_t VFileStream::threadsafe_write(int fd, const void* buffer, size_t numBytes)
+ssize_t VDirectIOFileStream::_wrap_write(int fd, const void* buffer, size_t numBytes)
     {
     ssize_t    result;
     bool    done = false;
 
     while (! done)
         {
-		result = vault::write(fd, buffer, numBytes);
+        result = vault::write(fd, buffer, numBytes);
         
         if ((result != (ssize_t) -1) || (errno != EINTR))
             done = true;
@@ -322,14 +317,14 @@ ssize_t VFileStream::threadsafe_write(int fd, const void* buffer, size_t numByte
     }
 
 // static
-off_t VFileStream::threadsafe_lseek(int fd, off_t inOffset, int whence)
+off_t VDirectIOFileStream::_wrap_lseek(int fd, off_t inOffset, int whence)
     {
     off_t    result;
     bool    done = false;
 
     while (! done)
         {
-		result = vault::lseek(fd, inOffset, whence);
+        result = vault::lseek(fd, inOffset, whence);
         
         if ((result != (off_t) -1) || (errno != EINTR))
             done = true;
@@ -341,14 +336,14 @@ off_t VFileStream::threadsafe_lseek(int fd, off_t inOffset, int whence)
     }
 
 // static
-int VFileStream::threadsafe_close(int fd)
+int VDirectIOFileStream::_wrap_close(int fd)
     {
     int        result;
     bool    done = false;
 
     while (! done)
         {
-		result = vault::close(fd);
+        result = vault::close(fd);
         
         if ((result == 0) || (errno != EINTR))
             done = true;

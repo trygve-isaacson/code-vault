@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -11,11 +11,12 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vsocketfactory.h"
 
-VListenerSocket::VListenerSocket(int portNumber, VSocketFactory* factory, int backlog)
-: VSocket()
+VListenerSocket::VListenerSocket(int portNumber, VSocketFactory* factory, int backlog) :
+VSocket(),
+mFactory(factory)
     {
+    // Initialize fields of base classes.
     mPortNumber = portNumber;
-    mFactory = factory;
     mListenBacklog = backlog;
 
     /*
@@ -38,14 +39,14 @@ VListenerSocket::~VListenerSocket()
         
 VSocket* VListenerSocket::accept()
     {
-    if (mSockID == kNoSockID)
+    if (mSocketID == kNoSocketID)
         {
         throw VException("VListenerSocket::accept called before socket is listening.");
         }
 
     struct sockaddr_in    clientaddr;
     VSocklenT        clientaddrLength = sizeof(clientaddr);
-    VSockID            handlerSockID = kNoSockID;
+    VSocketID            handlerSockID = kNoSocketID;
     VSocket*        handlerSocket = NULL;
     bool            shouldAccept = true;
     int                result = -1;
@@ -58,9 +59,9 @@ VSocket* VListenerSocket::accept()
 
         FD_ZERO(&readset);
         //lint -e573 Signed-unsigned mix with divide"
-        FD_SET(mSockID, &readset);
+        FD_SET(mSocketID, &readset);
 
-        result = ::select(static_cast<int>(mSockID + 1), &readset, NULL, NULL, &timeout);
+        result = ::select(static_cast<int>(mSocketID + 1), &readset, NULL, NULL, &timeout);
 
         if (result == -1)
             {
@@ -68,13 +69,13 @@ VSocket* VListenerSocket::accept()
             }
 
         //lint -e573 Signed-unsigned mix with divide"
-        shouldAccept = ((result > 0) && FD_ISSET(mSockID, &readset));
+        shouldAccept = ((result > 0) && FD_ISSET(mSocketID, &readset));
         }
 
     if (shouldAccept)
         {
         ::memset(&clientaddr, 0, static_cast<Vu32> (clientaddrLength));
-        handlerSockID = ::accept(mSockID, (struct sockaddr*) &clientaddr, &clientaddrLength);
+        handlerSockID = ::accept(mSocketID, (struct sockaddr*) &clientaddr, &clientaddrLength);
         
         if (handlerSockID < 0)
             {

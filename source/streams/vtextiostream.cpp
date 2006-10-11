@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -11,14 +11,14 @@ http://www.bombaydigital.com/
 #include "vchar.h"
 #include "vexception.h"
 
-VTextIOStream::VTextIOStream(VStream& rawStream, int lineEndingsWriteKind)
-: VIOStream(rawStream)
+VTextIOStream::VTextIOStream(VStream& rawStream, int lineEndingsWriteKind) :
+VIOStream(rawStream),
+mLineEndingsReadKind(kLineEndingsUnknown),
+mLineEndingsWriteKind(lineEndingsWriteKind),
+mPendingCharacter(0),
+mReadState(kReadStateReady)
     {
-    mLineBuffer.preflight(80);
-    mLineEndingsReadKind = kLineEndingsUnknown;
-    mLineEndingsWriteKind = lineEndingsWriteKind;
-    mPendingCharacter = 0;
-    mReadState = kReadStateReady;
+    mLineBuffer.preflight(80); // allocate a reasonable buffer size up front to avoid repeated re-allocation
     
     ASSERT_INVARIANT();
     }
@@ -73,7 +73,7 @@ void VTextIOStream::readLine(VString& s, bool includeLineEnding)
                     
                     done = true;    // done, bail out and return the string
                     
-                    this->updateLineEndingsReadKind(kLineEndingsUnix);
+                    this->_updateLineEndingsReadKind(kLineEndingsUnix);
                     }
                 else if (c == 0x0D)    // found a Mac line end, or 1st byte of a DOS line end
                     {
@@ -99,7 +99,7 @@ void VTextIOStream::readLine(VString& s, bool includeLineEnding)
                     mReadState = kReadStateReady;
                     done = true;    // done, bail out and return the string
 
-                    this->updateLineEndingsReadKind(kLineEndingsDOS);
+                    this->_updateLineEndingsReadKind(kLineEndingsDOS);
                     }
                 else    // found a normal character, so we have a Mac line end pending
                     {
@@ -111,7 +111,7 @@ void VTextIOStream::readLine(VString& s, bool includeLineEnding)
                     mReadState = kReadStateReady;
                     done = true;
 
-                    this->updateLineEndingsReadKind(kLineEndingsMac);
+                    this->_updateLineEndingsReadKind(kLineEndingsMac);
                     }
 
                 break;
@@ -126,7 +126,7 @@ void VTextIOStream::readLine(VString& s, bool includeLineEnding)
 
 VChar VTextIOStream::readCharacter()
     {
-    char    c;
+    char c;
     
     this->readGuaranteed(reinterpret_cast<Vu8*> (&c), 1);
 
@@ -139,32 +139,27 @@ void VTextIOStream::writeLine(const VString& s)
 
     (void) this->write(reinterpret_cast<Vu8*> (s.chars()), static_cast<Vs64> (s.length()));
     
-    int        numBytes = 0;
-    char    lineEnding[2];
+    Vu8 lineEnding[2]; // used if specific value is set below
+    int lineEndingLength = 0;
+    const Vu8* lineEndingChars = lineEnding;
     
     switch (mLineEndingsWriteKind)
         {
         case kUseUnixLineEndings:
-#ifdef VPLATFORM_UNIX
-        case kUseNativeLineEndings:
-#endif
-#ifdef VPLATFORM_MAC
-        case kUseNativeLineEndings:    // On Mac OS X, it's usually best to treat Unix as native default text file type. You can explicitly specify kUseMacLineEndings if desired.
-#endif
             lineEnding[0] = 0x0A;
-            numBytes = 1;
+            lineEndingLength = 1;
             break;
         case kUseDOSLineEndings:
-#ifdef VPLATFORM_WIN
-        case kUseNativeLineEndings:
-#endif
             lineEnding[0] = 0x0D;
             lineEnding[1] = 0x0A;
-            numBytes = 2;
+            lineEndingLength = 2;
             break;
         case kUseMacLineEndings:
             lineEnding[0] = 0x0D;
-            numBytes = 1;
+            lineEndingLength = 1;
+            break;
+        case kUseNativeLineEndings:
+            lineEndingChars = vault::VgetNativeLineEnding(lineEndingLength);
             break;
         case kUseSuppliedLineEndings:
             // line ending was supplied by caller and already written
@@ -174,8 +169,8 @@ void VTextIOStream::writeLine(const VString& s)
             break;
         }
     
-    if (numBytes != 0)
-        (void) this->write(reinterpret_cast<Vu8*> (lineEnding), static_cast<Vs64> (numBytes));
+    if (lineEndingLength != 0)
+        (void) this->write(lineEndingChars, static_cast<Vs64>(lineEndingLength));
 
     ASSERT_INVARIANT();
     }
@@ -199,7 +194,7 @@ void VTextIOStream::assertInvariant() const
     V_ASSERT(mReadState < kNumReadStates);
     }
 
-void VTextIOStream::updateLineEndingsReadKind(int lineEndingKind)
+void VTextIOStream::_updateLineEndingsReadKind(int lineEndingKind)
     {
     switch (mLineEndingsReadKind)
         {
@@ -287,7 +282,7 @@ void VTextIOStream::updateLineEndingsReadKind(int lineEndingKind)
 
     }
 
-int VTextIOStream::lineEndingsReadKindForWrite() const
+int VTextIOStream::getLineEndingsReadKindForWrite() const
     {
     int    writeKind = kUseNativeLineEndings;
 

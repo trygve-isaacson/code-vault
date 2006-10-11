@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -10,16 +10,6 @@ http://www.bombaydigital.com/
 /** @file */
 
 #include "vstring.h"
-#include <fcntl.h>
-
-class VInstant;
-class VFSNode;
-
-/**
-VFSNodeVector is simply a vector of VFSNode objects. Note that the vector
-elements are objects, not pointers to objects.
-*/
-typedef std::vector<VFSNode> VFSNodeVector;
 
 /**
 
@@ -76,10 +66,41 @@ typedef std::vector<VFSNode> VFSNodeVector;
 */
 
 /**
+VFSNodeInfo holds file system information about a node, and
+is used internally by VFSNode and its platform-specific helper
+functions. We define the time fields using a raw Vs64 value
+(millisecond offset from 1970 UTC) rather than a VInstant
+object so that there is zero overhead in constructing one of
+these.
+*/
+class VFSNodeInfo
+    {
+    public:
+    
+        VFSNodeInfo();
+        ~VFSNodeInfo() {}
+
+        Vs64    mCreationDate;      // a VInstant offset value
+        Vs64    mModificationDate;  // a VInstant offset value
+        VFSize  mFileSize;
+        bool    mIsFile;
+        bool    mIsDirectory;
+        int     mErrNo; // the value of errno if call failed, 0 otherwise
+    };
+
+
+class VInstant;
+class VFSNode;
+
+/**
+VFSNodeVector is simply a vector of VFSNode objects. Note that the vector
+elements are objects, not pointers to objects.
+*/
+typedef std::vector<VFSNode> VFSNodeVector;
+
+/**
 A VFSNode represents a file or directory in the file system, whether it
 actually exists or not, and provides some methods for operating on it.
-
-
 */
 class VFSNode
     {
@@ -93,15 +114,15 @@ class VFSNode
         before supplying it to VFSNode. Note that this facility does
         not allow DOS style "drive letters" but is designed to handle
         relative DOS paths.
-        @param    inPath    a string containing a platform-specific path,
+        @param    path    a string containing a platform-specific path,
                         which will be modified in place into normalized form
         */
-        static void normalizePath(VString& inPath);
+        static void normalizePath(VString& path);
         /**
         The reverse of normalizePath -- takes a normalized path and undoes
         the normalization, turning it into a platform-specific path.
         */
-        static void denormalizePath(VString& inPath);
+        static void denormalizePath(VString& path);
     
         /**
         Constructs an undefined VFSNode object (you will have to set its path
@@ -110,29 +131,35 @@ class VFSNode
         VFSNode();
         /**
         Constructs a VFSNode with a path.
-        @param    outPath    the path of the file or directory
+        @param    path    the path of the file or directory
         */
-        VFSNode(const VString& outPath);
+        VFSNode(const VString& path);
         /**
         Destructor.
         */
         virtual ~VFSNode() {}
+
+        /**
+        Assignment operator.
+        @param  other   the node to copy
+        */
+        VFSNode& operator=(const VFSNode& other);
         
         /**
         Specifies the path of the node.
         @param    path    the path of the file or directory
         */
-        void setPath(const VString& inPath);
+        void setPath(const VString& path);
         /**
         Gets the path of the node.
         @param    path    the string to set
         */
-        void getPath(VString& outPath) const;
+        void getPath(VString& path) const;
         /**
         Returns a reference to the node's path.
         @return    the path
         */
-        const VString& path() const;
+        const VString& getPath() const;
         /**
         Returns the node's name, without any directory path information.
         That is, the file or directory name, only.
@@ -191,15 +218,32 @@ class VFSNode
         */
         bool exists() const;
         /**
-        Returns true if the node is a directory.
-        @return true if the node is a directory, false if not
+        Returns the node's creation date.
+        @return    the node's creation date
         */
-        bool isDirectory() const;
+        VInstant creationDate() const;
+        /**
+        Returns the node's modification date.
+        @return    the node's modification date
+        */
+        VInstant modificationDate() const;
+        /**
+        Returns the file node's size (must be a file node). Throws a
+        VException if the node is not a file or does not exist.
+        @return    the file size
+        */
+        VFSize size() const;
         /**
         Returns true if the node is a file.
         @return true if the node is a file, false if not
         */
         bool isFile() const;
+        /**
+        Returns true if the node is a directory.
+        @return true if the node is a directory, false if not
+        */
+        bool isDirectory() const;
+
         /**
         Renames the node by specifying its new path; this could include
         changing its directory location. This function does NOT update
@@ -255,31 +299,64 @@ class VFSNode
         */
         void list(VFSNodeVector& children) const;
         
-        /**
-        Returns the file node's size (must be a file node). Throws a
-        VException if the node is not a file or does not exist.
-        @return    the file size
-        */
-        VFSize size() const;
-        /**
-        Returns the node's modification date.
-        @return    the node's modification date
-        */
-        VInstant modificationDate() const;
-        /**
-        Returns the node's creation date.
-        @return    the node's creation date
-        */
-        VInstant creationDate() const;
-
     private:
     
+        // These are the key functions that typically peculiar to each platform,
+        // and are implemented in the platform-specific vfsnode_platform.cpp
+        // files.
+
         /**
-        Calls the low-level stat() function.
-        @param    statData    a stat struct to hold the results
-        @return true if the call succeeded (false implies the node does not exist)
+        Converts a path string from the platform native form into "normalized"
+        form. The normalized form uses forward slash '/' to separate segments
+        in the path. On Unix, there's nothing to do because it is the normalized
+        form, but on Windows, we must convert backslash to slash, etc.
+        @param path the path string to be modified
         */
-        bool stat(struct stat& statData) const;
+        static void _platform_normalizePath(VString& path);
+        /**
+        Converts a path string from "normalized" form into the platform native
+        form.
+        @param path the path string to be modified
+        */
+        static void _platform_denormalizePath(VString& path);
+        /**
+        Fills out a VFSNodeInfo structure to describe this node as it actually
+        exists in the file system. If the node does not exist or if the attempt
+        to obtain its state fails, the result is false, info.mErrNo may contain
+        a system error number, and all other fields are unmodified.
+        @param info the structure to fill out
+        @return false if the call failed or the node does not exist, true if
+                the call succeeded and the node exists
+        */
+        bool _platform_getNodeInfo(VFSNodeInfo& info) const;
+        /**
+        Creates a directory at this node location.
+        @throw VException if the operation fails
+        */
+        void _platform_createDirectory() const;
+        /**
+        Removes the directory at this node location.
+        @return false if unable to remove the directory (this may include the
+                case where the directory does not exist, which is a benign
+                error and is why we return a boolean you can ignore rather
+                than throwing an exception)
+        */
+        bool _platform_removeDirectory() const;
+        /**
+        Removes the file at this node location.
+        @return false if unable to remove the file (this may include the
+                case where the file does not exist, which is a benign
+                error and is why we return a boolean you can ignore rather
+                than throwing an exception)
+        */
+        bool _platform_removeFile() const;
+        /**
+        Renames the file or directory at this node location.
+        @param newName the new name of the node (just the name, does not
+                include the path or parent directory's information)
+        */
+        void _platform_renameNode(const VString& newName) const;
+
         /**
         This function is called internally by the list() methods, so that
         the iteration code does not have to be implemented twice.
@@ -288,13 +365,17 @@ class VFSNode
         @param    useNames    true if the childNames will be filled in, false if not
         @param    useNames    true if the childNodes will be filled in, false if not
         */
-        void listImplementation(VStringVector& childNames, VFSNodeVector& childNodes, bool useNames, bool useNodes) const;
+        void _platform_getDirectoryList(VStringVector& childNames, VFSNodeVector& childNodes, bool useNames, bool useNodes) const;
     
-        static int    threadsafe_mkdir(const char* inPath, mode_t mode);                ///< Calls POSIX mkdir in a way that is safe even if interrupted by another thread.
-        static int    threadsafe_rename(const char* oldName, const char* newName);    ///< Calls POSIX rename in a way that is safe even if interrupted by another thread.
-        static int    threadsafe_stat(const char* inPath, struct stat* statData);        ///< Calls POSIX stat in a way that is safe even if interrupted by another thread.
-        static int    threadsafe_unlink(const char* inPath);                            ///< Calls POSIX unlink in a way that is safe even if interrupted by another thread.
-        static int    threadsafe_rmdir(const char* inPath);                                ///< Calls POSIX rmdir in a way that is safe even if interrupted by another thread.
+        // These static functions wrap the raw POSIX functions in order to
+        // make them work correctly even if a signal is caught inside the
+        // function. These functions can be called from the platform-specific
+        // implementation if appropriate.
+        static int _wrap_mkdir(const char* path, mode_t mode);             ///< Calls POSIX mkdir in a way that is safe even if a signal is caught inside the function.
+        static int _wrap_rename(const char* oldName, const char* newName); ///< Calls POSIX rename in a way that is safe even if a signal is caught inside the function.
+        static int _wrap_stat(const char* path, struct stat* statData);    ///< Calls POSIX stat in a way that is safe even if a signal is caught inside the function.
+        static int _wrap_unlink(const char* path);                         ///< Calls POSIX unlink in a way that is safe even if a signal is caught inside the function.
+        static int _wrap_rmdir(const char* path);                          ///< Calls POSIX rmdir in a way that is safe even if a signal is caught inside the function.
         
         VString    mPath;    ///< The node's path.
 

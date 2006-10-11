@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -44,10 +44,10 @@ class VSemaphore
         Waits until the semaphore is signaled by another thread.
         @param    ownedMutex    the mutex that the caller has already
                             acquired the lock for
-        @param    timeoutMilliseconds    zero for no timeout; otherwise, the number of
-                            milliseconds after which to timeout
+        @param    timeoutInterval    zero for no timeout; otherwise, the amount
+                            of time after which to timeout
         */
-        void wait(VMutex* ownedMutex, Vs64 timeoutMilliseconds=0);
+        void wait(VMutex* ownedMutex, const VDuration& timeoutInterval);
         /**
         Signals the semaphore; if one or more other threads is waiting on
         the semaphore, exactly one of them will become unblocked by its
@@ -84,11 +84,11 @@ class VSemaphore
         @param    mutex        pointer to a locked platform mutex that the calling
                             thread had acquired; this function unlocks it while
                             waiting and locks it upon return
-        @param    timeoutMilliseconds    zero for no timeout; otherwise, the number of
-                            milliseconds after which to timeout
+        @param    timeoutInterval    zero for no timeout; otherwise, the interval after
+                            which to timeout
         @return true on success; false on failure; timeout is considered success
         */
-        static bool semaphoreWait(VSemaphore_Type* semaphore, VMutex_Type* mutex, Vs64 timeoutMilliseconds);
+        static bool semaphoreWait(VSemaphore_Type* semaphore, VMutex_Type* mutex, const VDuration& timeoutInterval);
 
         /**
         Signals the platform semaphore value.
@@ -109,7 +109,7 @@ class VSemaphore
 
     protected:
     
-        VSemaphore_Type    mSemaphore;        ///< The OS semaphore handle.
+        VSemaphore_Type mSemaphore; ///< The OS semaphore handle.
     };
 
 #endif /* vsemaphore_h */

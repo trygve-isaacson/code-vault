@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -11,11 +11,12 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 
 VStream::VStream()
+// mName constructs to empty string
     {
     }
 
-VStream::VStream(const VString& name)
-: mName(name)
+VStream::VStream(const VString& name) :
+mName(name)
     {
     }
 
@@ -36,8 +37,8 @@ Vs64 /*VStream::*/streamCopy(VStream& fromStream, VStream& toStream, Vs64 numByt
     First we figure out which (if either) of the streams can give us a buffer
     pointer. Either or both of these may be NULL.
     */
-    Vu8*    fromBuffer = fromStream.getReadIOPtr();
-    Vu8*    toBuffer = toStream.getWriteIOPtr();
+    Vu8*    fromBuffer = fromStream._getReadIOPtr();
+    Vu8*    toBuffer = toStream._getWriteIOPtr();
     
     /*
     If the source stream gave us a buffer to read from, we have to ask it
@@ -45,7 +46,7 @@ Vs64 /*VStream::*/streamCopy(VStream& fromStream, VStream& toStream, Vs64 numByt
     copying.
     */
     if (fromBuffer != NULL)
-        numBytesToCopy = fromStream.prepareToRead(numBytesToCopy);
+        numBytesToCopy = fromStream._prepareToRead(numBytesToCopy);
     
     /*
     If the target stream gave us a buffer to write to, we have to ask it
@@ -54,8 +55,8 @@ Vs64 /*VStream::*/streamCopy(VStream& fromStream, VStream& toStream, Vs64 numByt
     */
     if (toBuffer != NULL)
         {
-        toStream.prepareToWrite(numBytesToCopy);
-        toBuffer = toStream.getWriteIOPtr();
+        toStream._prepareToWrite(numBytesToCopy);
+        toBuffer = toStream._getWriteIOPtr();
         }
 
     /*
@@ -67,13 +68,13 @@ Vs64 /*VStream::*/streamCopy(VStream& fromStream, VStream& toStream, Vs64 numByt
         {
         // stream-to-buffer copy
         numBytesCopied = fromStream.read(toBuffer, numBytesToCopy);
-        toStream.finishWrite(numBytesCopied);
+        toStream._finishWrite(numBytesCopied);
         }
     else if ((fromBuffer != NULL) && (toBuffer == NULL))
         {
         // buffer-to-stream copy
         numBytesCopied = toStream.write(fromBuffer, numBytesToCopy);
-        fromStream.finishRead(numBytesCopied);
+        fromStream._finishRead(numBytesCopied);
         }
     else if ((fromBuffer != NULL) && (toBuffer != NULL))
         {
@@ -81,8 +82,8 @@ Vs64 /*VStream::*/streamCopy(VStream& fromStream, VStream& toStream, Vs64 numByt
         VStream::copyMemory(toBuffer, fromBuffer, numBytesToCopy);
         numBytesCopied = numBytesToCopy;
 
-        fromStream.finishRead(numBytesCopied);
-        toStream.finishWrite(numBytesCopied);
+        fromStream._finishRead(numBytesCopied);
+        toStream._finishWrite(numBytesCopied);
         }
     else
         {
@@ -195,35 +196,35 @@ Vu8* VStream::newBuffer(Vs64 bufferSize)
         throw std::bad_alloc();
     }
 
-Vu8* VStream::getReadIOPtr() const
+Vu8* VStream::_getReadIOPtr() const
     {
     // To be overridden by memory-based streams.
     return NULL;
     }
 
-Vu8* VStream::getWriteIOPtr() const
+Vu8* VStream::_getWriteIOPtr() const
     {
     // To be overridden by memory-based streams.
     return NULL;
     }
 
-Vs64 VStream::prepareToRead(Vs64 /*numBytesToRead*/) const
+Vs64 VStream::_prepareToRead(Vs64 /*numBytesToRead*/) const
     {
     // To be overridden by memory-based streams.
     return 0;
     }
 
-void VStream::prepareToWrite(Vs64 /*numBytesToWrite*/)
+void VStream::_prepareToWrite(Vs64 /*numBytesToWrite*/)
     {
     // To be overridden by memory-based streams.
     }
 
-void VStream::finishRead(Vs64 /*numBytesRead*/)
+void VStream::_finishRead(Vs64 /*numBytesRead*/)
     {
     // To be overridden by memory-based streams.
     }
 
-void VStream::finishWrite(Vs64 /*numBytesWritten*/)
+void VStream::_finishWrite(Vs64 /*numBytesWritten*/)
     {
     // To be overridden by memory-based streams.
     }

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -20,6 +20,7 @@ int VThread::smNumVThreadsCreated = 0;
 int VThread::smNumThreadMainsStarted = 0;
 int VThread::smNumVThreadsDestructed = 0;
 int VThread::smNumThreadMainsCompleted = 0;
+VThreadActionListener* VThread::smActionListener = NULL;
 
 // If we just declare this as an object, not a pointer, static initialization order
 // problems can occur. This form ensures it is NULL until properly constructed.
@@ -34,7 +35,7 @@ mManager(manager),
 mThreadID((VThreadID_Type) -1),
 mIsRunning(false)
     {
-    VThread::updateThreadStatistics(VThread::eCreated);
+    VThread::_updateThreadStatistics(VThread::eCreated);
     }
 
 VThread::~VThread()
@@ -50,7 +51,7 @@ VThread::~VThread()
     // Prevent all exceptions from escaping destructor.
     try
         {
-        VThread::updateThreadStatistics(VThread::eDestroyed);
+        VThread::_updateThreadStatistics(VThread::eDestroyed);
         }
     catch (...) {}
     }
@@ -116,7 +117,7 @@ void VThread::setName(const VString& threadName)
 
 void* VThread::threadMain(void* arg)
     {
-    VThread::updateThreadStatistics(VThread::eMainStarted);
+    VThread::_updateThreadStatistics(VThread::eMainStarted);
 
     VThread*    thread = static_cast<VThread*> (arg);
     VString        threadName = thread->name();
@@ -170,13 +171,34 @@ void* VThread::threadMain(void* arg)
     if (deleteAtEnd)
         delete thread;
 
-    VThread::updateThreadStatistics(VThread::eMainCompleted);
+    VThread::_updateThreadStatistics(VThread::eMainCompleted);
 
     return NULL;
     }
 
 // static
-void VThread::updateThreadStatistics(eThreadAction action)
+void VThread::getThreadStatistics(int& numVThreads, int& numThreadMains, int& numVThreadsCreated, int& numThreadMainsStarted, int& numVThreadsDestructed, int& numThreadMainsCompleted)
+    {
+    VMutexLocker locker(gThreadStatsMutex);
+    
+    numVThreads = smNumVThreads;
+    numThreadMains = smNumThreadMains;
+    numVThreadsCreated = smNumVThreadsCreated;
+    numThreadMainsStarted = smNumThreadMainsStarted;
+    numVThreadsDestructed = smNumVThreadsDestructed;
+    numThreadMainsCompleted = smNumThreadMainsCompleted;
+    }
+
+// static
+void VThread::setActionListener(VThreadActionListener* listener)
+    {
+    VMutexLocker locker(gThreadStatsMutex);
+
+    smActionListener = listener;
+    }
+
+// static
+void VThread::_updateThreadStatistics(eThreadAction action)
     {
     VMutexLocker locker(gThreadStatsMutex);
 
@@ -199,19 +221,6 @@ void VThread::updateThreadStatistics(eThreadAction action)
             ++VThread::smNumThreadMainsCompleted;
             break;
         }
-    }
-
-// static
-void VThread::getThreadStatistics(int& numVThreads, int& numThreadMains, int& numVThreadsCreated, int& numThreadMainsStarted, int& numVThreadsDestructed, int& numThreadMainsCompleted)
-    {
-    VMutexLocker locker(gThreadStatsMutex);
-    
-    numVThreads = smNumVThreads;
-    numThreadMains = smNumThreadMains;
-    numVThreadsCreated = smNumVThreadsCreated;
-    numThreadMainsStarted = smNumThreadMainsStarted;
-    numVThreadsDestructed = smNumVThreadsDestructed;
-    numThreadMainsCompleted = smNumThreadMainsCompleted;
     }
 
 

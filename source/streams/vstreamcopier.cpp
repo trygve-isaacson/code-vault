@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -9,28 +9,43 @@ http://www.bombaydigital.com/
 #include "vstreamcopier.h"
 #include "vstream.h"
 
-VStreamCopier::VStreamCopier()
-: mChunkSize(0), mFrom(NULL), mTo(NULL), mNumBytesCopied(0)
+VStreamCopier::VStreamCopier() :
+mChunkSize(0),
+mFrom(NULL),
+mTo(NULL),
+mNumBytesCopied(0)
     {
     }
 
-VStreamCopier::VStreamCopier(int chunkSize, VStream* from, VStream* to)
-: mChunkSize(chunkSize), mFrom(from), mTo(to), mNumBytesCopied(0)
+VStreamCopier::VStreamCopier(int chunkSize, VStream* from, VStream* to) :
+mChunkSize(chunkSize),
+mFrom(from),
+mTo(to),
+mNumBytesCopied(0)
     {
     }
 
-VStreamCopier::VStreamCopier(int chunkSize, VIOStream* from, VIOStream* to)
-: mChunkSize(chunkSize), mFrom(&from->rawStream()), mTo(&to->rawStream()), mNumBytesCopied(0)
+VStreamCopier::VStreamCopier(int chunkSize, VIOStream* from, VIOStream* to) :
+mChunkSize(chunkSize),
+mFrom(&from->rawStream()),
+mTo(&to->rawStream()),
+mNumBytesCopied(0)
     {
     }
 
-VStreamCopier::VStreamCopier(int chunkSize, VStream* from, VIOStream* to)
-: mChunkSize(chunkSize), mFrom(from), mTo(&to->rawStream()), mNumBytesCopied(0)
+VStreamCopier::VStreamCopier(int chunkSize, VStream* from, VIOStream* to) :
+mChunkSize(chunkSize),
+mFrom(from),
+mTo(&to->rawStream()),
+mNumBytesCopied(0)
     {
     }
 
-VStreamCopier::VStreamCopier(int chunkSize, VIOStream* from, VStream* to)
-: mChunkSize(chunkSize), mFrom(&from->rawStream()), mTo(to), mNumBytesCopied(0)
+VStreamCopier::VStreamCopier(int chunkSize, VIOStream* from, VStream* to) :
+mChunkSize(chunkSize),
+mFrom(&from->rawStream()),
+mTo(to),
+mNumBytesCopied(0)
     {
     }
 

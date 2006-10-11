@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -9,6 +9,8 @@ http://www.bombaydigital.com/
 /*
 This set of includes is enough to pull in all vault header files.
 */
+
+#ifdef __cplusplus
 
 #include "vexception.h"
 #include "vchar.h"
@@ -20,8 +22,8 @@ This set of includes is enough to pull in all vault header files.
 #include "vmutexlocker.h"
 #include "vsocketstream.h"
 #include "vsocketfactory.h"
-#include "vfilestream.h"
 #include "vbufferedfilestream.h"
+#include "vdirectiofilestream.h"
 #include "vmemorystream.h"
 #include "vbinaryiostream.h"
 #include "vtextiostream.h"
@@ -29,6 +31,9 @@ This set of includes is enough to pull in all vault header files.
 #include "vlistenerthread.h"
 #include "vmanagementinterface.h"
 #include "vunitrunall.h"
+#include "vbento.h"
+
+#endif
 
 /**
     @defgroup toolbox Vault Toolbox (utilities)

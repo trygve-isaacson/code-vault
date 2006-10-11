@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -156,24 +156,25 @@ Vu8 VHex::hexCharToNibble(char hexChar)
         return 0;
     }
 
-VHex::VHex(VTextIOStream* outputStream, int numBytesPerRow, int indentCount, bool labelsInHex, bool showASCIIValues)
+VHex::VHex(VTextIOStream* outputStream, int numBytesPerRow, int indentCount, bool labelsInHex, bool showASCIIValues) :
+mOutputStream(outputStream),
+mNumBytesPerRow(numBytesPerRow),
+mIndentCount(indentCount),
+mLabelsInHex(labelsInHex),
+mShowASCIIValues(showASCIIValues),
+mStartColumn(0),
+mOffset(0),
+mPendingBufferUsed(0),
+mPendingBuffer(NULL)
+// mLineBuffer constructs to an empty string
     {
-    mOutputStream = outputStream;
-    mNumBytesPerRow = numBytesPerRow;
-    mIndentCount = indentCount;
-    mLabelsInHex = labelsInHex;
-    mShowASCIIValues = showASCIIValues;
-    mStartColumn = 0;
-    mOffset = 0;
-    mPendingBufferUsed = 0;
-    
     mPendingBuffer = new Vu8[mNumBytesPerRow];
     }
 
 VHex::~VHex()
     {
     delete [] mPendingBuffer;
-    mOutputStream = NULL;
+    mOutputStream = NULL; // we don't own it, so don't delete it
     }
 
 void VHex::printHex(const Vu8* buffer, Vs64 length, Vs64 offset)
@@ -181,7 +182,7 @@ void VHex::printHex(const Vu8* buffer, Vs64 length, Vs64 offset)
     while (length > 0)
         {
         if (mPendingBufferUsed == mNumBytesPerRow - mStartColumn)
-            this->printPending();
+            this->_printPending();
         
         mPendingBuffer[mPendingBufferUsed++] = buffer[offset++];
         
@@ -193,7 +194,7 @@ void VHex::printHex(const Vu8* buffer, Vs64 length, Vs64 offset)
 
 void VHex::reset()
     {
-    this->printPending();
+    this->_printPending();
 
     mStartColumn = 0;
     mOffset = 0;
@@ -201,10 +202,10 @@ void VHex::reset()
 
 void VHex::flush()
     {
-    this->printPending();
+    this->_printPending();
     }
 
-void VHex::printPending()
+void VHex::_printPending()
     {
     if (mPendingBufferUsed > 0)
         {

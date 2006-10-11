@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -48,7 +48,7 @@ void TestThreadClass::run()
     while ((mNumIterations > 0) && this->isRunning())
         {
         // We are now running in our own thread. Let's sleep a little...
-        VThread::sleepMilliseconds(mNumSecondsToSleep * 1000);
+        VThread::sleep(mNumSecondsToSleep * VDuration::SECOND());
 
         --mNumIterations;
         }

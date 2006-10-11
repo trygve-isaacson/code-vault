@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -12,11 +12,11 @@ VSocketFactory::VSocketFactory()
     {
     }
 
-VSocket* VSocketFactory::createSocket(VSockID sockID)
+VSocket* VSocketFactory::createSocket(VSocketID socketID)
     {
     VSocket*    theSocket = new VSocket();
     
-    theSocket->init(sockID);
+    theSocket->init(socketID);
     
     return theSocket;
     }

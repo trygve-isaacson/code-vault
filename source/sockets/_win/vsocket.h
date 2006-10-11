@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -48,10 +48,13 @@ class VSocket : public VSocketBase
         */
         virtual ~VSocket();
 
+        // --------------- These are the implementations of the pure virtual
+        // methods that only a platform subclass can implement.
+
         /**
         Connects to the server.
         */
-        virtual void    connect();
+        virtual void connect();
         /**
         Starts listening for incoming connections. Only useful to call
         with a VListenerSocket subclass, but needed here for class
@@ -59,14 +62,14 @@ class VSocket : public VSocketBase
         the VSocket platform-specific class that VListenerSocket
         derives from).
         */
-        virtual void    listen();
+        virtual void listen();
         /**
         Returns the number of bytes that are available to be read on this
         socket. If you do a read() on that number of bytes, you know that
         it will not block.
         @return the number of bytes currently available for reading
         */
-        virtual int        available();
+        virtual int available();
         /**
         Reads data from the socket.
         
@@ -113,8 +116,8 @@ class VSocket : public VSocketBase
 
     protected:
 
-        static bool    smStaticInited;    ///< Used internally to initialize at startup.
-        static bool staticInit();    ///< Used internally to initialize at startup.
+        static bool gStaticInited; ///< Used internally to initialize at startup.
+        static bool staticInit();   ///< Used internally to initialize at startup.
     };
 
 #endif /* vsocketbase_h */

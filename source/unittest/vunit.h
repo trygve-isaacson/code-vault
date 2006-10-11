@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -31,12 +31,12 @@ class VTestInfo
     {
     public:
     
-        VTestInfo(bool success, const VString& description, Vs64 durationMilliseconds);
+        VTestInfo(bool success, const VString& description, const VDuration& duration);
         ~VTestInfo() {}
 
-        bool    mSuccess;                ///< True if the test succeeded.
-        VString    mDescription;            ///< The text description or name of the test.
-        Vs64    mDurationMilliseconds;    ///< The number of milliseconds it took to run the test.
+        bool        mSuccess;        ///< True if the test succeeded.
+        VString        mDescription;    ///< The text description or name of the test.
+        VDuration    mDuration;      ///< The number of milliseconds it took to run the test.
     };
 
 typedef std::vector<VTestInfo> TestInfoVector;

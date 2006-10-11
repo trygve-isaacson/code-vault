@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -113,8 +113,14 @@ class VMutexLocker
     
     protected:
     
-        VMutex*    mMutex;        ///< Pointer to the VMutex object, or NULL.
-        bool    mIsLocked;    ///< True if this object has acquired the lock.
+        VMutex* mMutex;     ///< Pointer to the VMutex object, or NULL.
+        bool    mIsLocked;  ///< True if this object has acquired the lock.
+    
+    private:
+    
+        // Prevent copy construction and assignment since there is no provision for sharing a mutex.
+        VMutexLocker(const VMutexLocker& other);
+        VMutexLocker& operator=(const VMutexLocker& other);
     };
 
 #endif /* vmutexlocker_h */

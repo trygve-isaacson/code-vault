@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -11,17 +11,19 @@ http://www.bombaydigital.com/
 #include "vinstant.h"
 #include "vexception.h"
 
-//lint -e1923 "macro could become const variable -- Effective C++ #1"
-#define kVFloatNormalOutputFormat        "%f"
+static const char* kVFloatNormalOutputFormat        = "%f";
+static const char* kVFloatPrecisionFormatBuilder    = "%%.%df";
+static const char* kVDoubleInputFormat              = "%lf";
 
-//lint -e1923 "macro could become const variable -- Effective C++ #1"
-#define kVFloatPrecisionFormatBuilder    "%%.%df"
+static const Vs64 MAX_ONE_BYTE_LENGTH = CONST_S64(0x00000000000000FC);
+static const Vu8 THREE_BYTE_LENGTH_INDICATOR_BYTE = 0xFF;
+static const Vu8 FIVE_BYTE_LENGTH_INDICATOR_BYTE = 0xFE;
+static const Vu8 NINE_BYTE_LENGTH_INDICATOR_BYTE = 0xFD;
 
-//lint -e1923 "macro could become const variable -- Effective C++ #1"
-#define kVDoubleInputFormat                "%lf"
+#undef sscanf
 
-VBinaryIOStream::VBinaryIOStream(VStream& inRawStream)
-: VIOStream(inRawStream)
+VBinaryIOStream::VBinaryIOStream(VStream& inRawStream) :
+VIOStream(inRawStream)
     {
     }
 
@@ -183,24 +185,21 @@ VString VBinaryIOStream::readString32()
 
 void VBinaryIOStream::readInstant(VInstant& i)
     {
-    Vs32    kind = this->readS32();
-    Vs64    value = this->readS64();
-    
-    i.setStreamValues(kind, value);
+    Vs64 value = this->readS64();
+    i.setValue(value);
     }
 
 VInstant VBinaryIOStream::readInstant()
     {
     /*
-    Note that this API is far less efficient than the one above, because
+    Note that this API is less efficient than the one above, because
     it incurs TWO copies instead of none -- one when a temporary VInstant
     is created by the compiler to hold the return value, and one when
-    that temporary VInstant is copied to the caller's lvalue.
+    that temporary VInstant is copied to the caller's lvalue. (Unless the
+    compiler can optimize part of that away.)
     */
-
-    VInstant    i;
-    this->readInstant(i);
-    return i;
+    Vs64 value = this->readS64();
+    return VInstant::instantFromRawValue(value);
     }
 
 Vs64 VBinaryIOStream::readDynamicCount()
@@ -208,12 +207,12 @@ Vs64 VBinaryIOStream::readDynamicCount()
     // See comments below in writeDynamicCount for the format.
     
     Vu8    lengthKind = this->readU8();
-    
-    if (lengthKind == 0xFF)
+
+    if (lengthKind == THREE_BYTE_LENGTH_INDICATOR_BYTE)
         return (Vs64) this->readU16();
-    else if (lengthKind == 0xFE)
+    else if (lengthKind == FIVE_BYTE_LENGTH_INDICATOR_BYTE)
         return (Vs64) this->readU32();
-    else if (lengthKind == 0xFD)
+    else if (lengthKind == NINE_BYTE_LENGTH_INDICATOR_BYTE)
         return (Vs64) this->readU64();
     else
         return (Vs64) lengthKind;
@@ -332,12 +331,7 @@ void VBinaryIOStream::writeString32(const VString& s)
 
 void VBinaryIOStream::writeInstant(const VInstant& i)
     {
-    Vs32    kind;
-    Vs64    value;
-    
-    i.getStreamValues(kind, value);
-    this->writeS32(kind);
-    this->writeS64(value);
+    this->writeS64(i.getValue());
     }
 
 void VBinaryIOStream::writeDynamicCount(Vs64 count)
@@ -368,23 +362,23 @@ void VBinaryIOStream::writeDynamicCount(Vs64 count)
         first byte contains 0xFD = 253
         next eight bytes contain count as a U64
     */
-    if (count <= 0xFD)
+    if (count <= MAX_ONE_BYTE_LENGTH)
         {
         this->writeU8(static_cast<Vu8> (count));
         }
     else if (count <= V_MAX_U16)
         {
-        this->writeU8(0xFF);
+        this->writeU8(THREE_BYTE_LENGTH_INDICATOR_BYTE);
         this->writeU16(static_cast<Vu16> (count));
         }
     else if (count <= V_MAX_U32)
         {
-        this->writeU8(0xFE);
+        this->writeU8(FIVE_BYTE_LENGTH_INDICATOR_BYTE);
         this->writeU32(static_cast<Vu32> (count));
         }
     else
         {
-        this->writeU8(0xFD);
+        this->writeU8(NINE_BYTE_LENGTH_INDICATOR_BYTE);
         this->writeU64(static_cast<Vu64> (count));
         }
     }
@@ -392,7 +386,7 @@ void VBinaryIOStream::writeDynamicCount(Vs64 count)
 // static
 int VBinaryIOStream::getDynamicCountLength(Vs64 count)
     {
-    if (count <= 0xFD)
+    if (count <= MAX_ONE_BYTE_LENGTH)
         {
         return 1;
         }

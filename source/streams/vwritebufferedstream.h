@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -71,7 +71,7 @@ class VWriteBufferedStream : public VMemoryStream
         // call through to the raw stream, though I'm not sure it should
         // really be like that.
         
-    protected:
+    private:
         
         VStream&        mRawStream;        ///< The raw stream we eventually flush to.
     };

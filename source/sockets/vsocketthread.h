@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -76,6 +76,12 @@ class VSocketThread : public VThread
 
         VSocket*            mSocket;        ///< The socket this thread is managing.
         VListenerThread*    mOwnerThread;    ///< The thread that created this one.
+
+    private:
+    
+        // Prevent copy construction and assignment since there is no provision for sharing the underlying thread.
+        VSocketThread(const VSocketThread& other);
+        VSocketThread& operator=(const VSocketThread& other);
     };
 
 /**

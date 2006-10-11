@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -44,25 +44,29 @@ class VString;
 #define VLOGGER_LINE(level, message) VLogger::getDefaultLogger()->log(level, __FILE__, __LINE__, message)
 /** Emits a hex dump at a specified level to the default logger. */
 #define VLOGGER_HEXDUMP(level, message, buffer, length) VLogger::getDefaultLogger()->logHexDump(level, message, buffer, length)
+/** Returns true if the default logger would emit at the specified level. */
+#define VLOGGER_WOULD_LOG(level) (VLogger::getDefaultLogger()->getLevel() => level)
 
-/** Emits a message at kFatal level to the default logger. */
+/** Emits a message at kFatal level to the specified logger. */
 #define VLOGGER_NAMED_FATAL(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kFatal, NULL, 0, message)
-/** Emits a message at kError level to the default logger. */
+/** Emits a message at kError level to the specified logger. */
 #define VLOGGER_NAMED_ERROR(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kError, NULL, 0, message)
-/** Emits a message at kWarn level to the default logger. */
+/** Emits a message at kWarn level to the specified logger. */
 #define VLOGGER_NAMED_WARN(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kWarn, NULL, 0, message)
-/** Emits a message at kInfo level to the default logger. */
+/** Emits a message at kInfo level to the specified logger. */
 #define VLOGGER_NAMED_INFO(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kInfo, NULL, 0, message)
-/** Emits a message at kDebug level to the default logger. */
+/** Emits a message at kDebug level to the specified logger. */
 #define VLOGGER_NAMED_DEBUG(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kDebug, NULL, 0, message)
-/** Emits a message at kTrace level to the default logger. */
+/** Emits a message at kTrace level to the specified logger. */
 #define VLOGGER_NAMED_TRACE(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kTrace, NULL, 0, message)
-/** Emits a message at a specified level to the default logger. */
+/** Emits a message at a specified level to the specified logger. */
 #define VLOGGER_NAMED_LEVEL(loggername, level, message) VLogger::getLogger(loggername)->log(level, NULL, 0, message)
-/** Emits a message at a specified level, including file and line number, to the default logger. */
+/** Emits a message at a specified level, including file and line number, to the specified logger. */
 #define VLOGGER_NAMED_LINE(loggername, level, message) VLogger::getLogger(loggername)->log(level, __FILE__, __LINE__, message)
-/** Emits a hex dump at a specified level to the default logger. */
+/** Emits a hex dump at a specified level to the specified logger. */
 #define VLOGGER_NAMED_HEXDUMP(loggername, level, message, buffer, length) VLogger::getLogger(loggername)->logHexDump(level, message, buffer, length)
+/** Returns true if the specified logger would emit at the specified level. */
+#define VLOGGER_NAMED_WOULD_LOG(loggername, level) (VLogger::getLogger(loggername)->getLevel() => level)
 
 class VLogger;
 typedef std::vector<VLogger*> VLoggerList;
@@ -82,6 +86,10 @@ class VLogger
     public:
     
         /**
+        Deletes all loggers, presumably at program termination.
+        */
+        static void shutdown();
+        /**
         Returns the default logger, creating it if necessary.
         Because this function always returns a pointer
         to a valid logger object, you don't need to check for NULL.
@@ -97,6 +105,12 @@ class VLogger
         @return the specified logger, or the default logger if not found
         */
         static VLogger* getLogger(const VString& name);
+        /**
+        Returns the named logger, or NULL if there is no logger with that name.
+        @param    name    the name of the logger to access
+        @return the specified logger, or NULL if not found
+        */
+        static VLogger* findLogger(const VString& name);
         /**
         Installs a logger in the list of named loggers you can look up. If this
         is the first logger installed, it is set to be the default logger. If
@@ -182,10 +196,9 @@ class VLogger
         (for example in unit test output that you want to be diff'able) or need to
         log it regardless of the logger's log level. The message will be logged as-is
         and will not be suppressed based on log level.
-        @param    inFormat        the formatting string
-        @param    ...            variable arguments for the formatting string
+        @param    message the text to be logged
         */
-        void rawLog(const char* inFormat, ...);
+        void rawLog(const VString& message);
         
         /**
         Returns the current level of detail, below which messages are suppressed.
@@ -212,14 +225,14 @@ class VLogger
         */
         bool isEnabledFor(int logLevel) { return logLevel <= mLogLevel; }
 
-        CLASS_CONST(int, kOff, 0);        ///< Level of detail to suppress all output.
-        CLASS_CONST(int, kFatal, 1);    ///< Level of detail to only show failures likely to be fatal.
-        CLASS_CONST(int, kError, 20);    ///< Level of detail to add error messages.
-        CLASS_CONST(int, kWarn, 40);    ///< Level of detail to add basic warning messages.
-        CLASS_CONST(int, kInfo, 60);    ///< Level of detail to add coarse-grained status messages.
-        CLASS_CONST(int, kDebug, 80);    ///< Level of detail to add fine-grained status messages.
-        CLASS_CONST(int, kTrace, 100);    ///< Level of detail to add trace-level messages.
-        CLASS_CONST(int, kAll, 100);    ///< Level of detail to output all messages.
+        static const int kOff   = 0;    ///< Level of detail to suppress all output.
+        static const int kFatal = 1;    ///< Level of detail to only show failures likely to be fatal.
+        static const int kError = 20;   ///< Level of detail to add error messages.
+        static const int kWarn  = 40;   ///< Level of detail to add basic warning messages.
+        static const int kInfo  = 60;   ///< Level of detail to add coarse-grained status messages.
+        static const int kDebug = 80;   ///< Level of detail to add fine-grained status messages.
+        static const int kTrace = 100;  ///< Level of detail to add trace-level messages.
+        static const int kAll   = 100;  ///< Level of detail to output all messages.
         
         static const VString kDefaultLoggerName;
         
@@ -303,13 +316,13 @@ class VLogger
         */
         static void installDefaultLogger();
 
-        VMutex    mMutex;        ///< A mutex to protect against multiple threads' messages from being intertwined
-        int        mLogLevel;    ///< Only messages with a detail level <= this will be emitted.
-        VString    mName;        ///< This logger's unique name so it can be looked up.
+        VMutex  mMutex;     ///< A mutex to protect against multiple threads' messages from being intertwined
+        int     mLogLevel;  ///< Only messages with a detail level <= this will be emitted.
+        VString mName;      ///< This logger's unique name so it can be looked up.
         
-        static VLoggerList    smLoggers;            ///< The list of installed loggers.
-        static VLogger*        smDefaultLogger;    ///< The default logger returned if get by name fails.
-        static VMutex        smLoggersMutex;        ///< Protects default logger in housekeeping code.
+        static VLoggerList  gLoggers;       ///< The list of installed loggers.
+        static VLogger*     gDefaultLogger; ///< The default logger returned if get by name fails.
+        static VMutex       gLoggersMutex;  ///< Protects default logger in housekeeping code.
     };
 
 /**

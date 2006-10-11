@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -68,9 +68,9 @@ bool VThread::setPriority(int /*nice*/)
     }
 
 // static
-void VThread::sleepMilliseconds(int milliseconds)
+void VThread::sleep(const VDuration& interval)
     {
-    Sleep(milliseconds);
+    Sleep(static_cast<DWORD>(interval.getDurationMilliseconds()));
     }
 
 // static
@@ -129,9 +129,15 @@ bool VSemaphore::semaphoreDestroy(VSemaphore_Type* semaphore)
     }
 
 // static
-bool VSemaphore::semaphoreWait(VSemaphore_Type* semaphore, VMutex_Type* /*mutex*/, Vs64 timeoutMilliseconds)
+bool VSemaphore::semaphoreWait(VSemaphore_Type* semaphore, VMutex_Type* /*mutex*/, const VDuration& timeoutInterval)
     {
-    DWORD    timeoutMillisecondsDWORD = (timeoutMilliseconds == 0) ? INFINITE : ((DWORD) timeoutMilliseconds);
+    DWORD    timeoutMillisecondsDWORD;
+    
+    if (timeoutInterval == VDuration::ZERO())
+        timeoutMillisecondsDWORD = INFINITE;
+    else
+        timeoutMillisecondsDWORD = static_cast<DWORD>(timeoutMilliseconds);
+
     DWORD    result = WaitForSingleObject(*semaphore, timeoutMillisecondsDWORD);    // waits until the semaphore's count is > 0, then decrements it
     return (result != WAIT_FAILED);
     }

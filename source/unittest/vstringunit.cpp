@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -137,10 +137,29 @@ void VStringUnit::run()
     formatted.format("%s is %d years old", "Rover", 3);
     this->test(formatted, "Rover is 3 years old", "sprintf");
     
+    VString preflightFail("d'oh!");
+    try
+        {
+        this->logStatus("VStringUnit will now intentionally invoke a memory allocation failure in VString::preflight.");
+        std::cout << "VStringUnit will now intentionally invoke a memory allocation failure in VString::preflight; this may result in console error output." << std::endl;
+#ifndef VPLATFORM_WIN
+        preflightFail.preflightWithSimulatedFailure(); // on Linux and Mac, preflight() succeeds in allocated gigantic buffers!
+#else
+        preflightFail.preflight(static_cast<int>(V_MAX_S32 - CONST_S64(1)));
+#endif
+        this->test(false, "Intentional preflight allocation failure"); // If we get here, the test failed.
+        }
+    catch (const VException& ex)
+        {
+        this->logStatus(ex.what());
+        this->test(true, "Intentional preflight allocation failure"); // If we get here, the test succeeded.
+        this->test(preflightFail, "d'oh!", "No change during preflight allocation failure"); // verify that the string was not changed during the failure
+        }
+    
     // Test copying out.
     char    testBuffer[256];    // Largest legal Pascal string buffer.
     VString    testSource("This text should be copied out.");
-    testSource.copyToBuffer(testBuffer, 256);
+    testSource.copyToBuffer(testBuffer, sizeof(testBuffer));
     VString    testTarget(testBuffer);
     this->test(testTarget, "This text should be copied out.", "copy to chars");
     // Test copying in.
@@ -455,6 +474,26 @@ void VStringUnit::run()
     this->test(region1.regionMatches(7, region3, 0, 3), "regionMatches 2");
     this->test(! region1.regionMatches(7, region3, 0, 4), "! regionMatches 1");
     this->test(! region2.regionMatches(0, region3, 0, 3), "! regionMatches 2");
+
+#ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
+    boost::format formatter("Descending order arguments: %3% %2% %1%.");
+    formatter % "one" % 2.47 % 3;
+    
+    VString fmt1(formatter);
+    this->test(fmt1 == "Descending order arguments: 3 2.47 one.", "format constructor");
+
+    VString fmt2("This should get overwritten.");
+    fmt2 = formatter;
+    this->test(fmt2 == "Descending order arguments: 3 2.47 one.", "format operator=");
+
+    VString prefix("Append here: ");
+    VString fmt3 = prefix + formatter;
+    this->test(fmt3 == "Append here: Descending order arguments: 3 2.47 one.", "format operator+");
+
+    VString fmt4("Append here: ");
+    fmt4 += formatter;
+    this->test(fmt4 == "Append here: Descending order arguments: 3 2.47 one.", "format operator+=");
+#endif
     
     // This set of tests covers valid and invalid input to postflight and thus _setLength.
     VString rangeTester;

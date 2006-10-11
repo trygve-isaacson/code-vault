@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -10,24 +10,25 @@ http://www.bombaydigital.com/
 
 #include "vexception.h"
 
-VBufferedFileStream::VBufferedFileStream()
+VBufferedFileStream::VBufferedFileStream() :
+VAbstractFileStream(),
+mFile(NULL),
+mCloseOnDestruct(true)
     {
-    mFile = NULL;
-    mCloseOnDestruct = true;
     }
 
-VBufferedFileStream::VBufferedFileStream(const VFSNode& node)
-: mNode(node)
+VBufferedFileStream::VBufferedFileStream(const VFSNode& node) :
+VAbstractFileStream(node),
+mFile(NULL),
+mCloseOnDestruct(true)
     {
-    mFile = NULL;
-    mCloseOnDestruct = true;
-    node.getName(mName);
     }
 
-VBufferedFileStream::VBufferedFileStream(FILE* f)
+VBufferedFileStream::VBufferedFileStream(FILE* f, bool closeOnDestruct) :
+VAbstractFileStream(),
+mFile(f),
+mCloseOnDestruct(closeOnDestruct)
     {
-    mFile = f;
-    mCloseOnDestruct = false;
     }
 
 VBufferedFileStream::~VBufferedFileStream()
@@ -38,11 +39,17 @@ VBufferedFileStream::~VBufferedFileStream()
     mFile = NULL;
     }
 
+void VBufferedFileStream::setFile(FILE* f, bool closeOnDestruct)
+    {
+    mFile = f;
+    mCloseOnDestruct = closeOnDestruct;
+    }
+
 void VBufferedFileStream::openReadOnly()
     {
-    mFile = VBufferedFileStream::threadsafe_fopen(mNode.path(), "rb");
+    mFile = VBufferedFileStream::_wrap_fopen(mNode.getPath(), "rb");
     
-    this->throwIfOpenFailed("VBufferedFileStream::openReadOnly", mNode.path());
+    this->_throwIfOpenFailed("VBufferedFileStream::openReadOnly", mNode.getPath());
     }
 
 void VBufferedFileStream::openReadWrite()
@@ -54,37 +61,16 @@ void VBufferedFileStream::openReadWrite()
     existence first, and then open it exactly the way we intend.
     */
 
-    mFile = VBufferedFileStream::threadsafe_fopen(mNode.path(), mNode.exists() ? "r+b" : "w+b");
+    mFile = VBufferedFileStream::_wrap_fopen(mNode.getPath(), mNode.exists() ? "r+b" : "w+b");
     
-    this->throwIfOpenFailed("VBufferedFileStream::openReadWrite", mNode.path());
+    this->_throwIfOpenFailed("VBufferedFileStream::openReadWrite", mNode.getPath());
     }
 
 void VBufferedFileStream::openWrite()
     {
-    mFile = VBufferedFileStream::threadsafe_fopen(mNode.path(), "wb");
+    mFile = VBufferedFileStream::_wrap_fopen(mNode.getPath(), "wb");
     
-    this->throwIfOpenFailed("VBufferedFileStream::openWrite", mNode.path());
-    }
-
-void VBufferedFileStream::setNode(const VFSNode& node)
-    {
-    VString    path;
-    
-    node.getPath(path);
-    mNode.setPath(path);
-
-    node.getName(mName);
-    }
-
-const VFSNode& VBufferedFileStream::getNode() const
-    {
-    return mNode;
-    }
-
-void VBufferedFileStream::setFile(FILE* f)
-    {
-    mFile = f;
-    mCloseOnDestruct = false;
+    this->_throwIfOpenFailed("VBufferedFileStream::openWrite", mNode.getPath());
     }
 
 bool VBufferedFileStream::isOpen() const
@@ -96,7 +82,7 @@ void VBufferedFileStream::close()
     {
     if (this->isOpen())
         {
-        (void) VBufferedFileStream::threadsafe_fclose(mFile);
+        (void) VBufferedFileStream::_wrap_fclose(mFile);
         mFile = NULL;
         }
     }
@@ -128,7 +114,7 @@ Vs64 VBufferedFileStream::read(Vu8* targetBuffer, Vs64 numBytesToRead)
             requestCount = static_cast<size_t> (numBytesRemaining);
             }
 
-        actualCount = VBufferedFileStream::threadsafe_fread(targetBuffer + numBytesRead, 1, requestCount, mFile);
+        actualCount = VBufferedFileStream::_wrap_fread(targetBuffer + numBytesRead, 1, requestCount, mFile);
 
         numBytesRead += actualCount;
         numBytesRemaining -= actualCount;
@@ -165,7 +151,7 @@ Vs64 VBufferedFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite)
             requestCount = static_cast<size_t> (numBytesRemaining);
             }
 
-        actualCount = VBufferedFileStream::threadsafe_fwrite(buffer + numBytesWritten, 1, requestCount, mFile);
+        actualCount = VBufferedFileStream::_wrap_fwrite(buffer + numBytesWritten, 1, requestCount, mFile);
 
         numBytesWritten += actualCount;
         numBytesRemaining -= actualCount;
@@ -185,7 +171,7 @@ Vs64 VBufferedFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite)
 
 void VBufferedFileStream::flush()
     {
-    int    result = VBufferedFileStream::threadsafe_fflush(mFile);
+    int    result = VBufferedFileStream::_wrap_fflush(mFile);
     
     if (result != 0)
         {
@@ -234,12 +220,12 @@ bool VBufferedFileStream::skip(Vs64 numBytesToSkip)
 bool VBufferedFileStream::seek(Vs64 inOffset, int whence)
     {
     // FIXME: need to deal with Vs64-to-long conversion
-    return (VBufferedFileStream::threadsafe_fseek(mFile, static_cast<long> (inOffset), whence) == 0);
+    return (VBufferedFileStream::_wrap_fseek(mFile, static_cast<long> (inOffset), whence) == 0);
     }
 
 Vs64 VBufferedFileStream::offset() const
     {
-    return VBufferedFileStream::threadsafe_ftell(mFile);
+    return VBufferedFileStream::_wrap_ftell(mFile);
     }
 
 Vs64 VBufferedFileStream::available() const
@@ -254,25 +240,19 @@ Vs64 VBufferedFileStream::available() const
     return eofOffset - currentOffset;
     }
 
-void VBufferedFileStream::throwIfOpenFailed(const VString& failedMethod, const VString& path) const
-    {
-    if (! this->isOpen())
-        throw VException(errno, "%s failed to open '%s'. Error %d (%s).", failedMethod.chars(), path.chars(), errno, ::strerror(errno));
-    }
-
 // This a useful place to put a breakpoint when things aren't going as planned.
 static void _debugCheck(bool success)
     {
     if (! success)
         {
-        int        e = errno;
-        char*    s = ::strerror(e);
+        int     e = errno;
+        char*   s = ::strerror(e);
         s = NULL;    // avoid compiler warning for unused variable s
         }
     }
 
 // static
-FILE* VBufferedFileStream::threadsafe_fopen(const char* nativePath, const char* mode)
+FILE* VBufferedFileStream::_wrap_fopen(const char* nativePath, const char* mode)
     {
     if ((nativePath == NULL) || (nativePath[0] == 0))
         return NULL;
@@ -294,7 +274,7 @@ FILE* VBufferedFileStream::threadsafe_fopen(const char* nativePath, const char* 
     }
 
 // static
-int VBufferedFileStream::threadsafe_fclose(FILE* f)
+int VBufferedFileStream::_wrap_fclose(FILE* f)
     {
     if (f == NULL)
         return EOF;
@@ -317,7 +297,7 @@ int VBufferedFileStream::threadsafe_fclose(FILE* f)
     }
 
 // static
-size_t VBufferedFileStream::threadsafe_fread(void* buffer, size_t size, size_t nItems, FILE* f)
+size_t VBufferedFileStream::_wrap_fread(void* buffer, size_t size, size_t nItems, FILE* f)
     {
     if ((buffer == NULL) || (f == NULL))
         return 0;
@@ -341,7 +321,7 @@ size_t VBufferedFileStream::threadsafe_fread(void* buffer, size_t size, size_t n
     }
 
 // static
-size_t VBufferedFileStream::threadsafe_fwrite(const void* buffer, size_t size, size_t nItems, FILE* f)
+size_t VBufferedFileStream::_wrap_fwrite(const void* buffer, size_t size, size_t nItems, FILE* f)
     {
     size_t    result;
     bool    done = false;
@@ -366,7 +346,7 @@ size_t VBufferedFileStream::threadsafe_fwrite(const void* buffer, size_t size, s
     }
 
 // static
-int VBufferedFileStream::threadsafe_fseek(FILE* f, long int inOffset, int whence)
+int VBufferedFileStream::_wrap_fseek(FILE* f, long int inOffset, int whence)
     {
     int        result;
     bool    done = false;
@@ -388,7 +368,7 @@ int VBufferedFileStream::threadsafe_fseek(FILE* f, long int inOffset, int whence
     }
 
 // static
-int VBufferedFileStream::threadsafe_fflush(FILE* f)
+int VBufferedFileStream::_wrap_fflush(FILE* f)
     {
     int        result;
     bool    done = false;
@@ -409,7 +389,7 @@ int VBufferedFileStream::threadsafe_fflush(FILE* f)
     }
 
 // static
-long int VBufferedFileStream::threadsafe_ftell(FILE* f)
+long int VBufferedFileStream::_wrap_ftell(FILE* f)
     {
     long int    result;
     bool        done = false;

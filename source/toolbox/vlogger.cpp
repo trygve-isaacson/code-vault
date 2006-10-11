@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -12,9 +12,10 @@ http://www.bombaydigital.com/
 #include "vmutexlocker.h"
 #include "vmemorystream.h"
 #include "vhex.h"
+#include "vshutdownregistry.h"
 
 V_STATIC_INIT_TRACE
-    
+
 // VLogger -------------------------------------------------------------------
 
 const VString VLogger::kDefaultLoggerName; // empty string by definition
@@ -22,19 +23,26 @@ const VString VLogger::kDefaultLoggerName; // empty string by definition
 typedef VLoggerList::const_iterator const_VLoggerIterator;
 typedef VLoggerList::iterator VLoggerIterator;
 
-VLoggerList VLogger::smLoggers;
-VLogger* VLogger::smDefaultLogger = NULL;
-VMutex VLogger::smLoggersMutex;
+VLoggerList VLogger::gLoggers;
+VLogger* VLogger::gDefaultLogger = NULL;
+VMutex VLogger::gLoggersMutex;
+
+// static
+void VLogger::shutdown()
+    {
+    VMutexLocker locker(&gLoggersMutex);
+    vault::vectorDeleteAll(gLoggers);
+    }
 
 // static
 VLogger* VLogger::getDefaultLogger()
     {
     // Install one if there isn't one yet.
     
-    if (smDefaultLogger == NULL)
+    if (gDefaultLogger == NULL)
         VLogger::installDefaultLogger();
 
-    return smDefaultLogger;
+    return gDefaultLogger;
     }
 
 // static
@@ -43,11 +51,11 @@ VLogger* VLogger::getLogger(const VString& name)
     // If user is asking for default logger, don't bother searching.
     if (! name.isEmpty())
         {
-        VMutexLocker    locker(&smLoggersMutex);
+        VMutexLocker    locker(&gLoggersMutex);
 
-        const_VLoggerIterator    i = smLoggers.begin();
+        const_VLoggerIterator    i = gLoggers.begin();
 
-        while (i != smLoggers.end())
+        while (i != gLoggers.end())
             {
             VLogger*    logger = (*i);
             
@@ -62,11 +70,31 @@ VLogger* VLogger::getLogger(const VString& name)
     }
 
 // static
+VLogger* VLogger::findLogger(const VString& name)
+    {
+    VMutexLocker    locker(&gLoggersMutex);
+
+    const_VLoggerIterator    i = gLoggers.begin();
+
+    while (i != gLoggers.end())
+        {
+        VLogger*    logger = (*i);
+        
+        if (logger->mName == name)
+            return logger;
+        
+        ++i;
+        }
+        
+    return NULL;
+    }
+
+// static
 void VLogger::installLogger(VLogger* logger)
     {
-    VMutexLocker    locker(&smLoggersMutex);
+    VMutexLocker    locker(&gLoggersMutex);
     
-    for (VLoggerIterator i = smLoggers.begin(); i != smLoggers.end(); ++i)
+    for (VLoggerIterator i = gLoggers.begin(); i != gLoggers.end(); ++i)
         {
         VLogger*    existingLogger = (*i);
         
@@ -77,6 +105,9 @@ void VLogger::installLogger(VLogger* logger)
         
         if (existingLogger->mName == logger->mName)
             {
+            if (gDefaultLogger == existingLogger)
+                gDefaultLogger = logger;
+                
             *i = logger;            // replace the vector entry
             delete existingLogger;    // delete the one we're replacing
             return;
@@ -84,21 +115,24 @@ void VLogger::installLogger(VLogger* logger)
         }
 
     // No match found, so just add this one.
-    smLoggers.push_back(logger);
+    gLoggers.push_back(logger);
     }
 
 // static
 void VLogger::deleteLogger(const VString& name)
     {
-    VMutexLocker    locker(&smLoggersMutex);
+    VMutexLocker    locker(&gLoggersMutex);
     
-    for (VLoggerIterator i = smLoggers.begin(); i != smLoggers.end(); ++i)
+    for (VLoggerIterator i = gLoggers.begin(); i != gLoggers.end(); ++i)
         {
         VLogger*    existingLogger = (*i);
         
         if (existingLogger->mName == name)
             {
-            smLoggers.erase(i);        // erase only removes the vector element (the pointer)
+            if (gDefaultLogger == existingLogger)
+                gDefaultLogger = NULL;
+                
+            gLoggers.erase(i);        // erase only removes the vector element (the pointer)
             delete existingLogger;    // so we also must delete the object
             return;
             }
@@ -109,19 +143,19 @@ void VLogger::deleteLogger(const VString& name)
 // static
 void VLogger::setDefaultLogger(VLogger* logger)
     {
-    VMutexLocker    locker(&smLoggersMutex);
+    VMutexLocker    locker(&gLoggersMutex);
 
-    smDefaultLogger = logger;
+    gDefaultLogger = logger;
     }
 
 // static
 void VLogger::setLogLevels(const VString& name, int logLevel)
     {
-    VMutexLocker    locker(&smLoggersMutex);
+    VMutexLocker    locker(&gLoggersMutex);
 
-    VLoggerIterator    i = smLoggers.begin();
+    VLoggerIterator    i = gLoggers.begin();
 
-    while (i != smLoggers.end())
+    while (i != gLoggers.end())
         {
         VLogger*    logger = (*i);
         
@@ -135,11 +169,11 @@ void VLogger::setLogLevels(const VString& name, int logLevel)
 // static
 void VLogger::getLoggerInfo(VStringVector& resultStrings)
     {
-    VMutexLocker    locker(&smLoggersMutex);
+    VMutexLocker    locker(&gLoggersMutex);
 
-    const_VLoggerIterator    i = smLoggers.begin();
+    const_VLoggerIterator    i = gLoggers.begin();
 
-    while (i != smLoggers.end())
+    while (i != gLoggers.end())
         {
         VLogger*    logger = (*i);
         
@@ -153,15 +187,25 @@ void VLogger::getLoggerInfo(VStringVector& resultStrings)
 // static
 void VLogger::installDefaultLogger()
     {
-    // Use double-check locking.
-    VMutexLocker    locker(&smLoggersMutex);
+    VMutexLocker    locker(&gLoggersMutex);
 
-    if (smDefaultLogger == NULL)
+    if (gDefaultLogger == NULL)
         {
         VLogger*        logger = new VCoutLogger(kWarn, "default");
 
-        smLoggers.push_back(logger);
-        smDefaultLogger = logger;
+        gLoggers.push_back(logger);
+        gDefaultLogger = logger;
+        }
+    }
+
+static void _installShutdownCallback()
+    {
+    // One-time only initialization to install shutdown cleanup hook.
+    static bool loggerShutdownInstalled = false;
+    if (! loggerShutdownInstalled)
+        {
+        loggerShutdownInstalled = true;
+        VShutdownRegistry::instance()->registerFunction(VLogger::shutdown);
         }
     }
 
@@ -169,6 +213,7 @@ VLogger::VLogger(int logLevel, const VString& name) :
 mLogLevel(logLevel),
 mName(name)
     {
+    _installShutdownCallback(); // one-time initialization
     }
 
 VLogger::~VLogger()
@@ -179,7 +224,6 @@ void VLogger::log(int logLevel, const char* file, int line, const char* inFormat
     {
     if (this->isEnabledFor(logLevel))
         {
-        //SN 10/8/04 : CR 22227 & CR 22266 : moved mutex to begining of stack frame to protect arg list.
         VMutexLocker    locker(&mMutex);    // ensure multiple threads don't intertwine their log messages
         va_list    args;
         va_start(args, inFormat);
@@ -232,16 +276,8 @@ void VLogger::logHexDump(int logLevel, const VString& message, const Vu8* buffer
         }
     }
 
-void VLogger::rawLog(const char* inFormat, ...)
+void VLogger::rawLog(const VString& message)
     {
-    va_list    args;
-    va_start(args, inFormat);
-
-    VString    message;
-    message.vaFormat(inFormat, args);
-
-    va_end(args);
-    
     VMutexLocker    locker(&mMutex);    // ensure multiple threads don't intertwine their log messages
     this->emitRawLine(message);
     }
@@ -279,7 +315,7 @@ void VLogger::vaFormat(VString& stringToFormat, int logLevel, const char* file, 
     VLogger::getLevelName(logLevel, levelName);
 
     // If there's file/line number info, then always show it.
-    if (/*(logLevel < kDebug) || */(file == NULL))
+    if (file == NULL)
         stringToFormat.format("%s [%s] %s", timeStampString.chars(), levelName.chars(), message.chars());
     else
         stringToFormat.format("%s [%s] @ %s line %d: %s", timeStampString.chars(), levelName.chars(), file, line, message.chars());
@@ -362,6 +398,7 @@ void VCoutLogger::emitRawLine(const VString& line)
 
 VInterceptLogger::VInterceptLogger(int logLevel, const VString& name) :
 VLogger(logLevel, name)
+// mLastLoggedMessage constructs to empty string
     {
     }
 
@@ -382,6 +419,4 @@ void VInterceptLogger::emitRawLine(const VString& line)
     {
     mLastLoggedMessage = line;
     }
-
-// VFileTCPLogger ---------------------------------------------------------------
 

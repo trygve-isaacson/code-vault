@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -38,7 +38,10 @@ class VSettingsNode
     public:
         
         VSettingsNode(VSettingsTag* parent, const VString& name);
+        VSettingsNode(const VSettingsNode& other);
         virtual ~VSettingsNode() {}
+
+        VSettingsNode& operator=(const VSettingsNode& other);
 
         virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0) = 0;
 
@@ -83,10 +86,10 @@ class VSettingsNode
     
     protected:
 
-        virtual VSettingsAttribute* findAttribute(const VString& /*name*/) const { return NULL; }
-        virtual VSettingsTag* findChildTag(const VString& /*name*/) const { return NULL; }
-        virtual void addLeafValue(const VString& name, bool hasValue, const VString& value);
-        virtual void removeAttribute(VSettingsAttribute* /*attribute*/) {}
+        virtual VSettingsAttribute* _findAttribute(const VString& /*name*/) const { return NULL; }
+        virtual VSettingsTag* _findChildTag(const VString& /*name*/) const { return NULL; }
+        virtual void _addLeafValue(const VString& name, bool hasValue, const VString& value);
+        virtual void _removeAttribute(VSettingsAttribute* /*attribute*/) {}
         
         void throwNotFound(const VString& dataKind, const VString& missingTrail) const;
         
@@ -130,8 +133,8 @@ class VSettings : public VSettingsNode
         
     protected:
     
-        virtual VSettingsTag* findChildTag(const VString& /*name*/) const;
-        virtual void addLeafValue(const VString& name, bool hasValue, const VString& value);
+        virtual VSettingsTag* _findChildTag(const VString& /*name*/) const;
+        virtual void _addLeafValue(const VString& name, bool hasValue, const VString& value);
         
         VSettingsNodePtrVector    mNodes;
         
@@ -161,10 +164,10 @@ class VSettingsTag : public VSettingsNode
 
     protected:
 
-        virtual VSettingsAttribute* findAttribute(const VString& name) const;
-        virtual VSettingsTag* findChildTag(const VString& name) const;
-        virtual void addLeafValue(const VString& name, bool hasValue, const VString& value);
-        virtual void removeAttribute(VSettingsAttribute* attribute);
+        virtual VSettingsAttribute* _findAttribute(const VString& name) const;
+        virtual VSettingsTag* _findChildTag(const VString& name) const;
+        virtual void _addLeafValue(const VString& name, bool hasValue, const VString& value);
+        virtual void _removeAttribute(VSettingsAttribute* attribute);
 
         VSettingsAttributePtrVector    mAttributes;
         VSettingsNodePtrVector        mChildNodes;
@@ -275,6 +278,12 @@ class VSettingsXMLParser
         static bool isValidTagNameChar(const VChar& c);
         static bool isValidAttributeNameChar(const VChar& c);
         static bool isValidAttributeValueChar(const VChar& c);
+    
+    private:
+    
+        // Prevent copy construction and assignment since there is no provision for sharing pointer data.
+        VSettingsXMLParser(const VSettingsXMLParser& other);
+        VSettingsXMLParser& operator=(const VSettingsXMLParser& other);
         
     };
 

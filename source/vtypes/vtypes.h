@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -33,7 +33,7 @@ http://www.bombaydigital.com/
     bit integers. For example, if you are doing binary stream i/o, you'd better
     be certain of the exact number of bytes used in the stream to represent each
     particular integer value; thus, VBinaryIOStream speaks in these types and
-    does not let you read and write the more ambiguous "int". Trivia: the definition
+    does not let you read and write the more ambiguous "int". The definition
     of a 64-bit integer is different across compilers, hence it is unsafe for you
     to use "long long" and expect it to work; thus the existence of Vs64 and Vu64,
     which work correctly even with MSVC++ 6.
@@ -41,7 +41,9 @@ http://www.bombaydigital.com/
     <h3>Floating-Point</h3>
     
     Because the single-precision "float" type in the language is ambigous and
-    essentially dangerous, vtypes defines VFloat, which uses double precision.
+    essentially dangerous, vtypes defines VDouble, which uses double precision.
+    There is also a VFloat type, but in general you should avoid it because of
+    loss of precision and the aforementioned dangers.
     
     <h3>File Sizes</h3>
     
@@ -51,7 +53,10 @@ http://www.bombaydigital.com/
     represented in 32 bits. A video file of 3GB is not that uncommon. You need
     64 bits, and that's how VFSize is defined. Alternatively, you could just use
     Vs64 (or even Vu64), and that would work just as well, although it reads as
-    less obvious what its purpose is.
+    less obvious what its purpose is. The somewhat standard type size_t is
+    useful, but it will not be 64 bits on most systems today, so the Vault does
+    not use it to define stream-related sizes, in favor of a uniform use of
+    VFSize.
     
     <h3>Collection Sizes</h3>
     
@@ -103,16 +108,17 @@ http://www.bombaydigital.com/
     "CONST_S64(1)" instead, to declare a 64-bit constant whose value is 1.
     Use CONST_U64 for unsigned values.
     
-    For similar reasons, you cannot reliably declare a class static constant
-    in the normal way such as "const int kAlmostPi = 3;", so you must use
-    the macro CLASS_CONST provided here, such as "CLASS_CONST(int, kAlmostPi, 3);".
-    This will turn into an enum with MSVC++ 6 while using the const int syntax
-    for normal compilers. Currently for non-int types there is not a solution,
-    because enums are inherently ints, so this macro is really only useful for
-    "int" constants anyway.
+    MSVC++ 6 also is incompatible with the normal way of declaring class static
+    constants (e.g., "const int kMyConstant = 42;"). The Vault provides a macro
+    called "CLASS_CONST" that allows you to declare class static int constants
+    in a way that will compile with MSVC++ 6: "CLASS_CONST(int, kMyConstant, 42);".
+    As of Code Vault 2.5, I am no longer using this macro, but it's still defined
+    in case you need it (please just dump the piece of junk MSVC++ 6 compiler and
+    get the freely downloadable and reasonably decent VC++ 8 instead).
     
-    There are constants defined for the maximum possible values of each integer
-    data type: V_MAX_S8, V_MAX_U8, V_MAX_S16, V_MAX_U16, V_MAX_S32, V_MAX_U32, V_MAX_S64, V_MAX_U64.
+    There are constants defined for the miniumum and maximum possible values of each
+    integer data type: V_MIN_S8, V_MAX_S8, V_MAX_U8, V_MIN_S16, V_MAX_S16, V_MAX_U16,
+    V_MIN_32, V_MAX_S32, V_MAX_U32, V_MIN_64, V_MAX_S64, V_MAX_U64.
     These are defined as Vs64 values so that they are always valid and interchangeable.
     You should use these in place of the typical POSIX macros because not only are
     the POSIX macros not available on all platforms, but they aren't necessarily
@@ -121,9 +127,10 @@ http://www.bombaydigital.com/
     
     <h3>Miscellaneous</h3>
     
-    There are macros defined to wrap min(), max() and abs(), such that they will still
-    work if the standard C++ function templates are not available: V_MIN, V_MAX, V_ABS. You should
-    use these if you want to be sure your code compiles cross-platform.
+    There are macros defined to wrap min(), max(), abs(), and fabs(), such that they
+    will still work if the standard C++ function templates are not available: V_MIN,
+    V_MAX, V_ABS, V_FABS. You should use these if you want to be sure your code compiles
+    cross-platform.
     
     A macro ASSERT_INVARIANT is defined that calls "this->assertInvariant()" if you
     are building in debug mode. This allows you to define a method assertInvariant()
@@ -141,20 +148,19 @@ http://www.bombaydigital.com/
 */
 
 /*
+First we include the user-editable header file that configures
+the desired Vault features/behavior.
+*/
+#include "vconfigure.h"
+
+/*
 Next we include the few platform-specific definitions we've defined.
 Which actual file this refers to will depend on the include path
 set up for this platform build.
 */
 #include "vtypes_platform.h"
 
-/*
-When compiling on Solaris, there is still more needed....
-*/
-#ifdef sun
-#include <strings.h>
-#include <netinet/in.h>
-#include <inttypes.h>
-#endif
+#include <vector>
 
 /*
 We choose to define just the basic specific-sized data types. Most
@@ -163,139 +169,27 @@ But if you need a specific size (such as when doing stream i/o or
 talking to an external API that uses a specific sized type, these
 are our official definitions.
 */
-typedef signed char            Vs8;    ///< Signed 8-bit integer.
-typedef unsigned char        Vu8;    ///< Unsigned 8-bit integer.
+typedef signed char         Vs8;    ///< Signed 8-bit integer.
+typedef unsigned char       Vu8;    ///< Unsigned 8-bit integer.
 
-typedef signed short        Vs16;    ///< Signed 16-bit integer.
-typedef unsigned short        Vu16;    ///< Unsigned 16-bit integer.
+typedef signed short        Vs16;   ///< Signed 16-bit integer.
+typedef unsigned short      Vu16;   ///< Unsigned 16-bit integer.
 
-typedef signed long            Vs32;    ///< Signed 32-bit integer.
-typedef unsigned long        Vu32;    ///< Unsigned 32-bit integer.
+typedef signed long         Vs32;   ///< Signed 32-bit integer.
+typedef unsigned long       Vu32;   ///< Unsigned 32-bit integer.
 
 #ifndef VCOMPILER_MSVC_6_CRIPPLED /* MSVC++ 6 hacks for this are defined in Win32 platform header */
-typedef signed long long    Vs64;    ///< Signed 64-bit integer.
-typedef unsigned long long    Vu64;    ///< Unsigned 64-bit integer.
+typedef signed long long    Vs64;   ///< Signed 64-bit integer.
+typedef unsigned long long  Vu64;   ///< Unsigned 64-bit integer.
 #endif
 
-typedef float                VFloat;        ///< Single-precision floating-point number.
-typedef double            VDouble;    ///< Double-precision floating-point number.
+typedef float               VFloat;     ///< Single-precision floating-point number.
+typedef double              VDouble;    ///< Double-precision floating-point number.
+typedef Vs64                VFSize;     ///< Container for file or stream sizes. The purpose is to prevent 32-bit limits from creeping into APIs and source code.
+typedef size_t              VSizeType;  ///< loop index variable of correct type for STL iteration
 
-typedef Vs64                VFSize;    ///< Container for file or stream sizes. The purpose is to prevent 32-bit limits from creeping into APIs and source code.
-
-typedef size_t                VSizeType;    ///< loop index variable of correct type for STL iteration
-// FIXME: (DONE?) change VSizeType to size_type from STL, make sure it has all necessary includes per platform.
-
-/*
-Sometimes NULL is not defined.
-*/
 #ifndef NULL
-#define NULL 0    ///< Definition of NULL in compiler environments that don't already define it.
-#endif
-
-/*
-It is very convenient to define the C++ bool/true/false value for C,
-so that plain C code and C wrapper APIs don't have to be written differently
-*/
-#ifndef __cplusplus
-
-#ifndef bool
-    #ifndef BOOL_DEFINED
-        typedef unsigned int bool;    ///< Definition of bool for C compilers only.
-        #define BOOL_DEFINED
-    #endif
-#endif
-
-#ifndef false
-#define false    0    ///< Definition of false for C compilers only.
-#endif
-
-#ifndef true
-#define true    (!false)    ///< Definition of true for C compilers only.
-#endif
-
-#endif /* end of bool/true/false definitions for C */
-
-// The V_MIN, V_MAX, and V_ABS definitions are now contained in each
-// platform's vtypes_platform.h file, because their definitions have become
-// highly tailored to compatibility quirks of each development platform.
-
-/*
-It easiest to define limit macros here as well.
-*/
-#define V_MAX_S8    CONST_S64(0x000000000000007F)    ///< Largest signed 8-bit value
-#define V_MAX_U8    CONST_S64(0x00000000000000FF)    ///< Largest unsigned 8-bit value
-#define V_MAX_S16    CONST_S64(0x0000000000007FFF)    ///< Largest signed 16-bit value
-#define V_MAX_U16    CONST_S64(0x000000000000FFFF)    ///< Largest unsigned 16-bit value
-#define V_MAX_S32    CONST_S64(0x000000007FFFFFFF)    ///< Largest signed 32-bit value
-#define V_MAX_U32    CONST_S64(0x00000000FFFFFFFF)    ///< Largest unsigned 32-bit value
-#define V_MAX_S64    CONST_S64(0x7FFFFFFFFFFFFFFF)    ///< Largest signed 64-bit value
-#define V_MAX_U64    CONST_S64(0xFFFFFFFFFFFFFFFF)    ///< Largest unsigned 64-bit value
-
-/* All externs declared in this file must be wrapped in extern "C" for C compiler access! */
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
-Byte-swaps a 16-bit (2-byte) integer either host-to-network order, or
-network-to-host order (it's the same shuffling either way).
-
-This function always swaps the byte order of the value, regardless of
-whether native order matches network order. Its purpose is to perform
-a swap. The caller must have already decided that a swap is desirable.
-
-@param    a16BitValue    the original value
-@return    the swapped value
-*/
-extern Vu16    VbyteSwap16(Vu16 a16BitValue);
-
-/**
-Byte-swaps a 32-bit (4-byte) integer either host-to-network order, or
-network-to-host order (it's the same shuffling either way).
-
-This function always swaps the byte order of the value, regardless of
-whether native order matches network order. Its purpose is to perform
-a swap. The caller must have already decided that a swap is desirable.
-
-@param    a32BitValue    the original value
-@return    the swapped value
-*/
-extern Vu32    VbyteSwap32(Vu32 a32BitValue);
-
-/**
-Byte-swaps a 64-bit (8-byte) integer either host-to-network order, or
-network-to-host order (it's the same shuffling either way).
-
-This function always swaps the byte order of the value, regardless of
-whether native order matches network order. Its purpose is to perform
-a swap. The caller must have already decided that a swap is desirable.
-
-@param    a64BitValue    the original value
-@return    the swapped value
-*/
-extern Vu64    VbyteSwap64(Vu64 a64BitValue);
-
-/**
-Byte-swaps a 32-bit (4-byte) float either host-to-network order, or
-network-to-host order (it's the same shuffling either way).
-
-This function always swaps the byte order of the value, regardless of
-whether native order matches network order. Its purpose is to perform
-a swap. The caller must have already decided that a swap is desirable.
-
-@param    a32BitValue    the original value
-@return    the swapped value
-*/
-extern VFloat VbyteSwapFloat(VFloat a32BitValue);
-
-#ifdef __cplusplus
-}
-#endif
-
-#ifdef V_DEBUG
-#define ASSERT_INVARIANT() this->assertInvariant()    ///< Macro to call this->assertInvariant() in debug mode only.
-#else
-#define ASSERT_INVARIANT() ((void) 0)    ///< Macro to call this->assertInvariant() in debug mode only.
+    #define NULL 0  ///< Definition of NULL in compiler environments that don't already define it.
 #endif
 
 /*
@@ -313,8 +207,130 @@ we must use:
 CONST_U64(12345678901234567890) or CONST_U64(0x0123456789ABCDEF)
 */
 #ifndef VCOMPILER_MSVC_6_CRIPPLED /* MSVC++ 6 hacks for this are defined in Win32 platform header */
-#define CONST_S64(s) /*lint -save -e961*/ s##LL    /*lint -restore*/ ///< Macro to declare a Vs64 constant in a way that works even in VC++ 6.
-#define CONST_U64(s) s##ULL    ///< Macro to declare a Vu64 constant in a way that works even in VC++ 6.
+    #define CONST_S64(s) /*lint -save -e961*/ s##LL    /*lint -restore*/ ///< Macro to declare a Vs64 constant in a way that works even in VC++ 6.
+    #define CONST_U64(s) s##ULL    ///< Macro to declare a Vu64 constant in a way that works even in VC++ 6.
+#endif
+
+// Limit constants.
+static const Vs64 V_MIN_S8  = CONST_S64(0xFFFFFFFFFFFFFF80); ///< Smallest signed 8-bit value
+static const Vs64 V_MAX_S8  = CONST_S64(0x000000000000007F); ///< Largest signed 8-bit value
+static const Vs64 V_MAX_U8  = CONST_S64(0x00000000000000FF); ///< Largest unsigned 8-bit value
+static const Vs64 V_MIN_S16 = CONST_S64(0xFFFFFFFFFFFF8000); ///< Smallest signed 16-bit value
+static const Vs64 V_MAX_S16 = CONST_S64(0x0000000000007FFF); ///< Largest signed 16-bit value
+static const Vs64 V_MAX_U16 = CONST_S64(0x000000000000FFFF); ///< Largest unsigned 16-bit value
+static const Vs64 V_MIN_S32 = CONST_S64(0xFFFFFFFF80000000); ///< Smallest signed 32-bit value
+static const Vs64 V_MAX_S32 = CONST_S64(0x000000007FFFFFFF); ///< Largest signed 32-bit value
+static const Vs64 V_MAX_U32 = CONST_S64(0x00000000FFFFFFFF); ///< Largest unsigned 32-bit value
+static const Vs64 V_MIN_S64 = CONST_S64(0x8000000000000000); ///< Smallest signed 64-bit value
+static const Vs64 V_MAX_S64 = CONST_S64(0x7FFFFFFFFFFFFFFF); ///< Largest signed 64-bit value
+static const Vs64 V_MAX_U64 = CONST_S64(0xFFFFFFFFFFFFFFFF); ///< Largest unsigned 64-bit value
+
+namespace vault {
+
+/**
+Byte-swaps a 16-bit (2-byte) integer either host-to-network order, or
+network-to-host order (it's the same shuffling either way).
+
+This function always swaps the byte order of the value, regardless of
+whether native order matches network order. Its purpose is to perform
+a swap. The caller must have already decided that a swap is desirable.
+
+@param    a16BitValue    the original value
+@return    the swapped value
+*/
+extern Vu16 VbyteSwap16(Vu16 a16BitValue);
+
+/**
+Byte-swaps a 32-bit (4-byte) integer either host-to-network order, or
+network-to-host order (it's the same shuffling either way).
+
+This function always swaps the byte order of the value, regardless of
+whether native order matches network order. Its purpose is to perform
+a swap. The caller must have already decided that a swap is desirable.
+
+@param    a32BitValue    the original value
+@return    the swapped value
+*/
+extern Vu32 VbyteSwap32(Vu32 a32BitValue);
+
+/**
+Byte-swaps a 64-bit (8-byte) integer either host-to-network order, or
+network-to-host order (it's the same shuffling either way).
+
+This function always swaps the byte order of the value, regardless of
+whether native order matches network order. Its purpose is to perform
+a swap. The caller must have already decided that a swap is desirable.
+
+@param    a64BitValue    the original value
+@return    the swapped value
+*/
+extern Vu64 VbyteSwap64(Vu64 a64BitValue);
+
+/**
+Byte-swaps a 32-bit (4-byte) float either host-to-network order, or
+network-to-host order (it's the same shuffling either way).
+
+This function always swaps the byte order of the value, regardless of
+whether native order matches network order. Its purpose is to perform
+a swap. The caller must have already decided that a swap is desirable.
+
+@param    a32BitValue    the original value
+@return    the swapped value
+*/
+extern VFloat VbyteSwapFloat(VFloat a32BitValue);
+
+/**
+Returns the amount of memory used by the process as reported by
+some appropriate platform API. Note that this value may not necessarily
+grow and shrink directly by the amount of each heap malloc/new operation,
+because the underlying memory management library might keep free blocks
+around for future use without returning them to the operating system.
+This value is useful for general memory usage trend tracking, not
+necessarily for detailed memory leak detection.
+@return the number of bytes of memory used by the process, or zero if
+        this API is not implemented on this platform
+*/
+extern Vs64 VgetMemoryUsage();
+
+/**
+Wrapper for memcpy using more precise and convenient types used within
+Vault classes.
+*/
+inline void Vmemcpy(Vu8* to, Vu8* from, int length) { ::memcpy(to, (char*) from, (VSizeType) length); }
+
+/**
+Returns a pointer to a const static containing this platform's native
+text file line ending bytes, and also sets the supplied byte count so the
+caller (@see VTextIOStream) does not have the scan the string to determine
+the length. The caller will use this information to write line endings
+to text streams when asked to use the native form.
+@param  numBytes to be filled in, will be the number of bytes of line
+                ending chars
+@return a pointer to the line ending string
+*/
+extern const Vu8* VgetNativeLineEnding(int& numBytes);
+
+/**
+A helper template function that both clears a vector and deletes each
+object it holds a pointer to. This is the simplest way to delete all
+contained objects held in a vector. The vector must hold pointers to
+objects. See VLogger::shutdown for an example use.
+*/
+template <class T>
+void vectorDeleteAll(std::vector<T*>& v)
+    {
+    for (std::vector<T*>::iterator i = v.begin(); i != v.end(); ++i)
+        delete (*i);
+
+    v.clear();
+    }
+
+} // namespace vault
+
+#ifdef V_DEBUG
+    #define ASSERT_INVARIANT() this->assertInvariant() ///< Macro to call this->assertInvariant() in debug mode only.
+#else
+    #define ASSERT_INVARIANT() ((void) 0) ///< Macro to call this->assertInvariant() in debug mode only.
 #endif
 
 /*
@@ -323,12 +339,10 @@ for defining static class constants such as "const static int kFoo = 1;"
 and doing something different in that compiler.
 */
 #ifndef VCOMPILER_MSVC_6_CRIPPLED /* MSVC++ 6 hacks for this are defined in Win32 platform header */
-#define CLASS_CONST(type, name, init) static const type name = (init)    ///< Macro to declare a class static constant in a way that works even in VC++ 6.
+    #define CLASS_CONST(type, name, init) static const type name = (init)    ///< Macro to declare a class static constant in a way that works even in VC++ 6.
 #endif
 
 /** @} */
-
-inline void Vmemcpy(Vu8* to, Vu8* from, int length) { ::memcpy(to, (char*) from, (VSizeType) length); }
 
 /**
 The V_ASSERT macro and Vassert function provide assertion and assertion breakpoint
@@ -343,21 +357,21 @@ it has no runtime cost in a release build.
 extern void Vassert(bool expression, const char* file, int line);
 
 #ifdef V_DEBUG
-// This inline wrapper eliminates function call overhead for successful assertions.
-inline void VassertWrapper(bool expression, const char* file, int line) { if (!expression) Vassert(expression, file, line); }
-#define V_ASSERT(expression) VassertWrapper(expression, __FILE__, __LINE__)
+    // This inline wrapper eliminates function call overhead for successful assertions.
+    inline void VassertWrapper(bool expression, const char* file, int line) { if (!expression) Vassert(expression, file, line); }
+    #define V_ASSERT(expression) VassertWrapper(expression, __FILE__, __LINE__)
 #else
-#define V_ASSERT(expression) ((void) 0)
+    #define V_ASSERT(expression) ((void) 0)
 #endif
 
 // Uncomment this define to get a trace of static initialization through the macro below.
-//define V_DEBUG_STATIC_INITIALIZATION_TRACE 1
+//#define V_DEBUG_STATIC_INITIALIZATION_TRACE 1
 
-#ifdef V_DEBUG_STATIC_INITIALIZATION_TRACE
 extern int Vtrace(const char* fileName, int lineNumber);
-#define V_STATIC_INIT_TRACE static int staticVtrace = Vtrace(__FILE__, __LINE__);
+#ifdef V_DEBUG_STATIC_INITIALIZATION_TRACE
+    #define V_STATIC_INIT_TRACE static int staticVtrace = Vtrace(__FILE__, __LINE__);
 #else
-#define V_STATIC_INIT_TRACE
+    #define V_STATIC_INIT_TRACE
 #endif
 
 #endif /* vtypes_h */

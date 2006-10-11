@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -111,20 +111,20 @@ class VTextIOStream : public VIOStream
         stream.
         @return    one of the mLineEndingsReadKind enum values 
         */
-        int        lineEndingsReadKind() const { return mLineEndingsReadKind; }
+        int        getLineEndingsReadKind() const { return mLineEndingsReadKind; }
         /**
         Returns the mLineEndingsReadKind property, converted to a value
         suitable for supplying as the mLineEndingsWriteKind value for
         an output stream.
         @return    one of the mLineEndingsReadKind enum values 
         */
-        int        lineEndingsReadKindForWrite() const;
+        int        getLineEndingsReadKindForWrite() const;
         /**
         Returns the mLineEndingsWriteKind property, describing the kind of
         line endings that this object has been set up to write to the stream.
         @return    one of the mLineEndingsReadKind enum values 
         */
-        int        lineEndingsWriteKind() const { return mLineEndingsWriteKind; }
+        int        getLineEndingsWriteKind() const { return mLineEndingsWriteKind; }
         /**
         Sets the mLineEndingsWriteKind property, which determines what the
         writeLine method behavior is with regard to writing the line ending
@@ -138,17 +138,17 @@ class VTextIOStream : public VIOStream
         /** Asserts if any invariant is broken. */
         void assertInvariant() const;
         /** Updates the mLineEndingsReadKind based on the kind of line ending just detected. */
-        void updateLineEndingsReadKind(int lineEndingKind);
+        void _updateLineEndingsReadKind(int lineEndingKind);
 
-        int     mLineEndingsReadKind;    ///< During read, the kind of line endings we think the file is using.
-        int        mLineEndingsWriteKind;    ///< During write, the kind of line endings the caller wants us to use.
-        char    mPendingCharacter;        ///< During read we may have a pending character while reading DOS line endings.
-        int        mReadState;                ///< During read we have to maintain parsing state.
-        VString    mLineBuffer;            ///< Temporarily holds each line of the file as we read it.
+        int     mLineEndingsReadKind;   ///< During read, the kind of line endings we think the file is using.
+        int     mLineEndingsWriteKind;  ///< During write, the kind of line endings the caller wants us to use.
+        char    mPendingCharacter;      ///< During read we may have a pending character while reading DOS line endings.
+        int     mReadState;             ///< During read we have to maintain parsing state.
+        VString mLineBuffer;            ///< Temporarily holds each line of the file as we read it.
 
         enum {
             kReadStateReady,    ///< We are ready to read any character.
-            kReadStateGot0x0D,    ///< We have just read a 0x0D, which could be a Mac line ending, or the first byte of a DOS line ending.
+            kReadStateGot0x0D,  ///< We have just read a 0x0D, which could be a Mac line ending, or the first byte of a DOS line ending.
 
             kNumReadStates
             };

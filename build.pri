@@ -1,5 +1,5 @@
-# Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-# This file is part of the Code Vault version 2.3.2
+# Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+# This file is part of the Code Vault version 2.5
 # http://www.bombaydigital.com/
 
 #
@@ -28,10 +28,12 @@ vault_mac {
 DEPENDPATH += $${BASE}/source/vtypes/_mac
 DEPENDPATH += $${BASE}/source/threads/_unix
 DEPENDPATH += $${BASE}/source/sockets/_unix
+DEPENDPATH += $${BASE}/source/files/_unix
 
 INCLUDEPATH += $${BASE}/source/vtypes/_mac
 INCLUDEPATH += $${BASE}/source/threads/_unix
 INCLUDEPATH += $${BASE}/source/sockets/_unix
+INCLUDEPATH += $${BASE}/source/files/_unix
 
 HEADERS += $${BASE}/source/vtypes/_mac/vtypes_platform.h
 SOURCES += $${BASE}/source/vtypes/_mac/vtypes_platform.cpp
@@ -40,16 +42,19 @@ HEADERS += $${BASE}/source/threads/_unix/vthread_platform.h
 SOURCES += $${BASE}/source/threads/_unix/vthread_platform.cpp
 HEADERS += $${BASE}/source/sockets/_unix/vsocket.h
 SOURCES += $${BASE}/source/sockets/_unix/vsocket.cpp
+SOURCES += $${BASE}/source/sockets/_unix/vfsnode_platform.cpp
 }
 
 vault_unix {
 DEPENDPATH += $${BASE}/source/vtypes/_unix
 DEPENDPATH += $${BASE}/source/threads/_unix
 DEPENDPATH += $${BASE}/source/sockets/_unix
+DEPENDPATH += $${BASE}/source/files/_unix
 
 INCLUDEPATH += $${BASE}/source/vtypes/_unix
 INCLUDEPATH += $${BASE}/source/threads/_unix
 INCLUDEPATH += $${BASE}/source/sockets/_unix
+INCLUDEPATH += $${BASE}/source/files/_unix
 
 HEADERS += $${BASE}/source/vtypes/_unix/vtypes_platform.h
 SOURCES += $${BASE}/source/vtypes/_unix/vtypes_platform.cpp
@@ -58,16 +63,19 @@ HEADERS += $${BASE}/source/threads/_unix/vthread_platform.h
 SOURCES += $${BASE}/source/threads/_unix/vthread_platform.cpp
 HEADERS += $${BASE}/source/sockets/_unix/vsocket.h
 SOURCES += $${BASE}/source/sockets/_unix/vsocket.cpp
+SOURCES += $${BASE}/source/sockets/_unix/vfsnode_platform.cpp
 }
 
 vault_win32 {
 DEPENDPATH += $${BASE}/source/vtypes/_win
 DEPENDPATH += $${BASE}/source/threads/_win
 DEPENDPATH += $${BASE}/source/sockets/_win
+DEPENDPATH += $${BASE}/source/files/_win
 
 INCLUDEPATH += $${BASE}/source/vtypes/_win
 INCLUDEPATH += $${BASE}/source/threads/_win
 INCLUDEPATH += $${BASE}/source/sockets/_win
+INCLUDEPATH += $${BASE}/source/files/_win
 
 HEADERS += $${BASE}/source/vtypes/_win/vtypes_platform.h
 SOURCES += $${BASE}/source/vtypes/_win/vtypes_platform.cpp
@@ -76,6 +84,7 @@ HEADERS += $${BASE}/source/threads/_win/vthread_platform.h
 SOURCES += $${BASE}/source/threads/_win/vthread_platform.cpp
 HEADERS += $${BASE}/source/sockets/_win/vsocket.h
 SOURCES += $${BASE}/source/sockets/_win/vsocket.cpp
+SOURCES += $${BASE}/source/sockets/_win/vfsnode_platform.cpp
 }
 
 DEPENDPATH += $${BASE}/source
@@ -101,6 +110,7 @@ INCLUDEPATH += $${BASE}/source/unittest
 INCLUDEPATH += $${BASE}/source/vtypes
 
 HEADERS += $${BASE}/source/vault.h
+HEADERS += $${BASE}/source/vconfigure.h
 HEADERS += $${BASE}/source/vtypes/vtypes.h
 SOURCES += $${BASE}/source/vtypes/vtypes.cpp
 HEADERS += $${BASE}/source/containers/vbento.h
@@ -113,10 +123,12 @@ HEADERS += $${BASE}/source/containers/vinstant.h
 SOURCES += $${BASE}/source/containers/vinstant.cpp
 HEADERS += $${BASE}/source/containers/vstring.h
 SOURCES += $${BASE}/source/containers/vstring.cpp
+HEADERS += $${BASE}/source/files/vabstractfilestream.h
+SOURCES += $${BASE}/source/files/vabstractfilestream.cpp
 HEADERS += $${BASE}/source/files/vbufferedfilestream.h
 SOURCES += $${BASE}/source/files/vbufferedfilestream.cpp
-HEADERS += $${BASE}/source/files/vfilestream.h
-SOURCES += $${BASE}/source/files/vfilestream.cpp
+HEADERS += $${BASE}/source/files/vdirectiofilestream.h
+SOURCES += $${BASE}/source/files/vdirectiofilestream.cpp
 HEADERS += $${BASE}/source/files/vfsnode.h
 SOURCES += $${BASE}/source/files/vfsnode.cpp
 HEADERS += $${BASE}/source/server/vlistenersocket.h
@@ -182,6 +194,8 @@ HEADERS += $${BASE}/source/unittest/vhexunit.h
 SOURCES += $${BASE}/source/unittest/vhexunit.cpp
 HEADERS += $${BASE}/source/unittest/vinstantunit.h
 SOURCES += $${BASE}/source/unittest/vinstantunit.cpp
+HEADERS += $${BASE}/source/unittest/vplatformunit.h
+SOURCES += $${BASE}/source/unittest/vplatformunit.cpp
 HEADERS += $${BASE}/source/unittest/vstreamsunit.h
 SOURCES += $${BASE}/source/unittest/vstreamsunit.cpp
 HEADERS += $${BASE}/source/unittest/vstringunit.h

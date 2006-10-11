@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -49,8 +49,8 @@ class VMemoryStream : public VStream
     {
     public:
     
-        CLASS_CONST(Vs64, kIncrement2x, 0);                ///< Special constant for resize increment, causes buffer to double when expanded.
-        CLASS_CONST(Vs64, kDefaultBufferSize, 32768);    ///< The default size of the buffer allocated on construction.
+        static const Vs64 kIncrement2x = 0;                ///< Special constant for resize increment, causes buffer to double when expanded.
+        static const Vs64 kDefaultBufferSize = 32768;    ///< The default size of the buffer allocated on construction.
     
         /**
         Constructs the object with a specified buffer size and resizing increment.
@@ -66,11 +66,11 @@ class VMemoryStream : public VStream
                         only if you carefully use the adoptBuffer() method to assign a different
                         buffer (or NULL) to the object before it is destructed or needs to expand
                         the buffer.
-        @param    inBufferSize    the size of the supplied buffer
-        @param    inEOFOffset        the offset of the end of the "valid" data in the supplied buffer
+        @param    suppliedBufferSize    the size of the supplied buffer
+        @param    suppliedEOFOffset        the offset of the end of the "valid" data in the supplied buffer
         @param    resizeIncrement    the "chunk size" in which the buffer will expand when needed
         */
-        VMemoryStream(Vu8* buffer, Vs64 inBufferSize, Vs64 inEOFOffset, Vs64 resizeIncrement=kIncrement2x);
+        VMemoryStream(Vu8* buffer, Vs64 suppliedBufferSize, Vs64 suppliedEOFOffset, Vs64 resizeIncrement=kIncrement2x);
         /**
         Destructor.
         */
@@ -137,13 +137,13 @@ class VMemoryStream : public VStream
                         only if you carefully use the adoptBuffer() method to assign a different
                         buffer (or NULL) to the object before it is destructed or needs to expand
                         the buffer.
-        @param    inBufferSize    the size of the supplied buffer
-        @param    inEOFOffset        the offset of the end of the "valid" data in the supplied buffer
+        @param    suppliedBufferSize    the size of the supplied buffer
+        @param    suppliedEOFOffset        the offset of the end of the "valid" data in the supplied buffer
         @param    deleteOldBuffer    true if the object should "delete [] x" its existing buffer,
                                 false if you want it orphaned (for example, if you retain a
                                 pointer to it and will manage it yourself)
         */
-        void    adoptBuffer(Vu8* buffer, Vs64 inBufferSize, Vs64 inEOFOffset, bool deleteOldBuffer=true);
+        void    adoptBuffer(Vu8* buffer, Vs64 suppliedBufferSize, Vs64 suppliedEOFOffset, bool deleteOldBuffer=true);
         /**
         Returns the memory buffer pointer.
         @return    the memory buffer pointer
@@ -170,9 +170,9 @@ class VMemoryStream : public VStream
         Sets the EOF offset, constrained to the buffer size. That is, if you
         attempt to set EOF past the end of the buffer, the EOF will be set
         to the end of the buffer.
-        @param    offset    the new EOF offset
+        @param    eofOffset    the new EOF offset
         */
-        void    setEOF(Vs64 inOffset);
+        void    setEOF(Vs64 eofOffset);
         /**
         Returns true if the two memory streams contain exactly the same number
         of bytes (that is, they have the same EOF offsets) and those bytes
@@ -198,49 +198,56 @@ class VMemoryStream : public VStream
         from that buffer (for example, a file or socket stream).
         @return    the i/o buffer pointer, or NULL
         */
-        virtual Vu8*    getReadIOPtr() const;
+        virtual Vu8*    _getReadIOPtr() const;
         /**
         Returns a pointer to the current write i/o position in the stream's buffer,
         or NULL if the stream does not have a buffer or support direct copying
         to that buffer (for example, a file or socket stream).
         @return    the i/o buffer pointer, or NULL
         */
-        virtual Vu8*    getWriteIOPtr() const;
+        virtual Vu8*    _getWriteIOPtr() const;
         /**
         Returns the number of bytes available for reading from the stream's
         buffer, or zero by default for streams without buffers.
         @param    numBytesToRead    the number of bytes that will be read
         @return    the number of bytes available to read, or zero
         */
-        virtual Vs64    prepareToRead(Vs64 numBytesToRead) const;
+        virtual Vs64    _prepareToRead(Vs64 numBytesToRead) const;
         /**
         Preflights the stream's buffer so that it can have the specified
         number of bytes written to it subsequently. Throws a VException
         if the buffer cannot be expanded to accomodate the data.
         @param    numBytesToWrite    the number of bytes that will be written
         */
-        virtual void    prepareToWrite(Vs64 numBytesToWrite);
+        virtual void    _prepareToWrite(Vs64 numBytesToWrite);
         /**
         Postflights a copy by advancing the i/o offset to reflect
         the specified number of bytes having just been read.
         @param    numBytesRead    the number of bytes that were previously read
         */
-        virtual void    finishRead(Vs64 numBytesRead);
+        virtual void    _finishRead(Vs64 numBytesRead);
         /**
         Postflights a copy by advancing the i/o offset to reflect
         the specified number of bytes having just been written.
         @param    numBytesWritten    the number of bytes that were previously written
         */
-        virtual void    finishWrite(Vs64 numBytesWritten);
+        virtual void    _finishWrite(Vs64 numBytesWritten);
         
         /** Asserts if any invariant is broken. */
         void assertInvariant() const;
     
         Vs64    mBufferSize;        ///< The physical size of the buffer.
-        Vs64    mIOOffset;            ///< The offset in the buffer of the next read/write.
-        Vs64    mEOFOffset;            ///< The offset in the buffer of the end of the data.
-        Vs64    mResizeIncrement;    ///< The amount to increment when expanding the buffer.
+        Vs64    mIOOffset;          ///< The offset in the buffer of the next read/write.
+        Vs64    mEOFOffset;         ///< The offset in the buffer of the end of the data.
+        Vs64    mResizeIncrement;   ///< The amount to increment when expanding the buffer.
         Vu8*    mBuffer;            ///< The buffer itself.
+
+    private:
+    
+        // Prevent copy construction and assignment since there is no provision for sharing pointer data.
+        // This could be remedied by copying the buffer and state to allow these to be called.
+        VMemoryStream(const VMemoryStream& other);
+        VMemoryStream& operator=(const VMemoryStream& other);
     };
 
 #endif /* vmemorystream_h */

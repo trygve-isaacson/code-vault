@@ -1,5 +1,5 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
 This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
@@ -123,20 +123,20 @@ class VSingleton : public MShutdownHandler
         */
         T* instance()
             {
-            VMutexLocker locker(&smMutex, mThreadSafe);
+            VMutexLocker locker(&gMutex, mThreadSafe);
             
-            if (smInstance == NULL)
+            if (gInstance == NULL)
                 {
-                if (smInstanceDeleted && !mAllowResurrection)
+                if (gInstanceDeleted && !mAllowResurrection)
                     throw VException("VSingleton called with invalid attempt to get instance of deleted singleton.");
 
-                smInstance = new T();
+                gInstance = new T();
 
                 if (mWantShutdown)
                     VShutdownRegistry::instance()->registerHandler(this);
                 }
             
-            return smInstance;
+            return gInstance;
             }
         
         /**
@@ -144,10 +144,10 @@ class VSingleton : public MShutdownHandler
         */
         void deleteInstance()
             {
-            VMutexLocker locker(&smMutex, mThreadSafe);
-            delete smInstance;
-            smInstance = NULL;
-            smInstanceDeleted = true;
+            VMutexLocker locker(&gMutex, mThreadSafe);
+            delete gInstance;
+            gInstance = NULL;
+            gInstanceDeleted = true;
             }
     
     protected:
@@ -156,25 +156,25 @@ class VSingleton : public MShutdownHandler
         Implementation of MShutdownHandler interface.
         To shut down the singleton means to delete the instance.
         */
-        virtual void shutdown()
+        virtual void _shutdown()
             {
             this->deleteInstance();
             }
 
     private:
     
-        static VMutex smMutex;            ///< Mutex to protect the instance if the thread safety policy says so.
-        static T* smInstance;            ///< Pointer to the instance; NULL until first call to instance().
-        static bool smInstanceDeleted;    ///< True if deleteInstance() has been called; used with resurrection policy.
+        static VMutex gMutex;           ///< Mutex to protect the instance if the thread safety policy says so.
+        static T* gInstance;            ///< Pointer to the instance; NULL until first call to instance().
+        static bool gInstanceDeleted;   ///< True if deleteInstance() has been called; used with resurrection policy.
         
-        bool mThreadSafe;            ///< True if access to the instance is done via a mutex lock.
-        bool mWantShutdown;            ///< True if the holder will register with the shutdown registry upon creating the instance.
+        bool mThreadSafe;           ///< True if access to the instance is done via a mutex lock.
+        bool mWantShutdown;         ///< True if the holder will register with the shutdown registry upon creating the instance.
         bool mAllowResurrection;    ///< True if the instance is allowed to be created after having been previously destroyed.
         
     };
 
-template <class T> VMutex VSingleton<T>::smMutex;
-template <class T> T* VSingleton<T>::smInstance = NULL;
-template <class T> bool VSingleton<T>::smInstanceDeleted = false;
+template <class T> VMutex VSingleton<T>::gMutex;
+template <class T> T* VSingleton<T>::gInstance = NULL;
+template <class T> bool VSingleton<T>::gInstanceDeleted = false;
 
 #endif /* vsingleton_h */

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -51,15 +51,20 @@ void VSocketBase::netAddrToIPAddressString(VNetAddr netAddr, VString& ipAddress)
     ipAddress = ::inet_ntoa(addr);
     }
 
-VSocketBase::VSocketBase()
+VSocketBase::VSocketBase() :
+mSocketID(kNoSocketID),
+// mHostName constructs to empty
+mPortNumber(0),
+mReadTimeOutActive(false),
+// mReadTimeOut is not active
+mWriteTimeOutActive(false),
+// mWriteTimeOut is not active
+mListenBacklog(0),
+mRequireReadAll(true),
+mNumBytesRead(0),
+mNumBytesWritten(0)
+// mLastEventTime constructs to now
     {
-    mReadTimeOutActive = false;
-    mWriteTimeOutActive = false;
-    mSockID = kNoSockID;
-    mListenBacklog = 0;
-    mRequireReadAll = true;
-    mNumBytesRead = 0;
-    mNumBytesWritten = 0;
     }
 
 VSocketBase::~VSocketBase()
@@ -67,9 +72,9 @@ VSocketBase::~VSocketBase()
     VSocketBase::close();
     }
 
-void VSocketBase::init(VSockID id)
+void VSocketBase::init(VSocketID id)
     {
-    mSockID = id;
+    mSocketID = id;
 
     this->discoverHostAndPort();
     this->setDefaultSockOpt();
@@ -96,14 +101,14 @@ int VSocketBase::getPortNumber() const
 
 void VSocketBase::close()
     {
-    if (mSockID >= 0)
+    if (mSocketID >= 0)
         {
 #ifdef VPLATFORM_WIN
-        ::closesocket(mSockID);
+        ::closesocket(mSocketID);
 #else
-        vault::close(mSockID);
+        vault::close(mSocketID);
 #endif
-        mSockID = kNoSockID;
+        mSocketID = kNoSocketID;
         }
     }
 
@@ -175,20 +180,20 @@ Vs64 VSocketBase::numBytesWritten() const
     return mNumBytesWritten;
     }
 
-Vs64 VSocketBase::getIdleTime() const
+VDuration VSocketBase::getIdleTime() const
     {
-    VInstant    now;
+    VInstant now;
     return now - mLastEventTime;
     }
 
-VSockID VSocketBase::getSockID() const
+VSocketID VSocketBase::getSockID() const
     {
-    return mSockID;
+    return mSocketID;
     }
 
-void VSocketBase::setSockID(VSockID id)
+void VSocketBase::setSockID(VSocketID id)
     {
-    mSockID = id;
+    mSocketID = id;
     }
 
 void VSocketBase::assertInvariant() const
@@ -198,7 +203,7 @@ void VSocketBase::assertInvariant() const
 VSocketInfo::VSocketInfo(const VSocket& socket)
     {
     socket.getHostName(mHostName);
-    mSockID = socket.getSockID();
+    mSocketID = socket.getSockID();
     mPortNumber = socket.getPortNumber();
     mNumBytesRead = socket.numBytesRead();
     mNumBytesWritten = socket.numBytesWritten();

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -10,6 +10,8 @@ http://www.bombaydigital.com/
 /** @file */
 
 #include "vunit.h"
+
+class VBentoNode;
 
 /**
 Unit test class for validating VBento.
@@ -34,6 +36,20 @@ class VBentoUnit : public VUnit
         */
         virtual void run();
 
+    protected:
+    
+        /**
+        Verifies bento hierarchy contents as previously constructed.
+        */
+        void _verifyDynamicLengths();
+        /**
+        Builds some test data to be verified in various ways.
+        */
+        void _buildTestData(VBentoNode& root);
+        /**
+        Verifies bento hierarchy contents as previously constructed.
+        */
+        void _verifyContents(const VBentoNode& node, const VString& labelPrefix);
     };
 
 #endif /* vbentounit_h */

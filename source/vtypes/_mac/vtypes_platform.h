@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -16,7 +16,7 @@ http://www.bombaydigital.com/
 
 #define _BSD_WCHAR_T_DEFINED_
 #ifdef _lint
-typedef    _BSD_WCHAR_T_    wchar_t;
+    typedef _BSD_WCHAR_T_ wchar_t;
 #endif
 
 #include <assert.h>
@@ -30,7 +30,7 @@ typedef    _BSD_WCHAR_T_    wchar_t;
 #include <limits.h>
 
 #ifdef HAVE_MALLOC_H
-#include <malloc.h>
+    #include <malloc.h>
 #endif
 
 #include <unistd.h>
@@ -40,25 +40,25 @@ typedef    _BSD_WCHAR_T_    wchar_t;
 // Note: we can also check for __GNUC__
 
 #ifdef __MWERKS__
-#define VCOMPILER_CODEWARRIOR
-#define VLIBRARY_METROWERKS    /* might want to consider adding a check for using CW but not MSL */
+    #define VCOMPILER_CODEWARRIOR
+    #define VLIBRARY_METROWERKS    /* might want to consider adding a check for using CW but not MSL */
 #endif
 
 #ifndef VLIBRARY_METROWERKS
-#define V_HAVE_REENTRANT_TIME    // we can and should use the _r versions of time.h calls
+    #define V_HAVE_REENTRANT_TIME // we can and should use the _r versions of time.h calls
 #endif
 
 // @todo This will need to be conditional or chooseable for building non-CF code.
 #define WANT_VAULT_CORE_FOUNDATION_SUPPORT
 
 #ifndef VCOMPILER_CODEWARRIOR
-#ifdef WANT_VAULT_CORE_FOUNDATION_SUPPORT
-#define VAULT_CORE_FOUNDATION_SUPPORT
-#include <CoreFoundation/CFString.h>
-#endif
+    #ifdef WANT_VAULT_CORE_FOUNDATION_SUPPORT
+        #define VAULT_CORE_FOUNDATION_SUPPORT
+        #include <CoreFoundation/CFString.h>
+    #endif
 #endif
 
-#define O_BINARY        0x8000        ///< Macro to define O_BINARY mode, which is not in the standard headers.
+#define O_BINARY 0x8000 ///< Macro to define O_BINARY mode, which is not in the standard headers.
 
 #undef FD_ZERO
 #define FD_ZERO(p) memset(p, 0, sizeof(*(p)))
@@ -72,25 +72,25 @@ condition, __LITTLE_ENDIAN__ Mac on Intel.
 #if __LITTLE_ENDIAN__
 	#define VBYTESWAP_NEEDED
 
-	#define V_BYTESWAP_HTONS_GET(x)			VbyteSwap16((Vu16) x)
-	#define V_BYTESWAP_NTOHS_GET(x)			VbyteSwap16((Vu16) x)
-	#define V_BYTESWAP_HTONS_IN_PLACE(x)	((x) = (VbyteSwap16((Vu16) x)))
-	#define V_BYTESWAP_NTOHS_IN_PLACE(x)	((x) = (VbyteSwap16((Vu16) x)))
+	#define V_BYTESWAP_HTONS_GET(x)			vault::VbyteSwap16((Vu16) x)
+	#define V_BYTESWAP_NTOHS_GET(x)			vault::VbyteSwap16((Vu16) x)
+	#define V_BYTESWAP_HTONS_IN_PLACE(x)	((x) = (vault::VbyteSwap16((Vu16) x)))
+	#define V_BYTESWAP_NTOHS_IN_PLACE(x)	((x) = (vault::VbyteSwap16((Vu16) x)))
 
-	#define V_BYTESWAP_HTONL_GET(x)			VbyteSwap32((Vu32) x)
-	#define V_BYTESWAP_NTOHL_GET(x)			VbyteSwap32((Vu32) x)
-	#define V_BYTESWAP_HTONL_IN_PLACE(x)	((x) = (VbyteSwap32((Vu32) x)))
-	#define V_BYTESWAP_NTOHL_IN_PLACE(x)	((x) = (VbyteSwap32((Vu32) x)))
+	#define V_BYTESWAP_HTONL_GET(x)			vault::VbyteSwap32((Vu32) x)
+	#define V_BYTESWAP_NTOHL_GET(x)			vault::VbyteSwap32((Vu32) x)
+	#define V_BYTESWAP_HTONL_IN_PLACE(x)	((x) = (vault::VbyteSwap32((Vu32) x)))
+	#define V_BYTESWAP_NTOHL_IN_PLACE(x)	((x) = (vault::VbyteSwap32((Vu32) x)))
 
-	#define V_BYTESWAP_HTON64_GET(x)		VbyteSwap64((Vu64) x)
-	#define V_BYTESWAP_NTOH64_GET(x)		VbyteSwap64((Vu64) x)
-	#define V_BYTESWAP_HTON64_IN_PLACE(x)	((x) = (VbyteSwap64((Vu64) x)))
-	#define V_BYTESWAP_NTOH64_IN_PLACE(x)	((x) = (VbyteSwap64((Vu64) x)))
+	#define V_BYTESWAP_HTON64_GET(x)		vault::VbyteSwap64((Vu64) x)
+	#define V_BYTESWAP_NTOH64_GET(x)		vault::VbyteSwap64((Vu64) x)
+	#define V_BYTESWAP_HTON64_IN_PLACE(x)	((x) = (vault::VbyteSwap64((Vu64) x)))
+	#define V_BYTESWAP_NTOH64_IN_PLACE(x)	((x) = (vault::VbyteSwap64((Vu64) x)))
 
-	#define V_BYTESWAP_HTONF_GET(x)			VbyteSwapFloat((VFloat) x)
-	#define V_BYTESWAP_NTOHF_GET(x)			VbyteSwapFloat((VFloat) x)
-	#define V_BYTESWAP_HTONF_IN_PLACE(x)	((x) = (VbyteSwapFloat((VFloat) x)))
-	#define V_BYTESWAP_NTOHF_IN_PLACE(x)	((x) = (VbyteSwapFloat((VFloat) x)))
+	#define V_BYTESWAP_HTONF_GET(x)			vault::VbyteSwapFloat((VFloat) x)
+	#define V_BYTESWAP_NTOHF_GET(x)			vault::VbyteSwapFloat((VFloat) x)
+	#define V_BYTESWAP_HTONF_IN_PLACE(x)	((x) = (vault::VbyteSwapFloat((VFloat) x)))
+	#define V_BYTESWAP_NTOHF_IN_PLACE(x)	((x) = (vault::VbyteSwapFloat((VFloat) x)))
 
 #else
 
@@ -146,17 +146,17 @@ symbol.
 #include <AvailabilityMacros.h> /* so we can test MAC_OS_X_VERSION_xxxx values' presence */
 
 #ifdef VLIBRARY_METROWERKS
-#ifdef MAC_OS_X_VERSION_10_4
-#define __FP__
-#include <math.h>
-#undef FP_NAN
-#undef FP_INFINITE
-#undef FP_ZERO
-#undef FP_NORMAL
-#undef FP_SUBNORMAL
-#undef HUGE_VALF
-#undef HUGE_VALL
-#endif /* MAC_OS_X_VERSION_10_4 */
+    #ifdef MAC_OS_X_VERSION_10_4
+        #define __FP__
+        #include <math.h>
+        #undef FP_NAN
+        #undef FP_INFINITE
+        #undef FP_ZERO
+        #undef FP_NORMAL
+        #undef FP_SUBNORMAL
+        #undef HUGE_VALF
+        #undef HUGE_VALL
+    #endif /* MAC_OS_X_VERSION_10_4 */
 #endif /* VLIBRARY_METROWERKS */
 
 /*
@@ -167,17 +167,17 @@ of which headers dominate.
 */
 
 // min and max work the same everywhere
-#define V_MIN(a, b) std::min(a, b)    ///< Macro for getting min of compatible values using standard function template.
-#define V_MAX(a, b) std::max(a, b)    ///< Macro for getting max of compatible values using standard function template.
+#define V_MIN(a, b) std::min(a, b)  ///< Macro for getting min of compatible values using standard function template.
+#define V_MAX(a, b) std::max(a, b)  ///< Macro for getting max of compatible values using standard function template.
 
 #ifdef VLIBRARY_METROWERKS
 
     // Metrowerks cannot access abs under 10.4, and in any case does not put abs or fabs in std namespace.
 
     #ifdef MAC_OS_X_VERSION_10_4
-        #define V_ABS(a) ((a) < 0 ? (-(a)) : (a))    ///< Macro for getting abs of an integer value when standard functions / templates are not available.
+        #define V_ABS(a) ((a) < 0 ? (-(a)) : (a))   ///< Macro for getting abs of an integer value when standard functions / templates are not available.
     #else
-        #define V_ABS(a) abs(a)                        ///< Macro for getting abs of an integer value using standard function.
+        #define V_ABS(a) abs(a)                     ///< Macro for getting abs of an integer value using standard function.
     #endif
 
     #define V_FABS(a) abs(a)                        ///< Macro for getting abs of a floating point value using standard function.
@@ -189,10 +189,10 @@ of which headers dominate.
     #define V_ABS(a) std::abs(a)                    ///< Macro for getting abs of an integer value using standard function template.
 
     #ifdef MAC_OS_X_VERSION_10_4
-#include <math.h>
-        #define V_FABS(a) fabs(a)                    ///< Macro for getting abs of a floating point value using standard function.
+        #include <math.h>
+        #define V_FABS(a) fabs(a)                   ///< Macro for getting abs of a floating point value using standard function.
     #else
-        #define V_FABS(a) std::fabs(a)                ///< Macro for getting abs of a floating point value using standard function template.
+        #define V_FABS(a) std::fabs(a)              ///< Macro for getting abs of a floating point value using standard function template.
     #endif
 
 #endif /* VLIBRARY_METROWERKS */
@@ -202,11 +202,11 @@ of which headers dominate.
 // always define V_EFFICIENT_SPRINTF.
 
 #ifdef VLIBRARY_METROWERKS
-#define V_EFFICIENT_SPRINTF
+    #define V_EFFICIENT_SPRINTF
 #endif
 
 #ifdef MAC_OS_X_VERSION_10_4
-#define V_EFFICIENT_SPRINTF
+    #define V_EFFICIENT_SPRINTF
 #endif
 
 /*
@@ -226,13 +226,15 @@ inline int close(int fd) { return ::close(fd); }
 inline int mkdir(const char* path, mode_t mode) { return ::mkdir(path, mode); }
 inline int rmdir(const char* path) { return ::rmdir(path); }
 inline int unlink(const char* path) { return ::unlink(path); }
+inline int rename(const char* oldName, const char* newName) { return ::rename(oldName, newName); }
+inline int stat(const char* path, struct stat* buf) { return ::stat(path, buf); }
 inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args) { return ::vsnprintf(buffer, length, format, args); }
 
 inline int snprintf(char* buffer, size_t length, const char* format, ...)
     {
     va_list	args;
     va_start(args, format);
-    int result = ::snprintf(buffer, length, format, args);
+    int result = ::vsnprintf(buffer, length, format, args);
     va_end(args);
     return result;
     }

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -69,6 +69,12 @@ class VListenerSocket : public VSocket
     
         VSocketFactory*    mFactory;    ///< The factory for creating new VSocket objects.
 
+    private:
+    
+        // Prevent copy construction and assignment since there is no provision for sharing pointer data,
+        // and it is probably an error anyway to try to create multiple listeners on the same port.
+        VListenerSocket(const VListenerSocket& other);
+        VListenerSocket& operator=(const VListenerSocket& other);
     };
 
 #endif /* vlistenersocket_h */

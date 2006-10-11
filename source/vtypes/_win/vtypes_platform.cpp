@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -12,11 +12,31 @@ http://www.bombaydigital.com/
 #include "vmutexlocker.h"
 #include "vstring.h"
 
+#include <psapi.h> // for GetProcessMemoryInfo used by VgetMemoryUsage
+
 V_STATIC_INIT_TRACE
     
+Vs64 vault::VgetMemoryUsage()
+    {
+    PROCESS_MEMORY_COUNTERS info;
+    BOOL success = ::GetProcessMemoryInfo(::GetCurrentProcess(), &info, sizeof(info));
+    if (success)
+        return info.WorkingSetSize;
+    else
+        return 0;
+    }
+    
+static const Vu8 kDOSLineEnding[2] = { 0x0D, 0x0A };
+
+const Vu8* vault::VgetNativeLineEnding(int& numBytes)
+    {
+    numBytes = 2;
+    return kDOSLineEnding;
+    }
+
 static void getCurrentTZ(VString& tz)
     {
-	char*    tzEnvString = vault::getenv("TZ");
+    char*    tzEnvString = vault::getenv("TZ");
     
     if (tzEnvString == NULL)
         tz = VString::kEmptyString;
@@ -28,18 +48,13 @@ static void setCurrentTZ(const VString& tz)
     {
     VString    envString("TZ=%s", tz.chars());
 
-	vault::putenv(envString);
+    vault::putenv(envString);
     }
-
-//    extern "C" __time64_t __cdecl _mkgmtime64(struct tm* tb);
-//_CRTIMP time_t __cdecl _mkgmtime(struct tm *);
 
 static VMutex gTimeGMMutex;
 
 time_t timegm(struct tm* t)
     {
-    //return _mkgmtime(t);
-    
     VMutexLocker    locker(&gTimeGMMutex);
     VString            savedTZ;
     
@@ -52,5 +67,4 @@ time_t timegm(struct tm* t)
     
     return result;
     }
-
 

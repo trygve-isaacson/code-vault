@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -104,8 +104,8 @@ class VMutex
 
     private:
     
-        VMutex_Type    mMutex;        ///< The OS mutex handle.
-        bool        mIsLocked;    ///< True if this object has the mutex lock.
+        VMutex_Type mMutex;     ///< The OS mutex handle.
+        bool        mIsLocked;  ///< True if this object has the mutex lock.
     };
 
 #endif /* vmutex_h */

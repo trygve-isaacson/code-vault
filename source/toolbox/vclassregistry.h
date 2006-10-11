@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -74,28 +74,28 @@ own separate VClassFactory object, and an accessor function that makes
 sure it's created upon first use, just like VClassRegistry::registry().
 In other words, define your own "myRegistry()" function that looks
 exactly like the code in VClassRegistry::registry() but uses your own
-registry global rather than VClassRegistry::smRegistry.
+registry global rather than VClassRegistry::gRegistry.
 
 In the class declaration of the class that will own your registry:
 
     public:
         static VClassRegistry* myRegistry();
     protected:
-        static VClassRegistry* smRegistry;
+        static VClassRegistry* gRegistry;
 
 In the class implementation:
 
     // static
-    VClassRegistry* ThingThatOwnsMyRegistry::smRegistry = NULL;
+    VClassRegistry* ThingThatOwnsMyRegistry::gRegistry = NULL;
 
     // static
     VClassRegistry* ThingThatOwnsMyRegistry::registry()
         {
         // We're using the "create on first use" idiom here.
-        if (smRegistry == NULL)
-            smRegistry = new VClassRegistry();
+        if (gRegistry == NULL)
+            gRegistry = new VClassRegistry();
         
-        return smRegistry;
+        return gRegistry;
         }
 
 Then your FooFactory would only have to change its constructor from
@@ -151,9 +151,9 @@ class VClassRegistry
         
     protected:
     
-        VClassFactoryPtrVector    mFactories;    ///< The factories that have been registered.
+        VClassFactoryPtrVector mFactories; ///< The factories that have been registered.
         
-        static VClassRegistry* smRegistry;    ///< The global registry we maintain.
+        static VClassRegistry* gRegistry;  ///< The global registry we maintain.
     };
 
 /**
@@ -215,7 +215,7 @@ class factoryname : public VClassFactory \
     { \
     public: \
  \
-        static factoryname smFactory; \
+        static factoryname gFactory; \
  \
         factoryname(const VString& classID) : VClassFactory(classID) \
             { \
@@ -235,7 +235,7 @@ typically in your implementation file. Typically, you'll say something like:
 
 - DECLARE_CLASSFACTORY(Foo, FooFactory);
 */
-#define DECLARE_CLASSFACTORY(classname, factoryname) factoryname factoryname::smFactory(#classname)
+#define DECLARE_CLASSFACTORY(classname, factoryname) factoryname factoryname::gFactory(#classname)
 
 #endif /* vclassregistry_h */
 

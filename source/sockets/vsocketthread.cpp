@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -10,11 +10,11 @@ http://www.bombaydigital.com/
 
 #include "vlistenerthread.h"
 
-VSocketThread::VSocketThread(const VString& name, VSocket* socket, VListenerThread* ownerThread)
-: VThread(name, kDeleteSelfAtEnd, kCreateThreadDetached, (ownerThread == NULL) ? NULL : ownerThread->getManagementInterface())
+VSocketThread::VSocketThread(const VString& name, VSocket* socket, VListenerThread* ownerThread) :
+VThread(name, kDeleteSelfAtEnd, kCreateThreadDetached, (ownerThread == NULL) ? NULL : ownerThread->getManagementInterface()),
+mSocket(socket),
+mOwnerThread(ownerThread)
     {
-    mSocket = socket;
-    mOwnerThread = ownerThread;
     }
 
 VSocketThread::~VSocketThread()

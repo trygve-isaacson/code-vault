@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -55,19 +55,17 @@ VUnit::~VUnit()
 void VUnit::logStart()
     {
     this->logStatus("starting.");
-//    this->logMessage(VString("[status ] %s : starting.", mName.chars()));
     }
 
 void VUnit::logNormalEnd(VTextIOStream* xmlOutputStream)
     {
     this->logStatus("ended.");
-//    this->logMessage(VString("[status ] %s : ended.", mName.chars()));
     this->logResults(xmlOutputStream);
     }
 
 void VUnit::logExceptionalEnd(VTextIOStream* xmlOutputStream, const VString& exceptionMessage)
     {
-    mResults.push_back(VTestInfo(false, VString("after %s, threw exception: %s", mLastTestDescription.chars(), exceptionMessage.chars()), 0));
+    mResults.push_back(VTestInfo(false, VString("after %s, threw exception: %s", mLastTestDescription.chars(), exceptionMessage.chars()), VDuration::ZERO()));
 
     ++mNumFailedTests;
     this->logMessage(VString("[FAILURE] %s : ended with an exception after previous test '%s'. Exception: '%s'",
@@ -142,10 +140,10 @@ void VUnit::recordFailure(const VString& description)
         throw VException(message);
     }
 
-static void _getDurationString(Vs64 durationMilliseconds, VString& prettyString)
+static void _getDurationString(const VDuration& duration, VString& prettyString)
     {
-    int    wholeSeconds = static_cast<int>(durationMilliseconds / CONST_S64(1000));
-    int    thousandths = static_cast<int>(durationMilliseconds % CONST_S64(1000));
+    int    wholeSeconds = duration.getDurationSeconds();
+    int    thousandths = static_cast<int>(duration.getDurationMilliseconds() % 1000);
     
     prettyString.format("%d.%03d", wholeSeconds, thousandths);
     }
@@ -172,7 +170,7 @@ void VUnit::logXMLResults(VTextIOStream* xmlOutputStream)
         {
         VTestInfo    info = (*i);
 
-        _getDurationString(info.mDurationMilliseconds, durationString);
+        _getDurationString(info.mDuration, durationString);
         
         // We need to cleanse the description for XML.
         VString    xmlCleanDescription(info.mDescription);
@@ -215,10 +213,10 @@ void VUnit::logXMLResults(VTextIOStream* xmlOutputStream)
 
 // VTestInfo -----------------------------------------------------------------
 
-VTestInfo::VTestInfo(bool success, const VString& description, Vs64 durationMilliseconds) :
+VTestInfo::VTestInfo(bool success, const VString& description, const VDuration& duration) :
 mSuccess(success),
 mDescription(description),
-mDurationMilliseconds(durationMilliseconds)
+mDuration(duration)
     {
     }
 

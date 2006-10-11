@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -9,38 +9,49 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 
 // static
-void VException::breakpointLocation()
+void VException::_breakpointLocation()
     {
     // Put a breakpoint here if you want to break on all VExceptions.
     }
 
-VException::VException()
+VException::VException() :
+mError(kGenericError),
+// mErrorString constructs to empty string
+mErrorMessage("") // if mErrorString is empty, we assert that mErrorMessage is not null, so assign it something
     {
-    mError = kGenericError;
-    mErrorMessage = "";    // if mErrorString is empty, we assert that mErrorMessage is not null, so assign it something
-    
     ASSERT_INVARIANT();
     
-    VException::breakpointLocation();
+    VException::_breakpointLocation();
     }
 
-VException::VException(int error, const char* errorMessage)
+VException::VException(const VException& other) :
+std::exception(),
+mError(other.getError()),
+mErrorString(other.mErrorString),
+mErrorMessage(other.mErrorMessage)
     {
-    mError = error;
-    mErrorMessage = errorMessage;
-    
+    ASSERT_INVARIANT();
+
+    VException::_breakpointLocation();
+    }
+
+VException::VException(int error, const char* errorMessage) :
+mError(error),
+// mErrorString constructs to empty string
+mErrorMessage(errorMessage)
+    {
     ASSERT_INVARIANT();
     
-    VException::breakpointLocation();
+    VException::_breakpointLocation();
     }
 
 //lint -e818 -e960 "Violates MISRA Required Rule 69, function has variable number of arguments"
-VException::VException(int error, char* format, ...)
+VException::VException(int error, char* format, ...) :
+mError(error),
+// mErrorString constructs to empty string
+mErrorMessage(NULL)
     {
-    mError = error;
-    mErrorMessage = NULL;
-
-     va_list    args;
+    va_list    args;
     va_start(args, format);
 
     mErrorString.vaFormat(format, args);
@@ -49,37 +60,36 @@ VException::VException(int error, char* format, ...)
     
     ASSERT_INVARIANT();
     
-    VException::breakpointLocation();
+    VException::_breakpointLocation();
     }
 
-VException::VException(int error, const VString& errorString)
-: mErrorString(errorString)
+VException::VException(int error, const VString& errorString) :
+mError(error),
+mErrorString(errorString),
+mErrorMessage(NULL)
     {
-    mError = error;
-    mErrorMessage = NULL;
-    
     ASSERT_INVARIANT();
     
-    VException::breakpointLocation();
+    VException::_breakpointLocation();
     }
 
-VException::VException(const char* errorMessage)
+VException::VException(const char* errorMessage) :
+mError(kGenericError),
+// mErrorString constructs to empty string
+mErrorMessage(errorMessage)
     {
-    mError = kGenericError;
-    mErrorMessage = errorMessage;
-    
     ASSERT_INVARIANT();
     
-    VException::breakpointLocation();
+    VException::_breakpointLocation();
     }
 
 //lint -e818 -e960 "Violates MISRA Required Rule 69, function has variable number of arguments"
-VException::VException(char* format, ...)
+VException::VException(char* format, ...) :
+mError(kGenericError),
+// mErrorString constructs to empty string
+mErrorMessage(NULL)
     {
-    mError = kGenericError;
-    mErrorMessage = NULL;
-
-     va_list    args;
+    va_list    args;
     va_start(args, format);
 
     mErrorString.vaFormat(format, args);
@@ -88,23 +98,35 @@ VException::VException(char* format, ...)
     
     ASSERT_INVARIANT();
     
-    VException::breakpointLocation();
+    VException::_breakpointLocation();
     }
 
-VException::VException(const VString& errorString)
-: mErrorString(errorString)
+VException::VException(const VString& errorString) :
+mError(kGenericError),
+mErrorString(errorString),
+mErrorMessage(NULL)
     {
-    mError = kGenericError;
-    mErrorMessage = NULL;
-    
     ASSERT_INVARIANT();
     
-    VException::breakpointLocation();
+    VException::_breakpointLocation();
     }
 
 VException::~VException() throw()
     {
     // do NOT delete mErrorMessage, it's someone's static string constant
+    }
+
+VException& VException::operator=(const VException& other)
+    {
+    ASSERT_INVARIANT();
+
+    mError = other.getError();
+    mErrorString = other.mErrorString;
+    mErrorMessage = other.mErrorMessage;
+
+    ASSERT_INVARIANT();
+    
+    return *this;
     }
 
 const char* VException::what() const throw()

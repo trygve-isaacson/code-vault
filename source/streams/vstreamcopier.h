@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -131,10 +131,10 @@ class VStreamCopier
         */
         Vs64 numBytesCopied() const;
 
-    protected:
+    private:
         
-        int            mChunkSize;            ///< The number of bytes to copy per chunk.
-        VStream*    mFrom;                ///< The underlying stream we are copying from.
+        int         mChunkSize;         ///< The number of bytes to copy per chunk.
+        VStream*    mFrom;              ///< The underlying stream we are copying from.
         VStream*    mTo;                ///< The underlying stream we are copying to.
         Vs64        mNumBytesCopied;    ///< The total number of bytes copied so far.
     };

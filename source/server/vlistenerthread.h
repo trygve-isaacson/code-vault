@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -117,10 +117,10 @@ class VListenerThread : public VThread
         These two parameters are used to identify the socket because the sock
         ID can re-used by another socket after a given socket is closed.
         
-        @param    sockID            the socket ID
+        @param    socketID            the socket ID
         @param    localPortNumber    the socket's port number
         */
-        void stopSocketThread(VSockID sockID, int localPortNumber);
+        void stopSocketThread(VSocketID socketID, int localPortNumber);
 
         /**
         Attempts to stop all socket threads that were created by this
@@ -148,20 +148,26 @@ class VListenerThread : public VThread
         */
         bool isListening() const { return mShouldListen; }
 
-    protected:
+    private:
     
+        // Prevent copy construction and assignment since there is no provision for sharing the underlying thread
+        // or the pointer instance variables.
+        VListenerThread(const VListenerThread& other);
+        VListenerThread& operator=(const VListenerThread& other);
+
         /**
         Performs the run() loop operations needed when we should be listening.
         The run() method calls this when we are listening. So 
         */
-        void runListening();
+        void _runListening();
     
-        int                        mPortNumber;            ///< The port number we are listening on.
-        bool                    mShouldListen;            ///< True if we should be listening; false if we should not. Controls run loops.
-        VSocketFactory*            mSocketFactory;            ///< A factory for each incoming connection's VSocket.
-        VSocketThreadFactory*    mThreadFactory;            ///< A factory for each incoming connection's VSocketThread.
-        VSocketThreadPtrVector    mSocketThreads;            ///< The VSocketThread objects we have created.
-        VMutex                    mSocketThreadsMutex;    ///< Mutex to protect our VSocketThread vector.
+        int                     mPortNumber;            ///< The port number we are listening on.
+        bool                    mShouldListen;          ///< True if we should be listening; false if we should not. Controls run loops.
+        VSocketFactory*         mSocketFactory;         ///< A factory for each incoming connection's VSocket.
+        VSocketThreadFactory*   mThreadFactory;         ///< A factory for each incoming connection's VSocketThread.
+        VSocketThreadPtrVector  mSocketThreads;         ///< The VSocketThread objects we have created.
+        VMutex                  mSocketThreadsMutex;    ///< Mutex to protect our VSocketThread vector.
+
     };
 
 /**

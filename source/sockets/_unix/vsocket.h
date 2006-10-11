@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -74,8 +74,8 @@ class VSocket : public VSocketBase
         */
         virtual ~VSocket();
 
-        // --------------- These are the pure virtual methods that only a platform
-        // subclass can implement.
+        // --------------- These are the implementations of the pure virtual
+        // methods that only a platform subclass can implement.
 
         /**
         Connects to the server.
@@ -144,38 +144,38 @@ class VSocket : public VSocketBase
     
         void assertInvariant() const;
 
-        #ifdef SUSV2
+#ifdef SUSV2
 
         /**
         Connects to the server using the SUSV2 APIs.
         */
-        void connectStandard();
+        void _connectStandard();
         /**
         Starts listening for incoming connections using the SUSV2 APIs.
         */
-        void listenStandard();
+        void _listenStandard();
 
-        #else /* SUSV2 */
+#else /* not SUSV2 */
 
         /**
         Connects to the server using the BSD APIs.
         */
-        void connectEnhanced();
+        void _connectEnhanced();
         /**
         Starts listening for incoming connections using the BSD APIs.
         */
-        void listenEnhanced();
+        void _listenEnhanced();
 
         // These are further BSD-specific methods needed by the above.
-        void      tcpGetAddrInfo(struct addrinfo **res);                                                ///< Calls low-level getaddrinfo()
-        int      getAddrInfo(struct addrinfo* hints, struct addrinfo** res, bool useHostName=true);    ///< Calls low-level getaddrinfo()
-        VSockID    tcpConnectWAddrInfo(struct addrinfo * const resInput);                                ///< Calls low-level socket() and connect()
+        void      _tcpGetAddrInfo(struct addrinfo **res);                                                ///< Calls low-level getaddrinfo()
+        int      _getAddrInfo(struct addrinfo* hints, struct addrinfo** res, bool useHostName=true);    ///< Calls low-level _getAddrInfo()
+        VSocketID    _tcpConnectWAddrInfo(struct addrinfo * const resInput);                                ///< Calls low-level socket() and connect()
         
-        static VMutex smAddrInfoMutex;    ///< getaddrinfo() is not thread-safe, so we have to protect ourselves.
+        static VMutex gAddrInfoMutex;    ///< getaddrinfo() is not thread-safe, so we have to protect ourselves.
 
-        #endif /* SUSV2 */
+#endif /* SUSV2 */
         
-        static bool    smStaticInited;    ///< Used internally to initialize at startup.
+        static bool gStaticInited;  ///< Used internally to initialize at startup.
         static bool staticInit();    ///< Used internally to initialize at startup.
     };
 

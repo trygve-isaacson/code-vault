@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -12,19 +12,402 @@ http://www.bombaydigital.com/
 #include "vbufferedfilestream.h"
 #include "vhex.h"
 
+/**
+VBentoAttribute is an abstract base class for all of the concrete VBento
+attribute classes. Each VBentoNode object in the object hierarchy can
+have zero or more attributes; each such attribute exists in memory as
+a concrete VBentoAttribute-derived class. These objects know how to
+read/write themselves from the stream, when asked to do so by the
+VBentoNode objects that contain them.
+*/
+class VBentoAttribute
+    {
+    public:
+    
+        VBentoAttribute(); ///< Constructs with unitinitialized name.
+        VBentoAttribute(VBinaryIOStream& stream, const VString& dataType); ///< Constructs by reading from stream.
+        VBentoAttribute(const VString& name, const VString& dataType); ///< Constructs with name and type. @param name the attribute name @param dataType the data type
+        virtual ~VBentoAttribute(); ///< Destructor.
+        
+        const VString& getName() const; ///< Returns the attribute name. @return a reference to the attribute name string.
+        const VString& getDataType() const; ///< Returns the data type name. @return a reference to the data type name string.
+        virtual void getValueAsString(VString& s) const = 0; ///< Returns a printable form of the attribute value.
+
+        Vs64 calculateContentSize() const; ///< Returns the size, in bytes, of the attribute content if written to a binary stream. @return the attribute's binary size
+        Vs64 calculateTotalSize() const; ///< Returns the size, in bytes, of the attribute content plus dynamic size indicator if written to a binary stream. @return the attribute's binary size
+        void writeToStream(VBinaryIOStream& stream) const; ///< Writes the attribute to a binary stream. @param stream the stream to write to
+        void writeToStream(VTextIOStream& stream) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to
+        void printStreamLayout(VString& info, int indentLevel) const; ///< Debugging method. Creates a text representation of the node's binary stream layout.
+        void printStreamLayout(VHex& hexDump) const; ///< Debugging method. Prints a hex dump of the stream. @param hexDump the hex dump formatter object
+        
+        static VBentoAttribute* newObjectFromStream(VBinaryIOStream& stream); ///< Creates a new attribute object by reading a binary stream. @param stream the stream to read from @return the new object
+        static VBentoAttribute* newObjectFromStream(VTextIOStream& stream); ///< Creates a new attribute object by reading a text XML stream. @param stream the stream to read from @return the new object
+
+    protected:
+
+        virtual Vs64 getDataLength() const = 0; ///< Returns the length of this object's raw data only; pure virtual. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const = 0; ///< Writes the object's raw data only to a binary stream; pure virtual. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const = 0; ///< Writes the object's raw data only to a text stream as XML; pure virtual. @param stream the stream to write to
+    
+    private:
+    
+        VString mName;      ///< The attribute name.
+        VString mDataType;  ///< The data type name.
+    };
+    
+/**
+VBentoS8 is a VBentoAttribute that holds a Vs8 value.
+*/
+class VBentoS8 : public VBentoAttribute
+    {
+    public:
+    
+        static const char* ID() { return "vs_8"; } ///< The data type name / class ID string.
+    
+        VBentoS8() {} ///< Constructs with unitinitialized name and value.
+        VBentoS8(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readS8()) {} ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoS8(const VString& name, Vs8 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
+        virtual ~VBentoS8() {} ///< Destructor.
+
+        virtual void getValueAsString(VString& s) const { s.format("%d 0x%02X", mValue, mValue); }
+        
+        inline Vs8 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
+        inline void setValue(Vs8 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
+        
+    protected:
+
+        virtual Vs64 getDataLength() const { return 1; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeS8(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%d", (int) mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+    
+    private:
+
+        Vs8 mValue; ///< The attribute value.
+    };
+
+/**
+VBentoU8 is a VBentoAttribute that holds a Vu8 value.
+*/
+class VBentoU8 : public VBentoAttribute
+    {
+    public:
+    
+        static const char* ID() { return "vu_8"; } ///< The data type name / class ID string.
+    
+        VBentoU8() {} ///< Constructs with unitinitialized name and value.
+        VBentoU8(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readU8()) {} ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoU8(const VString& name, Vu8 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
+        virtual ~VBentoU8() {} ///< Destructor.
+        
+        virtual void getValueAsString(VString& s) const { s.format("%u 0x%02X", mValue, mValue); }
+        
+        inline Vu8 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
+        inline void setValue(Vu8 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
+        
+    protected:
+        
+        virtual Vs64 getDataLength() const { return 1; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeU8(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%d", (int) mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+    
+    private:
+
+        Vu8 mValue; ///< The attribute value.
+    };
+
+/**
+VBentoS16 is a VBentoAttribute that holds a Vs16 value.
+*/
+class VBentoS16 : public VBentoAttribute
+    {
+    public:
+    
+        static const char* ID() { return "vs16"; } ///< The data type name / class ID string.
+    
+        VBentoS16() {} ///< Constructs with unitinitialized name and value.
+        VBentoS16(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readS16()) {} ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoS16(const VString& name, Vs16 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
+        virtual ~VBentoS16() {} ///< Destructor.
+        
+        virtual void getValueAsString(VString& s) const { s.format("%hd 0x%04X", mValue, mValue); }
+        
+        inline Vs16 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
+        inline void setValue(Vs16 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
+        
+    protected:
+        
+        virtual Vs64 getDataLength() const { return 2; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeS16(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%d", (int) mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+    
+    private:
+
+        Vs16 mValue; ///< The attribute value.
+    };
+
+/**
+VBentoU16 is a VBentoAttribute that holds a Vu16 value.
+*/
+class VBentoU16 : public VBentoAttribute
+    {
+    public:
+    
+        static const char* ID() { return "vu16"; } ///< The data type name / class ID string.
+    
+        VBentoU16() {} ///< Constructs with unitinitialized name and value.
+        VBentoU16(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readU16()) {} ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoU16(const VString& name, Vu16 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
+        virtual ~VBentoU16() {} ///< Destructor.
+        
+        virtual void getValueAsString(VString& s) const { s.format("%hu 0x%04X", mValue, mValue); }
+        
+        inline Vu16 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
+        inline void setValue(Vu16 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
+        
+    protected:
+        
+        virtual Vs64 getDataLength() const { return 2; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeU16(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%d", (int) mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+    
+    private:
+
+        Vu16 mValue; ///< The attribute value.
+    };
+
+/**
+VBentoS32 is a VBentoAttribute that holds a Vs32 value.
+*/
+class VBentoS32 : public VBentoAttribute
+    {
+    public:
+    
+        static const char* ID() { return "vs32"; } ///< The data type name / class ID string.
+    
+        VBentoS32() {} ///< Constructs with unitinitialized name and value.
+        VBentoS32(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readS32()) {} ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoS32(const VString& name, Vs32 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
+        virtual ~VBentoS32() {} ///< Destructor.
+        
+        virtual void getValueAsString(VString& s) const { s.format("%ld 0x%08X", mValue, mValue); }
+        
+        inline Vs32 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
+        inline void setValue(Vs32 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
+        
+    protected:
+        
+        virtual Vs64 getDataLength() const { return 4; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeS32(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%d", mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+    
+    private:
+
+        Vs32 mValue; ///< The attribute value.
+    };
+
+/**
+VBentoU32 is a VBentoAttribute that holds a Vu32 value.
+*/
+class VBentoU32 : public VBentoAttribute
+    {
+    public:
+    
+        static const char* ID() { return "vu32"; } ///< The data type name / class ID string.
+    
+        VBentoU32() {} ///< Constructs with unitinitialized name and value.
+        VBentoU32(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readU32()) {} ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoU32(const VString& name, Vu32 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
+        virtual ~VBentoU32() {} ///< Destructor.
+        
+        virtual void getValueAsString(VString& s) const { s.format("%lu 0x%08X", mValue, mValue); }
+        
+        inline Vu32 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
+        inline void setValue(Vu32 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
+        
+    protected:
+        
+        virtual Vs64 getDataLength() const { return 4; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeU32(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%u", mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+    
+    private:
+
+        Vu32 mValue; ///< The attribute value.
+    };
+
+/**
+VBentoS64 is a VBentoAttribute that holds a Vs64 value.
+*/
+class VBentoS64 : public VBentoAttribute
+    {
+    public:
+    
+        static const char* ID() { return "vs64"; } ///< The data type name / class ID string.
+    
+        VBentoS64() {} ///< Constructs with unitinitialized name and value.
+        VBentoS64(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readS64()) {} ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoS64(const VString& name, Vs64 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
+        virtual ~VBentoS64() {} ///< Destructor.
+        
+        virtual void getValueAsString(VString& s) const { s.format("%lld 0x%016llX", mValue, mValue); }
+        
+        inline Vs64 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
+        inline void setValue(Vs64 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
+        
+    protected:
+        
+        virtual Vs64 getDataLength() const { return 8; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeS64(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%lld", mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+    
+    private:
+
+        Vs64 mValue; ///< The attribute value.
+    };
+
+/**
+VBentoU64 is a VBentoAttribute that holds a Vu64 value.
+*/
+class VBentoU64 : public VBentoAttribute
+    {
+    public:
+    
+        static const char* ID() { return "vu64"; } ///< The data type name / class ID string.
+    
+        VBentoU64() {} ///< Constructs with unitinitialized name and value.
+        VBentoU64(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readU64()) {} ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoU64(const VString& name, Vu64 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
+        virtual ~VBentoU64() {} ///< Destructor.
+        
+        virtual void getValueAsString(VString& s) const { s.format("%llu 0x%016llX", mValue, mValue); }
+        
+        inline Vu64 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
+        inline void setValue(Vu64 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
+        
+    protected:
+        
+        virtual Vs64 getDataLength() const { return 8; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeU64(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%llu", mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+    
+    private:
+
+        Vu64 mValue; ///< The attribute value.
+    };
+
+/**
+VBentoBool is a VBentoAttribute that holds a bool value.
+*/
+class VBentoBool : public VBentoAttribute
+    {
+    public:
+    
+        static const char* ID() { return "bool"; } ///< The data type name / class ID string.
+    
+        VBentoBool() {} ///< Constructs with unitinitialized name and value.
+        VBentoBool(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readBool()) {} ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoBool(const VString& name, bool b) : VBentoAttribute(name, ID()), mValue(b) {} ///< Constructs from supplied name and value.
+        virtual ~VBentoBool() {} ///< Destructor.
+        
+        virtual void getValueAsString(VString& s) const { s.format("%s 0x%02X", (mValue ? "true":"false"), static_cast<Vu8>(mValue)); }
+        
+        inline bool getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
+        inline void setValue(bool b) { mValue = b; } ///< Sets the attribute's value. @param b the attribute value
+        
+    protected:
+        
+        virtual Vs64 getDataLength() const { return 1; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeBool(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(mValue?"true":"false"); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+    
+    private:
+
+        bool mValue; ///< The attribute value.
+    };
+
+/**
+VBentoString is a VBentoAttribute that holds a VString value.
+*/
+class VBentoString : public VBentoAttribute
+    {
+    public:
+    
+        static const char* ID() { return "vstr"; } ///< The data type name / class ID string.
+    
+        VBentoString() {} ///< Constructs with unitinitialized name and empty string.
+        VBentoString(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()) { stream.readString(mValue); } ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoString(const VString& name, const VString& s) : VBentoAttribute(name, ID()), mValue(s) {} ///< Constructs from supplied name and value.
+        virtual ~VBentoString() {} ///< Destructor.
+        
+        virtual void getValueAsString(VString& s) const { s.format("\"%s\"", mValue.chars()); }
+        
+        inline const VString& getValue() const { return mValue; } ///< Returns the attribute's value. @return a reference to the value string
+        inline void setValue(const VString& s) { mValue = s; } ///< Sets the attribute's value. @param s the attribute value
+        
+    protected:
+        
+        virtual Vs64 getDataLength() const { return VBentoNode::_getBinaryStringLength(mValue); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeString(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(mValue); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+    
+    private:
+
+        VString mValue; ///< The attribute value.
+    };
+
+/**
+VBentoUnknownValue is a VBentoAttribute that holds a value that is read from
+an input stream but whose type is unknown; the object uses a VMemoryStream
+to hold the binary data of unknown type. The data's length is known. Its data
+type name is known but the VBento code does not know how to map that data
+type name to a C++ class, and must therefore use a VBentoUnknownValue.
+*/
+class VBentoUnknownValue : public VBentoAttribute
+    {
+    public:
+    
+        static const char* ID() { return "unkn"; } ///< The data type name / class ID string.
+    
+        VBentoUnknownValue() {} ///< Constructs with unitinitialized name and empty stream.
+        VBentoUnknownValue(VBinaryIOStream& stream, Vs64 dataLength, const VString& dataType); ///< Constructs by reading from stream. @param stream the stream to read @param dataLength the length of stream data to read @param dataType the original data type value
+        virtual ~VBentoUnknownValue() {} ///< Destructor.
+        
+        virtual void getValueAsString(VString& s) const { VHex::bufferToHexString(mValue.getBuffer(), mValue.eofOffset(), s, true/* want leading "0x" */); }
+        
+        inline const VMemoryStream& getValue() const { return mValue; } ///< Returns the attribute's value. @return a reference to the unknown-typed data stream
+        
+    protected:
+        
+        virtual Vs64 getDataLength() const { return mValue.eofOffset(); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const; ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString("(binary data)"); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+    
+    private:
+
+        VMemoryStream mValue; ///< The attribute value.
+    };
+
+static void _printIndent(VString& output, int indentLevel)
+    {
+    for (int i = 0; i < indentLevel; ++i)
+        output += "  ";
+    }
+
+// VBentoAttribute -----------------------------------------------------------
+
 VBentoAttribute::VBentoAttribute()
 : mName("uninitialized"), mDataType(VString::kEmptyString)
     {
     }
 
-VBentoAttribute::VBentoAttribute(VBinaryIOStream& stream, const VString& inDataType)
-: mName(VString::kEmptyString), mDataType(inDataType)
+VBentoAttribute::VBentoAttribute(VBinaryIOStream& stream, const VString& dataType)
+: mName(VString::kEmptyString), mDataType(dataType)
     {
     stream.readString(mName);
     }
 
-VBentoAttribute::VBentoAttribute(const VString& inName, const VString& inDataType)
-: mName(inName), mDataType(inDataType)
+VBentoAttribute::VBentoAttribute(const VString& name, const VString& dataType)
+: mName(name), mDataType(dataType)
     {
     }
 
@@ -32,29 +415,39 @@ VBentoAttribute::~VBentoAttribute()
     {
     }
 
-const VString& VBentoAttribute::name() const
+const VString& VBentoAttribute::getName() const
     {
     return mName;
     }
 
-const VString& VBentoAttribute::dataType() const
+const VString& VBentoAttribute::getDataType() const
     {
     return mDataType;
     }
 
-Vs64 VBentoAttribute::calculateBinarySize() const
+Vs64 VBentoAttribute::calculateContentSize() const
     {
-    Vs64    fixedLength = 8 + this->dataLength();
-    Vs64    lengthOfLength = VBentoNode::getLengthOfLength(fixedLength);
-    return lengthOfLength + fixedLength;
+    Vs64    lengthOfType = 4;
+    Vs64    lengthOfName = VBentoNode::_getBinaryStringLength(mName);
+    Vs64    lengthOfData = this->getDataLength();
+
+    return lengthOfType + lengthOfName + lengthOfData;
+    }
+
+Vs64 VBentoAttribute::calculateTotalSize() const
+    {
+    Vs64    contentSize = this->calculateContentSize();
+    Vs64    lengthOfLength = VBentoNode::_getLengthOfLength(contentSize);
+
+    return lengthOfLength + contentSize;
     }
 
 void VBentoAttribute::writeToStream(VBinaryIOStream& stream) const
     {
-    Vs64    totalSize = this->calculateBinarySize();
+    Vs64    contentSize = this->calculateContentSize();
 
-    VBentoNode::writeLengthToStream(stream, totalSize);
-    VBentoNode::writeFourCharCodeToStream(stream, mDataType);
+    VBentoNode::_writeLengthToStream(stream, contentSize);
+    VBentoNode::_writeFourCharCodeToStream(stream, mDataType);
     stream.writeString(mName);
     
     this->writeDataToStream(stream);
@@ -77,9 +470,24 @@ void VBentoAttribute::writeToStream(VTextIOStream& stream) const
     stream.writeString(quote);
     }
 
+void VBentoAttribute::printStreamLayout(VString& info, int indentLevel) const
+    {
+    VString valueString;
+    this->getValueAsString(valueString);
+    
+    _printIndent(info, indentLevel);
+    info += "attribute '";
+    info += mName;
+    info += "' (";
+    info += mDataType;
+    info += ") = ";
+    info += valueString;
+    info += '\n';
+    }
+
 void VBentoAttribute::printStreamLayout(VHex& hexDump) const
     {
-    Vs64    totalSize = this->calculateBinarySize();
+    Vs64    totalSize = this->calculateTotalSize();
     std::cout << "Attribute '" << mName << "': length= " << totalSize << ", type=" << mDataType << std::endl;
 
     VMemoryStream    buffer;
@@ -92,30 +500,30 @@ void VBentoAttribute::printStreamLayout(VHex& hexDump) const
 
 VBentoAttribute* VBentoAttribute::newObjectFromStream(VBinaryIOStream& stream)
     {
-    Vs64    theDataLength = VBentoNode::readLengthFromStream(stream);
+    Vs64    theDataLength = VBentoNode::_readLengthFromStream(stream);
     VString    theDataType;
 
-    VBentoNode::readFourCharCodeFromStream(stream, theDataType);
+    VBentoNode::_readFourCharCodeFromStream(stream, theDataType);
     
-    if (theDataType == VBentoS8::id())
+    if (theDataType == VBentoS8::ID())
         return new VBentoS8(stream);
-    else if (theDataType == VBentoU8::id())
+    else if (theDataType == VBentoU8::ID())
         return new VBentoU8(stream);
-    else if (theDataType == VBentoS16::id())
+    else if (theDataType == VBentoS16::ID())
         return new VBentoS16(stream);
-    else if (theDataType == VBentoU16::id())
+    else if (theDataType == VBentoU16::ID())
         return new VBentoU16(stream);
-    else if (theDataType == VBentoS32::id())
+    else if (theDataType == VBentoS32::ID())
         return new VBentoS32(stream);
-    else if (theDataType == VBentoU32::id())
+    else if (theDataType == VBentoU32::ID())
         return new VBentoU32(stream);
-    else if (theDataType == VBentoS64::id())
+    else if (theDataType == VBentoS64::ID())
         return new VBentoS64(stream);
-    else if (theDataType == VBentoU64::id())
+    else if (theDataType == VBentoU64::ID())
         return new VBentoU64(stream);
-    else if (theDataType == VBentoBool::id())
+    else if (theDataType == VBentoBool::ID())
         return new VBentoBool(stream);
-    else if (theDataType == VBentoString::id())
+    else if (theDataType == VBentoString::ID())
         return new VBentoString(stream);
     else
         return new VBentoUnknownValue(stream, theDataLength, theDataType);
@@ -123,75 +531,25 @@ VBentoAttribute* VBentoAttribute::newObjectFromStream(VBinaryIOStream& stream)
 
 VBentoAttribute* VBentoAttribute::newObjectFromStream(VTextIOStream& /*stream*/)
     {
-    VString    theName;
-    VString    theClassID;
-    VString    valueAsText;
-
+    // Reading unknown data types from a text stream is not (yet) supported.
     return new VBentoUnknownValue();
     }
 
-// static
-Vs64 VBentoNode::readLengthFromStream(VBinaryIOStream& stream)
-    {
-    return stream.readDynamicCount();
-    }
-
-// static
-void VBentoNode::writeLengthToStream(VBinaryIOStream& stream, Vs64 length)
-    {
-    stream.writeDynamicCount(length);
-    }
-
-// static
-Vs64 VBentoNode::getLengthOfLength(Vs64 length)
-    {
-    return VBinaryIOStream::getDynamicCountLength(length);
-    }
-
-// static
-void VBentoNode::readFourCharCodeFromStream(VBinaryIOStream& stream, VString& code)
-    {
-    code.preflight(4);
-    (void) stream.read(reinterpret_cast<Vu8*> (code.buffer()), CONST_S64(4));
-    code.postflight(4);
-    }
-
-// static
-void VBentoNode::writeFourCharCodeToStream(VBinaryIOStream& stream, const VString& code)
-    {
-    int    codeLength = code.length();
-
-    (void) stream.write(reinterpret_cast<Vu8*> (code.chars()), V_MIN(4, codeLength));
-    
-    // In case code is less than 4 chars, pad with spaces. Please don't use such codes,
-    // it's not efficient!
-    for (int i = codeLength; i < 4; ++i)
-        stream.writeS8(' ');
-    }
+// VBentoNode ----------------------------------------------------------------
 
 VBentoNode::VBentoNode()
 : mName("uninitialized")
     {
     }
 
-VBentoNode::VBentoNode(const VString& inName)
-: mName(inName)
+VBentoNode::VBentoNode(const VString& name)
+: mName(name)
     {
     }
 
 VBentoNode::VBentoNode(VBinaryIOStream& stream)
     {
-    /* unused Vs64    theDataLength = */ (void) VBentoNode::readLengthFromStream(stream);
-    Vs32    numAttributes = stream.readS32();
-    Vs32    numChildNodes = stream.readS32();
-
-    stream.readString(mName);
-
-    for (int i = 0; i < numAttributes; ++i)
-        this->addAttribute(VBentoAttribute::newObjectFromStream(stream));
-
-    for (int i = 0; i < numChildNodes; ++i)
-        this->addChildNode(new VBentoNode(stream));
+    this->readFromStream(stream);
     }
 
 VBentoNode::~VBentoNode()
@@ -205,38 +563,41 @@ VBentoNode::~VBentoNode()
         delete mChildNodes[i];
     }
 
-const VString& VBentoNode::name() const
+void VBentoNode::addChildNode(VBentoNode* node)
     {
-    return mName;
+    mChildNodes.push_back(node);
     }
 
-Vs64 VBentoNode::calculateBinarySize() const
+VBentoNode* VBentoNode::addNewChildNode(const VString& name)
     {
-    Vs64    fixedLength = 12;    // minimum overhead for this node
-
-    VSizeType    numAttributes = mAttributes.size();
-    for (VSizeType i = 0; i < numAttributes; ++i)
-        fixedLength += mAttributes[i]->calculateBinarySize();
-    
-    VSizeType    numChildNodes = mChildNodes.size();
-    for (VSizeType i = 0; i < numChildNodes; ++i)
-        fixedLength += mChildNodes[i]->calculateBinarySize();
-    
-    Vs64    lengthOfLength = VBentoNode::getLengthOfLength(fixedLength);
-
-    return lengthOfLength + fixedLength;
+    VBentoNode* child = new VBentoNode(name);
+    mChildNodes.push_back(child);
+    return child;
     }
+
+void VBentoNode::addS8(const VString& name, Vs8 value) { this->_addAttribute(new VBentoS8(name, value)); }
+void VBentoNode::addU8(const VString& name, Vu8 value) { this->_addAttribute(new VBentoU8(name, value)); }
+void VBentoNode::addS16(const VString& name, Vs16 value) { this->_addAttribute(new VBentoS16(name, value)); }
+void VBentoNode::addU16(const VString& name, Vu16 value) { this->_addAttribute(new VBentoU16(name, value)); }
+void VBentoNode::addS32(const VString& name, Vs32 value) { this->_addAttribute(new VBentoS32(name, value)); }
+void VBentoNode::addU32(const VString& name, Vu32 value) { this->_addAttribute(new VBentoU32(name, value)); }
+void VBentoNode::addS64(const VString& name, Vs64 value) { this->_addAttribute(new VBentoS64(name, value)); }
+void VBentoNode::addU64(const VString& name, Vu64 value) { this->_addAttribute(new VBentoU64(name, value)); }
+void VBentoNode::addBool(const VString& name, bool value) { this->_addAttribute(new VBentoBool(name, value)); }
+void VBentoNode::addString(const VString& name, const VString& value) { this->_addAttribute(new VBentoString(name, value)); }
+void VBentoNode::addInt(const VString& name, int value) { this->addS32(name, static_cast<Vs32>(value)); }
 
 void VBentoNode::writeToStream(VBinaryIOStream& stream) const
     {
-    VSizeType    numAttributes = mAttributes.size();
-    VSizeType    numChildNodes = mChildNodes.size();
+    Vs64    contentSize = this->_calculateContentSize();
+    VBentoNode::_writeLengthToStream(stream, contentSize);
 
-    Vs64    totalSize = this->calculateBinarySize();
-    
-    VBentoNode::writeLengthToStream(stream, totalSize);
+    VSizeType    numAttributes = mAttributes.size();
     stream.writeS32(static_cast<Vs32> (numAttributes));
+
+    VSizeType    numChildNodes = mChildNodes.size();
     stream.writeS32(static_cast<Vs32> (numChildNodes));
+
     stream.writeString(mName);
 
     for (VSizeType i = 0; i < numAttributes; ++i)
@@ -244,6 +605,266 @@ void VBentoNode::writeToStream(VBinaryIOStream& stream) const
     
     for (VSizeType i = 0; i < numChildNodes; ++i)
         mChildNodes[i]->writeToStream(stream);
+    }
+
+void VBentoNode::readFromStream(VBinaryIOStream& stream)
+    {
+    /* unused Vs64    contentSize = */ (void) VBentoNode::_readLengthFromStream(stream);
+    Vs32    numAttributes = stream.readS32();
+    Vs32    numChildNodes = stream.readS32();
+
+    stream.readString(mName);
+
+    for (int i = 0; i < numAttributes; ++i)
+        this->_addAttribute(VBentoAttribute::newObjectFromStream(stream));
+
+    for (int i = 0; i < numChildNodes; ++i)
+        this->addChildNode(new VBentoNode(stream));
+    }
+
+const VBentoNodePtrVector& VBentoNode::getNodes() const
+    {
+    return mChildNodes;
+    }
+
+const VBentoNode* VBentoNode::findNode(const VString& nodeName) const
+    {
+    for (VBentoNodePtrVector::const_iterator i = mChildNodes.begin(); i != mChildNodes.end(); ++i)
+        {
+        if ((*i)->getName() == nodeName)
+            return (*i);
+        }
+
+    return NULL;
+    }
+    
+const VBentoNode* VBentoNode::findNode(const VString& nodeName, const VString& attributeName, const VString& dataType) const
+    {
+    for (VBentoNodePtrVector::const_iterator i = mChildNodes.begin(); i != mChildNodes.end(); ++i)
+        {
+        if ((*i)->getName() == nodeName)
+            {
+            if ((*i)->_findAttribute(attributeName, dataType) != NULL)
+                return (*i);
+            }
+        }
+    
+    return NULL;
+    }
+
+Vs8 VBentoNode::getS8(const VString& name, Vs8 defaultValue) const
+    {
+    const VBentoS8*    attribute = dynamic_cast<const VBentoS8*> (this->_findAttribute(name, VBentoS8::ID()));
+    
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+Vs8 VBentoNode::getS8(const VString& name) const
+    {
+    const VBentoS8*    attribute = dynamic_cast<const VBentoS8*> (this->_findAttribute(name, VBentoS8::ID()));
+    
+    if (attribute == NULL)
+        throw VException("Attribute %s not found.", name.chars());
+    else
+        return attribute->getValue();
+    }
+
+Vu8 VBentoNode::getU8(const VString& name, Vu8 defaultValue) const
+    {
+    const VBentoU8*    attribute = dynamic_cast<const VBentoU8*> (this->_findAttribute(name, VBentoU8::ID()));
+    
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+Vu8 VBentoNode::getU8(const VString& name) const
+    {
+    const VBentoU8*    attribute = dynamic_cast<const VBentoU8*> (this->_findAttribute(name, VBentoU8::ID()));
+    
+    if (attribute == NULL)
+        throw VException("Attribute %s not found.", name.chars());
+    else
+        return attribute->getValue();
+    }
+
+Vs16 VBentoNode::getS16(const VString& name, Vs16 defaultValue) const
+    {
+    const VBentoS16*    attribute = dynamic_cast<const VBentoS16*> (this->_findAttribute(name, VBentoS16::ID()));
+    
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+Vs16 VBentoNode::getS16(const VString& name) const
+    {
+    const VBentoS16*    attribute = dynamic_cast<const VBentoS16*> (this->_findAttribute(name, VBentoS16::ID()));
+    
+    if (attribute == NULL)
+        throw VException("Attribute %s not found.", name.chars());
+    else
+        return attribute->getValue();
+    }
+
+Vu16 VBentoNode::getU16(const VString& name, Vu16 defaultValue) const
+    {
+    const VBentoU16*    attribute = dynamic_cast<const VBentoU16*> (this->_findAttribute(name, VBentoU16::ID()));
+    
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+Vu16 VBentoNode::getU16(const VString& name) const
+    {
+    const VBentoU16*    attribute = dynamic_cast<const VBentoU16*> (this->_findAttribute(name, VBentoU16::ID()));
+    
+    if (attribute == NULL)
+        throw VException("Attribute %s not found.", name.chars());
+    else
+        return attribute->getValue();
+    }
+
+Vs32 VBentoNode::getS32(const VString& name, Vs32 defaultValue) const
+    {
+    const VBentoS32*    attribute = dynamic_cast<const VBentoS32*> (this->_findAttribute(name, VBentoS32::ID()));
+    
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+Vs32 VBentoNode::getS32(const VString& name) const
+    {
+    const VBentoS32*    attribute = dynamic_cast<const VBentoS32*> (this->_findAttribute(name, VBentoS32::ID()));
+    
+    if (attribute == NULL)
+        throw VException("Attribute %s not found.", name.chars());
+    else
+        return attribute->getValue();
+    }
+
+Vu32 VBentoNode::getU32(const VString& name, Vu32 defaultValue) const
+    {
+    const VBentoU32*    attribute = dynamic_cast<const VBentoU32*> (this->_findAttribute(name, VBentoU32::ID()));
+    
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+Vu32 VBentoNode::getU32(const VString& name) const
+    {
+    const VBentoU32*    attribute = dynamic_cast<const VBentoU32*> (this->_findAttribute(name, VBentoU32::ID()));
+    
+    if (attribute == NULL)
+        throw VException("Attribute %s not found.", name.chars());
+    else
+        return attribute->getValue();
+    }
+
+Vs64 VBentoNode::getS64(const VString& name, Vs64 defaultValue) const
+    {
+    const VBentoS64*    attribute = dynamic_cast<const VBentoS64*> (this->_findAttribute(name, VBentoS64::ID()));
+    
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+Vs64 VBentoNode::getS64(const VString& name) const
+    {
+    const VBentoS64*    attribute = dynamic_cast<const VBentoS64*> (this->_findAttribute(name, VBentoS64::ID()));
+    
+    if (attribute == NULL)
+        throw VException("Attribute %s not found.", name.chars());
+    else
+        return attribute->getValue();
+    }
+
+Vu64 VBentoNode::getU64(const VString& name, Vu64 defaultValue) const
+    {
+    const VBentoU64*    attribute = dynamic_cast<const VBentoU64*> (this->_findAttribute(name, VBentoU64::ID()));
+    
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+Vu64 VBentoNode::getU64(const VString& name) const
+    {
+    const VBentoU64*    attribute = dynamic_cast<const VBentoU64*> (this->_findAttribute(name, VBentoU64::ID()));
+    
+    if (attribute == NULL)
+        throw VException("Attribute %s not found.", name.chars());
+    else
+        return attribute->getValue();
+    }
+
+bool VBentoNode::getBool(const VString& name, bool defaultValue) const
+    {
+    const VBentoBool*    attribute = dynamic_cast<const VBentoBool*> (this->_findAttribute(name, VBentoBool::ID()));
+    
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+bool VBentoNode::getBool(const VString& name) const
+    {
+    const VBentoBool*    attribute = dynamic_cast<const VBentoBool*> (this->_findAttribute(name, VBentoBool::ID()));
+    
+    if (attribute == NULL)
+        throw VException("Attribute %s not found.", name.chars());
+    else
+        return attribute->getValue();
+    }
+
+const VString& VBentoNode::getString(const VString& name, const VString& defaultValue) const
+    {
+    const VBentoString*    attribute = dynamic_cast<const VBentoString*> (this->_findAttribute(name, VBentoString::ID()));
+    
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VString& VBentoNode::getString(const VString& name) const
+    {
+    const VBentoString*    attribute = dynamic_cast<const VBentoString*> (this->_findAttribute(name, VBentoString::ID()));
+    
+    if (attribute == NULL)
+        throw VException("Attribute %s not found.", name.chars());
+    else
+        return attribute->getValue();
+    }
+
+int VBentoNode::getInt(const VString& name, int defaultValue) const
+    {
+    return static_cast<int>(this->getS32(name, static_cast<Vs32>(defaultValue)));
+    }
+
+int VBentoNode::getInt(const VString& name) const
+    {
+    return static_cast<int>(this->getS32(name));
+    }
+
+const VString& VBentoNode::getName() const
+    {
+    return mName;
     }
 
 void VBentoNode::writeToStream(VTextIOStream& stream, int indentLevel) const
@@ -298,7 +919,7 @@ void VBentoNode::printXML() const
     {
     try
         {
-        VBufferedFileStream    stdoutStream(stdout);
+        VBufferedFileStream    stdoutStream(stdout, false/*don't close on destruct*/);
         VTextIOStream        printStream(stdoutStream, VTextIOStream::kUseUnixLineEndings);
         
         this->writeToStream(printStream);
@@ -311,25 +932,34 @@ void VBentoNode::printXML() const
         }
     }
 
-void VBentoNode::printStreamLayout()
+void VBentoNode::getStreamLayoutText(VString& info) const
     {
-    try
-        {
-        VBufferedFileStream    stdoutStream(stdout);
-        VTextIOStream        printStream(stdoutStream, VTextIOStream::kUseUnixLineEndings);
-        VHex                hexDump(&printStream);
-        
-        this->printStreamLayout(hexDump);
-        
-        stdoutStream.flush();
-        }
-    catch (const VException& ex)
-        {
-        std::cout << "VBentoNode::printStreamLayout unable to print: '" << ex.what() << "'" << std::endl;
-        }
+    this->printStreamLayout(info, 0);
     }
 
-void VBentoNode::printStreamLayout(VHex& hexDump)
+void VBentoNode::printStreamLayoutText() const
+    {
+    VString info;
+    this->printStreamLayout(info, 0);
+    std::cout << info << std::endl;
+    }
+
+void VBentoNode::printStreamLayout(VString& info, int indentLevel) const
+    {
+    _printIndent(info, indentLevel);
+    info += "node '";
+    info += mName;
+    info += "'";
+    info += '\n';
+    
+    for (VBentoAttributePtrVector::const_iterator i = mAttributes.begin(); i != mAttributes.end(); ++i)
+        (*i)->printStreamLayout(info, indentLevel + 1);
+    
+    for (VBentoNodePtrVector::const_iterator i = mChildNodes.begin(); i != mChildNodes.end(); ++i)
+        (*i)->printStreamLayout(info, indentLevel + 1);
+    }
+
+void VBentoNode::printStreamLayout(VHex& hexDump) const
     {
     VMemoryStream    buffer;
     VBinaryIOStream    stream(buffer);
@@ -337,9 +967,9 @@ void VBentoNode::printStreamLayout(VHex& hexDump)
     VSizeType    numAttributes = mAttributes.size();
     VSizeType    numChildNodes = mChildNodes.size();
 
-    Vs64    totalSize = this->calculateBinarySize();
+    Vs64    totalSize = this->_calculateContentSize();
     
-    VBentoNode::writeLengthToStream(stream, totalSize);
+    VBentoNode::_writeLengthToStream(stream, totalSize);
     stream.writeS32(static_cast<Vs32> (numAttributes));
     stream.writeS32(static_cast<Vs32> (numChildNodes));
     stream.writeString(mName);
@@ -362,299 +992,127 @@ void VBentoNode::printStreamLayout(VHex& hexDump)
         mChildNodes[i]->printStreamLayout(hexDump);
     }
 
-void VBentoNode::addAttribute(VBentoAttribute* attribute)
+Vs64 VBentoNode::_calculateContentSize() const
+    {
+    Vs64 lengthOfCounters = 8; // 4 bytes each for #attributes and #children
+    Vs64 lengthOfName = VBentoNode::_getBinaryStringLength(mName);
+
+    Vs64 lengthOfAttributes = 0;
+    for (VBentoAttributePtrVector::const_iterator i = mAttributes.begin(); i != mAttributes.end(); ++i)
+        lengthOfAttributes += (*i)->calculateTotalSize();
+    
+    Vs64 lengthOfChildren = 0;
+    for (VBentoNodePtrVector::const_iterator i = mChildNodes.begin(); i != mChildNodes.end(); ++i)
+        lengthOfChildren += (*i)->_calculateTotalSize();
+
+    Vs64 contentSize = lengthOfCounters + lengthOfName + lengthOfAttributes + lengthOfChildren;
+    
+    return contentSize;
+    }
+
+Vs64 VBentoNode::_calculateTotalSize() const
+    {
+    Vs64    contentSize = this->_calculateContentSize();
+    Vs64    lengthOfLength = VBentoNode::_getLengthOfLength(contentSize);
+
+    return lengthOfLength + contentSize;
+    }
+
+void VBentoNode::_addAttribute(VBentoAttribute* attribute)
     {
     mAttributes.push_back(attribute);
     }
 
-void VBentoNode::addChildNode(VBentoNode* node)
-    {
-    mChildNodes.push_back(node);
-    }
-
-const VBentoAttributePtrVector& VBentoNode::attributes() const
+const VBentoAttributePtrVector& VBentoNode::_getAttributes() const
     {
     return mAttributes;
     }
 
-const VBentoAttribute* VBentoNode::findAttribute(const VString& name, const VString& inDataType) const
+const VBentoAttribute* VBentoNode::_findAttribute(const VString& name, const VString& dataType) const
     {
-    VSizeType    numAttributes = mAttributes.size();
-
-    for (VSizeType i = 0; i < numAttributes; ++i)
+    for (VBentoAttributePtrVector::const_iterator i = mAttributes.begin(); i != mAttributes.end(); ++i)
         {
-        VBentoAttribute*    attribute = mAttributes[i];
-
-        if ((attribute->name() == name) &&
-            (attribute->dataType() == inDataType))
-            return attribute;
+        if (((*i)->getName() == name) &&
+            ((*i)->getDataType() == dataType))
+            return (*i);
         }
     
     return NULL;
     }
 
-Vs8 VBentoNode::getS8Value(const VString& inName, Vs8 defaultValue) const
+// static
+Vs64 VBentoNode::_readLengthFromStream(VBinaryIOStream& stream)
     {
-    const VBentoS8*    attribute = dynamic_cast<const VBentoS8*> (this->findAttribute(inName, VBentoS8::id()));
-    
-    if (attribute == NULL)
-        return defaultValue;
-    else
-        return attribute->value();
+    return stream.readDynamicCount();
     }
 
-Vs8 VBentoNode::getS8Value(const VString& inName) const
+// static
+void VBentoNode::_writeLengthToStream(VBinaryIOStream& stream, Vs64 length)
     {
-    const VBentoS8*    attribute = dynamic_cast<const VBentoS8*> (this->findAttribute(inName, VBentoS8::id()));
-    
-    if (attribute == NULL)
-        throw VException("Attribute %s not found.", inName.chars());
-    else
-        return attribute->value();
+    stream.writeDynamicCount(length);
     }
 
-Vu8 VBentoNode::getU8Value(const VString& inName, Vu8 defaultValue) const
+// static
+Vs64 VBentoNode::_getLengthOfLength(Vs64 length)
     {
-    const VBentoU8*    attribute = dynamic_cast<const VBentoU8*> (this->findAttribute(inName, VBentoU8::id()));
-    
-    if (attribute == NULL)
-        return defaultValue;
-    else
-        return attribute->value();
+    return VBinaryIOStream::getDynamicCountLength(length);
     }
 
-Vu8 VBentoNode::getU8Value(const VString& inName) const
+// static
+void VBentoNode::_readFourCharCodeFromStream(VBinaryIOStream& stream, VString& code)
     {
-    const VBentoU8*    attribute = dynamic_cast<const VBentoU8*> (this->findAttribute(inName, VBentoU8::id()));
-    
-    if (attribute == NULL)
-        throw VException("Attribute %s not found.", inName.chars());
-    else
-        return attribute->value();
+    code.preflight(4);
+    (void) stream.read(reinterpret_cast<Vu8*> (code.buffer()), CONST_S64(4));
+    code.postflight(4);
     }
 
-Vs16 VBentoNode::getS16Value(const VString& inName, Vs16 defaultValue) const
+// static
+void VBentoNode::_writeFourCharCodeToStream(VBinaryIOStream& stream, const VString& code)
     {
-    const VBentoS16*    attribute = dynamic_cast<const VBentoS16*> (this->findAttribute(inName, VBentoS16::id()));
+    int    codeLength = code.length();
+
+    (void) stream.write(reinterpret_cast<Vu8*> (code.chars()), V_MIN(4, codeLength));
     
-    if (attribute == NULL)
-        return defaultValue;
-    else
-        return attribute->value();
+    // In case code is less than 4 chars, pad with spaces. Please don't use such codes,
+    // it's not efficient!
+    for (int i = codeLength; i < 4; ++i)
+        stream.writeS8(' ');
     }
 
-Vs16 VBentoNode::getS16Value(const VString& inName) const
+// static
+Vs64 VBentoNode::_getBinaryStringLength(const VString& s)
     {
-    const VBentoS16*    attribute = dynamic_cast<const VBentoS16*> (this->findAttribute(inName, VBentoS16::id()));
-    
-    if (attribute == NULL)
-        throw VException("Attribute %s not found.", inName.chars());
-    else
-        return attribute->value();
+    int textLength = s.length();
+    Vs64 lengthOfLength = VBentoNode::_getLengthOfLength(textLength);
+
+    return lengthOfLength + textLength;
     }
 
-Vu16 VBentoNode::getU16Value(const VString& inName, Vu16 defaultValue) const
-    {
-    const VBentoU16*    attribute = dynamic_cast<const VBentoU16*> (this->findAttribute(inName, VBentoU16::id()));
-    
-    if (attribute == NULL)
-        return defaultValue;
-    else
-        return attribute->value();
-    }
+// VBentoUnknownValue --------------------------------------------------------
 
-Vu16 VBentoNode::getU16Value(const VString& inName) const
-    {
-    const VBentoU16*    attribute = dynamic_cast<const VBentoU16*> (this->findAttribute(inName, VBentoU16::id()));
-    
-    if (attribute == NULL)
-        throw VException("Attribute %s not found.", inName.chars());
-    else
-        return attribute->value();
-    }
-
-Vs32 VBentoNode::getS32Value(const VString& inName, Vs32 defaultValue) const
-    {
-    const VBentoS32*    attribute = dynamic_cast<const VBentoS32*> (this->findAttribute(inName, VBentoS32::id()));
-    
-    if (attribute == NULL)
-        return defaultValue;
-    else
-        return attribute->value();
-    }
-
-Vs32 VBentoNode::getS32Value(const VString& inName) const
-    {
-    const VBentoS32*    attribute = dynamic_cast<const VBentoS32*> (this->findAttribute(inName, VBentoS32::id()));
-    
-    if (attribute == NULL)
-        throw VException("Attribute %s not found.", inName.chars());
-    else
-        return attribute->value();
-    }
-
-Vu32 VBentoNode::getU32Value(const VString& inName, Vu32 defaultValue) const
-    {
-    const VBentoU32*    attribute = dynamic_cast<const VBentoU32*> (this->findAttribute(inName, VBentoU32::id()));
-    
-    if (attribute == NULL)
-        return defaultValue;
-    else
-        return attribute->value();
-    }
-
-Vu32 VBentoNode::getU32Value(const VString& inName) const
-    {
-    const VBentoU32*    attribute = dynamic_cast<const VBentoU32*> (this->findAttribute(inName, VBentoU32::id()));
-    
-    if (attribute == NULL)
-        throw VException("Attribute %s not found.", inName.chars());
-    else
-        return attribute->value();
-    }
-
-Vs64 VBentoNode::getS64Value(const VString& inName, Vs64 defaultValue) const
-    {
-    const VBentoS64*    attribute = dynamic_cast<const VBentoS64*> (this->findAttribute(inName, VBentoS64::id()));
-    
-    if (attribute == NULL)
-        return defaultValue;
-    else
-        return attribute->value();
-    }
-
-Vs64 VBentoNode::getS64Value(const VString& inName) const
-    {
-    const VBentoS64*    attribute = dynamic_cast<const VBentoS64*> (this->findAttribute(inName, VBentoS64::id()));
-    
-    if (attribute == NULL)
-        throw VException("Attribute %s not found.", inName.chars());
-    else
-        return attribute->value();
-    }
-
-Vu64 VBentoNode::getU64Value(const VString& inName, Vu64 defaultValue) const
-    {
-    const VBentoU64*    attribute = dynamic_cast<const VBentoU64*> (this->findAttribute(inName, VBentoU64::id()));
-    
-    if (attribute == NULL)
-        return defaultValue;
-    else
-        return attribute->value();
-    }
-
-Vu64 VBentoNode::getU64Value(const VString& inName) const
-    {
-    const VBentoU64*    attribute = dynamic_cast<const VBentoU64*> (this->findAttribute(inName, VBentoU64::id()));
-    
-    if (attribute == NULL)
-        throw VException("Attribute %s not found.", inName.chars());
-    else
-        return attribute->value();
-    }
-
-bool VBentoNode::getBoolValue(const VString& inName, bool defaultValue) const
-    {
-    const VBentoBool*    attribute = dynamic_cast<const VBentoBool*> (this->findAttribute(inName, VBentoBool::id()));
-    
-    if (attribute == NULL)
-        return defaultValue;
-    else
-        return attribute->value();
-    }
-
-bool VBentoNode::getBoolValue(const VString& inName) const
-    {
-    const VBentoBool*    attribute = dynamic_cast<const VBentoBool*> (this->findAttribute(inName, VBentoBool::id()));
-    
-    if (attribute == NULL)
-        throw VException("Attribute %s not found.", inName.chars());
-    else
-        return attribute->value();
-    }
-
-VString* VBentoNode::getStringValue(const VString& inName, VString* defaultValue) const
-    {
-    VString*            s = defaultValue;
-    const VBentoString*    attribute = dynamic_cast<const VBentoString*> (this->findAttribute(inName, VBentoString::id()));
-    
-    if (attribute != NULL)
-        {
-        if (s == NULL)
-            s = new VString(attribute->value());
-        else
-            *s = attribute->value();
-        }
-    
-    return s;
-    }
-
-VString* VBentoNode::getStringValue(const VString& inName) const
-    {
-    const VBentoString*    attribute = dynamic_cast<const VBentoString*> (this->findAttribute(inName, VBentoString::id()));
-    
-    if (attribute == NULL)
-        throw VException("Attribute %s not found.", inName.chars());
-    else
-        return new VString(attribute->value());
-    }
-
-const VBentoNodePtrVector& VBentoNode::nodes() const
-    {
-    return mChildNodes;
-    }
-
-const VBentoNode* VBentoNode::findNode(const VString& nodeName) const
-    {
-    VSizeType    numChildren = mChildNodes.size();
-
-    for (VSizeType i = 0; i < numChildren; ++i)
-        {
-        VBentoNode*    child = mChildNodes[i];
-
-        if (child->name() == nodeName)
-            return child;
-        }
-    
-    return NULL;
-    }
-    
-const VBentoNode* VBentoNode::findNode(const VString& nodeName, const VString& attributeName, const VString& inDataType) const
-    {
-    VSizeType    numChildren = mChildNodes.size();
-
-    for (VSizeType i = 0; i < numChildren; ++i)
-        {
-        VBentoNode*    child = mChildNodes[i];
-
-        if (child->name() == nodeName)
-            {
-            if (child->findAttribute(attributeName, inDataType) != NULL)
-                return child;
-            }
-        }
-    
-    return NULL;
-    }
-
-VBentoUnknownValue::VBentoUnknownValue(VBinaryIOStream& stream, Vs64 inDataLength, const VString& inDataType)
-: VBentoAttribute(stream, inDataType), mValue(inDataLength)
+VBentoUnknownValue::VBentoUnknownValue(VBinaryIOStream& stream, Vs64 dataLength, const VString& dataType) :
+VBentoAttribute(stream, dataType),
+mValue(dataLength)
     {
     VBinaryIOStream    memoryIOStream(mValue);
     
-    streamCopy(stream, memoryIOStream, inDataLength);
+    streamCopy(stream, memoryIOStream, dataLength);
     }
 
-void VBentoUnknownValue::writeDataToStream(VBinaryIOStream& /*stream*/) const
+void VBentoUnknownValue::writeDataToStream(VBinaryIOStream& stream) const
     {
-    /* FIXME: tbd with correct const-ness...
-    
-    VBinaryIOStream    memoryIOStream(mValue);
+    // To ensure that there are no side-effects and we are indeed const in behavior,
+    // we save and restore mValue stream's offset, while doing a const-cast so
+    // that we are allowed to use manipulate the stream.
+    Vs64 savedOffset = mValue.offset();
+    VBinaryIOStream    memoryIOStream(const_cast<VBentoUnknownValue*>(this)->mValue);
     
     memoryIOStream.seek(0, SEEK_SET);
     streamCopy(memoryIOStream, stream, mValue.eofOffset());
-    */
+    memoryIOStream.seek(savedOffset, SEEK_SET);
     }
+
+// VBentoCallbackParser ------------------------------------------------------
 
 VBentoCallbackParser::VBentoCallbackParser(VBinaryIOStream& stream)
     {
@@ -663,7 +1121,7 @@ VBentoCallbackParser::VBentoCallbackParser(VBinaryIOStream& stream)
 
 void VBentoCallbackParser::processNode(int depth, VBinaryIOStream& stream)
     {
-    Vs64    theDataLength = VBentoNode::readLengthFromStream(stream);
+    Vs64    theDataLength = VBentoNode::_readLengthFromStream(stream);
     Vs32    numAttributes = stream.readS32();
     Vs32    numChildNodes = stream.readS32();
     VString    theName;
@@ -689,11 +1147,11 @@ void VBentoCallbackParser::processNode(int depth, VBinaryIOStream& stream)
 
 void VBentoCallbackParser::processAttribute(int depth, VBinaryIOStream& stream)
     {
-    Vs64    theDataLength = VBentoNode::readLengthFromStream(stream);
+    Vs64    theDataLength = VBentoNode::_readLengthFromStream(stream);
     VString    type;
     VString    theName;
 
-    VBentoNode::readFourCharCodeFromStream(stream, type);
+    VBentoNode::_readFourCharCodeFromStream(stream, type);
     stream.readString(theName);
     
     this->attributeHeaderComplete(depth, theDataLength, type, theName);
@@ -723,8 +1181,8 @@ void VBentoCallbackParser::attributeComplete(int /*depth*/, Vs64 /*length*/, con
     {
     }
 
-void VBentoCallbackParser::readAttributeData(int /*depth*/, VBinaryIOStream& stream, Vu64 inDataLength)
+void VBentoCallbackParser::readAttributeData(int /*depth*/, VBinaryIOStream& stream, Vu64 dataLength)
     {
-    stream.skip(static_cast<Vu64> (inDataLength));
+    stream.skip(static_cast<Vu64> (dataLength));
     }
 

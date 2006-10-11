@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -10,6 +10,7 @@ http://www.bombaydigital.com/
 
 #include "vchar.h"
 #include "vexception.h"
+#include "vlogger.h"
 
 #ifndef V_EFFICIENT_SPRINTF
 #include "vmutex.h"
@@ -102,12 +103,13 @@ mBuffer(NULL)
     ASSERT_INVARIANT();
     }
 
+#ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
 VString::VString(const char* formatText, ...) :
 mStringLength(0),
 mBufferLength(0),
 mBuffer(NULL)
     {
-    va_list    args;
+    va_list args;
     va_start(args, formatText);
 
     this->vaFormat(formatText, args);
@@ -116,6 +118,7 @@ mBuffer(NULL)
 
     ASSERT_INVARIANT();
     }
+#endif
 
 #ifdef VAULT_QT_SUPPORT
 VString::VString(const QString& s) :
@@ -125,6 +128,18 @@ mBuffer(NULL)
     {
     this->copyFromBuffer(s.ascii(), 0, s.length());
 
+    ASSERT_INVARIANT();
+    }
+#endif
+
+#ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
+VString::VString(const boost::format& fmt) :
+mStringLength(0),
+mBufferLength(0),
+mBuffer(NULL)
+    {
+    this->copyFromBuffer(fmt.str().c_str(), 0, fmt.size());
+    
     ASSERT_INVARIANT();
     }
 #endif
@@ -240,6 +255,19 @@ VString& VString::operator=(const QString& s)
 
     this->copyFromBuffer(s.ascii(), 0, s.length());
 
+    ASSERT_INVARIANT();
+
+    return *this;
+    }
+#endif
+
+#ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
+VString& VString::operator=(const boost::format& fmt)
+    {
+    ASSERT_INVARIANT();
+
+    this->copyFromBuffer(fmt.str().c_str(), 0, fmt.size());
+    
     ASSERT_INVARIANT();
 
     return *this;
@@ -479,6 +507,15 @@ VString VString::operator+(const VString& s) const
     return newString;
     }
 
+#ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
+VString VString::operator+(const boost::format& fmt) const
+    {
+    VString newString(*this);
+    newString += fmt;
+    return newString;
+    }
+#endif
+
 VString& VString::operator+=(const VChar& c)
     {
     ASSERT_INVARIANT();
@@ -543,6 +580,24 @@ VString& VString::operator+=(const char* s)
 
     return *this;
     }
+
+#ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
+VString& VString::operator+=(const boost::format& fmt)
+    {
+    ASSERT_INVARIANT();
+
+    int    theLength = (int) fmt.size();
+
+    this->preflight(theLength + mStringLength);
+    //lint -e668 "Possibly passing a null pointer to function"
+    ::memcpy(&(mBuffer[mStringLength]), fmt.str().c_str(), static_cast<VSizeType> (theLength));
+    this->_setLength(theLength + mStringLength);
+
+    ASSERT_INVARIANT();
+
+    return *this;
+    }
+#endif
 
 VString& VString::operator+=(int i)
     {
@@ -699,6 +754,7 @@ void VString::appendFromIStream(std::istream& in)
     ASSERT_INVARIANT();
     }
 
+#ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
 void VString::format(const char* formatText, ...)
     {
     ASSERT_INVARIANT();
@@ -712,6 +768,7 @@ void VString::format(const char* formatText, ...)
 
     ASSERT_INVARIANT();
     }
+#endif
 
 void VString::insert(char c, int offset)
     {
@@ -1108,9 +1165,9 @@ int VString::replace(const VString& searchString, const VString& replacementStri
         */
 
         mBuffer[currentOffset] = 0;    // terminate the C string buffer to create the BEFORE part
-        char*    beforePart = mBuffer;
-        char*    afterPart = &mBuffer[currentOffset + searchLength];
-        VString    alteredString("%s%s%s", beforePart, replacementString.chars(), afterPart);
+        char*   beforePart = mBuffer;
+        char*   afterPart = &mBuffer[currentOffset + searchLength];
+        VString alteredString("%s%s%s", beforePart, replacementString.chars(), afterPart);
         
         // Assign the new string to ourself -- copies its buffer into ours correctly.
         // (Could be optimized to just swap buffers if we defined a new friend function or two.)
@@ -1134,7 +1191,7 @@ int VString::replace(const VChar& searchChar, const VChar& replacementChar)
     {
     ASSERT_INVARIANT();
     
-    int        numReplacements = 0;
+    int     numReplacements = 0;
     char    match = searchChar.charValue();
     char    replacement = replacementChar.charValue();
 
@@ -1173,6 +1230,54 @@ void VString::toUpperCase()
             mBuffer[i] = static_cast<char> (::toupper(mBuffer[i]));
 
     ASSERT_INVARIANT();
+    }
+
+int VString::parseInt() const
+    {
+    ASSERT_INVARIANT();
+
+    Vs64 result = this->_parseSignedInteger();
+    Vs64 maxValue = V_MAX_S32;
+    Vs64 minValue = V_MIN_S32;
+
+    if (sizeof(int) == 1)
+        {
+        maxValue = V_MAX_S8;
+        minValue = V_MIN_S8;
+        }
+    else if (sizeof(int) == 2)
+        {
+        maxValue = V_MAX_S16;
+        minValue = V_MIN_S16;
+        }
+    else if (sizeof(int) == 8)
+        {
+        maxValue = V_MAX_S64;
+        minValue = V_MIN_S64;
+        }
+
+    if ((result < minValue) || (result > maxValue))
+        throw VRangeException(VString("VString::parseInt %s value is out of range.", mBuffer));
+
+    return static_cast<int>(result);
+    }
+
+Vs64 VString::parseS64() const
+    {
+    ASSERT_INVARIANT();
+
+    Vs64 result = this->_parseSignedInteger();
+
+    return result;
+    }
+
+Vu64 VString::parseU64() const
+    {
+    ASSERT_INVARIANT();
+
+    Vu64 result = this->_parseUnsignedInteger();
+
+    return result;
     }
 
 void VString::set(int i, const VChar& c)
@@ -1468,11 +1573,18 @@ void VString::preflight(int stringLength)
             {
             // Make sure our invariants are still OK, then throw the exception.
             ASSERT_INVARIANT();
-            throw VException("VString::preflight unable to allocate buffer.");
+            throw VException("VString::preflight unable to allocate buffer of length %d.", (stringLength + 1));
             }
         }
 
     ASSERT_INVARIANT();
+    }
+
+void VString::preflightWithSimulatedFailure()
+    {
+    ASSERT_INVARIANT();
+
+    throw VException("VString::preflight unable to allocate buffer. (Simulated failure)");
     }
 
 char* VString::buffer()
@@ -1495,6 +1607,7 @@ void VString::postflight(int stringLength)
     ASSERT_INVARIANT();
     }
 
+#ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
 void VString::vaFormat(const char* formatText, va_list args)
     {
     ASSERT_INVARIANT();
@@ -1508,17 +1621,27 @@ void VString::vaFormat(const char* formatText, va_list args)
         }
     else
         {
-        int    newStringLength = VString::_determineSprintfLength(formatText, args);
+        int newStringLength = VString::_determineSprintfLength(formatText, args);
     
+        if (newStringLength == -1)
+            {
+            // We were unable to determine the buffer length needed. Log an error and make the preflight
+            // use as big a buffer as we dare: how about the size of the temporary formatting buffer.
+            const int kTruncatedStringLength = 32768;
+            VLOGGER_ERROR(VString("VString: formatted string will be truncated to %d characaters.", kTruncatedStringLength));
+            newStringLength = kTruncatedStringLength;
+            }
+
         this->preflight(newStringLength);
     
-        (void) vault::vsnprintf(mBuffer, static_cast<VSizeType> (mBufferLength), formatText, args);
+        int actualLength = vault::vsnprintf(mBuffer, static_cast<VSizeType> (mBufferLength), formatText, args);
 
         this->_setLength(newStringLength); // could call postflight, but would do extra assertion check
         }
 
     ASSERT_INVARIANT();
     }
+#endif
 
 void VString::_setLength(int stringLength)
     {
@@ -1533,9 +1656,108 @@ void VString::_setLength(int stringLength)
         if (stringLength >= mBufferLength)
             throw VRangeException(VString("VString::_setLength: Out of bounds value %d exceeds buffer length of %d.", stringLength, mBufferLength));
 
-        mStringLength = stringLength;
-        mBuffer[mStringLength] = 0;
+        mBuffer[stringLength] = 0;
         }
+
+    // At this point we have validated the stringLength, even if mBuffer is NULL.
+    mStringLength = stringLength;
+    }
+
+Vs64 VString::_parseSignedInteger() const
+    {
+    Vs64 result = CONST_S64(0);
+    Vs64 multiplier = CONST_S64(1);
+
+    if (mStringLength != 0)
+        {
+        // Iterate over the characters backwards, building the result.
+        // If we encounter something illegal, throw the VRangeException.
+        for (int i = mStringLength-1; i >= 0; --i)
+            {
+            switch (mBuffer[i])
+                {
+                case '-':
+                    if (i != 0)
+                        throw VRangeException(VString("VString::_parseSignedInteger %c at index %d is invalid format.", mBuffer[i], i));
+
+                    result = -result;
+                    break;
+
+                case '+':
+                    if (i != 0)
+                        throw VRangeException(VString("VString::_parseSignedInteger %c at index %d is invalid format.", mBuffer[i], i));
+                    break;
+
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    result += (multiplier * (static_cast<int>(mBuffer[i] - '0')));
+                    break;
+
+                default:
+                    throw VRangeException(VString("VString::_parseSignedInteger %c at index %d is invalid format.", mBuffer[i], i));
+                    break;
+                }
+
+            multiplier *= 10;
+            }
+        }
+
+    return result;
+    }
+
+Vu64 VString::_parseUnsignedInteger() const
+    {
+    Vu64 result = CONST_U64(0);
+    Vs64 multiplier = CONST_S64(1);
+
+    if (mStringLength != 0)
+        {
+        // Iterate over the characters backwards, building the result.
+        // If we encounter something illegal, throw the VRangeException.
+        for (int i = mStringLength-1; i >= 0; --i)
+            {
+            switch (mBuffer[i])
+                {
+                case '-':
+                    throw VRangeException(VString("VString::_parseUnsignedInteger %c at index %d is invalid format.", mBuffer[i], i));
+                    break;
+
+                case '+':
+                    if (i != 0)
+                        throw VRangeException(VString("VString::_parseUnsignedInteger %c at index %d is invalid format.", mBuffer[i], i));
+                    break;
+
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    result += (multiplier * (static_cast<int>(mBuffer[i] - '0')));
+                    break;
+
+                default:
+                    throw VRangeException(VString("VString::_parseUnsignedInteger %c at index %d is invalid format.", mBuffer[i], i));
+                    break;
+                }
+
+            multiplier *= 10;
+            }
+        }
+
+    return result;
     }
 
 void VString::assertInvariant() const
@@ -1548,6 +1770,7 @@ void VString::assertInvariant() const
         }
     }
 
+#ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
 // static
 int VString::_determineSprintfLength(const char* formatText, va_list args)
     {
@@ -1562,19 +1785,20 @@ int VString::_determineSprintfLength(const char* formatText, va_list args)
     platform check code will tell us whether the platform supports it.
     */
     char    oneByteBuffer = 0;
-    int        theLength = vault::vsnprintf(&oneByteBuffer, 1, formatText, args);
+    int     theLength = vault::vsnprintf(&oneByteBuffer, 1, formatText, args);
 #else
     if (VString::gSprintfBufferMutex == NULL)
         VString::gSprintfBufferMutex = new VMutex();
 
-    VMutexLocker    locker(VString::gSprintfBufferMutex);
-    int        theLength = vault::vsnprintf(gSprintfBuffer, kSprintfBufferSize, formatText, args);
+    VMutexLocker locker(VString::gSprintfBufferMutex);
+    int theLength = vault::vsnprintf(gSprintfBuffer, kSprintfBufferSize, formatText, args);
 #endif
 
     va_end(args);
     
     return theLength;
     }
+#endif
 
 std::istream& operator>>(std::istream& in, VString& s)
     {

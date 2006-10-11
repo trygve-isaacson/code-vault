@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -10,7 +10,7 @@ http://www.bombaydigital.com/
 
 #include <iostream> // for namespace std
 
-Vu16 VbyteSwap16(Vu16 a16BitValue)
+Vu16 vault::VbyteSwap16(Vu16 a16BitValue)
     {
     Vu16    original = a16BitValue;
     Vu16    swapped;
@@ -23,7 +23,7 @@ Vu16 VbyteSwap16(Vu16 a16BitValue)
     return swapped;
     }
 
-Vu32 VbyteSwap32(Vu32 a32BitValue)
+Vu32 vault::VbyteSwap32(Vu32 a32BitValue)
     {
     Vu32    original = a32BitValue;
     Vu32    swapped;
@@ -38,7 +38,7 @@ Vu32 VbyteSwap32(Vu32 a32BitValue)
     return swapped;
     }
 
-Vu64 VbyteSwap64(Vu64 a64BitValue)
+Vu64 vault::VbyteSwap64(Vu64 a64BitValue)
     {
     Vu64    original = a64BitValue;
     Vu64    swapped;
@@ -57,7 +57,7 @@ Vu64 VbyteSwap64(Vu64 a64BitValue)
     return swapped;
     }
 
-VFloat VbyteSwapFloat(VFloat a32BitValue)
+VFloat vault::VbyteSwapFloat(VFloat a32BitValue)
     {
     /*
     The key here is avoid allowing the compiler to do any
@@ -78,7 +78,7 @@ VFloat VbyteSwapFloat(VFloat a32BitValue)
     return swapped;
     }
 
-//include "vlogger.h"
+//#include "vlogger.h"
 
 void Vassert(bool expression, const char* file, int line)
     {

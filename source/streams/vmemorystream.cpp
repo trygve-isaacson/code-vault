@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -10,13 +10,14 @@ http://www.bombaydigital.com/
 
 #include "vexception.h"
 
-VMemoryStream::VMemoryStream(Vs64 initialBufferSize, Vs64 resizeIncrement)
+VMemoryStream::VMemoryStream(Vs64 initialBufferSize, Vs64 resizeIncrement) :
+VStream(),
+mBufferSize(initialBufferSize),
+mIOOffset(0),
+mEOFOffset(0),
+mResizeIncrement(resizeIncrement),
+mBuffer(NULL)
     {
-    mBufferSize = initialBufferSize;
-    mEOFOffset = 0;
-    mIOOffset = 0;
-    mResizeIncrement = resizeIncrement;
-    
     mBuffer = VStream::newBuffer(mBufferSize);
 
     if (mBuffer == NULL)
@@ -25,15 +26,14 @@ VMemoryStream::VMemoryStream(Vs64 initialBufferSize, Vs64 resizeIncrement)
     ASSERT_INVARIANT();
     }
 
-VMemoryStream::VMemoryStream(Vu8* buffer, Vs64 inBufferSize, Vs64 inEOFOffset, Vs64 resizeIncrement)
+VMemoryStream::VMemoryStream(Vu8* buffer, Vs64 suppliedBufferSize, Vs64 suppliedEOFOffset, Vs64 resizeIncrement) :
+VStream(),
+mBufferSize(suppliedBufferSize),
+mIOOffset(0),
+mEOFOffset(suppliedEOFOffset),
+mResizeIncrement(resizeIncrement),
+mBuffer(buffer)
     {
-    mBufferSize = inBufferSize;
-    mEOFOffset = inEOFOffset;
-    mIOOffset = 0;
-    mResizeIncrement = resizeIncrement;
-    
-    mBuffer = buffer;
-
     ASSERT_INVARIANT();
     }
 
@@ -51,7 +51,7 @@ Vs64 VMemoryStream::read(Vu8* targetBuffer, Vs64 numBytesToRead)
     
     VStream::copyMemory(targetBuffer, mBuffer + mIOOffset, actualNumBytesToCopy);
     
-    this->finishRead(actualNumBytesToCopy);
+    this->_finishRead(actualNumBytesToCopy);
 
     ASSERT_INVARIANT();
 
@@ -62,11 +62,11 @@ Vs64 VMemoryStream::write(const Vu8* buffer, Vs64 numBytesToWrite)
     {
     ASSERT_INVARIANT();
 
-    this->prepareToWrite(numBytesToWrite);    // throws if we can't write requested size
+    this->_prepareToWrite(numBytesToWrite);    // throws if we can't write requested size
     
     VStream::copyMemory(mBuffer + mIOOffset, buffer, numBytesToWrite);
     
-    this->finishWrite(numBytesToWrite);
+    this->_finishWrite(numBytesToWrite);
 
     ASSERT_INVARIANT();
 
@@ -129,7 +129,7 @@ bool VMemoryStream::seek(Vs64 inOffset, int whence)
         Vs64 oldEOF = mEOFOffset;
         
         mIOOffset = mEOFOffset;
-        this->prepareToWrite(numZeroesToWrite);
+        this->_prepareToWrite(numZeroesToWrite);
     
         while (oldEOF < mEOFOffset)
             {
@@ -137,7 +137,7 @@ bool VMemoryStream::seek(Vs64 inOffset, int whence)
             oldEOF++;
             }
             
-        this->finishWrite(numZeroesToWrite);
+        this->_finishWrite(numZeroesToWrite);
         }
     else
         constrainedOffset = requestedOffset;
@@ -161,7 +161,7 @@ Vs64 VMemoryStream::available() const
     return mEOFOffset - mIOOffset;
     }
 
-Vu8* VMemoryStream::getReadIOPtr() const
+Vu8* VMemoryStream::_getReadIOPtr() const
     {
     /*
     For VMemoryStream, there is no distinction between read and write
@@ -173,7 +173,7 @@ Vu8* VMemoryStream::getReadIOPtr() const
     return mBuffer + mIOOffset;
     }
 
-Vu8* VMemoryStream::getWriteIOPtr() const
+Vu8* VMemoryStream::_getWriteIOPtr() const
     {
     /*
     For VMemoryStream, there is no distinction between read and write
@@ -185,7 +185,7 @@ Vu8* VMemoryStream::getWriteIOPtr() const
     return mBuffer + mIOOffset;
     }
 
-Vs64 VMemoryStream::prepareToRead(Vs64 numBytesToRead) const
+Vs64 VMemoryStream::_prepareToRead(Vs64 numBytesToRead) const
     {
     ASSERT_INVARIANT();
 
@@ -195,7 +195,7 @@ Vs64 VMemoryStream::prepareToRead(Vs64 numBytesToRead) const
     return actualNumBytesToRead;
     }
 
-void VMemoryStream::prepareToWrite(Vs64 numBytesToWrite)
+void VMemoryStream::_prepareToWrite(Vs64 numBytesToWrite)
     {
     ASSERT_INVARIANT();
 
@@ -237,7 +237,7 @@ void VMemoryStream::prepareToWrite(Vs64 numBytesToWrite)
         
         // FIXME: is this check now superfluous because new throws rather than returning NULL? (used to call malloc)
         if (newBuffer == NULL)
-            throw VException("VMemoryStream::prepareToWrite failure expanding buffer size from %lld to %lld.", mBufferSize, newBufferSize);
+            throw VException("VMemoryStream::_prepareToWrite failure expanding buffer size from %lld to %lld.", mBufferSize, newBufferSize);
 
         VStream::copyMemory(newBuffer, mBuffer, mEOFOffset);
 
@@ -249,7 +249,7 @@ void VMemoryStream::prepareToWrite(Vs64 numBytesToWrite)
     ASSERT_INVARIANT();
     }
 
-void VMemoryStream::finishRead(Vs64 numBytesRead)
+void VMemoryStream::_finishRead(Vs64 numBytesRead)
     {
     ASSERT_INVARIANT();
 
@@ -258,7 +258,7 @@ void VMemoryStream::finishRead(Vs64 numBytesRead)
     ASSERT_INVARIANT();
     }
 
-void VMemoryStream::finishWrite(Vs64 numBytesWritten)
+void VMemoryStream::_finishWrite(Vs64 numBytesWritten)
     {
     ASSERT_INVARIANT();
 
@@ -271,7 +271,7 @@ void VMemoryStream::finishWrite(Vs64 numBytesWritten)
     ASSERT_INVARIANT();
     }
 
-void VMemoryStream::adoptBuffer(Vu8* buffer, Vs64 inBufferSize, Vs64 inEOFOffset, bool deleteOldBuffer)
+void VMemoryStream::adoptBuffer(Vu8* buffer, Vs64 suppliedBufferSize, Vs64 suppliedEOFOffset, bool deleteOldBuffer)
     {
     ASSERT_INVARIANT();
 
@@ -281,8 +281,8 @@ void VMemoryStream::adoptBuffer(Vu8* buffer, Vs64 inBufferSize, Vs64 inEOFOffset
         mBuffer = NULL;
         }
 
-    mBufferSize = inBufferSize;
-    mEOFOffset = inEOFOffset;
+    mBufferSize = suppliedBufferSize;
+    mEOFOffset = suppliedEOFOffset;
     mIOOffset = 0;
     
     mBuffer = buffer;
@@ -318,11 +318,11 @@ Vs64 VMemoryStream::ioOffset() const
     return mIOOffset;
     }
 
-void VMemoryStream::setEOF(Vs64 inOffset)
+void VMemoryStream::setEOF(Vs64 eofOffset)
     {
     ASSERT_INVARIANT();
 
-    mEOFOffset = V_MIN(mBufferSize, inOffset);
+    mEOFOffset = V_MIN(mBufferSize, eofOffset);
     mIOOffset = V_MIN(mEOFOffset, mIOOffset);
 
     ASSERT_INVARIANT();
@@ -362,7 +362,7 @@ bool operator==(const VMemoryStream& m1, const VMemoryStream& m2)
     bool    equalSoFar = true;
     Vs64    numBytesRemaining = length;
     Vs64    offset = 0;
-    size_t    compareChunkSize;
+    size_t  compareChunkSize;
     
     do
         {

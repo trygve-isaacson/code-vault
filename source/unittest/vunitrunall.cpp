@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -19,6 +19,7 @@ http://www.bombaydigital.com/
 #include "vfsnodeunit.h"
 #include "vhexunit.h"
 #include "vinstantunit.h"
+#include "vplatformunit.h"
 #include "vstreamsunit.h"
 #include "vstringunit.h"
 #include "vtextiostream.h"
@@ -40,17 +41,11 @@ void runAllVUnitTests(bool logToFile, bool logOnSuccess, bool throwOnError, bool
     
     if (logToFile)    // if not, it'll use default cout logger
         {
-        VInstant    now;
-        VString        nowString;
+        VInstant now;
+        VString  nowString;
+        now.getLocalString(nowString, true);
         
-        now.getLocalString(nowString);
-        // avoid file names with trouble characters in them - space, colon, slash are likely in date/time strings
-        (void) nowString.replace(" ", "_");    
-        (void) nowString.replace(":", "_");    
-        (void) nowString.replace("/", "_");    
-        
-        VString    filePath("unit_%s.txt", nowString.chars());
-
+        VString filePath("unit_%s.txt", nowString.chars());
         VLogger::installLogger(new VFileLogger(VLogger::kDebug, "VUnit", filePath));
         }
 
@@ -58,6 +53,7 @@ void runAllVUnitTests(bool logToFile, bool logOnSuccess, bool throwOnError, bool
     
     // Use the macro above to declare each unit test and run it in a single line of boilerplate.
 
+    UNIT_TEST(VPlatformUnit)
     UNIT_TEST(VBentoUnit)
     UNIT_TEST(VBinaryIOUnit)
     UNIT_TEST(VCharUnit)

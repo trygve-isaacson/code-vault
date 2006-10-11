@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -11,19 +11,29 @@ http://www.bombaydigital.com/
 #include "vsocket.h"
 #include "vexception.h"
 
-VSocketStream::VSocketStream(const VString& name)
-: VStream(name)
+VSocketStream::VSocketStream(const VString& name) :
+VStream(name),
+mSocket(NULL)
     {
     }
 
-VSocketStream::VSocketStream(VSocket* socket, const VString& name)
-: VStream(name)
+VSocketStream::VSocketStream(VSocket* socket, const VString& name) :
+VStream(name),
+mSocket(socket)
     {
-    mSocket = socket;
     }
 
-VSocketStream::~VSocketStream()
+VSocketStream::VSocketStream(const VSocketStream& other) :
+VStream(VString("%s copy", other.name().chars())),
+mSocket(other.mSocket)
     {
+    }
+
+VSocketStream& VSocketStream::operator=(const VSocketStream& other)
+    {
+    mName = other.mName;
+    mSocket = other.mSocket;
+    return *this;
     }
 
 VSocket* VSocketStream::getSocket() const

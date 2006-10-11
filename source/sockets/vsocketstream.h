@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -44,9 +44,20 @@ class VSocketStream : public VStream
         */
         VSocketStream(VSocket* socket, const VString& name);
         /**
+        Copy constructor. Both streams will share the same socket unless a
+        call to setSocket() is subsequently made on one of them.
+        */
+        VSocketStream(const VSocketStream& other);
+        /**
         Destructor.
         */
-        virtual ~VSocketStream();
+        virtual ~VSocketStream() {}
+
+        /**
+        Assignment operator. Both streams will share the same socket unless a
+        call to setSocket() is subsequently made on one of them.
+        */
+        VSocketStream& operator=(const VSocketStream& other);
         
         /**
         Returns a pointer to the VSocket object used by this VSocketStream.
@@ -111,7 +122,7 @@ class VSocketStream : public VStream
         */
         virtual Vs64    available() const;
     
-    protected:
+    private:
     
         VSocket*    mSocket;    ///< The socket on which this stream does its i/o.
     };

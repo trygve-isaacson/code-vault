@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -10,9 +10,9 @@ http://www.bombaydigital.com/
 
 #include "vexception.h"
 
-VMutex::VMutex()
+VMutex::VMutex() :
+mIsLocked(false)
     {
-    mIsLocked = false;
     if (! VMutex::mutexInit(&mMutex))
         throw VException("VMutex::VMutex unable to initialize mutex.");
     }

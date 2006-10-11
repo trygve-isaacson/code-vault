@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -40,11 +40,11 @@ http://www.bombaydigital.com/
     
 */
     
-// We have to define VSockID here because we don't include platform (it includes us).
+// We have to define VSocketID here because we don't include platform (it includes us).
 #ifdef VPLATFORM_WIN
-    typedef SOCKET VSockID;    ///< The platform-dependent definition of a socket identifier.
+    typedef SOCKET VSocketID;    ///< The platform-dependent definition of a socket identifier.
 #else
-    typedef int VSockID;    ///< The platform-dependent definition of a socket identifier.
+    typedef int VSocketID;    ///< The platform-dependent definition of a socket identifier.
 #endif
 
 typedef Vu32 VNetAddr;    ///< A 32-bit IP address, in network byte order (think of it as an array of 4 bytes, not as a 32-bit integer).
@@ -156,7 +156,7 @@ class VSocketBase
         with the VSocket classes.
         @param    id    the id of the already-open socket
         */
-        virtual void    init(VSockID id);
+        virtual void init(VSocketID id);
         /**
         Initializes the socket object by opening a connection to a server at the
         specified host and port.
@@ -164,7 +164,7 @@ class VSocketBase
         @param    hostName    the host name, numeric or not is fine
         @param    portNumber    the port number to connect to on the host
         */
-        virtual void    init(const VString& hostName, int portNumber);
+        virtual void init(const VString& hostName, int portNumber);
         
         // --------------- These are the various utility and accessor methods.
         
@@ -172,7 +172,7 @@ class VSocketBase
         Returns the socket id.
         @return    the socket id
         */
-        VSockID        getSockID() const;
+        VSocketID getSockID() const;
         /**
         Associates this socket object with the specified socket id. This is
         something you might use if you are managing sockets externally and
@@ -185,65 +185,65 @@ class VSocketBase
         
         @param    id    the socket id of the socket to manage
         */
-        void        setSockID(VSockID id);
+        void setSockID(VSocketID id);
         /**
         Returns the name or address of the host to which this socket is
         connected.
         @param    hostName    the string to format
         */
-        void    getHostName(VString& hostName) const;
+        void getHostName(VString& hostName) const;
         /**
         Returns the port number on the host to which this socket is
         connected.
         @return     the host's port number to which this socket is connected
         */
-        int            getPortNumber() const;
+        int getPortNumber() const;
         /**
         Closes the socket. This terminates the connection.
         */
-        void        close();
+        void close();
         /**
         Sets the linger value for the socket.
         @param    val    the linger value in seconds
         */
-        void        setLinger(int val);
+        void setLinger(int val);
         /**
         Removes the read timeout setting for the socket.
         */
-        void        clearReadTimeOut();
+        void clearReadTimeOut();
         /**
         Sets the read timeout setting for the socket.
         @param    timeout    the read timeout value
         */
-        void        setReadTimeOut(const struct timeval& timeout);
+        void setReadTimeOut(const struct timeval& timeout);
         /**
         Removes the write timeout setting for the socket.
         */
-        void        clearWriteTimeOut();
+        void clearWriteTimeOut();
         /**
         Sets the write timeout setting for the socket.
         @param    timeout    the write timeout value
         */
-        void        setWriteTimeOut(const struct timeval& timeout);
+        void setWriteTimeOut(const struct timeval& timeout);
         /**
         Sets the socket options to their default values.
         */
-        void        setDefaultSockOpt();
+        void setDefaultSockOpt();
         /**
         Returns the number of bytes that have been read from this socket.
         @return    the number of bytes read from this socket
         */
-        Vs64        numBytesRead() const;
+        Vs64 numBytesRead() const;
         /**
         Returns the number of bytes that have been written to this socket.
         @return    the number of bytes written to this socket
         */
-        Vs64        numBytesWritten() const;
+        Vs64 numBytesWritten() const;
         /**
-        Returns the number of milliseconds since the last read or write activity
+        Returns the amount of time since the last read or write activity
         occurred on this socket.
         */
-        Vs64        getIdleTime() const;
+        VDuration getIdleTime() const;
         
         // --------------- These are the pure virtual methods that only a platform
         // subclass can implement.
@@ -251,7 +251,7 @@ class VSocketBase
         /**
         Connects to the server.
         */
-        virtual void    connect() = 0;
+        virtual void connect() = 0;
         /**
         Starts listening for incoming connections. Only useful to call
         with a VListenerSocket subclass, but needed here for class
@@ -259,14 +259,14 @@ class VSocketBase
         the VSocket platform-specific class that VListenerSocket
         derives from).
         */
-        virtual void    listen() = 0;
+        virtual void listen() = 0;
         /**
         Returns the number of bytes that are available to be read on this
         socket. If you do a read() on that number of bytes, you know that
         it will not block.
         @return the number of bytes currently available for reading
         */
-        virtual int        available() = 0;
+        virtual int available() = 0;
         /**
         Reads data from the socket.
         
@@ -277,7 +277,7 @@ class VSocketBase
         @param    numBytesToRead    the number of bytes to read from the socket
         @return    the number of bytes read
         */
-        virtual int        read(Vu8* buffer, int numBytesToRead) = 0;
+        virtual int read(Vu8* buffer, int numBytesToRead) = 0;
         /**
         Writes data to the socket.
         
@@ -288,24 +288,24 @@ class VSocketBase
         @param    numBytesToWrite    the number of bytes to write to the socket
         @return    the number of bytes written
         */
-        virtual int        write(const Vu8* buffer, int numBytesToWrite) = 0;
+        virtual int write(const Vu8* buffer, int numBytesToWrite) = 0;
         /**
         Flushes any unwritten bytes to the socket.
         */
-        virtual void    flush();
+        virtual void flush();
         /**
         Sets the host name and port number properties of this socket by
         asking the lower level services to whom the socket is connected.
         */
-        virtual void    discoverHostAndPort() = 0;
+        virtual void discoverHostAndPort() = 0;
         /**
         Shuts down just the read side of the connection.
         */
-        virtual void    closeRead() = 0;
+        virtual void closeRead() = 0;
         /**
         Shuts down just the write side of the connection.
         */
-        virtual void    closeWrite() = 0;
+        virtual void closeWrite() = 0;
         /**
         Sets a specified socket option.
         @param    level        the option level
@@ -313,30 +313,30 @@ class VSocketBase
         @param    valuePtr    a pointer to the new option value data
         @param    valueLength    the length of the data pointed to by valuePtr
         */
-        virtual void    setSockOpt(int level, int name, void* valuePtr, int valueLength) = 0;
+        virtual void setSockOpt(int level, int name, void* valuePtr, int valueLength) = 0;
         
-        CLASS_CONST(VSockID, kNoSockID, -1);            ///< The sock id for a socket that is not connected.
-        CLASS_CONST(int, kDefaultBufferSize, 65535);    ///< The default buffer size.
-        CLASS_CONST(int, kDefaultServiceType, 0x08);    ///< The default service type.
-        CLASS_CONST(int, kDefaultNoDelay, 1);            ///< The default nodelay value.
+        static const VSocketID kNoSocketID = -1;        ///< The sock id for a socket that is not connected.
+        static const int kDefaultBufferSize = 65535;    ///< The default buffer size.
+        static const int kDefaultServiceType = 0x08;    ///< The default service type.
+        static const int kDefaultNoDelay = 1;           ///< The default nodelay value.
 
     protected:
     
         /** Asserts if any invariant is broken. */
         void assertInvariant() const;
 
-        VSockID            mSockID;                ///< The sock id.
-        VString            mHostName;                ///< The name of the host to which the socket is connected.
-        int                mPortNumber;            ///< The port number on the host to which the socket is connected.
-        bool            mReadTimeOutActive;        ///< True if reads should time out.
-        struct timeval    mReadTimeOut;            ///< The read timeout value, if used.
+        VSocketID       mSocketID;              ///< The socket id.
+        VString         mHostName;              ///< The name of the host to which the socket is connected.
+        int             mPortNumber;            ///< The port number on the host to which the socket is connected.
+        bool            mReadTimeOutActive;     ///< True if reads should time out.
+        struct timeval  mReadTimeOut;           ///< The read timeout value, if used.
         bool            mWriteTimeOutActive;    ///< True if writes should time out.
-        struct timeval    mWriteTimeOut;            ///< The write timeout value, if used.
-        int                mListenBacklog;            ///< The listen backlog value.
+        struct timeval  mWriteTimeOut;          ///< The write timeout value, if used.
+        int             mListenBacklog;         ///< The listen backlog value.
         bool            mRequireReadAll;        ///< True if we throw when read returns less than # bytes asked for.
-        Vs64            mNumBytesRead;            ///< Number of bytes read from this socket.
-        Vs64            mNumBytesWritten;        ///< Number of bytes written to this socket.
-        VInstant        mLastEventTime;            ///< Timestamp of last read or write.
+        Vs64            mNumBytesRead;          ///< Number of bytes read from this socket.
+        Vs64            mNumBytesWritten;       ///< Number of bytes written to this socket.
+        VInstant        mLastEventTime;         ///< Timestamp of last read or write.
     };
 
 /**
@@ -358,12 +358,12 @@ class VSocketInfo
         */
         virtual ~VSocketInfo() {}
     
-        VSockID    mSockID;            ///< The sock id.
-        VString    mHostName;            ///< The name of the host to which the socket is connected.
-        int        mPortNumber;        ///< The port number on the host to which the socket is connected.
-        Vs64    mNumBytesRead;        ///< Number of bytes read from this socket.
-        Vs64    mNumBytesWritten;    ///< Number of bytes written to this socket.
-        Vs64    mIdleTime;            ///< Milliseconds elapsed since last activity.
+        VSocketID   mSocketID;          ///< The sock id.
+        VString     mHostName;          ///< The name of the host to which the socket is connected.
+        int         mPortNumber;        ///< The port number on the host to which the socket is connected.
+        Vs64        mNumBytesRead;      ///< Number of bytes read from this socket.
+        Vs64        mNumBytesWritten;   ///< Number of bytes written to this socket.
+        VDuration   mIdleTime;          ///< Amount of time elapsed since last activity.
     };
 
 /**

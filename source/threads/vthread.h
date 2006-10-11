@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -13,8 +13,10 @@ http://www.bombaydigital.com/
 
 #include "vstring.h"
 #include "vmutex.h"
+#include "vinstant.h"
 
 class VManagementInterface;
+class VThreadActionListener;
 
 /**
 
@@ -314,9 +316,9 @@ class VThread
         The thread will resume execution after approximately that amount
         of time, although the exact runtime behavior depends on the
         system load.
-        @param    milliseconds    the duration to sleep for
+        @param    interval    the amount of time to sleep for
         */
-        static void sleepMilliseconds(int milliseconds);
+        static void sleep(const VDuration& interval);
         
         /**
         Yields to other threads. This is a way of the calling thread
@@ -326,34 +328,68 @@ class VThread
         */
         static void yield();
         
-    protected:
-    
-        bool                    mIsDeleted;        ///< For debugging purposes it's useful to detect when an attempt is made to delete a thread twice.
-        VString                    mName;            ///< For debugging purposes it's very useful to give each thread a name.
-        bool                    mDeleteAtEnd;    ///< True if threadMain should delete this obj when it returns from run().
-        bool                    mCreateDetached;///< True if the thread is created in detached state.
-        VManagementInterface*    mManager;        ///< The VManagementInterface that manages us, or NULL.
-        VThreadID_Type            mThreadID;        ///< The OS-specific thread ID value.
-        bool                    mIsRunning;        ///< The running state of the thread (@see isRunning()).
-    
-        // These static members track and control the existence of threads we create.
-        static int        smNumVThreads;                ///< The number of VThread objects that currently exist.
-        static int        smNumThreadMains;            ///< The number of VThread::main() functions currently underway.
-        static int        smNumVThreadsCreated;        ///< The total number of VThread objects ever created.
-        static int        smNumThreadMainsStarted;    ///< The total number of VThread::main() functions ever entered.
-        static int        smNumVThreadsDestructed;    ///< The total number of VThread objects ever destructed.
-        static int        smNumThreadMainsCompleted;    ///< The total number of VThread::main() functions ever completed.
-
         /**
         Defines the actions indicated in calls to updateThreadStats.
         */
         enum eThreadAction { eCreated, eDestroyed, eMainStarted, eMainCompleted };
+        
+        /**
+        Call this to assign a thread action listener; you MUST call this
+        later with NULL before exiting if the listener object has a shorter
+        lifetime than all thread actions.
+        @param listener the listener to be called with thread actions, or NULL
+                        to de-register so no actions cause calls to a listener
+        */
+        static void setActionListener(VThreadActionListener* listener);
+
+    protected:
+    
+        bool                    mIsDeleted;      ///< For debugging purposes it's useful to detect when an attempt is made to delete a thread twice.
+        VString                 mName;           ///< For debugging purposes it's very useful to give each thread a name.
+        bool                    mDeleteAtEnd;    ///< True if threadMain should delete this obj when it returns from run().
+        bool                    mCreateDetached; ///< True if the thread is created in detached state.
+        VManagementInterface*   mManager;        ///< The VManagementInterface that manages us, or NULL.
+        VThreadID_Type          mThreadID;       ///< The OS-specific thread ID value.
+        bool                    mIsRunning;      ///< The running state of the thread (@see isRunning()).
+    
+        // These static members track and control the existence of threads we create.
+        static int smNumVThreads;               ///< The number of VThread objects that currently exist.
+        static int smNumThreadMains;            ///< The number of VThread::main() functions currently underway.
+        static int smNumVThreadsCreated;        ///< The total number of VThread objects ever created.
+        static int smNumThreadMainsStarted;     ///< The total number of VThread::main() functions ever entered.
+        static int smNumVThreadsDestructed;     ///< The total number of VThread objects ever destructed.
+        static int smNumThreadMainsCompleted;   ///< The total number of VThread::main() functions ever completed.
+
+        static VThreadActionListener* smActionListener; ///< For now, there can only be 1; if more are needed, make this a collection.
 
         /**
         Updates the thread statistics based on the specified action happening.
         @param    action    what happened (@see eThreadAction)
         */
-        static void    updateThreadStatistics(eThreadAction action);
+        static void _updateThreadStatistics(eThreadAction action);
+
+    private:
+    
+        // Prevent copy construction and assignment since there is no provision for sharing the underlying thread.
+        VThread(const VThread& other);
+        VThread& operator=(const VThread& other);
+    };
+
+/**
+VThreadActionListener is a notification interface that you can implement and
+register with VThread::registerActionListener, in order to be notified of
+thread lifecycle events, for purposes of tracking thread statistics. The
+threadAction() method is called any time a thread is created or destroyed,
+or a thread main is started or completes.
+*/
+class VThreadActionListener
+    {
+    public:
+    
+        VThreadActionListener() {}
+        virtual ~VThreadActionListener() {}
+        
+        virtual void threadAction(VThread::eThreadAction action) = 0;
     };
 
 #endif /* vthread_h */

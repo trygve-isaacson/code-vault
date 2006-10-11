@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -11,87 +11,49 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vinstant.h"
 
-#ifndef VPLATFORM_WIN
-
-#include <dirent.h>
-
-// static
-void VFSNode::normalizePath(VString& /*path*/) {}
-
-// static
-void VFSNode::denormalizePath(VString& /*path*/) {}
-
-#else  /* VPLATFORM_WIN */
-
 // static
 void VFSNode::normalizePath(VString& path)
     {
-    // For the moment, we get almost all the functionality we need by
-    // simply converting backslash to slash if we are compiled for Windows.
-    // Mac OS X support is free since it's Unix. Mac OS 9 support would
-    // have to deal with ':'. DOS drive letters and Mac OS 9 root/relative
-    // paths would complicate things a little for things like getParentPath.
-    path.replace("\\", "/");
+    VFSNode::_platform_normalizePath(path);
     }
 
 // static
 void VFSNode::denormalizePath(VString& path)
     {
-    // See comments above.
-    path.replace("/", "\\");
+    VFSNode::_platform_denormalizePath(path);
     }
-
-/* Note: according to Microsoft KB article 177506, only the following characters
-are valid in file and folder names on their operating system. I should provide
-some way of filtering out bad stuff for the particular platform.
-
-- letters
-- numbers
-^   Accent circumflex (caret)
-&   Ampersand
-'   Apostrophe (single quotation mark)
-@   At sign
-{   Brace left
-}   Brace right
-[   Bracket opening
-]   Bracket closing
-,   Comma
-$   Dollar sign
-=   Equal sign
-!   Exclamation point
--   Hyphen
-#   Number sign
-(   Parenthesis opening
-)   Parenthesis closing
-%   Percent
-.   Period
-+   Plus
-~   Tilde
-_   Underscore 
-*/
-
-#endif /* VPLATFORM_WIN */
 
 VFSNode::VFSNode()
     {
     }
 
-VFSNode::VFSNode(const VString& inPath)
+VFSNode::VFSNode(const VString& path) :
+mPath(path)
     {
-    mPath = inPath;
+    if (path.isEmpty())
+        mPath = ".";
     }
 
-void VFSNode::setPath(const VString& inPath)
+VFSNode& VFSNode::operator=(const VFSNode& other)
     {
-    mPath = inPath;
+    mPath = other.mPath;
+    return *this;
     }
 
-void VFSNode::getPath(VString& outPath) const
+void VFSNode::setPath(const VString& path)
     {
-    outPath = mPath;
+    if (path.isEmpty())
+        mPath = ".";
+    else
+        mPath = path;
     }
 
-const VString& VFSNode::path() const
+void VFSNode::getPath(VString& path) const
+    {
+    path = mPath;
+    }
+
+const VString& VFSNode::getPath() const
     {
     return mPath;
     }
@@ -139,30 +101,16 @@ void VFSNode::mkdirs() const
     VFSNode    parentNode;
     this->getParentNode(parentNode);
     
-    if (! parentNode.path().isEmpty())    // root or parent of supplied path must be assumed to exist
+    if (! parentNode.getPath().isEmpty())    // root or parent of supplied path must be assumed to exist
         parentNode.mkdirs();
     
-    // Create this directory.
+    // Create this directory specifically.
     this->mkdir();
     }
 
 void VFSNode::mkdir() const
     {
-    int result = VFSNode::threadsafe_mkdir(mPath, (S_IFDIR | S_IRWXO | S_IRWXG | S_IRWXU));
-
-    /*
-    If two threads are competing to create the same directory, even if they
-    both check for its existence, they might end up trying to create it at
-    the same time -- one of them will get result -1 with errno == EEXIST.
-    The best thing for our interface is to have mkdir succeed if the directory
-    already exists.
-    */
-    
-    if ((result == -1) && (errno == EEXIST) && this->isDirectory())
-        result = 0;
-
-    if (result != 0)
-        throw VException(result, "VFSNode::mkdir failed (error %d: %s) for '%s'.", errno, ::strerror(errno), mPath.chars());
+    this->_platform_createDirectory();
     }
 
 bool VFSNode::rm() const
@@ -184,14 +132,10 @@ bool VFSNode::rm() const
     
     if (success)
         {
-        int result;
-        
         if (isDir)
-            result = VFSNode::threadsafe_rmdir(mPath);
+            success = this->_platform_removeDirectory();
         else
-            result = VFSNode::threadsafe_unlink(mPath);
-
-        success = (result == 0);
+            success = this->_platform_removeFile();
         }
 
     return success;
@@ -212,72 +156,31 @@ bool VFSNode::rmDirContents() const
     return allSucceeded;
     }
 
-bool VFSNode::exists() const
-    {
-    struct stat    statData;
-    
-    return this->stat(statData);
-    }
-
-bool VFSNode::isDirectory() const
-    {
-    struct stat    statData;
-
-    bool doesExist = this->stat(statData);
-
-#ifndef VPLATFORM_WIN
-    return (doesExist
-        && ((S_ISDIR(statData.st_mode)) || (S_ISLNK(statData.st_mode))));
-#else
-    return (doesExist
-        && ((GetFileAttributes(mPath) & FILE_ATTRIBUTE_DIRECTORY) != 0));
-#endif
-    }
-
-bool VFSNode::isFile() const
-    {
-    struct stat    statData;
-
-    bool doesExist = this->stat(statData);
-
-#ifndef VPLATFORM_WIN
-    return (doesExist
-        && (! S_ISDIR(statData.st_mode))
-        && (! S_ISLNK(statData.st_mode)));
-#else
-    return (doesExist
-        && ((GetFileAttributes(mPath) & FILE_ATTRIBUTE_DIRECTORY) == 0));
-#endif
-    }
-
 void VFSNode::renameToPath(const VString& newPath) const
     {
-    int    result = VFSNode::threadsafe_rename(mPath, newPath);
+    VFSNode newNode(newPath);
+    VString newName;
     
-    if (result != 0)
-        throw VException(result, "VFSNode::rename failed (error %d: %s) renaming '%s' to '%s'.", errno, ::strerror(errno), mPath.chars(), newPath.chars());
+    newNode.getName(newName);
+
+    this->_platform_renameNode(newName);
     }
 
 void VFSNode::renameToName(const VString& newName) const
     {
-    VFSNode    parentNode;
-    this->getParentNode(parentNode);
-    
-    VString    newPath;
-    parentNode.getChildPath(newName, newPath);
-    
-    this->renameToPath(newPath);
+    this->_platform_renameNode(newName);
     }
 
 void VFSNode::renameToName(const VString& newName, VFSNode& nodeToUpdate) const
     {
+    this->_platform_renameNode(newName);
+
     VFSNode    parentNode;
     this->getParentNode(parentNode);
     
     VString    newPath;
     parentNode.getChildPath(newName, newPath);
     
-    this->renameToPath(newPath);
     nodeToUpdate.setPath(newPath);    // it IS allowed for nodeToUpdate to be this
     }
 
@@ -290,18 +193,12 @@ void VFSNode::renameToNode(const VFSNode& newNode) const
     this->renameToPath(newPath);
     }
 
-bool VFSNode::stat(struct stat& statData) const
-    {
-    int result = VFSNode::threadsafe_stat(mPath, &statData);
-    return (result >= 0);
-    }
-
 void VFSNode::list(VStringVector& children) const
     {
     VFSNodeVector    dummy;
     
     // Call the implementation with parameters to indicate we are using names, not nodes.
-    this->listImplementation(children, dummy, true, false);
+    this->_platform_getDirectoryList(children, dummy, true, false);
     }
 
 void VFSNode::list(VFSNodeVector& children) const
@@ -309,55 +206,62 @@ void VFSNode::list(VFSNodeVector& children) const
     VStringVector    dummy;
     
     // Call the implementation with parameters to indicate we are using nodes, not names.
-    this->listImplementation(dummy, children, false, true);
+    this->_platform_getDirectoryList(dummy, children, false, true);
     }
 
-VFSize VFSNode::size() const
+bool VFSNode::exists() const
     {
-    struct stat    statData;
-    
-    int result = VFSNode::threadsafe_stat(mPath, &statData);
-
-    if (result >= 0)
-        {
-        return statData.st_size;
-        }
-    else
-        {
-        throw VException(result, "VFSNode::size failed (error %d: %s) for '%s'.", errno, ::strerror(errno), mPath.chars());
-        }
-    }
-
-VInstant VFSNode::modificationDate() const
-    {
-    struct stat    statData;
-    
-    int result = VFSNode::threadsafe_stat(mPath, &statData);
-
-    if (result >= 0)
-        {
-        return VInstant(statData.st_mtime);
-        }
-    else
-        {
-        throw VException(result, "VFSNode::modificationDate failed (error %d: %s) for '%s'.", errno, ::strerror(errno), mPath.chars());
-        }
+    VFSNodeInfo info;
+    return this->_platform_getNodeInfo(info); // only the function result is needed
     }
 
 VInstant VFSNode::creationDate() const
     {
-    struct stat    statData;
-    
-    int result = VFSNode::threadsafe_stat(mPath, &statData);
+    VFSNodeInfo info;
+    bool exists = this->_platform_getNodeInfo(info);
 
-    if (result >= 0)
-        {
-        return VInstant(statData.st_ctime);
-        }
-    else
-        {
-        throw VException(result, "VFSNode::creationDate failed (error %d: %s) for '%s'.", errno, ::strerror(errno), mPath.chars());
-        }
+    if (!exists)
+        throw VException(info.mErrNo, "VFSNode::creationDate failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars());
+
+    return VInstant::instantFromRawValue(info.mCreationDate);
+    }
+
+VInstant VFSNode::modificationDate() const
+    {
+    VFSNodeInfo info;
+    bool exists = this->_platform_getNodeInfo(info);
+
+    if (!exists)
+        throw VException(info.mErrNo, "VFSNode::modificationDate failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars());
+
+    return VInstant::instantFromRawValue(info.mModificationDate);
+    }
+
+VFSize VFSNode::size() const
+    {
+    VFSNodeInfo info;
+    bool exists = this->_platform_getNodeInfo(info);
+
+    if (!exists)
+        throw VException(info.mErrNo, "VFSNode::size failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars());
+
+    return info.mFileSize;
+    }
+
+bool VFSNode::isFile() const
+    {
+    VFSNodeInfo info;
+    bool exists = this->_platform_getNodeInfo(info);
+    
+    return exists && info.mIsFile;
+    }
+
+bool VFSNode::isDirectory() const
+    {
+    VFSNodeInfo info;
+    bool exists = this->_platform_getNodeInfo(info);
+    
+    return exists && info.mIsDirectory;
     }
 
 // This is a useful place to put a breakpoint when things aren't going as planned.
@@ -372,14 +276,50 @@ static void _debugCheck(bool success)
     }
     
 // static
-int VFSNode::threadsafe_mkdir(const char* inPath, mode_t mode)
+int VFSNode::_wrap_mkdir(const char* path, mode_t mode)
     {
     int        result;
     bool    done = false;
     
     while (! done)
         {
-		result = vault::mkdir(inPath, mode);
+        result = vault::mkdir(path, mode);
+        
+        if ((result == 0) || (errno != EINTR))
+            done = true;
+        }
+    
+    /*
+    If two threads are competing to create the same directory, even if they
+    both check for its existence, they might end up trying to create it at
+    the same time -- one of them will get result -1 with errno == EEXIST.
+    The best thing for our interface is to have mkdir succeed if the directory
+    already exists.
+    */
+    
+    if ((result == -1) && (errno == EEXIST))
+        {
+        // Call stat to determine whether the existent node is a directory.
+        // If it is, then we "succeeded" in creating it.
+        VFSNode node(path);
+        if (node.isDirectory())
+            result = 0;
+        }
+
+    _debugCheck(result == 0);
+
+    return result;
+    }
+
+// static
+int VFSNode::_wrap_rename(const char* oldName, const char* newName)
+    {
+    int        result;
+    bool    done = false;
+
+    while (! done)
+        {
+        result = vault::rename(oldName, newName);
         
         if ((result == 0) || (errno != EINTR))
             done = true;
@@ -391,14 +331,14 @@ int VFSNode::threadsafe_mkdir(const char* inPath, mode_t mode)
     }
 
 // static
-int VFSNode::threadsafe_rename(const char* oldName, const char* newName)
+int VFSNode::_wrap_stat(const char* path, struct stat* buf)
     {
     int        result;
     bool    done = false;
 
     while (! done)
         {
-        result = ::rename(oldName, newName);
+        result = vault::stat(path, buf);
         
         if ((result == 0) || (errno != EINTR))
             done = true;
@@ -410,14 +350,14 @@ int VFSNode::threadsafe_rename(const char* oldName, const char* newName)
     }
 
 // static
-int VFSNode::threadsafe_stat(const char* inPath, struct stat* buf)
+int VFSNode::_wrap_unlink(const char* path)
     {
     int        result;
     bool    done = false;
 
     while (! done)
         {
-        result = ::stat(inPath, buf);
+        result = vault::unlink(path);
         
         if ((result == 0) || (errno != EINTR))
             done = true;
@@ -429,14 +369,14 @@ int VFSNode::threadsafe_stat(const char* inPath, struct stat* buf)
     }
 
 // static
-int VFSNode::threadsafe_unlink(const char* inPath)
+int VFSNode::_wrap_rmdir(const char* path)
     {
     int        result;
     bool    done = false;
 
     while (! done)
         {
-		result = vault::unlink(inPath);
+        result = vault::rmdir(path);
         
         if ((result == 0) || (errno != EINTR))
             done = true;
@@ -447,150 +387,15 @@ int VFSNode::threadsafe_unlink(const char* inPath)
     return result;
     }
 
-// static
-int VFSNode::threadsafe_rmdir(const char* inPath)
+// VFSNodeInfo ---------------------------------------------------------------
+
+VFSNodeInfo::VFSNodeInfo() :
+mCreationDate(0),
+mModificationDate(0),
+mFileSize(0),
+mIsFile(false),
+mIsDirectory(false),
+mErrNo(0)
     {
-    int        result;
-    bool    done = false;
-
-    while (! done)
-        {
-		result = vault::rmdir(inPath);
-        
-        if ((result == 0) || (errno != EINTR))
-            done = true;
-        }
-    
-    _debugCheck(result == 0);
-
-    return result;
     }
 
-#ifndef VPLATFORM_WIN
-
-// This is the Unix implementation using opendir(), readdir(), closedir() functions.
-
-void VFSNode::listImplementation(VStringVector& childNames, VFSNodeVector& childNodes, bool useNames, bool useNodes) const
-    {
-    VString    childPath;
-    VString    nodeName;
-    VFSNode childNode;
-
-    DIR*    dir = ::opendir(mPath);
-    
-    if (dir == NULL)
-        throw VException("VFSNode::list failed for '%s'.", mPath.chars());
-
-    try
-        {
-        struct dirent*    entry = ::readdir(dir);
-        
-        while (entry != NULL)
-            {
-            nodeName = entry->d_name;
-            
-            // Skip current and parent pseudo-entries. Otherwise client must
-            // know too much detail in order to avoid traversal problems.
-            if ((nodeName != ".") &&
-                (nodeName != ".."))
-                {
-                if (useNames)
-                    {
-                    childNames.push_back(nodeName);
-                    }
-
-                if (useNodes)
-                    {
-                    this->getChildPath(nodeName, childPath);
-                    childNode.setPath(childPath);
-                    childNodes.push_back(childNode);
-                    }
-
-                }
-            
-            entry = ::readdir(dir);
-            }
-        }
-    catch (...)
-        {
-        ::closedir(dir);
-        throw;
-        }
-
-    ::closedir(dir);
-    }
-
-#else /* VPLATFORM_WIN */
-
-// This is the Windows implementation using FindFirstFile(), FindNextFile(), FindClose() functions.
-
-void VFSNode::listImplementation(VStringVector& childNames, VFSNodeVector& childNodes, bool useNames, bool useNodes) const
-    {
-    // FIXME: This code has not been made UNICODE/DBCS compatible.
-    // The problem areas are in the strings, and for now we just
-    // brute-force cast so that the compiler is happy.
-    
-    //SN 10/8/04 : CR 22227 & CR 22266 - moved childpath at begining of function to avoid crash
-    VString    childPath;
-    //SN 10/11/04 : CR 22227 & CR 22266 - moved nodeName at begining of function to avoid crash
-    VString    nodeName;
-    VFSNode childNode;
-    VString    searchPath("%s/*", mPath.chars());
-    
-    VFSNode::denormalizePath(searchPath);    // make it have DOS syntax
-
-    //Initialize data structs
-    childNames.clear();
-    childNodes.clear();
-
-    WIN32_FIND_DATA    data;
-//    HANDLE            dir = ::FindFirstFile((const unsigned short*) searchPath.chars(), &data); // FIXME: error in VC++7 (OK for CW?)
-// Actually the cast here depends on the flags for wchar support?
-    HANDLE            dir = ::FindFirstFile((LPCTSTR) searchPath.chars(), &data);
-
-    if (dir == INVALID_HANDLE_VALUE)
-        {
-        DWORD    error = ::GetLastError();
-        
-        if (error == ERROR_NO_MORE_FILES)
-            return;
-            
-        throw VException("VFSNode::list failed (error %d) for '%s'.", error , searchPath.chars());
-        }
-    
-    try
-        {
-        do
-            {
-            nodeName = (char*) data.cFileName;
-
-            // Skip current and parent pseudo-entries. Otherwise client must
-            // know too much detail in order to avoid traversal problems.
-            if ((nodeName != ".") &&
-                (nodeName != ".."))
-                {
-                if (useNames)
-                    {
-                    childNames.push_back(nodeName);
-                    }
-
-                if (useNodes)
-                    {
-                    this->getChildPath(nodeName, childPath);
-                    childNode.setPath(childPath);
-                    childNodes.push_back(childNode);
-                    }
-                }
-            
-            } while (::FindNextFile(dir, &data));
-        }
-    catch (...)
-        {
-        ::FindClose(dir);
-        throw;
-        }
-
-    ::FindClose(dir);
-    }
-
-#endif /* VPLATFORM_WIN */

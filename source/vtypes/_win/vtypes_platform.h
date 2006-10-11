@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2005 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.3.2
+Copyright c1997-2006 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -63,6 +63,7 @@ needed.
 	#if _MSC_VER >= 1400
 	#define _CRT_SECURE_NO_DEPRECATE
 	#endif
+
 #endif
 
 // The Code Vault does not currently support Unicode strings.
@@ -85,7 +86,6 @@ needed.
 #include <string.h>
 #include <limits.h>
 #include <math.h>
-
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -101,13 +101,19 @@ needed.
 #include <io.h>
 #include <direct.h>
 
+// If Windows globally #defines these as preprocessor macros, they cannot
+// be used as method names! Get rid of them.
+#undef min
+#undef max
+#undef abs
+
 /*
 The VC++ 6.0 compiler is nonstandard in how it defines 64-bit integers,
 so we define them specially here.
 */
 #ifdef VCOMPILER_MSVC_6_CRIPPLED
-typedef LONGLONG    Vs64;
-typedef ULONGLONG    Vu64;
+typedef LONGLONG  Vs64;
+typedef ULONGLONG Vu64;
 #endif
 
 /*
@@ -158,25 +164,25 @@ Intel byte order.
 
 #define VBYTESWAP_NEEDED
 
-#define V_BYTESWAP_HTONS_GET(x)            VbyteSwap16((Vu16) x)
-#define V_BYTESWAP_NTOHS_GET(x)            VbyteSwap16((Vu16) x)
-#define V_BYTESWAP_HTONS_IN_PLACE(x)    ((x) = (VbyteSwap16((Vu16) x)))
-#define V_BYTESWAP_NTOHS_IN_PLACE(x)    ((x) = (VbyteSwap16((Vu16) x)))
+#define V_BYTESWAP_HTONS_GET(x)         vault::VbyteSwap16((Vu16) x)
+#define V_BYTESWAP_NTOHS_GET(x)         vault::VbyteSwap16((Vu16) x)
+#define V_BYTESWAP_HTONS_IN_PLACE(x)    ((x) = (vault::VbyteSwap16((Vu16) x)))
+#define V_BYTESWAP_NTOHS_IN_PLACE(x)    ((x) = (vault::VbyteSwap16((Vu16) x)))
 
-#define V_BYTESWAP_HTONL_GET(x)            VbyteSwap32((Vu32) x)
-#define V_BYTESWAP_NTOHL_GET(x)            VbyteSwap32((Vu32) x)
-#define V_BYTESWAP_HTONL_IN_PLACE(x)    ((x) = (VbyteSwap32((Vu32) x)))
-#define V_BYTESWAP_NTOHL_IN_PLACE(x)    ((x) = (VbyteSwap32((Vu32) x)))
+#define V_BYTESWAP_HTONL_GET(x)         vault::VbyteSwap32((Vu32) x)
+#define V_BYTESWAP_NTOHL_GET(x)         vault::VbyteSwap32((Vu32) x)
+#define V_BYTESWAP_HTONL_IN_PLACE(x)    ((x) = (vault::VbyteSwap32((Vu32) x)))
+#define V_BYTESWAP_NTOHL_IN_PLACE(x)    ((x) = (vault::VbyteSwap32((Vu32) x)))
 
-#define V_BYTESWAP_HTON64_GET(x)        VbyteSwap64((Vu64) x)
-#define V_BYTESWAP_NTOH64_GET(x)        VbyteSwap64((Vu64) x)
-#define V_BYTESWAP_HTON64_IN_PLACE(x)    ((x) = (VbyteSwap64((Vu64) x)))
-#define V_BYTESWAP_NTOH64_IN_PLACE(x)    ((x) = (VbyteSwap64((Vu64) x)))
+#define V_BYTESWAP_HTON64_GET(x)        vault::VbyteSwap64((Vu64) x)
+#define V_BYTESWAP_NTOH64_GET(x)        vault::VbyteSwap64((Vu64) x)
+#define V_BYTESWAP_HTON64_IN_PLACE(x)   ((x) = (vault::VbyteSwap64((Vu64) x)))
+#define V_BYTESWAP_NTOH64_IN_PLACE(x)   ((x) = (vault::VbyteSwap64((Vu64) x)))
 
-#define V_BYTESWAP_HTONF_GET(x)            VbyteSwapFloat((VFloat) x)
-#define V_BYTESWAP_NTOHF_GET(x)            VbyteSwapFloat((VFloat) x)
-#define V_BYTESWAP_HTONF_IN_PLACE(x)    ((x) = (VbyteSwapFloat((VFloat) x)))
-#define V_BYTESWAP_NTOHF_IN_PLACE(x)    ((x) = (VbyteSwapFloat((VFloat) x)))
+#define V_BYTESWAP_HTONF_GET(x)         vault::VbyteSwapFloat((VFloat) x)
+#define V_BYTESWAP_NTOHF_GET(x)         vault::VbyteSwapFloat((VFloat) x)
+#define V_BYTESWAP_HTONF_IN_PLACE(x)    ((x) = (vault::VbyteSwapFloat((VFloat) x)))
+#define V_BYTESWAP_NTOHF_IN_PLACE(x)    ((x) = (vault::VbyteSwapFloat((VFloat) x)))
 
 typedef size_t ssize_t;
 /* #define S_ISLNK(x) ... Would need equivalent for stat.mode on Win32, see VFSNode::isDirectory() */
@@ -184,14 +190,14 @@ typedef size_t ssize_t;
 #define SHUT_WR SD_SEND
 
 #ifdef VCOMPILER_MSVC
-typedef int mode_t;
-#define open _open
-#define rmdir _rmdir
-#define vsnprintf _vsnprintf
-#define S_IRWXO    _S_IREAD | _S_IWRITE
-#define S_IRWXG    _S_IREAD | _S_IWRITE
-#define S_IRWXU    _S_IREAD | _S_IWRITE
-/* #define S_ISDIR(x) ... Would need equivalent for stat.mode on Win32, see VFSNode::isDirectory() */
+    typedef int mode_t;
+    #define open _open
+    #define rmdir _rmdir
+    #define vsnprintf _vsnprintf
+    #define S_IRWXO    _S_IREAD | _S_IWRITE
+    #define S_IRWXG    _S_IREAD | _S_IWRITE
+    #define S_IRWXU    _S_IREAD | _S_IWRITE
+    /* #define S_ISDIR(x) ... Would need equivalent for stat.mode on Win32, see VFSNode::isDirectory() */
 #endif
 
 // On Windows, we implement snapshot using _ftime64(), which is UTC-based.
@@ -206,17 +212,17 @@ typedef unsigned long in_addr_t;
 
 #ifdef DEFINE_V_MINMAXABS
 
-#define V_MIN(a, b) ((a) > (b) ? (b) : (a))    ///< Macro for getting min of compatible values when standard functions / templates are not available.
-#define V_MAX(a, b) ((a) > (b) ? (a) : (b))    ///< Macro for getting max of compatible values when standard functions / templates are not available.
-#define V_ABS(a) ((a) < 0 ? (-(a)) : (a))    ///< Macro for getting abs of an integer value when standard functions / templates are not available.
-#define V_FABS(a) ((a) < 0 ? (-(a)) : (a))    ///< Macro for getting abs of a floating point value when standard functions / templates are not available.
+    #define V_MIN(a, b) ((a) > (b) ? (b) : (a)) ///< Macro for getting min of compatible values when standard functions / templates are not available.
+    #define V_MAX(a, b) ((a) > (b) ? (a) : (b)) ///< Macro for getting max of compatible values when standard functions / templates are not available.
+    #define V_ABS(a) ((a) < 0 ? (-(a)) : (a))   ///< Macro for getting abs of an integer value when standard functions / templates are not available.
+    #define V_FABS(a) ((a) < 0 ? (-(a)) : (a))  ///< Macro for getting abs of a floating point value when standard functions / templates are not available.
 
 #else
 
-#define V_MIN(a, b) std::min(a, b)    ///< Macro for getting min of compatible values using standard function template.
-#define V_MAX(a, b) std::max(a, b)    ///< Macro for getting max of compatible values using standard function template.
-#define V_ABS(a) std::abs(a)        ///< Macro for getting abs of an integer value using standard function template.
-#define V_FABS(a) std::fabs(a)        ///< Macro for getting abs of a floating point value using standard function template.
+    #define V_MIN(a, b) std::min(a, b) ///< Macro for getting min of compatible values using standard function template.
+    #define V_MAX(a, b) std::max(a, b) ///< Macro for getting max of compatible values using standard function template.
+    #define V_ABS(a) std::abs(a)       ///< Macro for getting abs of an integer value using standard function template.
+    #define V_FABS(a) std::fabs(a)     ///< Macro for getting abs of a floating point value using standard function template.
 
 #endif /* DEFINE_V_MINMAXABS */
 
@@ -267,6 +273,8 @@ inline int close(int fd) { return ::close(fd); }
 inline int mkdir(const char* path, mode_t /*mode*/) { return ::mkdir(path); }
 inline int rmdir(const char* path) { return ::_rmdir(path); }
 inline int unlink(const char* path) { return ::unlink(path); }
+inline int rename(const char* oldName, const char* newName) { return ::rename(oldName, newName); }
+inline int stat(const char* path, struct stat* buf) { return ::stat(path, buf); }
 inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args) { return ::_vsnprintf(buffer, length, format, args); }
 
 inline int snprintf(char* buffer, size_t length, const char* format, ...)
