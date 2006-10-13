@@ -47,29 +47,11 @@ VSocket::~VSocket()
     // Note: base class destructor does a close() of the socket if it is open.
     }
 
-void VSocket::connect()
-    {
-#ifdef SUSV2
-    this->_connectStandard();
-#else
-    this->_connectEnhanced();
-#endif
-    }
-
-void VSocket::listen()
-    {
-#ifdef SUSV2
-    this->_listenStandard();
-#else
-    this->_listenEnhanced();
-#endif
-    }
-
 int VSocket::available()
     {
-    int    numBytesAvailable = 0;
+    int numBytesAvailable = 0;
     
-    int    result = ::ioctl(mSocketID, FIONREAD, &numBytesAvailable);
+    int result = ::ioctl(mSocketID, FIONREAD, &numBytesAvailable);
     
     if (result == -1)
         throw VException("VSocket::available failed on socket %d, result=%d, error=%s.", mSocketID, result, ::strerror(errno));
@@ -79,11 +61,11 @@ int VSocket::available()
 
 int VSocket::read(Vu8* buffer, int numBytesToRead)
     {
-    int        bytesRemainingToRead = numBytesToRead;
+    int     bytesRemainingToRead = numBytesToRead;
     Vu8*    nextBufferPositionPtr = buffer;
-    int        result;
-    int        theNumBytesRead = 0;
-    fd_set    readset;
+    int     result;
+    int     theNumBytesRead = 0;
+    fd_set  readset;
 
     while (bytesRemainingToRead > 0) 
         {
@@ -148,11 +130,11 @@ int VSocket::read(Vu8* buffer, int numBytesToRead)
 
 int VSocket::write(const Vu8* buffer, int numBytesToWrite)
     {
-    Vu8*    nextBufferPositionPtr = (Vu8*) buffer;
-    int        bytesRemainingToWrite = numBytesToWrite;
-    int        theNumBytesWritten;
-    int        result = 0; // avoid compiler warning for possible uninitialized use
-    fd_set    writeset;
+    const Vu8*  nextBufferPositionPtr = buffer;
+    int         bytesRemainingToWrite = numBytesToWrite;
+    int         theNumBytesWritten;
+    int         result = 0; // avoid compiler warning for possible uninitialized use
+    fd_set      writeset;
 
     if (mSocketID < 0) 
         {
@@ -211,28 +193,28 @@ int VSocket::write(const Vu8* buffer, int numBytesToWrite)
 
 void VSocket::discoverHostAndPort()
     {
-    struct sockaddr_in    info;
-    VSocklenT            infoLength = sizeof(info);
+    struct sockaddr_in  info;
+    VSocklenT           infoLength = sizeof(info);
 
     int    result = ::getpeername(mSocketID, (struct sockaddr*) &info, &infoLength);
     //lint -e550 "Symbol 'e' (line 207) not accessed"
     if (result != 0)
         {
-        int    e = errno;    // for debugging purposes, can set a breakpoint here and look at errno
+        int e = errno;    // for debugging purposes, can set a breakpoint here and look at errno
         e = 0;            // avoid unused variable compiler warning
         }
 
     mPortNumber = ntohs(info.sin_port);
 
-    char*    name = /*::hack_*/::inet_ntoa(info.sin_addr); //somewhat deprecated in favor of addr2ascii
-    //char*    name = ::addr2ascii(AF_INET, info.sin_addr, sizeof(info.sin_addr), NULL);
+    char* name = ::inet_ntoa(info.sin_addr); // addr2ascii is preferred but is not yet standard:
+    //char* name = ::addr2ascii(AF_INET, info.sin_addr, sizeof(info.sin_addr), NULL);
     
     mHostName = name;
     }
 
 void VSocket::closeRead()
     {
-    int    result = ::shutdown(mSocketID, SHUT_RD);
+    int result = ::shutdown(mSocketID, SHUT_RD);
     
     if (result < 0)
         throw VException("VSocket::closeRead unable to shut down socket %d.", mSocketID);
@@ -240,7 +222,7 @@ void VSocket::closeRead()
 
 void VSocket::closeWrite()
     {
-    int    result = ::shutdown(mSocketID, SHUT_WR);
+    int result = ::shutdown(mSocketID, SHUT_WR);
     
     if (result < 0)
         throw VException("VSocket::closeWrite unable to shut down socket %d.", mSocketID);
@@ -255,13 +237,13 @@ void VSocket::assertInvariant() const
     {
     }
 
-#ifdef SUSV2
+#ifndef V_BSD_ENHANCED_SOCKETS
 
-void VSocket::_connectStandard()
+void VSocket::connect()
     {
-    struct sockaddr_in    info;
-    int                    infoLength = sizeof(info);
-    VSocketID                socketID;
+    struct sockaddr_in  info;
+    int                 infoLength = sizeof(info);
+    VSocketID           socketID;
     
     ::memset(&info, 0, sizeof(info));
     info.sin_family = AF_INET;
@@ -272,26 +254,26 @@ void VSocket::_connectStandard()
         
     if (socketID >= 0)
         {
-        int    result = ::connect(socketID, (const sockaddr*) &info, infoLength);
+        int result = ::connect(socketID, (const sockaddr*) &info, infoLength);
 
         if (result != 0)
             {
             // Connect failed.
             vault::close(socketID);
-            throw VException("VSocket::_connectStandard was unable to connect to %s:%d -- socket id %d, errno=%s", mHostName.chars(), mPortNumber, socketID, ::strerror(errno));
+            throw VException("VSocket::connect was unable to connect to %s:%d -- socket id %d, errno=%s", mHostName.chars(), mPortNumber, socketID, ::strerror(errno));
             }
         }
 
     mSocketID = socketID;
     }
 
-void VSocket::_listenStandard()
+void VSocket::listen()
     {
-    VSocketID                listenSockID = kNoSocketID;
-    struct sockaddr_in    info;
-    int                    infoLength = sizeof(info);
-    const int            on = 1;
-    int                    result;
+    VSocketID           listenSockID = kNoSocketID;
+    struct sockaddr_in  info;
+    int                 infoLength = sizeof(info);
+    const int           on = 1;
+    int                 result;
     
     ::memset(&info, 0, sizeof(info));
     info.sin_family = AF_INET;
@@ -300,35 +282,35 @@ void VSocket::_listenStandard()
     
     listenSockID = ::socket(AF_INET, SOCK_STREAM, 0);
     if (listenSockID < 0)
-        throw VException("VSocket::_listenStandard socket() failed with id %d, errno=%s", listenSockID, ::strerror(errno));
+        throw VException("VSocket::listen socket() failed with id %d, errno=%s", listenSockID, ::strerror(errno));
         
     result = ::setsockopt(listenSockID, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
     if (result != 0)
-        throw VException("VSocket::_listenStandard setsockopt() failed -- socket id %d, result %d, errno=%s", listenSockID, result, ::strerror(errno));
+        throw VException("VSocket::listen setsockopt() failed -- socket id %d, result %d, errno=%s", listenSockID, result, ::strerror(errno));
 
     result = ::bind(listenSockID, (const sockaddr*) &info, infoLength);
     if (result != 0)
         {
         vault::close(listenSockID);
-        throw VException("VSocket::_listenStandard bind() for port %d failed -- socket id %d, result %d, errno=%s", mPortNumber, listenSockID, result, ::strerror(errno));
+        throw VException("VSocket::listen bind() for port %d failed -- socket id %d, result %d, errno=%s", mPortNumber, listenSockID, result, ::strerror(errno));
         }
 
     (void) ::listen(listenSockID, mListenBacklog);
     if (result != 0)
         {
         vault::close(listenSockID);
-        throw VException("VSocket::_listenStandard listen() for port %d failed -- socket id %d, result %d, errno=%s", mPortNumber, listenSockID, result, ::strerror(errno));
+        throw VException("VSocket::listen listen() for port %d failed -- socket id %d, result %d, errno=%s", mPortNumber, listenSockID, result, ::strerror(errno));
         }
 
     mSocketID = listenSockID;
     }
 
-#else /* SUSV2 */
+#else /* V_BSD_ENHANCED_SOCKETS version follows */
 
-void VSocket::_connectEnhanced()
+void VSocket::connect()
     {
-    VSocketID            socketID = kNoSocketID;
-    struct addrinfo    *res = NULL;
+    VSocketID           socketID = kNoSocketID;
+    struct addrinfo*    res = NULL;
     
     this->_tcpGetAddrInfo(&res);
 
@@ -347,15 +329,15 @@ void VSocket::_connectEnhanced()
     mSocketID = socketID;
     }
 
-void VSocket::_listenEnhanced()
+void VSocket::listen()
     {
-    VSocketID                listenSockID;
-    int                    result;
-    const int            on = 1;
-    struct addrinfo        hints;
+    VSocketID           listenSockID;
+    int                 result;
+    const int           on = 1;
+    struct addrinfo     hints;
     struct addrinfo*    res;
     struct addrinfo*    ressave;
-    VString                lastError;
+    VString             lastError;
 
     ::memset(&hints, 0, sizeof(hints));
     hints.ai_flags = AI_PASSIVE;
@@ -364,7 +346,7 @@ void VSocket::_listenEnhanced()
 
     result = this->_getAddrInfo(&hints, &res, false);
     if (result != 0)
-        throw VException("VSocket::_listenEnhanced getAddrInfo() failed with result %d, errno=%s", result, ::strerror(errno));
+        throw VException("VSocket::listen getAddrInfo() failed with result %d, errno=%s", result, ::strerror(errno));
 
     ressave = res;
 
@@ -375,7 +357,7 @@ void VSocket::_listenEnhanced()
         if (listenSockID < 0)
             {
             // Error on this interface, we'll try the next one.
-            lastError.format("VSocket::_listenEnhanced socket() failed with id %d, errno=%s", listenSockID, ::strerror(errno));
+            lastError.format("VSocket::listen socket() failed with id %d, errno=%s", listenSockID, ::strerror(errno));
             continue;
             }
     
@@ -383,7 +365,7 @@ void VSocket::_listenEnhanced()
         if (result != 0)
             {
             // Error on this interface, we'll try the next one.
-            lastError.format("VSocket::_listenEnhanced setsockopt() failed on socket %d with result %d, errno=%s", listenSockID, result, ::strerror(errno));
+            lastError.format("VSocket::listen setsockopt() failed on socket %d with result %d, errno=%s", listenSockID, result, ::strerror(errno));
             continue;
             }
     
@@ -396,7 +378,7 @@ void VSocket::_listenEnhanced()
             }
 
         // Error on this interface, we'll try the next one.
-        lastError.format("VSocket::_listenEnhanced bind() failed on socket %d with result %d, errno=%s", listenSockID, result, ::strerror(errno));
+        lastError.format("VSocket::listen bind() failed on socket %d with result %d, errno=%s", listenSockID, result, ::strerror(errno));
         vault::close(listenSockID);
 
         } while ((res = res->ai_next) != NULL);
@@ -405,7 +387,7 @@ void VSocket::_listenEnhanced()
         throw VException(lastError);
 
     if (lastError.length() != 0)
-        std::cout << "VSocket::_listenEnhanced bind() succeeded after earlier error: " << lastError << "." << std::endl;
+        std::cout << "VSocket::listen bind() succeeded after earlier error: " << lastError << "." << std::endl;
 
     result = ::listen(listenSockID, mListenBacklog);
 
@@ -414,7 +396,7 @@ void VSocket::_listenEnhanced()
     if (result != 0)
         {
         vault::close(listenSockID);
-        throw VException("VSocket::_listenEnhanced listen() failed on socket %d with result %d, errno=%s", listenSockID, result, ::strerror(errno));
+        throw VException("VSocket::listen listen() failed on socket %d with result %d, errno=%s", listenSockID, result, ::strerror(errno));
         }
 
     mSocketID = listenSockID;
@@ -440,7 +422,7 @@ void VSocket::_tcpGetAddrInfo(struct addrinfo **res)
 int VSocket::_getAddrInfo(struct addrinfo* hints, struct addrinfo** res, bool useHostName)
     {
     VMutexLocker    locker(&gAddrInfoMutex);
-    VString            portAsString("%d", mPortNumber);
+    VString         portAsString("%d", mPortNumber);
 
     return ::getaddrinfo(useHostName ? mHostName.chars() : NULL, portAsString.chars(), hints, res);
     }
@@ -448,7 +430,7 @@ int VSocket::_getAddrInfo(struct addrinfo* hints, struct addrinfo** res, bool us
 VSocketID VSocket::_tcpConnectWAddrInfo(struct addrinfo * const resInput)
     {
     struct addrinfo*    res = resInput;
-    VSocketID                socketID;
+    VSocketID           socketID;
 
     do
         {
@@ -481,5 +463,5 @@ VSocketID VSocket::_tcpConnectWAddrInfo(struct addrinfo * const resInput)
 // The BSD call to getaddrinfo() is not threadsafe so we protect it with a global mutex.
 VMutex VSocket::gAddrInfoMutex;
 
-#endif /* SUSV2 */
+#endif /* V_BSD_ENHANCED_SOCKETS */
 
