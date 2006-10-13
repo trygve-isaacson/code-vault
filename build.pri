@@ -39,11 +39,11 @@ INCLUDEPATH += $${VAULT_BASE}/source/files/_unix
 HEADERS += $${VAULT_BASE}/source/vtypes/_mac/vtypes_platform.h
 SOURCES += $${VAULT_BASE}/source/vtypes/_mac/vtypes_platform.cpp
 SOURCES += $${VAULT_BASE}/source/containers/_unix/vinstant_platform.cpp
+SOURCES += $${VAULT_BASE}/source/files/_unix/vfsnode_platform.cpp
 HEADERS += $${VAULT_BASE}/source/threads/_unix/vthread_platform.h
 SOURCES += $${VAULT_BASE}/source/threads/_unix/vthread_platform.cpp
 HEADERS += $${VAULT_BASE}/source/sockets/_unix/vsocket.h
 SOURCES += $${VAULT_BASE}/source/sockets/_unix/vsocket.cpp
-SOURCES += $${VAULT_BASE}/source/sockets/_unix/vfsnode_platform.cpp
 }
 
 vault_unix {
@@ -60,11 +60,11 @@ INCLUDEPATH += $${VAULT_BASE}/source/files/_unix
 HEADERS += $${VAULT_BASE}/source/vtypes/_unix/vtypes_platform.h
 SOURCES += $${VAULT_BASE}/source/vtypes/_unix/vtypes_platform.cpp
 SOURCES += $${VAULT_BASE}/source/containers/_unix/vinstant_platform.cpp
+SOURCES += $${VAULT_BASE}/source/files/_unix/vfsnode_platform.cpp
 HEADERS += $${VAULT_BASE}/source/threads/_unix/vthread_platform.h
 SOURCES += $${VAULT_BASE}/source/threads/_unix/vthread_platform.cpp
 HEADERS += $${VAULT_BASE}/source/sockets/_unix/vsocket.h
 SOURCES += $${VAULT_BASE}/source/sockets/_unix/vsocket.cpp
-SOURCES += $${VAULT_BASE}/source/sockets/_unix/vfsnode_platform.cpp
 }
 
 vault_win32 {
@@ -81,11 +81,11 @@ INCLUDEPATH += $${VAULT_BASE}/source/files/_win
 HEADERS += $${VAULT_BASE}/source/vtypes/_win/vtypes_platform.h
 SOURCES += $${VAULT_BASE}/source/vtypes/_win/vtypes_platform.cpp
 SOURCES += $${VAULT_BASE}/source/containers/_win/vinstant_platform.cpp
+SOURCES += $${VAULT_BASE}/source/files/_win/vfsnode_platform.cpp
 HEADERS += $${VAULT_BASE}/source/threads/_win/vthread_platform.h
 SOURCES += $${VAULT_BASE}/source/threads/_win/vthread_platform.cpp
 HEADERS += $${VAULT_BASE}/source/sockets/_win/vsocket.h
 SOURCES += $${VAULT_BASE}/source/sockets/_win/vsocket.cpp
-SOURCES += $${VAULT_BASE}/source/files/_win/vfsnode_platform.cpp
 
 LINKER_LIBRARIES += Psapi.lib
 }
