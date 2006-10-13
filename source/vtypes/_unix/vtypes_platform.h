@@ -143,7 +143,8 @@ actually call the swapping functions. If not, the macros do nothing.
 
 #endif
 
-// On HPUX vsnprintf does not return would-be length for null target buffer.
+// vsnprintf(NULL, 0, . . .) behavior generally conforms to IEEE 1003.1,
+// but not on HP-UX.
 #ifndef VPLATFORM_UNIX_HPUX
     #define V_EFFICIENT_SPRINTF
 #endif

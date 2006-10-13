@@ -197,17 +197,9 @@ of which headers dominate.
 
 #endif /* VLIBRARY_METROWERKS */
 
-// I'm not yet turning this on for GCC on 10.3 until verified.
-// Once verified, I can get rid of both of these ifdefs, and
-// always define V_EFFICIENT_SPRINTF.
-
-#ifdef VLIBRARY_METROWERKS
-    #define V_EFFICIENT_SPRINTF
-#endif
-
-#ifdef MAC_OS_X_VERSION_10_4
-    #define V_EFFICIENT_SPRINTF
-#endif
+// vsnprintf(NULL, 0, . . .) behavior conforms to IEEE 1003.1 on CW and
+// for GCC/10.4; I have not verified this on GCC/10.3 yet.
+#define V_EFFICIENT_SPRINTF
 
 /*
 These are the custom uniform definitions of system-level functions that behave
