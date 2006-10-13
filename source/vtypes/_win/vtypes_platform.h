@@ -100,6 +100,7 @@ needed.
 #include <windows.h>
 #include <io.h>
 #include <direct.h>
+#include <fcntl.h>
 
 // If Windows globally #defines these as preprocessor macros, they cannot
 // be used as method names! Get rid of them.
@@ -191,13 +192,9 @@ typedef size_t ssize_t;
 
 #ifdef VCOMPILER_MSVC
     typedef int mode_t;
-    #define open _open
-    #define rmdir _rmdir
-    #define vsnprintf _vsnprintf
     #define S_IRWXO    _S_IREAD | _S_IWRITE
     #define S_IRWXG    _S_IREAD | _S_IWRITE
     #define S_IRWXU    _S_IREAD | _S_IWRITE
-    /* #define S_ISDIR(x) ... Would need equivalent for stat.mode on Win32, see VFSNode::isDirectory() */
 #endif
 
 // On Windows, we implement snapshot using _ftime64(), which is UTC-based.
@@ -226,6 +223,10 @@ typedef unsigned long in_addr_t;
 
 #endif /* DEFINE_V_MINMAXABS */
 
+// vsnprintf(NULL, 0, . . .) behavior conforms to IEEE 1003.1 on CW/Win and VC++ 8
+// (may need to set conditionally for older versions of VC++).
+#define V_EFFICIENT_SPRINTF
+
 /*
 These are the custom uniform definitions of system-level functions that behave
 slightly differently on each compiler/library/OS platform. These are declared
@@ -249,6 +250,8 @@ inline int close(int fd) { return ::_close(fd); }
 inline int mkdir(const char* path, mode_t /*mode*/) { return ::_mkdir(path); }
 inline int rmdir(const char* path) { return ::_rmdir(path); }
 inline int unlink(const char* path) { return ::_unlink(path); }
+inline int rename(const char* oldName, const char* newName) { return ::rename(oldName, newName); }
+inline int stat(const char* path, struct stat* buf) { return ::stat(path, buf); }
 inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args) { return ::_vsnprintf(buffer, length, format, args); }
 
 inline int snprintf(char* buffer, size_t length, const char* format, ...)
