@@ -31,15 +31,15 @@ http://www.bombaydigital.com/
     and write bytes, to seek (as allowed), and to flush. The concrete subclasses
     provide the actual i/o implementation that works over the particular
     transport. Data at this stream layer is untyped -- it's all just
-    bytes. You'll instantiate either a VBufferedFileStream, VFileStream,
+    bytes. You'll instantiate either a VBufferedFileStream, VDirectIOFileStream,
     VSocketStream, or VMemoryStream, either directly or indirectly. In
     addition, the class VWriteBufferedStream lets you buffer writes to a
     stream such as VSocketStream that doesn't buffer data on its own.
     VMemoryStream uses a memory buffer to hold the stream data; you don't have
     to worry about writing past the end of the buffer: it expands as
-    necessary. Regarding VBufferedFileStream vs. VFileStream, you should
+    necessary. Regarding VBufferedFileStream vs. VDirectIOFileStream, you should
     generally use VBufferedFileStream, unless you need the particular
-    behavior of VFileStream, because VBufferedFileStream uses the platform
+    behavior of VDirectIOFileStream, because VBufferedFileStream uses the platform
     APIs that give better file i/o performance.
     
     <h4>Upper Layer: Formatted Streams</h4>
@@ -89,7 +89,7 @@ http://www.bombaydigital.com/
     
     - You'll use a class derived from VStream to specify what kind of
     transport the data is carried on: VBufferedFileStream, VSocketStream, or
-    VMemoryStream. (Or in certain circumstances, VFileStream or
+    VMemoryStream. (Or in certain circumstances, VDirectIOFileStream or
     VWriteBufferedStream.)
     
     - You'll most directly use a class derived from VIOStream to read
@@ -116,8 +116,8 @@ http://www.bombaydigital.com/
 /**    
 VStream is an abstract base class that defines a stream-oriented i/o API.
 
-You will generally use VSocketStream for socket i/o, VFileStream for file i/o,
-and VMemoryStream for memory i/o. VStream also defines and implements a
+You will generally use VSocketStream for socket i/o, VBufferedFileStream for file
+i/o, and VMemoryStream for memory i/o. VStream also defines and implements a
 static function streamCopy() for efficiently copying data between any two
 streams, no matter their types; this is useful for doing zero-copy file and
 socket i/o, or buffering such i/o, without having to specialize the code.
@@ -163,7 +163,7 @@ very easy).
             <td>yes</td>
         </tr>
         <tr>
-            <td>VFileStream</td>
+            <td>VAbstractFileStream-derived</td>
             <td>yes</td>
             <td>yes</td>
             <td>yes</td>
@@ -187,7 +187,9 @@ indicating whether you could succesfully seek to the desired location.
 @see    VBinaryIOStream
 @see    VTextIOStream
 @see    VMemoryStream
-@see    VFileStream
+@see    VAbstractFileStream
+@see    VBufferedFileStream
+@see    VDirectIOFileStream
 @see    VSocketStream
 */
 class VStream
@@ -268,7 +270,7 @@ class VStream
             <td>yes</td>
         </tr>
         <tr>
-            <td>VFileStream</td>
+            <td>VAbstractFileStream-derived</td>
             <td>yes</td>
             <td>yes</td>
             <td>yes</td>
@@ -318,10 +320,10 @@ class VStream
         /**
         Efficiently copies bytes from one stream to another, no matter which
         concrete stream types are being used. Some examples of using it
-        include reading a file into memory (fromStream is a VFileStream,
+        include reading a file into memory (fromStream is VAbstractFileStream-derived,
         toStream is a VMemoryStream), writing from memory to a socket
         (fromStream is a VMemoryStream, toStream is a VSocketStream), and
-        transferring a file to a socket (fromStream is a VFileStream,
+        transferring a file to a socket (fromStream is VAbstractFileStream-derived,
         toStream is a VSocketStream).
         
         If either of the streams is a VMemoryStream, the copy is made

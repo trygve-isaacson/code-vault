@@ -30,7 +30,9 @@ a VIOStream-derived object for i/o, and construct it with the VWriteBufferedStre
 @see    VBinaryIOStream
 @see    VTextIOStream
 @see    VMemoryStream
-@see    VFileStream
+@see    VAbstractFileStream
+@see    VBufferedFileStream
+@see    VDirectIOFileStream
 @see    VSocketStream
 */
 class VWriteBufferedStream : public VMemoryStream

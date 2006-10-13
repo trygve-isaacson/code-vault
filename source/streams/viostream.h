@@ -114,7 +114,7 @@ class VIOStream
             <td>yes</td>
         </tr>
         <tr>
-            <td>VFileStream</td>
+            <td>VAbstractFileStream-derived</td>
             <td>yes</td>
             <td>yes</td>
             <td>yes</td>
@@ -168,10 +168,10 @@ class VIOStream
         /**
         Efficiently copies bytes from one stream to another, no matter which
         concrete stream types are being used. Some examples of using it
-        include reading a file into memory (fromStream is a VFileStream,
+        include reading a file into memory (fromStream is VAbstractFileStream-derived,
         toStream is a VMemoryStream), writing from memory to a socket
         (fromStream is a VMemoryStream, toStream is a VSocketStream), and
-        transferring a file to a socket (fromStream is a VFileStream,
+        transferring a file to a socket (fromStream is VAbstractFileStream-derived,
         toStream is a VSocketStream).
         
         If either of the streams is a VMemoryStream, the copy is made
