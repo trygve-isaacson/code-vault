@@ -8,6 +8,7 @@ http://www.bombaydigital.com/
 
 #include "vfsnode.h"
 
+#include "vexception.h"
 #include <dirent.h>
 
 // static

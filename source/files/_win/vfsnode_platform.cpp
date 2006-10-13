@@ -8,6 +8,8 @@ http://www.bombaydigital.com/
 
 #include "vfsnode.h"
 
+#include "vexception.h"
+
 /* Note: according to Microsoft KB article 177506, only the following characters
 are valid in file and folder names on their operating system. I should provide
 some way of filtering out bad stuff for the particular platform.

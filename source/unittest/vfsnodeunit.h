@@ -11,6 +11,7 @@ http://www.bombaydigital.com/
 
 #include "vunit.h"
 #include "vfsnode.h"
+#include "vabstractfilestream.h"
 
 /**
 Unit test class for validating VFSNode.

@@ -78,7 +78,7 @@ void VThread::yield()
     {
     // FIXME: There's no yield function under Windows --
     // Investigate the API "SwitchToThread()"
-    VThread::sleepMilliseconds(1);
+    VThread::sleep(VDuration::MILLISECOND());
     }
 
 // VMutex platform-specific functions ----------------------------------------
@@ -136,7 +136,7 @@ bool VSemaphore::semaphoreWait(VSemaphore_Type* semaphore, VMutex_Type* /*mutex*
     if (timeoutInterval == VDuration::ZERO())
         timeoutMillisecondsDWORD = INFINITE;
     else
-        timeoutMillisecondsDWORD = static_cast<DWORD>(timeoutMilliseconds);
+        timeoutMillisecondsDWORD = static_cast<DWORD>(timeoutInterval.getDurationMilliseconds());
 
     DWORD    result = WaitForSingleObject(*semaphore, timeoutMillisecondsDWORD);    // waits until the semaphore's count is > 0, then decrements it
     return (result != WAIT_FAILED);
