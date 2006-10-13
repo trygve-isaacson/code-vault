@@ -19,8 +19,8 @@ bool VSocket::staticInit()
     { 
     bool    success = true;
     WORD    versionRequested;
-    WSADATA    wsaData;
-    int        err;
+    WSADATA wsaData;
+    int     err;
 
     versionRequested = MAKEWORD(2, 0);
  
@@ -44,11 +44,11 @@ VSocket::~VSocket()
 
 void VSocket::connect()
     {
-    int                    length;
-    struct sockaddr_in    address;
-    VSockID                socketID;
+    int                 length;
+    struct sockaddr_in  address;
+    VSocketID           socketID;
     
-    ::memset(&address, 0, sizeof(address));    // is this needed?
+    ::memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
     address.sin_port = htons(mPortNumber);
     address.sin_addr.s_addr = ::inet_addr(mHostName);
@@ -71,17 +71,16 @@ void VSocket::connect()
 
 void VSocket::listen()
     {
-    
-    VSockID                listenSockID = kNoSockID;
-    struct sockaddr_in    info;
-    int                    infoLength = sizeof(info);
-    const int            on = 1;
-    int                    result;
+    VSocketID           listenSockID = kNoSocketID;
+    struct sockaddr_in  info;
+    int                 infoLength = sizeof(info);
+    const int           on = 1;
+    int                 result;
     
     ::memset(&info, 0, sizeof(info));
     info.sin_family = AF_INET;
     info.sin_port = htons(mPortNumber);
-    info.sin_addr.s_addr = INADDR_ANY;//::inet_addr(hostName);
+    info.sin_addr.s_addr = INADDR_ANY;
     
     listenSockID = ::socket(AF_INET, SOCK_STREAM, 0);
     if (listenSockID <= 0)
@@ -108,9 +107,9 @@ void VSocket::listen()
 
 int VSocket::available()
     {
-    u_long    numBytesAvailable = 0;
+    u_long numBytesAvailable = 0;
     
-    int    result = ::ioctlsocket(mSocketID, FIONREAD, &numBytesAvailable);
+    int result = ::ioctlsocket(mSocketID, FIONREAD, &numBytesAvailable);
     
     if (result != 0)
         throw VException("VSocket::available failed on socket %d, result=%d, error=%s.", mSocketID, result, ::strerror(errno));
@@ -147,11 +146,11 @@ int VSocket::available()
 
 int VSocket::read(Vu8* buffer, int numBytesToRead)
     {
-    int        bytesRemainingToRead = numBytesToRead;
+    int     bytesRemainingToRead = numBytesToRead;
     Vu8*    nextBufferPositionPtr = buffer;
-    int        result;
-    int        numBytesRead = 0;
-    fd_set    readset;
+    int     result;
+    int     numBytesRead = 0;
+    fd_set  readset;
 
     while (bytesRemainingToRead > 0) 
         {
@@ -214,11 +213,11 @@ int VSocket::read(Vu8* buffer, int numBytesToRead)
 
 int VSocket::write(const Vu8* buffer, int numBytesToWrite)
     {
-    Vu8*    nextBufferPositionPtr = (Vu8*) buffer;
-    int        bytesRemainingToWrite = numBytesToWrite;
-    int        numBytesWritten;
-    int        result;
-    fd_set    writeset;
+    const Vu8*  nextBufferPositionPtr = buffer;
+    int         bytesRemainingToWrite = numBytesToWrite;
+    int         numBytesWritten;
+    int         result;
+    fd_set      writeset;
 
     if (mSocketID < 0) 
         {
@@ -276,8 +275,8 @@ int VSocket::write(const Vu8* buffer, int numBytesToWrite)
 
 void VSocket::discoverHostAndPort()
     {
-    VSocklenT            namelen = sizeof(struct sockaddr_in);
-    struct sockaddr_in    info;
+    VSocklenT           namelen = sizeof(struct sockaddr_in);
+    struct sockaddr_in  info;
 
     ::getpeername(mSocketID, (struct sockaddr*) &info, &namelen);
 
@@ -287,7 +286,7 @@ void VSocket::discoverHostAndPort()
 
 void VSocket::closeRead()
     {
-    int    result = ::shutdown(mSocketID, SHUT_RD);
+    int result = ::shutdown(mSocketID, SHUT_RD);
     
     if (result < 0)
         throw VException("VSocket::closeRead unable to shut down socket %d.", mSocketID);
@@ -295,7 +294,7 @@ void VSocket::closeRead()
 
 void VSocket::closeWrite()
     {
-    int    result = ::shutdown(mSocketID, SHUT_WR);
+    int result = ::shutdown(mSocketID, SHUT_WR);
     
     if (result < 0)
         throw VException("VSocket::closeWrite unable to shut down socket %d.", mSocketID);

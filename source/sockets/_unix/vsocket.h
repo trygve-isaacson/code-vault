@@ -24,16 +24,14 @@ http://www.bombaydigital.com/
 #include <arpa/inet.h>
 
 /**
-About the "SUSV2" define:
-BSD sockets implements enhanced socket APIs that are not defined in the older
-yet well-defined Single Unix Specification V2. If we are compiling under BSD
-we may as well use the enhanced APIs, so here we have just a couple of #ifdef
-based on SUSV2 to determine which API variant we use. You have to set SUSV2,
-otherwise we assume BSD. One thing the BSD APIs let you do is listen on
-multiple interfaces or an interface other than the default one. The SUSV2 APIs
-don't let you control this, so you can only listen on the default interface.
+If the enhanced BSD multi-home APIs are available, you can define the
+preprocessor symbol V_BSD_ENHANCED_SOCKETS, which will cause a slightly
+different set of code to be used for listen() and connect(), which
+takes advantage of those APIs. One thing the BSD APIs let you do is listen on
+multiple interfaces or an interface other than the default one. The
+IEEE 1003.1 APIs don't give you control over this, so you can only listen on
+the default interface.
 */
-#define SUSV2
 
 /*
 There are a couple of Unix APIs we call that take a socklen_t parameter.
@@ -80,7 +78,7 @@ class VSocket : public VSocketBase
         /**
         Connects to the server.
         */
-        virtual void    connect();
+        virtual void connect();
         /**
         Starts listening for incoming connections. Only useful to call
         with a VListenerSocket subclass, but needed here for class
@@ -88,14 +86,14 @@ class VSocket : public VSocketBase
         the VSocket platform-specific class that VListenerSocket
         derives from).
         */
-        virtual void    listen();
+        virtual void listen();
         /**
         Returns the number of bytes that are available to be read on this
         socket. If you do a read() on that number of bytes, you know that
         it will not block.
         @return the number of bytes currently available for reading
         */
-        virtual int        available();
+        virtual int available();
         /**
         Reads data from the socket.
         
@@ -106,7 +104,7 @@ class VSocket : public VSocketBase
         @param    numBytesToRead    the number of bytes to read from the socket
         @return    the number of bytes read
         */
-        virtual int        read(Vu8* buffer, int numBytesToRead);
+        virtual int read(Vu8* buffer, int numBytesToRead);
         /**
         Writes data to the socket.
         
@@ -117,20 +115,20 @@ class VSocket : public VSocketBase
         @param    numBytesToWrite    the number of bytes to write to the socket
         @return    the number of bytes written
         */
-        virtual int        write(const Vu8* buffer, int numBytesToWrite);
+        virtual int write(const Vu8* buffer, int numBytesToWrite);
         /**
         Sets the host name and port number properties of this socket by
         asking the lower level services to whom the socket is connected.
         */
-        virtual void    discoverHostAndPort();
+        virtual void discoverHostAndPort();
         /**
         Shuts down just the read side of the connection.
         */
-        virtual void    closeRead();
+        virtual void closeRead();
         /**
         Shuts down just the write side of the connection.
         */
-        virtual void    closeWrite();
+        virtual void closeWrite();
         /**
         Sets a specified socket option.
         @param    level        the option level
@@ -138,45 +136,26 @@ class VSocket : public VSocketBase
         @param    valuePtr    a pointer to the new option value data
         @param    valueLength    the length of the data pointed to by valuePtr
         */
-        virtual void    setSockOpt(int level, int name, void* valuePtr, int valueLength);
+        virtual void setSockOpt(int level, int name, void* valuePtr, int valueLength);
 
     protected:
     
         void assertInvariant() const;
 
-#ifdef SUSV2
+#ifdef V_BSD_ENHANCED_SOCKETS
 
-        /**
-        Connects to the server using the SUSV2 APIs.
-        */
-        void _connectStandard();
-        /**
-        Starts listening for incoming connections using the SUSV2 APIs.
-        */
-        void _listenStandard();
-
-#else /* not SUSV2 */
-
-        /**
-        Connects to the server using the BSD APIs.
-        */
-        void _connectEnhanced();
-        /**
-        Starts listening for incoming connections using the BSD APIs.
-        */
-        void _listenEnhanced();
-
-        // These are further BSD-specific methods needed by the above.
-        void      _tcpGetAddrInfo(struct addrinfo **res);                                                ///< Calls low-level getaddrinfo()
-        int      _getAddrInfo(struct addrinfo* hints, struct addrinfo** res, bool useHostName=true);    ///< Calls low-level _getAddrInfo()
-        VSocketID    _tcpConnectWAddrInfo(struct addrinfo * const resInput);                                ///< Calls low-level socket() and connect()
+        // These are further BSD-specific methods used in the V_BSD_ENHANCED_SOCKETS
+        // versions of connect() and listen().
+        void _tcpGetAddrInfo(struct addrinfo **res);                                                ///< Calls low-level getaddrinfo()
+        int _getAddrInfo(struct addrinfo* hints, struct addrinfo** res, bool useHostName=true);    ///< Calls low-level _getAddrInfo()
+        VSocketID _tcpConnectWAddrInfo(struct addrinfo * const resInput);                                ///< Calls low-level socket() and connect()
         
         static VMutex gAddrInfoMutex;    ///< getaddrinfo() is not thread-safe, so we have to protect ourselves.
 
-#endif /* SUSV2 */
+#endif /* V_BSD_ENHANCED_SOCKETS */
         
         static bool gStaticInited;  ///< Used internally to initialize at startup.
-        static bool staticInit();    ///< Used internally to initialize at startup.
+        static bool staticInit();   ///< Used internally to initialize at startup.
     };
 
 #endif /* vsocketbase_h */
