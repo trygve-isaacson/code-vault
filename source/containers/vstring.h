@@ -829,11 +829,11 @@ class VString
 
 #ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
 /*
-For implementations of sprintf that don't help us out by returning the
-would-have-been-length value if the buffer is too small (currently this
-means Win32 or perhaps it is just VC++'s lib) we need a large-ish static
+For implementations of vsnprintf that don't comply with IEEE 1003.1
+behavior when n=0 and s=NULL, we need a large-ish static
 buffer that is protected by a mutex that we can use instead. See
-VString::determineSprintfLength().
+VString::determineSprintfLength(). As of Code Vault 2.5, Windows is
+the only platform that needs this workaround.
 */
     #ifndef V_EFFICIENT_SPRINTF
         static const int kSprintfBufferSize = 32768;    ///< Size of the static printf buffer used when efficient sprintf is not available.

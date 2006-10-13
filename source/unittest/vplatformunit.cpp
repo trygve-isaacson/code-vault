@@ -33,16 +33,19 @@ static int _wrap_vsnprintf(char* dest, size_t count, const char* formatText, ...
 	return result;
     }
 
+// If you find that the call to _wrap_vsnprintf() below crashes on some
+// new platform, you can comment out this #define statement, and the
+// platform checks will proceed, presuming that the feature is unavailable
+// rather than actually testing for it. All platforms tested so far
+// survive it as a valid way to test the V_EFFICIENT_SPRINTF setting.
+#define PERFORM_VSNPRINTF_NULL_FEATURE_CHECK
+
 void VPlatformUnit::_runEfficientSprintfCheck()
     {
-    char    oneByteBuffer = 0;
-    char    stackCheck1 = 0;
-    char    stackCheck2 = 0;
-    char    stackCheck3 = 0;
-    char    stackCheck4 = 0;
-    int     theLength = _wrap_vsnprintf(&oneByteBuffer, 1, "%s%s%s%s%s", "a", "b", "c", "d", "e");
+#ifdef PERFORM_VSNPRINTF_NULL_FEATURE_CHECK
+    int theLength = _wrap_vsnprintf(NULL, 0, "%s%s%s%s%s", "a", "b", "c", "d", "e");
     
-    if (theLength == 5 && stackCheck1 == 0 && stackCheck2 == 0 && stackCheck3 == 0 && stackCheck4 == 0)
+    if (theLength == 5)
         {
 #ifdef V_EFFICIENT_SPRINTF
         this->test(true, "V_EFFICIENT_SPRINTF should be defined.");
@@ -58,6 +61,15 @@ void VPlatformUnit::_runEfficientSprintfCheck()
         this->test(true, "V_EFFICIENT_SPRINTF should not be defined.");
 #endif
         }
+#else /* PERFORM_VSNPRINTF_NULL_FEATURE_CHECK not in effect follows */
+
+#ifdef V_EFFICIENT_SPRINTF
+        this->test(false, "V_EFFICIENT_SPRINTF should not be defined.");
+#else
+        this->test(true, "V_EFFICIENT_SPRINTF should not be defined.");
+#endif
+
+#endif /* PERFORM_VSNPRINTF_NULL_FEATURE_CHECK */
     }
 
 void VPlatformUnit::_runByteswapCheck()

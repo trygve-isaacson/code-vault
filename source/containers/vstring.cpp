@@ -1776,16 +1776,14 @@ int VString::_determineSprintfLength(const char* formatText, va_list args)
     {
 #ifdef V_EFFICIENT_SPRINTF
     /*
-    The following optimization does not work on all platforms.
-    The SUSV2 definition of vsnprintf does NOT indicate that this is
-    the behavior; however, on many platforms, if the string is too large
-    for the output buffer, the function returns the would-be buffer size.
-    When this behavior is available, we use it to our advantage. We set
-    V_EFFICIENT_SPRINTF in the platform header if we can do this. The
-    platform check code will tell us whether the platform supports it.
+    The IEEE 1003.1 standard states that we can call vsnprintf with
+    a length of 0 and a null buffer pointer, and it shall return the
+    number of bytes that would have been written had n been sufficiently
+    large, excluding the terminating null byte. However, this does not
+    work will all libraries, so we set V_EFFICIENT_SPRINTF in the
+    platform header if we can use this feature.
     */
-    char    oneByteBuffer = 0;
-    int     theLength = vault::vsnprintf(&oneByteBuffer, 1, formatText, args);
+    int theLength = vault::vsnprintf(NULL, 0, formatText, args);
 #else
     if (VString::gSprintfBufferMutex == NULL)
         VString::gSprintfBufferMutex = new VMutex();
