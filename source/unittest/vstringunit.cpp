@@ -521,7 +521,8 @@ void VStringUnit::run()
         }
     
     rangeTester.preflight(3); // just enough room for "abc"
-    strcpy(rangeTester.buffer(), "abc");
+    char* buffer = rangeTester.buffer();
+    buffer[0] = 'a'; buffer[1] = 'b'; buffer[2] = 'c'; buffer[3] = 0;
     try
         {
         rangeTester.postflight(4); // should throw a VRangeException
