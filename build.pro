@@ -1,7 +1,7 @@
 # This is a qmake project file.
 # To use it, cd to this directory and run qmake.
 # By default it generates a Makefile, which you can run make on.
-# With option flags it can generate a VC++ or ProjectBuilder project file.
+# With option flags it can generate a VC++ or XCode project file.
 
 TEMPLATE	= app
 CONFIG		+= warn_on debug thread staticlib exceptions rtti stl
