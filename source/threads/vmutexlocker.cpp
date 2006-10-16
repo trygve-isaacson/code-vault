@@ -12,8 +12,8 @@ http://www.bombaydigital.com/
 #include "vthread.h"
 
 VMutexLocker::VMutexLocker(VMutex* inMutex, bool lockInitially) :
-mIsLocked(false),
-mMutex(inMutex)
+mMutex(inMutex),
+mIsLocked(false)
     {
     if (lockInitially)
         this->lock();

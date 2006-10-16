@@ -319,7 +319,7 @@ objects. See VLogger::shutdown for an example use.
 template <class T>
 void vectorDeleteAll(std::vector<T*>& v)
     {
-    for (std::vector<T*>::iterator i = v.begin(); i != v.end(); ++i)
+    for (typename std::vector<T*>::iterator i = v.begin(); i != v.end(); ++i)
         delete (*i);
 
     v.clear();
