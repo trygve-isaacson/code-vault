@@ -48,12 +48,13 @@ http://www.bombaydigital.com/
     #define V_HAVE_REENTRANT_TIME // we can and should use the _r versions of time.h calls
 #endif
 
-// @todo This will need to be conditional or chooseable for building non-CF code.
-#define WANT_VAULT_CORE_FOUNDATION_SUPPORT
-
-#ifndef VCOMPILER_CODEWARRIOR
-    #ifdef WANT_VAULT_CORE_FOUNDATION_SUPPORT
-        #define VAULT_CORE_FOUNDATION_SUPPORT
+#ifdef VCOMPILER_CODEWARRIOR
+    #ifdef VAULT_CORE_FOUNDATION_SUPPORT
+        // D'oh! This is not supported! Can't access CF using CodeWarrior.
+        #undef VAULT_CORE_FOUNDATION_SUPPORT
+    #endif
+#else
+    #ifdef VAULT_CORE_FOUNDATION_SUPPORT
         #include <CoreFoundation/CFString.h>
     #endif
 #endif
