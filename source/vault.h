@@ -12,6 +12,7 @@ This set of includes is enough to pull in all vault header files.
 
 #ifdef __cplusplus
 
+#include "vtypes.h"
 #include "vexception.h"
 #include "vchar.h"
 #include "vlogger.h"
@@ -32,6 +33,14 @@ This set of includes is enough to pull in all vault header files.
 #include "vmanagementinterface.h"
 #include "vunitrunall.h"
 #include "vbento.h"
+#include "vserver.h"
+#include "vclientsession.h"
+#include "vmessage.h"
+#include "vmessagepool.h"
+#include "vmessagequeue.h"
+#include "vmessagehandler.h"
+#include "vmessageinputthread.h"
+#include "vmessageoutputthread.h"
 
 #endif
 

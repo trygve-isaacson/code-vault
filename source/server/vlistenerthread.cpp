@@ -11,17 +11,21 @@ http://www.bombaydigital.com/
 #include "vsocketfactory.h"
 #include "vsocketthreadfactory.h"
 #include "vmanagementinterface.h"
+#include "vclientsession.h"
 #include "vexception.h"
 #include "vmutexlocker.h"
 #include "vlogger.h"
+#include "vmessageinputthread.h"
+#include "vmessageoutputthread.h"
 #include <algorithm>
 
-VListenerThread::VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, bool initiallyListening) :
+VListenerThread::VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, VClientSessionFactory* sessionFactory, bool initiallyListening) :
 VThread(name, deleteSelfAtEnd, createDetached, manager),
 mPortNumber(portNumber),
 mShouldListen(initiallyListening),
 mSocketFactory(socketFactory),
-mThreadFactory(threadFactory)
+mThreadFactory(threadFactory),
+mSessionFactory(sessionFactory)
 // mSocketThreads constructs to empty
 // mSocketThreadsMutex constructs to unlocked
     {
@@ -128,6 +132,9 @@ void VListenerThread::_runListening()
         listenerSocket = new VListenerSocket(mPortNumber, mSocketFactory);
         listenerSocket->listen();
 
+        if (mManager != NULL)
+            mManager->listenerListening(this);
+
         while (mShouldListen && this->isRunning())
             {
             VSocket*    theSocket = listenerSocket->accept();
@@ -135,9 +142,27 @@ void VListenerThread::_runListening()
             if (theSocket != NULL)
                 {
                 VMutexLocker    locker(&mSocketThreadsMutex);
-                VSocketThread*    thread = mThreadFactory->createThread(theSocket, this);
-                thread->start();
-                mSocketThreads.push_back(thread);
+                
+                if (mSessionFactory == NULL)
+                    {
+                    VSocketThread*    thread = mThreadFactory->createThread(theSocket, this);
+                    thread->start();
+                    mSocketThreads.push_back(thread);
+                    }
+                else
+                    {
+                    VClientSession* session = mSessionFactory->createSession(theSocket, this);
+                    // session is responsible for starting the threads it uses
+                    VSocketThread* thread;
+                    thread = session->getInputThread();
+                    if (thread != NULL)
+                        mSocketThreads.push_back(thread);
+                    thread = session->getOutputThread();
+                    if (thread != NULL)
+                        mSocketThreads.push_back(thread);
+
+                    mSessionFactory->addSessionToServer(session);
+                    }
                 }
             else
                 {

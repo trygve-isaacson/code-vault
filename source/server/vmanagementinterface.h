@@ -64,9 +64,20 @@ class VManagementInterface
         also receive a threadStarting() notification for this listener
         thread, because it is also just a thread; that notification will
         occur before the listenerStarting() notification.
-        @param    thread    the thread to add to the interface's list
+        @param    thread    the listener thread that is running
         */
         virtual void listenerStarting(VListenerThread* listener) = 0;
+        /**
+        Notifies the interface that a listener thread has called listen()
+        so that it is listening for connections. An example use might
+        be a loopback connection testing class, which needs to wait until
+        the listener is actually listening before it can open a connection
+        to the loopback server socket. The thread
+        pointer is guaranteed to be valid until the interface is notified
+        of listenerEnded().
+        @param    thread    the listener thread that is listening
+        */
+        virtual void listenerListening(VListenerThread* listener) = 0;
         /**
         Notifies the interface of a listener thread whose runListening() has
         failed. This is typically due to the port being in use, and indicates
@@ -74,8 +85,9 @@ class VManagementInterface
         decide to stop the listener thread (so it doesn't keep trying to listen)
         and shut down the server (since this may indicate a failure to start
         up properly). This notification will occur between calls to
-        listenerStarting() and listenerEnded().
-        @param    thread    the thread that failed to listen
+        listenerStarting() and listenerEnded(). Note that listenerEnded() will
+        be definitely called after listenerFailed().
+        @param    thread    the listener thread that failed
         */
         virtual void listenerFailed(VListenerThread* listener, const VString& message) = 0;
         /**
@@ -88,10 +100,11 @@ class VManagementInterface
         Important note: the management interface will
         also receive a threadEnded() notification for this listener
         thread, because it is also just a thread; that notification will
-        occur after the listenerStarting() notification.
-        @param    listenerThread    the thread to remove from the list
+        occur after the listenerEnded() notification.
+        @param    listenerThread    the listener thread that has ended
         */
         virtual void listenerEnded(VListenerThread* listener) = 0;
+
     };
 
 #endif /* vmanagementinterface_h */

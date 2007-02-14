@@ -24,6 +24,7 @@ http://www.bombaydigital.com/
 #include "vstringunit.h"
 #include "vtextiostream.h"
 #include "vthreadsunit.h"
+#include "vmessageunit.h"
 
 #define UNIT_TEST(classname) \
     {  \
@@ -65,6 +66,7 @@ void runAllVUnitTests(bool logToFile, bool logOnSuccess, bool throwOnError, bool
     UNIT_TEST(VStreamsUnit)
     UNIT_TEST(VStringUnit)
     UNIT_TEST(VThreadsUnit)
+    UNIT_TEST(VMessageUnit)
 
     }
 

@@ -28,6 +28,7 @@ class VSocketThreadFactory
     {
     public:
     
+        VSocketThreadFactory() : mManager(NULL) {}
         /**
         Constructs the factory with the optional management interface that will
         be supplied to each socket thread.
@@ -37,6 +38,13 @@ class VSocketThreadFactory
         Destructor, declared for completeness.
         */
         virtual ~VSocketThreadFactory() {}
+        
+        /**
+        Sets the management interface to receive notifications. May be NULL if
+        no notifications are to be given.
+        @param  manager the manager to notify, or NULL
+        */
+        void setManager(VManagementInterface* manager) { mManager = manager; }
         
         /**
         Creates a VSocketThread object to communicate on the specified socket.

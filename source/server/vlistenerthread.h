@@ -15,6 +15,7 @@ http://www.bombaydigital.com/
 
 class VSocketFactory;
 class VSocketThreadFactory;
+class VClientSessionFactory;
 
 /**
     @ingroup vsocket vthread
@@ -56,19 +57,24 @@ class VListenerThread : public VThread
         you can supply it to the VListenerThread so that it can let the
         manager know when the thread starts and ends.
         
-        @param    name                a name for the thread, useful for debugging purposes
-        @param    deleteSelfAtEnd        @see VThread
-        @param    createDetached        @see VThread
-        @param    manager                the object that receives notifications for this thread, or NULL
-        @param    portNumber            the port number to listen on
-        @param    socketFactory        a factory for creating a VSocket for each
-                                    incoming connection
-        @param    threadFactory        a factory for creating a VSocketThread for
-                                    each incoming connection
+        @param    name              a name for the thread, useful for debugging purposes
+        @param    deleteSelfAtEnd   @see VThread
+        @param    createDetached    @see VThread
+        @param    manager           the object that receives notifications for this thread, or NULL
+        @param    portNumber        the port number to listen on
+        @param    socketFactory     a factory for creating a VSocket for each incoming connection
+        @param    threadFactory     a factory for creating a VSocketThread for
+                                        each incoming connection, if sessionFactory is
+                                        not supplied (threadFactory OR sessionFactory should
+                                        be NULL)
+        @param    sessionFactory    a factory that will create a session object
+                                        for each incoming connection if not using the
+                                        threadFactory (threadFactory OR sessionFactory should
+                                        be NULL)
         @param    initiallyListening    true if the thread should be listening when it first starts;
-                                    false means it won't listen until you call startListening()
+                                        false means it won't listen until you call startListening()
         */
-        VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, bool initiallyListening=true);
+        VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, VClientSessionFactory* sessionFactory=NULL, bool initiallyListening=true);
         /**
         Destructor.
         */
@@ -165,6 +171,7 @@ class VListenerThread : public VThread
         bool                    mShouldListen;          ///< True if we should be listening; false if we should not. Controls run loops.
         VSocketFactory*         mSocketFactory;         ///< A factory for each incoming connection's VSocket.
         VSocketThreadFactory*   mThreadFactory;         ///< A factory for each incoming connection's VSocketThread.
+        VClientSessionFactory*  mSessionFactory;        ///< A factory for each incoming connection's VClientSession.
         VSocketThreadPtrVector  mSocketThreads;         ///< The VSocketThread objects we have created.
         VMutex                  mSocketThreadsMutex;    ///< Mutex to protect our VSocketThread vector.
 
