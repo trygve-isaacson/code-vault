@@ -325,13 +325,13 @@ const char    VSettingsNode::kPathDelimiterChar = '/';
 // VSettings ----------------------------------------------------------------------
 
 VSettings::VSettings() :
-VSettingsNode(NULL, VString::kEmptyString)
+VSettingsNode(NULL, VString::EMPTY())
 // mNodes constructs to empty
     {
     }
 
 VSettings::VSettings(VTextIOStream& inputStream) :
-VSettingsNode(NULL, VString::kEmptyString)
+VSettingsNode(NULL, VString::EMPTY())
 // mNodes constructs to empty
     {
     VSettings::readFromStream(inputStream);
@@ -372,7 +372,7 @@ void VSettings::debugPrint()
     
     while (lengthRemaining > 0)
         {
-        s = VString::kEmptyString;
+        s = VString::EMPTY();
         
         char    c = *buffer;
         ++buffer;
@@ -530,7 +530,7 @@ void VSettings::splitPathFirst(const VString& path, VString& nextNodeName, VStri
     path.getSubstring(nextNodeName, 0, dotLocation);
     
     if (dotLocation == -1)    // no dot found
-        outRemainder = VString::kEmptyString;
+        outRemainder = VString::EMPTY();
     else
         path.getSubstring(outRemainder, dotLocation + 1);
     }
@@ -543,7 +543,7 @@ void VSettings::splitPathLast(const VString& path, VString& leadingPath, VString
     int    dotLocation = path.lastIndexOf(kPathDelimiterChar);
     
     if (dotLocation == -1)    // no dot found
-        leadingPath = VString::kEmptyString;
+        leadingPath = VString::EMPTY();
     else
         path.getSubstring(leadingPath, 0, dotLocation);
 
@@ -1243,7 +1243,7 @@ void VSettingsXMLParser::parseLine()
 
 void VSettingsXMLParser::resetElement()
     {
-    mElement = VString::kEmptyString;
+    mElement = VString::EMPTY();
     }
 
 void VSettingsXMLParser::accumulate(const VChar& c)

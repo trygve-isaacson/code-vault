@@ -212,7 +212,7 @@ void VHex::_printPending()
         char    highNibbleChar;
         char    lowNibbleChar;
 
-        mLineBuffer = VString::kEmptyString;
+        mLineBuffer = VString::EMPTY();
         
         // Add spaces to indent.
         for (int i = 0; i < mIndentCount; ++i)

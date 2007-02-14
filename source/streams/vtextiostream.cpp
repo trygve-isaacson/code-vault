@@ -34,7 +34,7 @@ void VTextIOStream::readLine(VString& s, bool includeLineEnding)
     // each character beyond the initial buffer size we specified in the
     // constructor (80).
     
-    mLineBuffer = VString::kEmptyString;
+    mLineBuffer = VString::EMPTY();
 
     bool    readFirstByteOfLine = false;
     Vs64    numBytesToRead = 1;
