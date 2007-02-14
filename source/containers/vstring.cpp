@@ -25,10 +25,15 @@ V_STATIC_INIT_TRACE
 /*
 The "empty string" constant constructs to an empty string.
 When you want to pass "" to a function that takes a "const VString&" parameter,
-it's much more efficient to pass the kEmptyString because it avoids
+it's much more efficient to pass the empty VString constant because it avoids
 constructing a temporary empty VString object on the fly.
 */
-const VString VString::kEmptyString;
+// static
+const VString& VString::EMPTY()
+    {
+    static const VString kEmptyString;
+    return kEmptyString;
+    }
 
 static const char* kFormat_int = "%d";
 static const char* kFormat_Vu8 = "%u";
@@ -723,7 +728,7 @@ void VString::readFromIStream(std::istream& in)
     {
     ASSERT_INVARIANT();
 
-    *this = VString::kEmptyString;
+    *this = VString::EMPTY();
     
     this->appendFromIStream(in);
     
@@ -869,7 +874,7 @@ VChar VString::at(int i) const
     ASSERT_INVARIANT();
 
     if (i >= mStringLength)
-        throw VException("VString::at index out of range.");
+        throw VException("VString::at(%d) index out of range for length %d.", i, mStringLength);
 
     return VChar(mBuffer[i]);
     }
@@ -879,7 +884,7 @@ VChar VString::operator[](int i) const
     ASSERT_INVARIANT();
 
     if (i >= mStringLength)
-        throw VException("VString::operator[] index out of range.");
+        throw VException("VString::operator[%d] index out of range for length %d.", i, mStringLength);
 
     return VChar(mBuffer[i]);
     }
@@ -889,7 +894,7 @@ char& VString::operator[](int i)
     ASSERT_INVARIANT();
 
     if (i >= mStringLength)
-        throw VException("VString::operator[] index out of range.");
+        throw VException("VString::operator[%d] index out of range for length %d.", i, mStringLength);
 
     return mBuffer[i];
     }
@@ -899,7 +904,7 @@ char VString::charAt(int i) const
     ASSERT_INVARIANT();
 
     if (i >= mStringLength)
-        throw VException("VString::charAt index out of range.");
+        throw VException("VString::charAt(%d) index out of range for length %d.", i, mStringLength);
 
     return mBuffer[i];
     }
@@ -1285,7 +1290,7 @@ void VString::set(int i, const VChar& c)
     ASSERT_INVARIANT();
 
     if (i >= mStringLength)
-        throw VException("VString::set() index out of range.");
+        throw VException("VString::set(%d,%c) index out of range for string length %d.", i, c.charValue(), mStringLength);
 
     if (mBuffer != NULL)
         mBuffer[i] = c.charValue();
@@ -1780,7 +1785,7 @@ int VString::_determineSprintfLength(const char* formatText, va_list args)
     a length of 0 and a null buffer pointer, and it shall return the
     number of bytes that would have been written had n been sufficiently
     large, excluding the terminating null byte. However, this does not
-    work will all libraries, so we set V_EFFICIENT_SPRINTF in the
+    work with all libraries, so we set V_EFFICIENT_SPRINTF in the
     platform header if we can use this feature.
     */
     int theLength = vault::vsnprintf(NULL, 0, formatText, args);

@@ -30,7 +30,7 @@ void VUnit::runUnit(VUnit& unit, VTextIOStream* xmlOutputStream)
         }
     catch (...)
         {
-        unit.logExceptionalEnd(xmlOutputStream, VString::kEmptyString);
+        unit.logExceptionalEnd(xmlOutputStream, VString::EMPTY());
         throw;
         }
 
@@ -78,7 +78,7 @@ void VUnit::logResults(VTextIOStream* xmlOutputStream)
     this->logMessage(VString("[results] %s : tests passed: %d", mName.chars(), mNumSuccessfulTests));
     this->logMessage(VString("[results] %s : tests failed: %d", mName.chars(), mNumFailedTests));
     this->logMessage(VString("[results] %s : summary: %s", mName.chars(), (this->success() ? "SUCCESS" : "FAILURE")));
-    this->logMessage(VString::kEmptyString);    // Blank line to increase readability
+    this->logMessage(VString::EMPTY());    // Blank line to increase readability
     
     this->logXMLResults(xmlOutputStream);
     }

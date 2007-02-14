@@ -77,8 +77,11 @@ class VString
     {
     public:
     
-        static const VString kEmptyString; ///< An empty string. More efficient to use than "" as a const VString& parameter.
-    
+        /**
+        Returns a reference to the read-only empty VString constant.
+        */
+        static const VString& EMPTY();
+
         /**
         Constructs an empty string.
         */

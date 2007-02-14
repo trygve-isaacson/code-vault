@@ -97,15 +97,15 @@ void VStringUnit::run()
     this->test(! s.endsWith('x'), "! endsWith char");
     
     // Test empty string constant behavior.
-    this->test(VString::kEmptyString.isEmpty(), "kEmptyString is empty");
-    this->test(VString::kEmptyString.length() == 0, "kEmptyString length is zero");
-    this->test(VString::kEmptyString == "", "kEmptyString equals empty string literal");
-    s.format("A%sB", VString::kEmptyString.chars());
+    this->test(VString::EMPTY().isEmpty(), "kEmptyString is empty");
+    this->test(VString::EMPTY().length() == 0, "kEmptyString length is zero");
+    this->test(VString::EMPTY() == "", "kEmptyString equals empty string literal");
+    s.format("A%sB", VString::EMPTY().chars());
     this->test(s == "AB", "kEmptyString is empty formatting element");
     s = "";
-    this->test(s == VString::kEmptyString, "kEmptyString equals an empty VString");
+    this->test(s == VString::EMPTY(), "kEmptyString equals an empty VString");
     VString newlyConstructedString;
-    this->test(newlyConstructedString == VString::kEmptyString, "kEmptyString equals a new constructed VString");
+    this->test(newlyConstructedString == VString::EMPTY(), "kEmptyString equals a new constructed VString");
 
     // Test assigning empty strings into non-empty strings.
     s = "foo";
@@ -259,16 +259,16 @@ void VStringUnit::run()
     this->test(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
     
     // Test inserts on an empty string.
-    s = VString::kEmptyString;
+    s = VString::EMPTY();
     s.insert('x');
     this->test(s, "x", "insert test 9");
-    s = VString::kEmptyString;
+    s = VString::EMPTY();
     s.insert("ABC");
     this->test(s, "ABC", "insert test 10");
-    s = VString::kEmptyString;
+    s = VString::EMPTY();
     s.insert('x', 5);    // this will also test out-of-bounds handling (currently it forces in-bounds; I think an exception would be better)
     this->test(s, "x", "insert test 9");
-    s = VString::kEmptyString;
+    s = VString::EMPTY();
     s.insert("ABC", 5);    // this will also test out-of-bounds handling (currently it forces in-bounds; I think an exception would be better)
     this->test(s, "ABC", "insert test 10");
     
@@ -315,10 +315,10 @@ void VStringUnit::run()
     this->test(s, "This string had leading and trailing whitespace.", "trim test 4");
     s = "    ";
     s.trim();
-    this->test(s, VString::kEmptyString, "trim test 5");
+    this->test(s, VString::EMPTY(), "trim test 5");
     s = "";
     s.trim();
-    this->test(s, VString::kEmptyString, "trim test 6");
+    this->test(s, VString::EMPTY(), "trim test 6");
     
     int    numCreatures;
     s = "one fish, two fish, red fish, blue fish, fishfishfish";
@@ -335,7 +335,7 @@ void VStringUnit::run()
     this->test(s, "one bird, two bird, red bird, blue bird, birdbirdbird", "replace test 3a");
     this->test(numCreatures == 7, "replace test 3b");
     // Test replacing with empty string.
-    numCreatures = s.replace("bird", VString::kEmptyString);
+    numCreatures = s.replace("bird", VString::EMPTY());
     this->test(s, "one , two , red , blue , ", "replace test 4a");
     this->test(numCreatures == 7, "replace test 4b");
     // Test string-not-found.
@@ -343,7 +343,7 @@ void VStringUnit::run()
     this->test(s, "one , two , red , blue , ", "replace test 5a");
     this->test(numCreatures == 0, "replace test 5b");
     // Test finding an empty string. Should never "find" an empty string.
-    numCreatures = s.replace(VString::kEmptyString, "uh-oh");
+    numCreatures = s.replace(VString::EMPTY(), "uh-oh");
     this->test(s, "one , two , red , blue , ", "replace test 6a");
     this->test(numCreatures == 0, "replace test 6b");
     // Test replace method with char parameters, search char in string.
@@ -432,7 +432,7 @@ void VStringUnit::run()
     
     s = "foo";
     this->test(! s.isEmpty(), "not is empty");
-    s = VString::kEmptyString;
+    s = VString::EMPTY();
     this->test(s.isEmpty(), "is empty");
     
     s = "hello";

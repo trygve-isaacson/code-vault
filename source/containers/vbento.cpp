@@ -396,12 +396,12 @@ static void _printIndent(VString& output, int indentLevel)
 // VBentoAttribute -----------------------------------------------------------
 
 VBentoAttribute::VBentoAttribute()
-: mName("uninitialized"), mDataType(VString::kEmptyString)
+: mName("uninitialized"), mDataType(VString::EMPTY())
     {
     }
 
 VBentoAttribute::VBentoAttribute(VBinaryIOStream& stream, const VString& dataType)
-: mName(VString::kEmptyString), mDataType(dataType)
+: mName(VString::EMPTY()), mDataType(dataType)
     {
     stream.readString(mName);
     }
@@ -901,7 +901,7 @@ void VBentoNode::writeToStream(VTextIOStream& stream, int indentLevel) const
 
     if (numChildNodes != 0)
         {
-        s = VString::kEmptyString;
+        s = VString::EMPTY();
 
         for (int i = 0; i < indentLevel; ++i)
             s += ' ';
