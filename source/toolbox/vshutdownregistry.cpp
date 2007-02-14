@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.5.1
 http://www.bombaydigital.com/
 */
 
@@ -8,13 +8,20 @@ http://www.bombaydigital.com/
 
 #include "vmutexlocker.h"
 
-VMutex VShutdownRegistry::gMutex;
 VShutdownRegistry* VShutdownRegistry::gInstance = NULL;
+
+// This style of static mutex declaration and access ensures correct
+// initialization if accessed during the static initialization phase.
+static VMutex* _mutexInstance()
+    {
+    static VMutex gMutex;
+    return &gMutex;
+    }
 
 // static
 VShutdownRegistry* VShutdownRegistry::instance()
     {
-    VMutexLocker    locker(&gMutex);
+    VMutexLocker    locker(_mutexInstance());
     
     if (gInstance == NULL)
         gInstance = new VShutdownRegistry();
@@ -25,7 +32,7 @@ VShutdownRegistry* VShutdownRegistry::instance()
 // static
 void VShutdownRegistry::shutdown()
     {
-    VMutexLocker    locker(&gMutex);
+    VMutexLocker    locker(_mutexInstance());
     
     if (gInstance != NULL)
         {
@@ -36,14 +43,14 @@ void VShutdownRegistry::shutdown()
 
 void VShutdownRegistry::registerHandler(MShutdownHandler* handler)
     {
-    VMutexLocker    locker(&gMutex);
+    VMutexLocker    locker(_mutexInstance());
     
     mHandlers.push_back(handler);
     }
 
 void VShutdownRegistry::registerFunction(shutdownFunction func)
     {
-    VMutexLocker    locker(&gMutex);
+    VMutexLocker    locker(_mutexInstance());
     
     mFunctions.push_back(func);
     }

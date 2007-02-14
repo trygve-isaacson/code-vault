@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.5.1
 http://www.bombaydigital.com/
 */
 
@@ -322,7 +322,6 @@ class VLogger
         
         static VLoggerList  gLoggers;       ///< The list of installed loggers.
         static VLogger*     gDefaultLogger; ///< The default logger returned if get by name fails.
-        static VMutex       gLoggersMutex;  ///< Protects default logger in housekeeping code.
     };
 
 /**

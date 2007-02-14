@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.5.1
 http://www.bombaydigital.com/
 */
 
@@ -18,6 +18,14 @@ V_STATIC_INIT_TRACE
 
 // VLogger -------------------------------------------------------------------
 
+// This style of static mutex declaration and access ensures correct
+// initialization if accessed during the static initialization phase.
+static VMutex* _mutexInstance()
+    {
+    static VMutex gMutex;
+    return &gMutex;
+    }
+
 const VString VLogger::kDefaultLoggerName; // empty string by definition
 
 typedef VLoggerList::const_iterator const_VLoggerIterator;
@@ -25,13 +33,23 @@ typedef VLoggerList::iterator VLoggerIterator;
 
 VLoggerList VLogger::gLoggers;
 VLogger* VLogger::gDefaultLogger = NULL;
-VMutex VLogger::gLoggersMutex;
 
+/*
+We define a shutdown method here, but we don't install it into the
+VShutdownRegistry. This is because experience has shown that the
+shutdown registry sequence often involves code that emits log output,
+and if we delete the loggers before all log output is done, that log
+output will just end up creating a new default cout logger. So
+instead, if you want to delete loggers during shutdown, call this
+function directly as late as possible--ideally, as the last line of
+code in main().
+*/
 // static
 void VLogger::shutdown()
     {
-    VMutexLocker locker(&gLoggersMutex);
+    VMutexLocker locker(_mutexInstance());
     vault::vectorDeleteAll(gLoggers);
+    gDefaultLogger = NULL;
     }
 
 // static
@@ -51,7 +69,7 @@ VLogger* VLogger::getLogger(const VString& name)
     // If user is asking for default logger, don't bother searching.
     if (! name.isEmpty())
         {
-        VMutexLocker    locker(&gLoggersMutex);
+        VMutexLocker    locker(_mutexInstance());
 
         const_VLoggerIterator    i = gLoggers.begin();
 
@@ -72,7 +90,7 @@ VLogger* VLogger::getLogger(const VString& name)
 // static
 VLogger* VLogger::findLogger(const VString& name)
     {
-    VMutexLocker    locker(&gLoggersMutex);
+    VMutexLocker    locker(_mutexInstance());
 
     const_VLoggerIterator    i = gLoggers.begin();
 
@@ -92,7 +110,7 @@ VLogger* VLogger::findLogger(const VString& name)
 // static
 void VLogger::installLogger(VLogger* logger)
     {
-    VMutexLocker    locker(&gLoggersMutex);
+    VMutexLocker    locker(_mutexInstance());
     
     for (VLoggerIterator i = gLoggers.begin(); i != gLoggers.end(); ++i)
         {
@@ -121,7 +139,7 @@ void VLogger::installLogger(VLogger* logger)
 // static
 void VLogger::deleteLogger(const VString& name)
     {
-    VMutexLocker    locker(&gLoggersMutex);
+    VMutexLocker    locker(_mutexInstance());
     
     for (VLoggerIterator i = gLoggers.begin(); i != gLoggers.end(); ++i)
         {
@@ -143,7 +161,7 @@ void VLogger::deleteLogger(const VString& name)
 // static
 void VLogger::setDefaultLogger(VLogger* logger)
     {
-    VMutexLocker    locker(&gLoggersMutex);
+    VMutexLocker    locker(_mutexInstance());
 
     gDefaultLogger = logger;
     }
@@ -151,7 +169,7 @@ void VLogger::setDefaultLogger(VLogger* logger)
 // static
 void VLogger::setLogLevels(const VString& name, int logLevel)
     {
-    VMutexLocker    locker(&gLoggersMutex);
+    VMutexLocker    locker(_mutexInstance());
 
     VLoggerIterator    i = gLoggers.begin();
 
@@ -169,7 +187,7 @@ void VLogger::setLogLevels(const VString& name, int logLevel)
 // static
 void VLogger::getLoggerInfo(VStringVector& resultStrings)
     {
-    VMutexLocker    locker(&gLoggersMutex);
+    VMutexLocker    locker(_mutexInstance());
 
     const_VLoggerIterator    i = gLoggers.begin();
 
@@ -187,7 +205,7 @@ void VLogger::getLoggerInfo(VStringVector& resultStrings)
 // static
 void VLogger::installDefaultLogger()
     {
-    VMutexLocker    locker(&gLoggersMutex);
+    VMutexLocker    locker(_mutexInstance());
 
     if (gDefaultLogger == NULL)
         {
@@ -198,22 +216,10 @@ void VLogger::installDefaultLogger()
         }
     }
 
-static void _installShutdownCallback()
-    {
-    // One-time only initialization to install shutdown cleanup hook.
-    static bool loggerShutdownInstalled = false;
-    if (! loggerShutdownInstalled)
-        {
-        loggerShutdownInstalled = true;
-        VShutdownRegistry::instance()->registerFunction(VLogger::shutdown);
-        }
-    }
-
 VLogger::VLogger(int logLevel, const VString& name) :
 mLogLevel(logLevel),
 mName(name)
     {
-    _installShutdownCallback(); // one-time initialization
     }
 
 VLogger::~VLogger()
@@ -371,7 +377,7 @@ mOutputStream(mFileStream)
     mFileStream.openReadWrite();
     mFileStream.seek(CONST_S64(0), SEEK_END);
 
-    mOutputStream.writeLine(VString::kEmptyString);
+    mOutputStream.writeLine(VString::EMPTY());
     }
 
 void VFileLogger::emitRawLine(const VString& line)

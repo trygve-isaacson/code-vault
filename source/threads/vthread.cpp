@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.5.1
 http://www.bombaydigital.com/
 */
 
@@ -36,6 +36,8 @@ mThreadID((VThreadID_Type) -1),
 mIsRunning(false)
     {
     VThread::_updateThreadStatistics(VThread::eCreated);
+
+    VLOGGER_DEBUG(VString("VThread::VThread: constructed VThread '%s'.", name.chars()));
     }
 
 VThread::~VThread()
@@ -43,6 +45,8 @@ VThread::~VThread()
     // Detect repeat deletion bug. Can't refer to mName because it's been deleted.
     if (mIsDeleted)
         VLOGGER_ERROR(VString("Thread delete on already-deleted thread @0x%08X.", this));
+    else
+        VLOGGER_DEBUG(VString("VThread::~VThread: destructed VThread '%s'.", mName.chars()));
 
     mIsDeleted = true;
     mIsRunning = false;
@@ -122,6 +126,8 @@ void* VThread::threadMain(void* arg)
     VThread*    thread = static_cast<VThread*> (arg);
     VString        threadName = thread->name();
     
+    VLOGGER_DEBUG(VString("VThread::threadMain: started thread '%s'.", threadName.chars()));
+    
     bool        deleteAtEnd = thread->getDeleteAtEnd();
     
     VManagementInterface*    manager = thread->getManagementInterface();
@@ -154,7 +160,10 @@ void* VThread::threadMain(void* arg)
     try
         {
         if (manager != NULL)
+            {
+            VLOGGER_DEBUG(VString("VThread '%s' notifying manager[0x%08X] of thread end.", threadName.chars(), manager));
             manager->threadEnded(thread);
+            }
         }
     catch (...) 
         {
@@ -172,6 +181,8 @@ void* VThread::threadMain(void* arg)
         delete thread;
 
     VThread::_updateThreadStatistics(VThread::eMainCompleted);
+
+    VLOGGER_DEBUG(VString("VThread::threadMain: completed thread '%s'.", threadName.chars()));
 
     return NULL;
     }

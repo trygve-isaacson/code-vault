@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.5.1
 http://www.bombaydigital.com/
 */
 
@@ -107,7 +107,6 @@ class VShutdownRegistry
         VShutdownRegistry() : mHandlers(), mFunctions() {}
         ~VShutdownRegistry();
         
-        static VMutex                gMutex;    ///< Mutex to make our list threadsafe.
         static VShutdownRegistry*    gInstance; ///< The registry as a singleton object.
         
         ShutdownHandlerList     mHandlers;  ///< The handlers that have been registered with us.
