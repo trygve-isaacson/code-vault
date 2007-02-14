@@ -9,6 +9,8 @@ http://www.bombaydigital.com/
 
 /** @file */
 
+#include "vtypes.h"
+
 #include "vthread_platform.h"
 
 /**

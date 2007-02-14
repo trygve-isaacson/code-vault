@@ -11,6 +11,8 @@ http://www.bombaydigital.com/
 #include "vmutex.h"
 #include "vthread.h"
 
+// VMutexLocker ----------------------------------------------------------------
+
 VMutexLocker::VMutexLocker(VMutex* inMutex, bool lockInitially) :
 mMutex(inMutex),
 mIsLocked(false)
@@ -57,5 +59,33 @@ void VMutexLocker::yield()
     this->unlock();
     VThread::yield();
     this->lock();
+    }
+
+// VMutexUnlocker --------------------------------------------------------------
+
+VMutexUnlocker::VMutexUnlocker(VMutex* inMutex, bool unlockInitially) :
+VMutexLocker(inMutex, false)
+    {
+    // We reverse the presumed state and normal construction action vs. VMutexLocker.
+    mIsLocked = true; // fool unlock() into letting us unlock it next
+    if (unlockInitially)
+        this->unlock();
+    }
+
+VMutexUnlocker::~VMutexUnlocker()
+    {
+    // We reverse the normal destruction action vs. VMutexLocker, and must then
+    // fake out the mIsLocked state so that the base class destructor won't unlock.
+    if (!this->isLocked())
+        {
+        // Prevent all exceptions from escaping destructor.
+        try
+            {
+            this->lock();
+            }
+        catch (...) {}
+        }
+    
+    mIsLocked = false; // fool the base class destructor so it doesn't unlock it
     }
 

@@ -17,6 +17,8 @@ class VMutex;
     @ingroup vthread
 */
 
+// VMutexLocker ----------------------------------------------------------------
+
 /**
 VMutexLocker is a helper class that you can use to make working with
 mutexes easier, and more importantly to guarantee proper release behavior
@@ -121,6 +123,42 @@ class VMutexLocker
         // Prevent copy construction and assignment since there is no provision for sharing a mutex.
         VMutexLocker(const VMutexLocker& other);
         VMutexLocker& operator=(const VMutexLocker& other);
+    };
+
+// VMutexUnlocker --------------------------------------------------------------
+
+/**
+VMutexUnlocker is helper class that is the inverse of a VMutexLocker: it
+unlocks a mutex upon construction, and locks it upon destruction. The unlocker
+presumes that the mutex is locked to begin with.
+*/
+class VMutexUnlocker : public VMutexLocker
+    {
+    public:
+    
+        /**
+        Constructs the unlocker, and if specified, releases the mutex lock.
+        It is presumed by this class that the mutex is locked when this
+        object is constructed.
+        
+        You can pass NULL to constructor if you don't want anything to
+        happen; this can useful if, for example, you allow a NULL VMutex
+        pointer to be passed to a routine that needs to unlock it if supplied.
+        
+        @param    inMutex            the VMutex to unlock, or NULL if no action is wanted
+        @param    unlockInitially    true if the lock should be released on construction
+        */
+        VMutexUnlocker(VMutex* inMutex, bool unlockInitially=true);
+        /**
+        Destructor, re-locks the mutex if this object has released it.
+        */
+        virtual ~VMutexUnlocker();
+        
+    private:
+    
+        // Prevent copy construction and assignment since there is no provision for sharing a mutex.
+        VMutexUnlocker(const VMutexUnlocker& other);
+        VMutexUnlocker& operator=(const VMutexUnlocker& other);
     };
 
 #endif /* vmutexlocker_h */
