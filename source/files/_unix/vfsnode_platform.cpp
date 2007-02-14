@@ -9,6 +9,7 @@ http://www.bombaydigital.com/
 #include "vfsnode.h"
 
 #include "vexception.h"
+#include "vthread.h"
 #include <dirent.h>
 
 // static
@@ -82,11 +83,9 @@ void VFSNode::_platform_renameNode(const VString& newName) const
 // This is the Unix implementation of directory iteration using
 // opendir(), readdir(), closedir() functions.
 
-void VFSNode::_platform_getDirectoryList(VStringVector& childNames, VFSNodeVector& childNodes, bool useNames, bool useNodes) const
+void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) const
     {
-    VString childPath;
     VString nodeName;
-    VFSNode childNode;
 
     DIR* dir = ::opendir(mPath);
     
@@ -95,10 +94,13 @@ void VFSNode::_platform_getDirectoryList(VStringVector& childNames, VFSNodeVecto
 
     try
         {
+        bool keepGoing = true;
         struct dirent* entry = ::readdir(dir);
         
-        while (entry != NULL)
+        while (keepGoing && (entry != NULL))
             {
+            VThread::yield(); // be nice if we're iterating over a huge directory
+
             nodeName = entry->d_name;
             
             // Skip current and parent pseudo-entries. Otherwise client must
@@ -106,18 +108,9 @@ void VFSNode::_platform_getDirectoryList(VStringVector& childNames, VFSNodeVecto
             if ((nodeName != ".") &&
                 (nodeName != ".."))
                 {
-                if (useNames)
-                    {
-                    childNames.push_back(nodeName);
-                    }
-
-                if (useNodes)
-                    {
-                    this->getChildPath(nodeName, childPath);
-                    childNode.setPath(childPath);
-                    childNodes.push_back(childNode);
-                    }
-
+                VFSNode childNode;
+                this->getChildNode(nodeName, childNode);
+                keepGoing = callback.handleNextNode(childNode);
                 }
             
             entry = ::readdir(dir);

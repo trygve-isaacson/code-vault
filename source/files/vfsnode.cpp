@@ -11,6 +11,99 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vinstant.h"
 
+// VListNodeInfoCallback -----------------------------------------------------
+
+class VFSNodeListCallback : public VDirectoryIterationCallback
+    {
+    public:
+    
+        VFSNodeListCallback(VFSNodeVector& nodeList) : VDirectoryIterationCallback(), mNodeList(nodeList) {}
+        virtual ~VFSNodeListCallback() {}
+
+        virtual bool handleNextNode(const VFSNode& node);
+
+    private:
+    
+        VFSNodeVector& mNodeList;
+    };
+
+bool VFSNodeListCallback::handleNextNode(const VFSNode& node)
+    {
+    mNodeList.push_back(node);
+    return true;
+    }
+
+// VFSNodeNameCallback -----------------------------------------------------
+
+class VFSNodeNameCallback : public VDirectoryIterationCallback
+    {
+    public:
+    
+        VFSNodeNameCallback(VStringVector& nameList) : VDirectoryIterationCallback(), mNameList(nameList) {}
+        virtual ~VFSNodeNameCallback() {}
+
+        virtual bool handleNextNode(const VFSNode& node);
+
+    private:
+    
+        VStringVector& mNameList;
+    };
+
+bool VFSNodeNameCallback::handleNextNode(const VFSNode& node)
+    {
+    VString nodeName;
+    node.getName(nodeName);
+    mNameList.push_back(nodeName);
+    return true;
+    }
+
+// VFSNodeFindCallback -----------------------------------------------------
+
+class VFSNodeFindCallback : public VDirectoryIterationCallback
+    {
+    public:
+    
+        VFSNodeFindCallback(const VString& nameToMatch);
+        virtual ~VFSNodeFindCallback() {}
+
+        virtual bool handleNextNode(const VFSNode& node);
+        
+        bool found() const { return mFound; }
+        void getMatchedNode(VFSNode& node) const { node = mMatchedNode; }
+
+    private:
+    
+        bool    mFound;
+        VString mNameToMatchLowerCase;
+        VFSNode mMatchedNode;
+    };
+
+VFSNodeFindCallback::VFSNodeFindCallback(const VString& nameToMatch) :
+VDirectoryIterationCallback(),
+mFound(false),
+mNameToMatchLowerCase(nameToMatch)
+    {
+    mNameToMatchLowerCase.toLowerCase();
+    }
+
+bool VFSNodeFindCallback::handleNextNode(const VFSNode& node)
+    {
+    VString nodeNameLowerCase;
+    node.getName(nodeNameLowerCase);
+    nodeNameLowerCase.toLowerCase();
+    
+    if (nodeNameLowerCase == mNameToMatchLowerCase)
+        {
+        mFound = true;
+        mMatchedNode = node;
+        return false; // we found a match, so stop looking
+        }
+    
+    return true;
+    }
+
+// VFSNode -------------------------------------------------------------------
+
 // static
 void VFSNode::normalizePath(VString& path)
     {
@@ -195,18 +288,31 @@ void VFSNode::renameToNode(const VFSNode& newNode) const
 
 void VFSNode::list(VStringVector& children) const
     {
-    VFSNodeVector    dummy;
-    
-    // Call the implementation with parameters to indicate we are using names, not nodes.
-    this->_platform_getDirectoryList(children, dummy, true, false);
+    VFSNodeNameCallback callback(children);
+    this->_platform_directoryIterate(callback);
     }
 
 void VFSNode::list(VFSNodeVector& children) const
     {
-    VStringVector    dummy;
+    VFSNodeListCallback callback(children);
+    this->_platform_directoryIterate(callback);
+    }
+
+void VFSNode::iterate(VDirectoryIterationCallback& callback) const
+    {
+    this->_platform_directoryIterate(callback);
+    }
+
+bool VFSNode::find(const VString& name, VFSNode& node) const
+    {
+    VFSNodeFindCallback callback(name);
+    this->_platform_directoryIterate(callback);
     
-    // Call the implementation with parameters to indicate we are using nodes, not names.
-    this->_platform_getDirectoryList(dummy, children, false, true);
+    bool found = callback.found();
+    if (found)
+        callback.getMatchedNode(node);
+    
+    return found;
     }
 
 bool VFSNode::exists() const

@@ -14,6 +14,22 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vtextiostream.h"
 
+// VFSNodeIterateTestCallback -----------------------------------------------------
+
+class VFSNodeIterateTestCallback : public VDirectoryIterationCallback
+    {
+    public:
+    
+        VFSNodeIterateTestCallback() {}
+        virtual ~VFSNodeIterateTestCallback() {}
+
+        virtual bool handleNextNode(const VFSNode& node);
+        
+        VStringVector fNodeNames;
+    };
+
+// VFSNodeUnit -------------------------------------------------------------
+
 VFSNodeUnit::VFSNodeUnit(bool logOnSuccess, bool throwOnError)
 : VUnit("VFSNodeUnit", logOnSuccess, throwOnError)
     {
@@ -66,7 +82,9 @@ void VFSNodeUnit::run()
     (void) testBinaryFileNode.rm();
     this->test(! testBinaryFileNode.exists(), "unbuffered binary file removed");
     
-    // Done with exercising file i/o and streams. Clean up our litter.
+    this->_testDirectoryIteration(testDirDeeper);
+    
+    // Done with exercising file i/o and streams and directory stuff. Clean up our litter.
     
     VString    deepPath;
     testDirDeeper.getParentPath(deepPath);
@@ -214,3 +232,77 @@ void VFSNodeUnit::_testBinaryFileIO(const VString& seriesLabel, VFSNode& node, V
     fileStream.close();
     }
 
+void VFSNodeUnit::_testDirectoryIteration(const VFSNode& dir)
+    {
+    const int NUM_FILES_TO_CREATE = 5;
+    const int NUM_FILES_TO_CHECK = NUM_FILES_TO_CREATE + 3; // we'll verify we don't have these extras
+    
+    // Test directory listing, iteration, find.
+    // Create 5 files in the deep directory, then test that we can find them.
+    for (int i = 0; i < NUM_FILES_TO_CREATE; ++i)
+        {
+        VString testIterFileName("iter_test_%d.txt", i);
+        VFSNode testIterFileNode;
+        dir.getChildNode(testIterFileName, testIterFileNode);
+        VBufferedFileStream testIterStream(testIterFileNode);
+        testIterStream.openWrite();
+        VTextIOStream out(testIterStream);
+        out.writeLine(testIterFileName);
+        }
+    
+    { // find() test
+    VFSNode testIterNode;
+    for (int i = 0; i < NUM_FILES_TO_CHECK; ++i)
+        {
+        VString testIterFileName("iter_test_%d.txt", i);
+        if (i < NUM_FILES_TO_CREATE)
+            this->test(dir.find(testIterFileName, testIterNode), VString("find() found #%d", i)); // this file should exist
+        else
+            this->test(! dir.find(testIterFileName, testIterNode), VString("find() did not find #%d", i)); // this file should not exist
+        }
+    }
+    
+    { // list() names test
+    VStringVector fileNames;
+    dir.list(fileNames);
+    this->test(fileNames.size() == NUM_FILES_TO_CREATE, "list names size");
+    for (int i = 0; i < fileNames.size(); ++i)
+        {
+        VString testIterFileName("iter_test_%d.txt", i);
+        this->test(fileNames[i] == testIterFileName, VString("list names #%d", i));
+        }
+    }
+    
+    { // list() nodes test
+    VFSNodeVector fileNodes;
+    dir.list(fileNodes);
+    this->test(fileNodes.size() == NUM_FILES_TO_CREATE, "list nodes size");
+    for (int i = 0; i < fileNodes.size(); ++i)
+        {
+        VString testIterFileName("iter_test_%d.txt", i);
+        VString nodeFileName;
+        fileNodes[i].getName(nodeFileName);
+        this->test(nodeFileName == testIterFileName, VString("list nodes #%d", i));
+        }
+    }
+    
+    { // iterate() test
+    VFSNodeIterateTestCallback callback;
+    dir.iterate(callback);
+    this->test(callback.fNodeNames.size() == NUM_FILES_TO_CREATE, "iterate size");
+    for (int i = 0; i < callback.fNodeNames.size(); ++i)
+        {
+        VString testIterFileName("iter_test_%d.txt", i);
+        this->test(callback.fNodeNames[i] == testIterFileName, VString("iterate nodes #%d", i));
+        }
+    }
+    
+    }
+
+bool VFSNodeIterateTestCallback::handleNextNode(const VFSNode& node)
+    {
+    VString nodeName;
+    node.getName(nodeName);
+    fNodeNames.push_back(nodeName);
+    return true;
+    }

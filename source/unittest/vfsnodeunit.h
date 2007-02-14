@@ -40,6 +40,7 @@ class VFSNodeUnit : public VUnit
     
         void _testTextFileIO(const VString& seriesLabel, VFSNode& node, VAbstractFileStream& fileStream);
         void _testBinaryFileIO(const VString& seriesLabel, VFSNode& node, VAbstractFileStream& fileStream);
+        void _testDirectoryIteration(const VFSNode& dir);
     };
 
 #endif /* vfsnodeunit_h */

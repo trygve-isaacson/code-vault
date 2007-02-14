@@ -9,6 +9,7 @@ http://www.bombaydigital.com/
 #include "vfsnode.h"
 
 #include "vexception.h"
+#include "vthread.h"
 
 /* Note: according to Microsoft KB article 177506, only the following characters
 are valid in file and folder names on their operating system. I should provide
@@ -116,22 +117,16 @@ void VFSNode::_platform_renameNode(const VString& newName) const
 // This is the Windows implementation of directory iteration using
 // FindFirstFile(), FindNextFile(), FindClose() functions.
 
-void VFSNode::_platform_getDirectoryList(VStringVector& childNames, VFSNodeVector& childNodes, bool useNames, bool useNodes) const
+void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) const
     {
     // FIXME: This code has not been made UNICODE/DBCS compatible.
     // The problem areas are in the strings, and for now we just
     // brute-force cast so that the compiler is happy.
     
-    VString childPath;
     VString nodeName;
-    VFSNode childNode;
     VString searchPath("%s/*", mPath.chars());
     
     VFSNode::denormalizePath(searchPath);    // make it have DOS syntax
-
-    //Initialize data structs
-    childNames.clear();
-    childNodes.clear();
 
     WIN32_FIND_DATA data;
 //  HANDLE dir = ::FindFirstFile((const unsigned short*) searchPath.chars(), &data); // FIXME: error in VC++7 (OK for CW?)
@@ -150,8 +145,12 @@ void VFSNode::_platform_getDirectoryList(VStringVector& childNames, VFSNodeVecto
     
     try
         {
+        bool keepGoing = true;
+
         do
             {
+            VThread::yield(); // be nice if we're iterating over a huge directory
+
             nodeName = (char*) data.cFileName;
 
             // Skip current and parent pseudo-entries. Otherwise client must
@@ -159,20 +158,12 @@ void VFSNode::_platform_getDirectoryList(VStringVector& childNames, VFSNodeVecto
             if ((nodeName != ".") &&
                 (nodeName != ".."))
                 {
-                if (useNames)
-                    {
-                    childNames.push_back(nodeName);
-                    }
-
-                if (useNodes)
-                    {
-                    this->getChildPath(nodeName, childPath);
-                    childNode.setPath(childPath);
-                    childNodes.push_back(childNode);
-                    }
+                VFSNode childNode;
+                this->getChildNode(nodeName, childNode);
+                keepGoing = callback.handleNextNode(childNode);
                 }
             
-            } while (::FindNextFile(dir, &data));
+            } while (keepGoing && ::FindNextFile(dir, &data));
         }
     catch (...)
         {

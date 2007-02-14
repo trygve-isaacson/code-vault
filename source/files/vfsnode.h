@@ -92,6 +92,21 @@ class VFSNodeInfo
 class VInstant;
 class VFSNode;
 
+class VDirectoryIterationCallback
+    {
+    public:
+    
+        VDirectoryIterationCallback() {}
+        virtual ~VDirectoryIterationCallback() {}
+        
+        /**
+        A callback implementation needs to implement this method; it should
+        return false if no further iteration is desired, true if iteration
+        should continue.
+        */
+        virtual bool handleNextNode(const VFSNode& node) = 0;
+    };
+
 /**
 VFSNodeVector is simply a vector of VFSNode objects. Note that the vector
 elements are objects, not pointers to objects.
@@ -298,6 +313,27 @@ class VFSNode
         @param    children    the vector of node objects to be filled in
         */
         void list(VFSNodeVector& children) const;
+        /**
+        Iterates over the directory's nodes, calling the supplied callback
+        object for each one (the "." and ".." are omitted). The callback
+        can process each node as needed, and can halt the iteration at any
+        time.
+        @param    callback    the object that will be called for each node
+                                iterated over
+        */
+        void iterate(VDirectoryIterationCallback& callback) const;
+        /**
+        Iterates over the directory until it finds the specified child node using
+        a case-insensitive match on the node names. This is useful if you need
+        to open a file but don't know what case it is in due to cross-platform
+        naming issues. If you know the case, you should just open the file rather
+        than trying to find it first before opening.
+        @param name the name to match (matching is not case-sensitive)
+        @param node the node to be returned indicating the actual name in its
+            particular case; node is unmodified if there was no match
+        @return true if a match was found and node contains the match
+        */
+        bool find(const VString& name, VFSNode& node) const;
         
     private:
     
@@ -358,14 +394,14 @@ class VFSNode
         void _platform_renameNode(const VString& newName) const;
 
         /**
-        This function is called internally by the list() methods, so that
-        the iteration code does not have to be implemented twice.
-        @param    childNames    the vector of strings to possibly be filled in
-        @param    childNodes    the vector of node objects to possibly be filled in
-        @param    useNames    true if the childNames will be filled in, false if not
-        @param    useNames    true if the childNodes will be filled in, false if not
+        Iterates over this directory, calling the supplied callback
+        object for each node found. If the nodes "." or ".." are
+        present in the platform's iteration function, they are
+        omitted (not passed to the callback).
+        @param callback the callback object to notify of each node we
+            iterate over
         */
-        void _platform_getDirectoryList(VStringVector& childNames, VFSNodeVector& childNodes, bool useNames, bool useNodes) const;
+        void _platform_directoryIterate(VDirectoryIterationCallback& callback) const;
     
         // These static functions wrap the raw POSIX functions in order to
         // make them work correctly even if a signal is caught inside the
