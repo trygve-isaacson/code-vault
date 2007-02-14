@@ -159,4 +159,20 @@ class VUnit
         VString    mLastTestDescription;    ///< Description of last test invoked.
     };
 
+/**
+VTestRunner is an abstract interface for running a single unit test class. This can
+be useful when a unit test harness needs to allow something else to run tests for it,
+and that thing does not have access to the caller's API. The caller can simply
+implement VTestRunner and pass that interface.
+*/
+class VTestRunner
+    {
+    public:
+    
+        VTestRunner() {}
+        virtual ~VTestRunner() {}
+        
+        virtual void runUnit(VUnit& unit) = 0;
+    };
+
 #endif /* vunit_h */
