@@ -143,6 +143,9 @@ actually call the swapping functions. If not, the macros do nothing.
 
 #endif
 
+// We use gettimeofday(), which uses UTC-based values.
+#define V_INSTANT_SNAPSHOT_IS_UTC    // platform_snapshot() gives us a UTC time suitable for platform_now()
+
 // vsnprintf(NULL, 0, . . .) behavior generally conforms to IEEE 1003.1,
 // but not on HP-UX.
 #ifndef VPLATFORM_UNIX_HPUX
@@ -165,6 +168,7 @@ inline int open(const char* path, int flags, mode_t mode) { return ::open(path, 
 inline int close(int fd) { return ::close(fd); }
 inline int mkdir(const char* path, mode_t mode) { return ::mkdir(path, mode); }
 inline int rmdir(const char* path) { return ::rmdir(path); }
+inline int unlink(const char* path) { return ::unlink(path); }
 inline int rename(const char* oldName, const char* newName) { return ::rename(oldName, newName); }
 inline int stat(const char* path, struct stat* buf) { return ::stat(path, buf); }
 inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args) { return ::vsnprintf(buffer, length, format, args); }
