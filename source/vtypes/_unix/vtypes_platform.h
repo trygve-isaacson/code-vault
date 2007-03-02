@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -119,27 +119,37 @@ actually call the swapping functions. If not, the macros do nothing.
     #define V_BYTESWAP_HTONF_IN_PLACE(x)    ((x) = (vault::VbyteSwapFloat((VFloat) x)))
     #define V_BYTESWAP_NTOHF_IN_PLACE(x)    ((x) = (vault::VbyteSwapFloat((VFloat) x)))
 
+	#define V_BYTESWAP_HTOND_GET(x)			vault::VbyteSwapDouble((VDouble) x)
+	#define V_BYTESWAP_NTOHD_GET(x)			vault::VbyteSwapDouble((VDouble) x)
+	#define V_BYTESWAP_HTOND_IN_PLACE(x)	((x) = (vault::VbyteSwapDouble((VDouble) x)))
+	#define V_BYTESWAP_NTOHD_IN_PLACE(x)	((x) = (vault::VbyteSwapDouble((VDouble) x)))
+
 #else
 
-    #define V_BYTESWAP_HTONS_GET(x)         (x)
-    #define V_BYTESWAP_NTOHS_GET(x)         (x)
-    #define V_BYTESWAP_HTONS_IN_PLACE(x)    (x)
-    #define V_BYTESWAP_NTOHS_IN_PLACE(x)    (x)
+    #define V_BYTESWAP_HTONS_GET(x)         /*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHS_GET(x)         /*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_HTONS_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHS_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
 
-    #define V_BYTESWAP_HTONL_GET(x)         (x)
-    #define V_BYTESWAP_NTOHL_GET(x)         (x)
-    #define V_BYTESWAP_HTONL_IN_PLACE(x)    (x)
-    #define V_BYTESWAP_NTOHL_IN_PLACE(x)    (x)
+    #define V_BYTESWAP_HTONL_GET(x)         /*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHL_GET(x)         /*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_HTONL_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHL_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
 
-    #define V_BYTESWAP_HTON64_GET(x)        (x)
-    #define V_BYTESWAP_NTOH64_GET(x)        (x)
-    #define V_BYTESWAP_HTON64_IN_PLACE(x)   (x)
-    #define V_BYTESWAP_NTOH64_IN_PLACE(x)   (x)
+    #define V_BYTESWAP_HTON64_GET(x)        /*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOH64_GET(x)        /*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_HTON64_IN_PLACE(x)   /*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOH64_IN_PLACE(x)   /*lint -save -e522*/ (x) /*lint -restore */
 
-    #define V_BYTESWAP_HTONF_GET(x)         (x)
-    #define V_BYTESWAP_NTOHF_GET(x)         (x)
-    #define V_BYTESWAP_HTONF_IN_PLACE(x)    (x)
-    #define V_BYTESWAP_NTOHF_IN_PLACE(x)    (x)
+    #define V_BYTESWAP_HTONF_GET(x)         /*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHF_GET(x)         /*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_HTONF_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHF_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
+
+    #define V_BYTESWAP_HTOND_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHD_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_HTOND_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHD_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
 
 #endif
 

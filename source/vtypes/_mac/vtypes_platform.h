@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -48,12 +48,7 @@ http://www.bombaydigital.com/
     #define V_HAVE_REENTRANT_TIME // we can and should use the _r versions of time.h calls
 #endif
 
-#ifdef VCOMPILER_CODEWARRIOR
-    #ifdef VAULT_CORE_FOUNDATION_SUPPORT
-        // D'oh! This is not supported! Can't access CF using CodeWarrior.
-        #undef VAULT_CORE_FOUNDATION_SUPPORT
-    #endif
-#else
+#ifndef VCOMPILER_CODEWARRIOR
     #ifdef VAULT_CORE_FOUNDATION_SUPPORT
         #include <CoreFoundation/CFString.h>
     #endif
@@ -93,6 +88,11 @@ condition, __LITTLE_ENDIAN__ Mac on Intel.
 	#define V_BYTESWAP_HTONF_IN_PLACE(x)	((x) = (vault::VbyteSwapFloat((VFloat) x)))
 	#define V_BYTESWAP_NTOHF_IN_PLACE(x)	((x) = (vault::VbyteSwapFloat((VFloat) x)))
 
+	#define V_BYTESWAP_HTOND_GET(x)			vault::VbyteSwapDouble((VDouble) x)
+	#define V_BYTESWAP_NTOHD_GET(x)			vault::VbyteSwapDouble((VDouble) x)
+	#define V_BYTESWAP_HTOND_IN_PLACE(x)	((x) = (vault::VbyteSwapDouble((VDouble) x)))
+	#define V_BYTESWAP_NTOHD_IN_PLACE(x)	((x) = (vault::VbyteSwapDouble((VDouble) x)))
+
 #else
 
     #define V_BYTESWAP_HTONS_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
@@ -114,6 +114,11 @@ condition, __LITTLE_ENDIAN__ Mac on Intel.
     #define V_BYTESWAP_NTOHF_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
     #define V_BYTESWAP_HTONF_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
     #define V_BYTESWAP_NTOHF_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
+
+    #define V_BYTESWAP_HTOND_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHD_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_HTOND_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
+    #define V_BYTESWAP_NTOHD_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
 
 #endif
 
@@ -186,7 +191,7 @@ of which headers dominate.
 #else
 
     // GCC can access std::abs under 10.3 and 10.4, but fabs is strangely inconsistent.
-    
+
     #define V_ABS(a) std::abs(a)                    ///< Macro for getting abs of an integer value using standard function template.
 
     #ifdef MAC_OS_X_VERSION_10_4

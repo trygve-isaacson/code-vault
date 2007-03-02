@@ -81,7 +81,7 @@ class VString
         Returns a reference to the read-only empty VString constant.
         */
         static const VString& EMPTY();
-
+    
         /**
         Constructs an empty string.
         */
@@ -536,6 +536,12 @@ class VString
         @return true if this string starts with the specified string
         */
         bool startsWith(const VString& s) const;
+        /**
+        Returns true if this string starts with the specified string (ignoring case).
+        @param    s    the string to search for
+        @return true if this string starts with the specified string
+        */
+        bool startsWithIgnoreCase(const VString& s) const;
         /**
         Returns true if this string starts with the specified char.
         @param    c    the char to search for

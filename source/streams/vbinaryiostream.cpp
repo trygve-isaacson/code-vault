@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -10,10 +10,6 @@ http://www.bombaydigital.com/
 
 #include "vinstant.h"
 #include "vexception.h"
-
-static const char* kVFloatNormalOutputFormat        = "%f";
-static const char* kVFloatPrecisionFormatBuilder    = "%%.%df";
-static const char* kVDoubleInputFormat              = "%lf";
 
 static const Vs64 MAX_ONE_BYTE_LENGTH = CONST_S64(0x00000000000000FC);
 static const Vu8 THREE_BYTE_LENGTH_INDICATOR_BYTE = 0xFF;
@@ -113,19 +109,13 @@ VFloat VBinaryIOStream::readFloat()
     return value;
     }
 
-VDouble VBinaryIOStream::readDoubleString()
+VDouble VBinaryIOStream::readDouble()
     {
-    /*
-    See this reference for POSIX string formatting specs:
-    <http://www.opengroup.org/onlinepubs/007908799/xsh/fscanf.html>
-    */
     VDouble    value;
-    VString    doubleString;
-    
-    this->readString(doubleString);
-    
-    ::sscanf(doubleString, kVDoubleInputFormat, &value);
-
+    this->readGuaranteed(reinterpret_cast<Vu8*> (&value), CONST_S64(8));
+#ifdef VBYTESWAP_NEEDED
+    V_BYTESWAP_NTOHD_IN_PLACE(value);
+#endif
     return value;
     }
 
@@ -137,7 +127,7 @@ bool VBinaryIOStream::readBool()
 void VBinaryIOStream::readString(VString& s)
     {
     Vs64    length = this->readDynamicCount();
-    
+
     if (length > V_MAX_S32)
         throw VException("String with unsupported length > 2GB encountered in stream.");
 
@@ -163,7 +153,7 @@ VString VBinaryIOStream::readString()
 void VBinaryIOStream::readString32(VString& s)
     {
     Vs32    length = this->readS32();
-    
+
     s.preflight((int) length);
     this->readGuaranteed(reinterpret_cast<Vu8*> (s.buffer()), length);
     s.postflight((int) length);
@@ -205,7 +195,7 @@ VInstant VBinaryIOStream::readInstant()
 Vs64 VBinaryIOStream::readDynamicCount()
     {
     // See comments below in writeDynamicCount for the format.
-    
+
     Vu8    lengthKind = this->readU8();
 
     if (lengthKind == THREE_BYTE_LENGTH_INDICATOR_BYTE)
@@ -293,23 +283,13 @@ void VBinaryIOStream::writeFloat(VFloat f)
     (void) this->write(reinterpret_cast<Vu8*> (&value), CONST_S64(4));
     }
 
-void VBinaryIOStream::writeDoubleString(VDouble f, int precision)
+void VBinaryIOStream::writeDouble(VDouble d)
     {
-    /*
-    See this reference for POSIX string formatting specs:
-    <http://www.opengroup.org/onlinepubs/007908799/xsh/fscanf.html>
-    */
-    if (precision == 0)    // use default precision, POSIX says it will be 6
-        {
-        VString    floatString(kVFloatNormalOutputFormat, f);
-        this->writeString(floatString);
-        }
-    else
-        {
-        VString    formatString(kVFloatPrecisionFormatBuilder, precision);
-        VString    floatString(formatString, f);
-        this->writeString(floatString);
-        }
+    VDouble    value = d;
+#ifdef VBYTESWAP_NEEDED
+    V_BYTESWAP_HTOND_IN_PLACE(value);
+#endif
+    (void) this->write(reinterpret_cast<Vu8*> (&value), CONST_S64(8));
     }
 
 void VBinaryIOStream::writeBool(bool i)
@@ -344,20 +324,20 @@ void VBinaryIOStream::writeDynamicCount(Vs64 count)
     indicator in 1 byte. We need 3 special indicator values, so we will use
     the values 255, 254, 253 for those. Thus in 1 byte we can indicate a
     length from 0 to 252.
-    
+
     So:
-    
+
     count from 0 to 252:
         write the count as 1 byte
 
     count over 252 but fits in 16 bits:
         first byte contains 0xFF = 255
         next two bytes contain count as a U16
-    
+
     count too big for 16 bits but fits in 32 bits:
         first byte contains 0xFE = 254
         next four bytes contain count as a U32
-    
+
     otherwise:
         first byte contains 0xFD = 253
         next eight bytes contain count as a U64

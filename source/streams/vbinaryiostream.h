@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -150,7 +150,7 @@ data, just not VString.
 class VBinaryIOStream : public VIOStream
     {
     public:
-    
+
         /**
         Constructs the object with an underlying raw stream.
         @param    inRawStream    the raw stream on which I/O will be performed
@@ -160,7 +160,7 @@ class VBinaryIOStream : public VIOStream
         Destructor.
         */
         virtual ~VBinaryIOStream() {}
-        
+
         /**
         Reads a signed 8-bit value from the stream.
         @return    the Vs8
@@ -202,18 +202,17 @@ class VBinaryIOStream : public VIOStream
         */
         Vu64    readU64();
         /**
-        Reads a floating-point value from the stream.
+        Reads a single-precision floating-point value from the stream.
         @see VBinaryIOStream::writeFloat
         @return    the VFloat
         */
         VFloat    readFloat();
         /**
-        Reads a floating-point value from the stream. Note that the
-        precision is dependent on how the value was written to the stream.
-        @see VBinaryIOStream::writeDoubleString
-        @return    the VDouble
+        Reads a double-precision floating-point value from the stream.
+        @see VBinaryIOStream::writeFloat
+        @return    the VFloat
         */
-        VDouble    readDoubleString();
+        VDouble    readDouble();
         /**
         Reads a bool value from the stream.
         @return    the bool
@@ -265,7 +264,7 @@ class VBinaryIOStream : public VIOStream
         @return the count value
         */
         Vs64    readDynamicCount();
-        
+
         /**
         Writes a signed 8-bit value to the stream.
         @param    i    the Vs8
@@ -307,17 +306,15 @@ class VBinaryIOStream : public VIOStream
         */
         void    writeU64(Vu64 i);
         /**
-        Writes a floating-point value to the stream.
+        Writes a single-precision floating-point value to the stream.
         @param    f            the VFloat
         */
         void    writeFloat(VFloat f);
         /**
-        Writes a floating-point value to the stream.
-        @param    f            the VDouble
-        @param    precision    an optional value for the number of decimal digits to retain;
-                            if omitted, the POSIX default precision of 6 will be used
+        Writes a double-precision floating-point value to the stream.
+        @param    d            the VDouble
         */
-        void    writeDoubleString(VDouble f, int precision=0);
+        void    writeDouble(VDouble d);
         /**
         Writes a bool value to the stream.
         @param    i    the bool
@@ -348,7 +345,7 @@ class VBinaryIOStream : public VIOStream
         @param    count    the count value
         */
         void    writeDynamicCount(Vs64 count);
-        
+
         /**
         Returns the number of bytes that the specified count value would take in
         a stream when streamed using the dynamic count format.

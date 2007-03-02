@@ -64,6 +64,17 @@ class VMessageInputThread : public VSocketThread
 
     protected:
     
+		/**
+		Pulls the next message from the socket (blocking until there is data),
+		and then calls dispatchMessage() to handle the message.
+		*/
+		virtual void _processNextRequest();
+		/**
+		Handles the message by finding or creating a handler and calling it
+        to process the message, returning when it's OK to read the next message.
+		@param	message	the message to handle
+		*/
+		virtual void _dispatchMessage(VMessage* message);
         /**
         This method is intended for use by loopback testing, where the test code can
         see (and potentially preprocess) a message that it sent that is about to
@@ -76,20 +87,6 @@ class VMessageInputThread : public VSocketThread
         handled in the normal fashion.
         */
         virtual void _afterProcessMessage(VMessageHandler* /*handler*/) {}
-
-	private:
-	
-		/**
-		Pulls the next message from the socket (blocking until there is data),
-		and then calls dispatchMessage() to handle the message.
-		*/
-		virtual void _processNextRequest();
-		/**
-		Handles the message by finding or creating a handler and calling it
-        to process the message, returning when it's OK to read the next message.
-		@param	message	the message to handle
-		*/
-		virtual void _dispatchMessage(VMessage* message);
 	
 		VMessagePool*   mMessagePool;	///< The message pool from which new message objects are created.
 		VSocketStream   mSocketStream;	///< The underlying raw stream from which data is read.

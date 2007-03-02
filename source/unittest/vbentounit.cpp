@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -9,6 +9,7 @@ http://www.bombaydigital.com/
 #include "vbentounit.h"
 #include "vbento.h"
 #include "vexception.h"
+#include "vchar.h"
 
 VBentoUnit::VBentoUnit(bool logOnSuccess, bool throwOnError)
 : VUnit("VBentoUnit", logOnSuccess, throwOnError)
@@ -16,6 +17,8 @@ VBentoUnit::VBentoUnit(bool logOnSuccess, bool throwOnError)
     }
 
 #define VERY_LONG_STRING "This is a string that needs to be longer than 252 characters in order to test the dynamic length prefix capability, where short data has a single byte length descriptor but longer data uses longer length descriptors. By making this string longer than 252 characters, it means that its length descriptor in the bento binary stream will require three bytes rather than one. But most strings only need one byte to describe their length."
+static const VFloat kTestFloatValue = 3.14f;
+static const VDouble kTestDoubleValue = 3.14159; // note: use of more than 6 decimal places here will cause the text i/o conversion test to fail because only 6 decimal places are written out
 
 void VBentoUnit::run()
     {
@@ -23,10 +26,14 @@ void VBentoUnit::run()
 
     // We'll just populate a Bento container with every type, and then
     // retrieve them and validate.
-    
+
     VBentoNode    root("root");
     this->_buildTestData(root);
     this->_verifyContents(root, "tree");
+
+    VString rootText;
+    root.writeToBentoTextString(rootText);
+    this->logStatus(rootText);
 
     // Test the same stuff being correctly streamed.
     VMemoryStream buffer;
@@ -37,6 +44,11 @@ void VBentoUnit::run()
     VBentoNode other(stream);
 
     this->_verifyContents(other, "stream");
+
+    VBentoNode rootFromText;
+    rootFromText.readFromBentoTextString(rootText);
+
+    this->_verifyContents(rootFromText, "text");
     }
 
 void VBentoUnit::_verifyDynamicLengths()
@@ -80,11 +92,14 @@ void VBentoUnit::_buildTestData(VBentoNode& root)
     root.addString("vstr", "bento unit test");
     root.addString("lstr", VERY_LONG_STRING);
     root.addInt("int", 900);
-    
+    root.addFloat("flot", kTestFloatValue);
+    root.addDouble("doub", kTestDoubleValue);
+    root.addChar("char", VChar('!'));
+
     VBentoNode*    childNode = new VBentoNode("child"); // exercise the new + addChildNode method of adding
     childNode->addS32("ch32", 1000);
     root.addChildNode(childNode);
-    
+
     // Construct an array of integers at root/intarray/value[]
     VBentoNode* intarray = root.addNewChildNode("intarray"); // exercise the addNewChildNode method of adding
     for (int i = 0; i < 10; ++i)
@@ -115,6 +130,9 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         VString s2 = node.getString("lstr");
         this->test(s2 == VERY_LONG_STRING, VString("%s lstr", labelPrefix.chars()));
         this->test(node.getInt("int") == 900, VString("%s int", labelPrefix.chars()));
+        this->test(node.getFloat("flot") == kTestFloatValue, VString("%s float", labelPrefix.chars()));
+        this->test(node.getDouble("doub") == kTestDoubleValue, VString("%s double", labelPrefix.chars()));
+        this->test(node.getChar("char") == '!', VString("%s char", labelPrefix.chars()));
 
         const VBentoNode* child = node.findNode("child");
         this->test(child != NULL, VString("%s child", labelPrefix.chars()));
@@ -146,6 +164,10 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         this->test(node.getU64("non-existent", 999) == 999, VString("%s default u64", labelPrefix.chars()));
         this->test(node.getBool("non-existent", true) == true, VString("%s default bool", labelPrefix.chars()));
         this->test(node.getString("non-existent", "999") == "999", VString("%s default string", labelPrefix.chars()));
+        this->test(node.getInt("non-existent", 999) == 999, VString("%s default int", labelPrefix.chars()));
+        this->test(node.getFloat("non-existent", kTestFloatValue) == kTestFloatValue, VString("%s default float", labelPrefix.chars()));
+        this->test(node.getDouble("non-existent", kTestDoubleValue) == kTestDoubleValue, VString("%s default double", labelPrefix.chars()));
+        this->test(node.getChar("non-existent", 'x') == 'x', VString("%s default char", labelPrefix.chars()));
 
         // Test non-throwing missing value handling.
         // Each of these SHOULD throw an exception.
@@ -179,6 +201,18 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
 
         try { (void) node.getString("non-existent"); this->test(false, VString("%s throw string", labelPrefix.chars())); }
             catch (const VException& /*ex*/) { this->test(true, VString("%s throw string", labelPrefix.chars()));}
+
+        try { (void) node.getInt("non-existent"); this->test(false, VString("%s throw int", labelPrefix.chars())); }
+            catch (const VException& /*ex*/) { this->test(true, VString("%s throw int", labelPrefix.chars()));}
+
+        try { (void) node.getFloat("non-existent"); this->test(false, VString("%s throw float", labelPrefix.chars())); }
+            catch (const VException& /*ex*/) { this->test(true, VString("%s throw float", labelPrefix.chars()));}
+
+        try { (void) node.getDouble("non-existent"); this->test(false, VString("%s throw double", labelPrefix.chars())); }
+            catch (const VException& /*ex*/) { this->test(true, VString("%s throw double", labelPrefix.chars()));}
+
+        try { (void) node.getChar("non-existent"); this->test(false, VString("%s throw char", labelPrefix.chars())); }
+            catch (const VException& /*ex*/) { this->test(true, VString("%s throw char", labelPrefix.chars()));}
 
         }
     catch (const VException& ex)

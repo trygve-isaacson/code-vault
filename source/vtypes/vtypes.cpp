@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -16,10 +16,10 @@ Vu16 vault::VbyteSwap16(Vu16 a16BitValue)
     Vu16    swapped;
     Vu8*    originalBytes = reinterpret_cast<Vu8*> (&original);
     Vu8*    swappedBytes = reinterpret_cast<Vu8*> (&swapped);
-    
+
     swappedBytes[0] = originalBytes[1];
     swappedBytes[1] = originalBytes[0];
-    
+
     return swapped;
     }
 
@@ -29,12 +29,12 @@ Vu32 vault::VbyteSwap32(Vu32 a32BitValue)
     Vu32    swapped;
     Vu8*    originalBytes = reinterpret_cast<Vu8*> (&original);
     Vu8*    swappedBytes = reinterpret_cast<Vu8*> (&swapped);
-    
+
     swappedBytes[0] = originalBytes[3];
     swappedBytes[1] = originalBytes[2];
     swappedBytes[2] = originalBytes[1];
     swappedBytes[3] = originalBytes[0];
-    
+
     return swapped;
     }
 
@@ -44,7 +44,7 @@ Vu64 vault::VbyteSwap64(Vu64 a64BitValue)
     Vu64    swapped;
     Vu8*    originalBytes = reinterpret_cast<Vu8*> (&original);
     Vu8*    swappedBytes = reinterpret_cast<Vu8*> (&swapped);
-    
+
     swappedBytes[0] = originalBytes[7];
     swappedBytes[1] = originalBytes[6];
     swappedBytes[2] = originalBytes[5];
@@ -53,7 +53,7 @@ Vu64 vault::VbyteSwap64(Vu64 a64BitValue)
     swappedBytes[5] = originalBytes[2];
     swappedBytes[6] = originalBytes[1];
     swappedBytes[7] = originalBytes[0];
-    
+
     return swapped;
     }
 
@@ -69,12 +69,37 @@ VFloat vault::VbyteSwapFloat(VFloat a32BitValue)
     VFloat    swapped;
     Vu8*    originalBytes = reinterpret_cast<Vu8*> (&original);
     Vu8*    swappedBytes = reinterpret_cast<Vu8*> (&swapped);
-    
+
     swappedBytes[0] = originalBytes[3];
     swappedBytes[1] = originalBytes[2];
     swappedBytes[2] = originalBytes[1];
     swappedBytes[3] = originalBytes[0];
-    
+
+    return swapped;
+    }
+
+VDouble vault::VbyteSwapDouble(VDouble a64BitValue)
+    {
+    /*
+    The key here is avoid allowing the compiler to do any
+    conversion of the double to Vs64, which would cause truncation
+    of the fractional value. That's what happens if you use
+    VbyteSwap64 because the double gets converted to a Vs64.
+    */
+    VDouble    original = a64BitValue;
+    VDouble    swapped;
+    Vu8*    originalBytes = reinterpret_cast<Vu8*> (&original);
+    Vu8*    swappedBytes = reinterpret_cast<Vu8*> (&swapped);
+
+    swappedBytes[0] = originalBytes[7];
+    swappedBytes[1] = originalBytes[6];
+    swappedBytes[2] = originalBytes[5];
+    swappedBytes[3] = originalBytes[4];
+    swappedBytes[4] = originalBytes[3];
+    swappedBytes[5] = originalBytes[2];
+    swappedBytes[6] = originalBytes[1];
+    swappedBytes[7] = originalBytes[0];
+
     return swapped;
     }
 
@@ -93,7 +118,7 @@ void Vassert(bool expression, const char* file, int line)
 //            VLogger::getDefaultLogger()->log(VLogger::kFatal, file, line, "Assertion Failure.");
             }
         catch (...) {}
-        
+
 #ifndef VCOMPILER_MSVC
         //lint -e421 "Caution -- function 'abort(void)' is considered dangerous [MISRA Rule 126]"
         __assert(false, file, line);

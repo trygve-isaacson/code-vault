@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -18,7 +18,7 @@ http://www.bombaydigital.com/
 #endif
 
 V_STATIC_INIT_TRACE
-    
+
 #undef strlen
 #undef strcmp
 
@@ -45,7 +45,7 @@ static const char* kFormat_Vs32 = "%ld";
 static const char* kFormat_Vu64 = "%llu";
 static const char* kFormat_Vs64 = "%lld";
 // static const char* kFormat_VFloat = "%f"; // (not currently used)
-static const char* kFormat_VDouble = "%Lf";
+static const char* kFormat_VDouble = "%lf";
 
 VString::VString() :
 mStringLength(0),
@@ -131,7 +131,7 @@ mStringLength(0),
 mBufferLength(0),
 mBuffer(NULL)
     {
-    this->copyFromBuffer(s.ascii(), 0, s.length());
+    this->copyFromBuffer(s.toUtf8(), 0, s.length());
 
     ASSERT_INVARIANT();
     }
@@ -144,7 +144,7 @@ mBufferLength(0),
 mBuffer(NULL)
     {
     this->copyFromBuffer(fmt.str().c_str(), 0, fmt.size());
-    
+
     ASSERT_INVARIANT();
     }
 #endif
@@ -165,7 +165,7 @@ mBuffer(NULL)
         bool success = false;
         int originalLength = static_cast<int>(CFStringGetLength(s));
         int length = originalLength;
-        
+
         // Because of expansion that can happen during transcoding, the number of bytes we need
         // might be more than the number of "characters" in the CFString. We start by trying with
         // a buffer of the exact size, and if that fails, we try with double the space, and finally
@@ -191,13 +191,13 @@ mBuffer(NULL)
             this->preflight(length);
             success = CFStringGetCString(s, mBuffer, static_cast<CFIndex>(length+1), kCFStringEncodingUTF8);
             }
-        
+
         if (! success)
             throw VException("VString CFStringRef constructor allocated up to %d bytes, which was insufficient for CFStringRef of length %d.", length, originalLength);
-        
+
         this->_setLength(length);
         }
-        
+
     ASSERT_INVARIANT();
     }
 #endif
@@ -214,7 +214,7 @@ VString& VString::operator=(const VString& s)
     if (this != &s)
         {
         int theLength = s.length();
-        
+
         if (theLength != 0)
             {
             this->preflight(theLength);
@@ -223,7 +223,7 @@ VString& VString::operator=(const VString& s)
 
         this->_setLength(theLength);
         }
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -238,7 +238,7 @@ VString& VString::operator=(const VString* s)
     else if (this != s)
         {
         int theLength = s->length();
-        
+
         if (theLength != 0)
             {
             this->preflight(theLength);
@@ -247,7 +247,7 @@ VString& VString::operator=(const VString* s)
 
         this->_setLength(theLength);
         }
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -258,7 +258,7 @@ VString& VString::operator=(const QString& s)
     {
     ASSERT_INVARIANT();
 
-    this->copyFromBuffer(s.ascii(), 0, s.length());
+    this->copyFromBuffer(s.toUtf8(), 0, s.length());
 
     ASSERT_INVARIANT();
 
@@ -272,7 +272,7 @@ VString& VString::operator=(const boost::format& fmt)
     ASSERT_INVARIANT();
 
     this->copyFromBuffer(fmt.str().c_str(), 0, fmt.size());
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -294,7 +294,7 @@ VString& VString::operator=(const CFStringRef& s)
         bool success = false;
         int originalLength = static_cast<int>(CFStringGetLength(s));
         int length = originalLength;
-        
+
         // Because of expansion that can happen during transcoding, the number of bytes we need
         // might be more than the number of "characters" in the CFString. We start by trying with
         // a buffer of the exact size, and if that fails, we try with double the space, and finally
@@ -320,13 +320,13 @@ VString& VString::operator=(const CFStringRef& s)
             this->preflight(length);
             success = CFStringGetCString(s, mBuffer, static_cast<CFIndex>(length+1), kCFStringEncodingUTF8);
             }
-        
+
         if (! success)
             throw VException("VString CFStringRef constructor allocated up to %d bytes, which was insufficient for CFStringRef of length %d.", length, originalLength);
-        
+
         this->_setLength(length);
         }
-        
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -340,7 +340,7 @@ VString& VString::operator=(const VChar& c)
     this->preflight(1);
     mBuffer[0] = c.charValue();
     this->_setLength(1);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -353,7 +353,7 @@ VString& VString::operator=(char c)
     this->preflight(1);
     mBuffer[0] = c;
     this->_setLength(1);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -378,7 +378,7 @@ VString& VString::operator=(const char* s)
 
         this->_setLength(theLength);
         }
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -387,9 +387,9 @@ VString& VString::operator=(const char* s)
 VString& VString::operator=(int i)
     {
     ASSERT_INVARIANT();
-    
+
     this->format(kFormat_int, i);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -398,9 +398,9 @@ VString& VString::operator=(int i)
 VString& VString::operator=(Vu8 i)
     {
     ASSERT_INVARIANT();
-    
+
     this->format(kFormat_Vu8, (int) i);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -409,9 +409,9 @@ VString& VString::operator=(Vu8 i)
 VString& VString::operator=(Vs8 i)
     {
     ASSERT_INVARIANT();
-    
+
     this->format(kFormat_Vs8, (int) i);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -420,9 +420,9 @@ VString& VString::operator=(Vs8 i)
 VString& VString::operator=(Vu16 i)
     {
     ASSERT_INVARIANT();
-    
+
     this->format(kFormat_Vu16, i);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -431,9 +431,9 @@ VString& VString::operator=(Vu16 i)
 VString& VString::operator=(Vs16 i)
     {
     ASSERT_INVARIANT();
-    
+
     this->format(kFormat_Vs16, i);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -442,9 +442,9 @@ VString& VString::operator=(Vs16 i)
 VString& VString::operator=(Vu32 i)
     {
     ASSERT_INVARIANT();
-    
+
     this->format(kFormat_Vu32, i);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -453,9 +453,9 @@ VString& VString::operator=(Vu32 i)
 VString& VString::operator=(Vs32 i)
     {
     ASSERT_INVARIANT();
-    
+
     this->format(kFormat_Vs32, i);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -464,9 +464,9 @@ VString& VString::operator=(Vs32 i)
 VString& VString::operator=(Vu64 i)
     {
     ASSERT_INVARIANT();
-    
+
     this->format(kFormat_Vu64, i);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -475,9 +475,9 @@ VString& VString::operator=(Vu64 i)
 VString& VString::operator=(Vs64 i)
     {
     ASSERT_INVARIANT();
-    
+
     this->format(kFormat_Vs64, i);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -486,9 +486,9 @@ VString& VString::operator=(Vs64 i)
 VString& VString::operator=(VDouble f)
     {
     ASSERT_INVARIANT();
-    
+
     this->format(kFormat_VDouble, f);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -529,7 +529,7 @@ VString& VString::operator+=(const VChar& c)
 
     mBuffer[mStringLength] = c.charValue();
     this->_setLength(1 + mStringLength);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -541,16 +541,16 @@ VString& VString::operator+=(const VString& s)
 
     // We have to be careful copying the buffer if &s==this
     // because things morph under us as we work in that case.
-    
+
     int    theLength = s.length();
 
     this->preflight(theLength + mStringLength);
 
     //lint -e668 "Possibly passing a null pointer to function"
     ::memcpy(&(mBuffer[mStringLength]), s.chars(), static_cast<VSizeType> (theLength));
-    
+
     this->_setLength(theLength + mStringLength);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -580,7 +580,7 @@ VString& VString::operator+=(const char* s)
     //lint -e668 "Possibly passing a null pointer to function"
     ::memcpy(&(mBuffer[mStringLength]), s, static_cast<VSizeType> (theLength));
     this->_setLength(theLength + mStringLength);
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -607,10 +607,10 @@ VString& VString::operator+=(const boost::format& fmt)
 VString& VString::operator+=(int i)
     {
     ASSERT_INVARIANT();
-    
+
     VString    s(kFormat_int, i);
     *this += s;
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -619,10 +619,10 @@ VString& VString::operator+=(int i)
 VString& VString::operator+=(Vu8 i)
     {
     ASSERT_INVARIANT();
-    
+
     VString    s(kFormat_Vu8, (int) i);
     *this += s;
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -631,10 +631,10 @@ VString& VString::operator+=(Vu8 i)
 VString& VString::operator+=(Vs8 i)
     {
     ASSERT_INVARIANT();
-    
+
     VString    s(kFormat_Vs8, (int) i);
     *this += s;
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -643,10 +643,10 @@ VString& VString::operator+=(Vs8 i)
 VString& VString::operator+=(Vu16 i)
     {
     ASSERT_INVARIANT();
-    
+
     VString    s(kFormat_Vu16, i);
     *this += s;
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -655,10 +655,10 @@ VString& VString::operator+=(Vu16 i)
 VString& VString::operator+=(Vs16 i)
     {
     ASSERT_INVARIANT();
-    
+
     VString    s(kFormat_Vs16, i);
     *this += s;
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -667,10 +667,10 @@ VString& VString::operator+=(Vs16 i)
 VString& VString::operator+=(Vu32 i)
     {
     ASSERT_INVARIANT();
-    
+
     VString    s(kFormat_Vu32, i);
     *this += s;
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -679,10 +679,10 @@ VString& VString::operator+=(Vu32 i)
 VString& VString::operator+=(Vs32 i)
     {
     ASSERT_INVARIANT();
-    
+
     VString    s(kFormat_Vs32, i);
     *this += s;
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -691,10 +691,10 @@ VString& VString::operator+=(Vs32 i)
 VString& VString::operator+=(Vu64 i)
     {
     ASSERT_INVARIANT();
-    
+
     VString    s(kFormat_Vu64, i);
     *this += s;
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -703,10 +703,10 @@ VString& VString::operator+=(Vu64 i)
 VString& VString::operator+=(Vs64 i)
     {
     ASSERT_INVARIANT();
-    
+
     VString    s(kFormat_Vs64, i);
     *this += s;
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -715,10 +715,10 @@ VString& VString::operator+=(Vs64 i)
 VString& VString::operator+=(VDouble f)
     {
     ASSERT_INVARIANT();
-    
+
     VString    s(kFormat_VDouble, f);
     *this += s;
-    
+
     ASSERT_INVARIANT();
 
     return *this;
@@ -729,9 +729,9 @@ void VString::readFromIStream(std::istream& in)
     ASSERT_INVARIANT();
 
     *this = VString::EMPTY();
-    
+
     this->appendFromIStream(in);
-    
+
     ASSERT_INVARIANT();
     }
 
@@ -740,9 +740,9 @@ void VString::appendFromIStream(std::istream& in)
     ASSERT_INVARIANT();
 
     char    c;
-    
+
     in >> c;
-    
+
     while (c != 0)
         {
         // Trying here to avoid reallocating buffer on every incremental character. Do it every 10 instead.
@@ -750,12 +750,12 @@ void VString::appendFromIStream(std::istream& in)
         int    roundedUpLength = (currentLength + 11) - (currentLength % 10);
 
         this->preflight(roundedUpLength);
-        
+
         *this += c;
-        
+
         in >> c;
         }
-    
+
     ASSERT_INVARIANT();
     }
 
@@ -778,7 +778,7 @@ void VString::format(const char* formatText, ...)
 void VString::insert(char c, int offset)
     {
     ASSERT_INVARIANT();
-    
+
     // We could make a VString of c, and then insert it, but it seems
     // much more efficient to move a single char by itself.
 
@@ -795,7 +795,7 @@ void VString::insert(char c, int offset)
     // Need to use memmove here because memcpy behavior is undefined if ranges overlap.
     ::memmove(&(mBuffer[actualOffset+addedLength]), &(mBuffer[actualOffset]), numBytesToMove);    // shift forward by 1 byte, everything past the offset
     mBuffer[actualOffset] = c;
-    
+
     this->postflight(newLength);
 
     ASSERT_INVARIANT();
@@ -804,21 +804,21 @@ void VString::insert(char c, int offset)
 void VString::insert(const VString& s, int offset)
     {
     ASSERT_INVARIANT();
-    
+
     if (s.length() == 0) // optimize the nothing-to-do case
         return;
-    
+
     // If s happens to be 'this', we'll need a temporary copy of it.
     // Otherwise, our memmove() + memcpy() data would be messed up.
     VString    tempCopy;    // note that by just declaring this, we merely have a few bytes on the stack -- nothing on the heap yet
     char*    source = s.chars();
-    
+
     if (this == &s)
         {
         tempCopy = s;    // this will cause tempCopy to allocate a buffer to hold a copy of s (which is 'this')
         source = tempCopy.chars();    // we'll do our final memcpy() from the copy, not from the 'this' buffer that's split by the memmove()
         }
-    
+
     int    addedLength = s.length();
     int    oldLength = this->length();
     int    newLength = oldLength + addedLength;
@@ -832,7 +832,7 @@ void VString::insert(const VString& s, int offset)
     // Need to use memmove here because memcpy behavior is undefined if ranges overlap.
     ::memmove(&(mBuffer[actualOffset+addedLength]), &(mBuffer[actualOffset]), numBytesToMove);    // shift forward by s.length() byte, everything past the offset
     ::memcpy(&(mBuffer[actualOffset]), source, addedLength);
-    
+
     this->postflight(newLength);
 
     ASSERT_INVARIANT();
@@ -918,7 +918,7 @@ VString::operator char*() const
     else
         return mBuffer;
     }
-        
+
 char* VString::chars() const
     {
     ASSERT_INVARIANT();
@@ -971,7 +971,7 @@ int VString::compare(const VString& s) const
 int VString::compare(const char* s) const
     {
     ASSERT_INVARIANT();
-    
+
     if (mBuffer == NULL)
         return ::strcmp("", s);
     else
@@ -988,7 +988,7 @@ int VString::compareIgnoreCase(const VString& s) const
 int VString::compareIgnoreCase(const char* s) const
     {
     ASSERT_INVARIANT();
-    
+
     /*
     FIXME:
     Need to figure out "correct" way to reference strcasecmp in the
@@ -997,10 +997,10 @@ int VString::compareIgnoreCase(const char* s) const
     */
     VString    thisString((mBuffer == NULL) ? "" : mBuffer);
     VString    otherString(s);
-    
+
     thisString.toLowerCase();
     otherString.toLowerCase();
-    
+
     return ::strcmp(thisString, otherString);
     }
 
@@ -1010,7 +1010,18 @@ bool VString::startsWith(const VString& s) const
 
     return this->regionMatches(0, s, 0, s.length());
     }
-        
+
+bool VString::startsWithIgnoreCase(const VString& s) const
+{
+	VString    thisString((mBuffer == NULL) ? "" : mBuffer);
+    VString    otherString(s);
+
+    thisString.toLowerCase();
+    otherString.toLowerCase();
+
+	return this->regionMatches(0, otherString, 0, otherString.length());
+}
+
 bool VString::startsWith(char aChar) const
     {
     ASSERT_INVARIANT();
@@ -1022,14 +1033,14 @@ bool VString::startsWith(char aChar) const
     else
         return (mBuffer[0] == aChar);
     }
-        
+
 bool VString::endsWith(const VString& s) const
     {
     ASSERT_INVARIANT();
-    
+
     return this->regionMatches(mStringLength - s.length(), s, 0, s.length());
     }
-        
+
 bool VString::endsWith(char aChar) const
     {
     ASSERT_INVARIANT();
@@ -1041,68 +1052,68 @@ bool VString::endsWith(char aChar) const
     else
         return (mBuffer[mStringLength - 1] == aChar);
     }
-        
+
 int VString::indexOf(char c, int fromIndex) const
     {
     ASSERT_INVARIANT();
-    
+
     if (mBuffer != NULL)
         for (int i = fromIndex; i < mStringLength; ++i)
             {
             if (mBuffer[i] == c)
                 return i;
             }
-        
+
     return -1;
     }
 
 int VString::indexOf(const VString& s, int fromIndex) const
     {
     ASSERT_INVARIANT();
-    
+
     int    otherLength = s.length();
-    
+
     for (int i = fromIndex; i < mStringLength; ++i)
         {
         if (this->regionMatches(i, s, 0, otherLength))
             return i;
         }
-        
+
     return -1;
     }
 
 int VString::lastIndexOf(char c, int fromIndex) const
     {
     ASSERT_INVARIANT();
-    
+
     if (fromIndex == -1)
         fromIndex = mStringLength - 1;
-    
+
     if (mBuffer != NULL)
         for (int i = fromIndex; i >= 0; --i)
             {
             if (mBuffer[i] == c)
                 return i;
             }
-        
+
     return -1;
     }
 
 int VString::lastIndexOf(const VString& s, int fromIndex) const
     {
     ASSERT_INVARIANT();
-    
+
     int    otherLength = s.length();
-    
+
     if (fromIndex == -1)
         fromIndex = mStringLength;
-    
+
     for (int i = fromIndex; i >= 0; --i)
         {
         if (this->regionMatches(i, s, 0, otherLength))
             return i;
         }
-        
+
     return -1;
     }
 
@@ -1112,7 +1123,7 @@ bool VString::regionMatches(int thisOffset, const VString& otherString, int othe
 
     int    result;
     int    otherStringLength = otherString.length();
-    
+
     // Buffer offset safety checks first. If they fail, return false.
     if ((thisOffset < 0) ||
         (thisOffset >= mStringLength) ||
@@ -1121,7 +1132,7 @@ bool VString::regionMatches(int thisOffset, const VString& otherString, int othe
         (otherOffset >= otherStringLength) ||
         (otherOffset + regionLength > otherStringLength))
         return false;
-    
+
     result = ::strncmp(this->chars() + thisOffset, otherString.chars() + otherOffset, static_cast<VSizeType> (regionLength));
 
     return (result == 0);
@@ -1130,16 +1141,16 @@ bool VString::regionMatches(int thisOffset, const VString& otherString, int othe
 int VString::replace(const VString& searchString, const VString& replacementString)
     {
     ASSERT_INVARIANT();
-    
+
     int    searchLength = searchString.length();
-    
+
     if (searchLength == 0)
         return 0;
 
     int    replacementLength = replacementString.length();
     int    numReplacements = 0;
     int    currentOffset = this->indexOf(searchString);
-    
+
     while ((currentOffset != -1) && (mBuffer != NULL))
         {
         /*
@@ -1150,7 +1161,7 @@ int VString::replace(const VString& searchString, const VString& replacementStri
         string, and then reassign it back to ourself. This relieves us of having
         to create multiple temporary buffers; we only create 1 temporary buffer as
         a result of using a VString to format into.
-        
+
         We could further optimize by
         combining ourself with 3 memcpy calls instead of letting vsnprintf calculate
         the buffer length:
@@ -1161,9 +1172,9 @@ int VString::replace(const VString& searchString, const VString& replacementStri
         4. null terminate the buffer: buffer[length of buffer] = 0
         (order of 1, 2, 3 is important for correct copying w/o incorrect overwriting)
         (something like that off the top of my head)
-        
+
         And, if replacementLength <= searchLength we could just update in place.
-        
+
         FIXME: On second thought, this in-place replacement is dangerous IF we run out of memory
         because we've broken the invariants. The problem is that we irrevocably alter our data
         before we're guaranteed we'll succeed. This is very unlikely to actually happen, but it's possible.
@@ -1173,29 +1184,29 @@ int VString::replace(const VString& searchString, const VString& replacementStri
         char*   beforePart = mBuffer;
         char*   afterPart = &mBuffer[currentOffset + searchLength];
         VString alteredString("%s%s%s", beforePart, replacementString.chars(), afterPart);
-        
+
         // Assign the new string to ourself -- copies its buffer into ours correctly.
         // (Could be optimized to just swap buffers if we defined a new friend function or two.)
         *this = alteredString;
-        
+
         // Finally we have to move currentOffset forward past the replacement part.
         currentOffset += replacementLength;
-        
+
         ++numReplacements;
-        
+
         // See if there is another occurrence to replace.
         currentOffset = this->indexOf(searchString, currentOffset);
         }
 
     ASSERT_INVARIANT();
-    
+
     return numReplacements;
     }
 
 int VString::replace(const VChar& searchChar, const VChar& replacementChar)
     {
     ASSERT_INVARIANT();
-    
+
     int     numReplacements = 0;
     char    match = searchChar.charValue();
     char    replacement = replacementChar.charValue();
@@ -1211,7 +1222,7 @@ int VString::replace(const VChar& searchChar, const VChar& replacementChar)
             }
 
     ASSERT_INVARIANT();
-    
+
     return numReplacements;
     }
 
@@ -1306,13 +1317,13 @@ void VString::getSubstring(VString& toString, int startIndex, int endIndex) cons
 
     startIndex = V_MAX(0, startIndex);        // prevent negative start index
     startIndex = V_MIN(theLength, startIndex);    // prevent start past end
-    
+
     if (endIndex == -1)    // -1 means to end of string
         endIndex = theLength;
 
     endIndex = V_MIN(theLength, endIndex);        // prevent stop past end
     endIndex = V_MAX(startIndex, endIndex);    // prevent stop before start
-    
+
     if (mBuffer != NULL)
         toString.copyFromBuffer(mBuffer, startIndex, endIndex);
     }
@@ -1325,13 +1336,13 @@ void VString::substringInPlace(int startIndex, int endIndex)
 
     startIndex = V_MAX(0, startIndex);        // prevent negative start index
     startIndex = V_MIN(theLength, startIndex);    // prevent start past end
-    
+
     if (endIndex == -1)    // -1 means to end of string
         endIndex = theLength;
 
     endIndex = V_MIN(theLength, endIndex);        // prevent stop past end
     endIndex = V_MAX(startIndex, endIndex);    // prevent stop before start
-    
+
     // Only do something if the start/stop are not the whole string.
     int    newLength = endIndex - startIndex;
     if (newLength != theLength)
@@ -1339,14 +1350,14 @@ void VString::substringInPlace(int startIndex, int endIndex)
         ::memmove(&(mBuffer[0]), &(mBuffer[startIndex]), static_cast<VSizeType> (newLength));
         this->_setLength(newLength);
         }
-    
+
     ASSERT_INVARIANT();
     }
 
 void VString::trim()
     {
     ASSERT_INVARIANT();
-    
+
     int    theLength = mStringLength;
 
     // optimize for empty string condition
@@ -1355,7 +1366,7 @@ void VString::trim()
 
     int    indexOfFirstNonWhitespace = -1;
     int    indexOfLastNonWhitespace = -1;
-    
+
     if (mBuffer != NULL)
         {
         for (int i = 0; i < theLength; ++i)
@@ -1366,7 +1377,7 @@ void VString::trim()
                 break;
                 }
             }
-    
+
         if (indexOfFirstNonWhitespace != -1)
             {
             for (int i = theLength-1; i >= 0; --i)
@@ -1379,7 +1390,7 @@ void VString::trim()
                 }
             }
         }
-    
+
     /*
     Case 1: all whitespace - set length to zero
     Case 2: no leading/trailing whitespace - nothing to do
@@ -1403,7 +1414,7 @@ void VString::trim()
         int    numBytesAfterTrimming = (indexOfLastNonWhitespace - indexOfFirstNonWhitespace) + 1;
 
         ::memmove(&(mBuffer[0]), &(mBuffer[indexOfFirstNonWhitespace]), static_cast<VSizeType> (numBytesAfterTrimming));
-        
+
         this->_setLength(numBytesAfterTrimming);
         }
 
@@ -1419,7 +1430,7 @@ void VString::copyToBuffer(char* toBuffer, int bufferSize) const
 
     if (bufferSize <= mStringLength)
         throw VRangeException(VString("VString::copyToBuffer: target buffer size %d is too small (%d required).", bufferSize, mStringLength+1));
-    
+
     if ((mBuffer == NULL) || (mBufferLength == 0) || (mStringLength == 0))
         {
         toBuffer[0] = 0;
@@ -1439,18 +1450,18 @@ void VString::copyToBuffer(char* toBuffer, int bufferSize) const
 void VString::copyFromBuffer(const char* fromBuffer, int startIndex, int endIndex)
     {
     ASSERT_INVARIANT();
-    
+
     if (startIndex < 0)
         throw VRangeException(VString("VString::copyFromBuffer: out of range start index %d.", startIndex));
-    
+
     // Flag improper usage based on 2.3.2 semantics:
     if (endIndex == LONG_MAX)
         throw VRangeException("VString::copyFromBuffer: deprecated use of LONG_MAX endIndex parameter.");
-    
+
     // We allow endIndex to be less than startIndex, and compensate for that
     if (endIndex < startIndex)
         endIndex = startIndex;
-    
+
     this->preflight(endIndex - startIndex);
     //lint -e668 "Possibly passing a null pointer to function"
     ::memcpy(mBuffer, fromBuffer + startIndex, static_cast<VSizeType> (endIndex - startIndex));
@@ -1470,7 +1481,7 @@ void VString::copyToPascalString(char* pascalBuffer) const
     else
         {
         Vu8    constrainedLength = static_cast<Vu8> (V_MIN(255, mStringLength));
-        
+
         pascalBuffer[0] = static_cast<char> (constrainedLength);
         ::memcpy(&(pascalBuffer[1]), mBuffer, constrainedLength);
         }
@@ -1479,7 +1490,7 @@ void VString::copyToPascalString(char* pascalBuffer) const
 void VString::copyFromPascalString(const char* pascalBuffer)
     {
     ASSERT_INVARIANT();
-    
+
     int    theLength = static_cast<int> (static_cast<Vu8> (pascalBuffer[0]));
 
     this->preflight(theLength);
@@ -1493,28 +1504,28 @@ void VString::copyFromPascalString(const char* pascalBuffer)
 void VString::setFourCharacterCode(Vu32 fourCharacterCode)
     {
     ASSERT_INVARIANT();
-    
+
     char codeChars[4];
-    
+
     for (int i = 0; i < 4; ++i)
         {
         int bitsToShift = 8 * (3-i);
         Vu8 byteValue = static_cast<Vu8>((fourCharacterCode & (static_cast<Vu32>(0x000000FF) << bitsToShift)) >> bitsToShift);
         codeChars[i] = byteValue;
-        
+
         if (codeChars[i] == 0)
             throw VRangeException(VString("VString::setFourCharacterCode: Code 0x%08X has a zero byte.", fourCharacterCode));
         }
-    
+
     this->copyFromBuffer(codeChars, 0, 4);
-    
+
     ASSERT_INVARIANT();
     }
 
 Vu32 VString::getFourCharacterCode() const
     {
     ASSERT_INVARIANT();
-    
+
     Vu32 result = 0;
 
     for (int i = 0; i < 4; ++i)
@@ -1531,7 +1542,7 @@ Vu32 VString::getFourCharacterCode() const
 
         result |= orValue;
         }
-    
+
     return result;
     }
 
@@ -1541,7 +1552,7 @@ void VString::preflight(int stringLength)
 
     if (stringLength < 0)
         throw VRangeException(VString("VString::preflight: negative length %d.", stringLength));
-    
+
     if (stringLength == INT_MAX)
         throw VRangeException(VString("VString::preflight: out of bounds length %d.", stringLength));
 
@@ -1551,7 +1562,7 @@ void VString::preflight(int stringLength)
             {
             // This allocation will throw an exception if we run out of memory. Catch below.
             char*    newBuffer = new char[stringLength + 1L];
-            
+
             // Copy our old string, including the null terminator, to the new buffer.
             if (mBufferLength == 0)
                 {
@@ -1616,7 +1627,7 @@ void VString::postflight(int stringLength)
 void VString::vaFormat(const char* formatText, va_list args)
     {
     ASSERT_INVARIANT();
-    
+
     if (formatText == NULL)
         {
         this->preflight(0);
@@ -1627,7 +1638,7 @@ void VString::vaFormat(const char* formatText, va_list args)
     else
         {
         int newStringLength = VString::_determineSprintfLength(formatText, args);
-    
+
         if (newStringLength == -1)
             {
             // We were unable to determine the buffer length needed. Log an error and make the preflight
@@ -1638,7 +1649,7 @@ void VString::vaFormat(const char* formatText, va_list args)
             }
 
         this->preflight(newStringLength);
-    
+
         (void) vault::vsnprintf(mBuffer, static_cast<VSizeType> (mBufferLength), formatText, args);
 
         this->_setLength(newStringLength); // could call postflight, but would do extra assertion check
@@ -1798,7 +1809,7 @@ int VString::_determineSprintfLength(const char* formatText, va_list args)
 #endif
 
     va_end(args);
-    
+
     return theLength;
     }
 #endif

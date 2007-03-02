@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -18,11 +18,11 @@ http://www.bombaydigital.com/
     preprocessor macros that facilitate platform-neutral code. Without these
     definitions, you would have to cope with the various quirks and
     behaviors of different compilers, libraries, and processors.
-    
+
     <h2>Data Types</h2>
-    
+
     <h3>Integers</h3>
-    
+
     Whenever possible, you should just use int. If you are willing to assume
     that the world is now 32-bit or better, then you can treat int as
     "a signed integer that holds about +/- 2 billion", and if your data fits
@@ -37,16 +37,16 @@ http://www.bombaydigital.com/
     of a 64-bit integer is different across compilers, hence it is unsafe for you
     to use "long long" and expect it to work; thus the existence of Vs64 and Vu64,
     which work correctly even with MSVC++ 6.
-    
+
     <h3>Floating-Point</h3>
-    
+
     Because the single-precision "float" type in the language is ambigous and
     essentially dangerous, vtypes defines VDouble, which uses double precision.
     There is also a VFloat type, but in general you should avoid it because of
     loss of precision and the aforementioned dangers.
-    
+
     <h3>File Sizes</h3>
-    
+
     If you want to avoid writing code that breaks when encountering large files,
     it is best to use the type VFSize to represent file and stream sizes. Even in
     today's systems, some users work with files whose size exceeds what can be
@@ -57,9 +57,9 @@ http://www.bombaydigital.com/
     useful, but it will not be 64 bits on most systems today, so the Vault does
     not use it to define stream-related sizes, in favor of a uniform use of
     VFSize.
-    
+
     <h3>Collection Sizes</h3>
-    
+
     The type VSizeType is defined as a uniform way of defining a type for
     the size of an STL collection. This is often a good clean way of defining
     the loop control variable for an STL iteration for-loop. You cannot just
@@ -68,18 +68,18 @@ http://www.bombaydigital.com/
     template-defined size_type because if you decide to use a different
     STL collection type, your control variable type should change, too. I'm not
     totally satisfied with this, but so far this seems like the best option.
-    
+
     <h3>Strings</h3>
-    
+
     See VString for the string class used everywhere in the Vault.
-    
+
     <h3>Date and Time</h3>
-    
+
     See VInstant and its relatives VDate and VTimeOfDay for the date and time
     representations used everywhere in the Vault.
-    
+
     <h3>Byte Order</h3>
-    
+
     Some compilers' libraries provide macros for invoking host-to-network order
     and network-to-host order byte swapping, such that they do nothing on "big
     endian" machines ("network byte order" means big endian in this terminology).
@@ -96,18 +96,18 @@ http://www.bombaydigital.com/
     explicitly, you can call VbyteSwap16(), VbyteSwap32(), or VbyteSwap64(), which
     swap bytes between network and host order (the two directions happen to be
     symmetric for big- and little-endian).
-    
+
     <h3>Constants</h3>
-    
+
     There are a couple of things to note about defining and using constants.
-    
+
     Because of certain compilers' limitations (namely MSVC++ 6), you cannot
     declare a 64-bit constant in the normal way if you want it to compile
     cross-platform. That is, "1LL" is unfortunately not going to work. Provided
     here is a macro CONST_S64 that will work with all compilers. So use
     "CONST_S64(1)" instead, to declare a 64-bit constant whose value is 1.
     Use CONST_U64 for unsigned values.
-    
+
     MSVC++ 6 also is incompatible with the normal way of declaring class static
     constants (e.g., "const int kMyConstant = 42;"). The Vault provides a macro
     called "CLASS_CONST" that allows you to declare class static int constants
@@ -115,7 +115,7 @@ http://www.bombaydigital.com/
     As of Code Vault 2.5, I am no longer using this macro, but it's still defined
     in case you need it (please just dump the piece of junk MSVC++ 6 compiler and
     get the freely downloadable and reasonably decent VC++ 8 instead).
-    
+
     There are constants defined for the miniumum and maximum possible values of each
     integer data type: V_MIN_S8, V_MAX_S8, V_MAX_U8, V_MIN_S16, V_MAX_S16, V_MAX_U16,
     V_MIN_32, V_MAX_S32, V_MAX_U32, V_MIN_64, V_MAX_S64, V_MAX_U64.
@@ -124,14 +124,14 @@ http://www.bombaydigital.com/
     the POSIX macros not available on all platforms, but they aren't necessarily
     provided for 64-bit values; and you should use them instead of the standard C++
     function templates may not be available at all.
-    
+
     <h3>Miscellaneous</h3>
-    
+
     There are macros defined to wrap min(), max(), abs(), and fabs(), such that they
     will still work if the standard C++ function templates are not available: V_MIN,
     V_MAX, V_ABS, V_FABS. You should use these if you want to be sure your code compiles
     cross-platform.
-    
+
     A macro ASSERT_INVARIANT is defined that calls "this->assertInvariant()" if you
     are building in debug mode. This allows you to define a method assertInvariant()
     in any class, and call this macro to test your invariants. The rule of thumb is
@@ -139,9 +139,9 @@ http://www.bombaydigital.com/
     test the invariants on entry to each method, test the invariants on exit of any
     non-const method. See "C++ FAQs" item 224. The Vault uses this mechanism itself in
     several of its classes that are suited to invariant testing.
-    
+
 */
-    
+
 /**
     @addtogroup vtypes
     @{
@@ -278,6 +278,19 @@ a swap. The caller must have already decided that a swap is desirable.
 @return    the swapped value
 */
 extern VFloat VbyteSwapFloat(VFloat a32BitValue);
+
+/**
+Byte-swaps a 64-bit (8-byte) double either host-to-network order, or
+network-to-host order (it's the same shuffling either way).
+
+This function always swaps the byte order of the value, regardless of
+whether native order matches network order. Its purpose is to perform
+a swap. The caller must have already decided that a swap is desirable.
+
+@param    a64BitValue    the original value
+@return    the swapped value
+*/
+extern VDouble VbyteSwapDouble(VDouble a64BitValue);
 
 /**
 Returns the amount of memory used by the process as reported by
