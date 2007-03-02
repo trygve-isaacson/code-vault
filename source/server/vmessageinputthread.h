@@ -69,13 +69,13 @@ class VMessageInputThread : public VSocketThread
         see (and potentially preprocess) a message that it sent that is about to
         be handled in the normal fashion.
         */
-        virtual void _beforeProcessMessage(VMessageHandler* handler, VMessage* message) {}
+        virtual void _beforeProcessMessage(VMessageHandler* /*handler*/, VMessage* /*message*/) {}
         /**
         This method is intended for use by loopback testing, where the test code can
         see (and potentially post-process) a message that it sent that has just been
         handled in the normal fashion.
         */
-        virtual void _afterProcessMessage(VMessageHandler* handler) {}
+        virtual void _afterProcessMessage(VMessageHandler* /*handler*/) {}
 
 	private:
 	
