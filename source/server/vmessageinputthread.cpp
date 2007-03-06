@@ -11,13 +11,14 @@ http://www.bombaydigital.com/
 #include "vmessage.h"
 #include "vmessagepool.h"
 #include "vclientsession.h"
+#include "vbento.h"
 
 // VMessageInputThread --------------------------------------------------------
 
-VMessageInputThread::VMessageInputThread(const VString& inName, VSocket* inSocket, VListenerThread* ownerThread, VServer* server, VMessagePool* messagePool)
-: VSocketThread(inName, inSocket, ownerThread),
+VMessageInputThread::VMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VMessagePool* messagePool)
+: VSocketThread(name, socket, ownerThread),
 mMessagePool(messagePool),
-mSocketStream(inSocket, "VMessageInputThread"),
+mSocketStream(socket, "VMessageInputThread"),
 mInputStream(mSocketStream),
 mConnected(false),
 mSession(NULL),
@@ -119,6 +120,7 @@ void VMessageInputThread::_dispatchMessage(VMessage* message)
 	if (handler == NULL)
 		{
 		VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] VMessageInputThread::_dispatchMessage: No message hander defined for message %d.", mName.chars(), (int) message->getMessageID()));
+        this->_handleNoMessageHandler(message);
 		VMessagePool::releaseMessage(message, mMessagePool);
 		}
 	else
@@ -132,7 +134,7 @@ void VMessageInputThread::_dispatchMessage(VMessage* message)
 		try
 			{
             this->_beforeProcessMessage(handler, message);
-			handler->processMessage();
+            this->_callProcessMessage(handler);
             this->_afterProcessMessage(handler);
 			}
 		catch (const VException& ex)
@@ -152,4 +154,57 @@ void VMessageInputThread::_dispatchMessage(VMessage* message)
 		delete handler;
 		}
 	}
+
+void VMessageInputThread::_callProcessMessage(VMessageHandler* handler)
+    {
+    handler->processMessage();
+    }
+
+// VBentoMessageInputThread ---------------------------------------------------
+
+VBentoMessageInputThread::VBentoMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VMessagePool* messagePool) :
+VMessageInputThread(name, socket, ownerThread, server, messagePool)
+    {
+    }
+
+void VBentoMessageInputThread::_handleNoMessageHandler(VMessage* message)
+    {
+    VBentoNode responseData("response");
+    responseData.addInt("result", -1);
+    responseData.addString("error", VString("Invalid message ID %d. No handler defined.", (int) message->getMessageID()));
+
+    VString bentoText;
+    responseData.writeToBentoTextString(bentoText);
+    VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] Error Reply: %s", mName.chars(), bentoText.chars()));
+
+	VMessage* response = mMessagePool->get();
+    responseData.writeToStream(*response);
+    VBinaryIOStream io(mSocketStream);
+    response->send(mName, io);
+    VMessagePool::releaseMessage(response, mMessagePool);
+    }
+    
+void VBentoMessageInputThread::_callProcessMessage(VMessageHandler* handler)
+    {
+    try
+        {
+        VMessageInputThread::_callProcessMessage(handler);
+        }
+    catch (const std::exception& ex)
+        {
+        VBentoNode responseData("response");
+        responseData.addInt("result", -1);
+        responseData.addString("error", VString("An error occurred processing the message: %s", ex.what()));
+
+        VString bentoText;
+        responseData.writeToBentoTextString(bentoText);
+        VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] Error Reply: %s", mName.chars(), bentoText.chars()));
+
+        VMessage* response = mMessagePool->get();
+        responseData.writeToStream(*response);
+        VBinaryIOStream io(mSocketStream);
+        response->send(mName, io);
+        VMessagePool::releaseMessage(response, mMessagePool);
+        }
+    }
 

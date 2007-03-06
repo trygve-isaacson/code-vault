@@ -42,7 +42,7 @@ class VMessageInputThread : public VSocketThread
 							the caller retains ownership of the pool (it is not
 							deleted by this object upon its destruction)
 		*/
-		VMessageInputThread(const VString& inName, VSocket* inSocket, VListenerThread* ownerThread, VServer* server, VMessagePool* messagePool);
+		VMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VMessagePool* messagePool);
 		/**
 		Virtual destructor.
 		*/
@@ -76,11 +76,26 @@ class VMessageInputThread : public VSocketThread
 		*/
 		virtual void _dispatchMessage(VMessage* message);
         /**
+        This method is called by _dispatchMessage if it cannot find the handler
+        for the message being handled. How to handle this is protocol-specific,
+        but a subclass could send an error response back to the sender if the
+        protocol allows that. The implementation must NOT release the message,
+        and the message WILL be released by _dispatchMessage() upon return.
+        */
+        virtual void _handleNoMessageHandler(VMessage* /*message*/) {}
+        /**
         This method is intended for use by loopback testing, where the test code can
         see (and potentially preprocess) a message that it sent that is about to
         be handled in the normal fashion.
         */
         virtual void _beforeProcessMessage(VMessageHandler* /*handler*/, VMessage* /*message*/) {}
+        /**
+        This method is where we actually call the message handler to process the
+        message it was constructed with. A subclass might override this to wrap
+        the call to super in a try/catch block if it wants to take action other
+        than logging in response to an exception.
+        */
+        virtual void _callProcessMessage(VMessageHandler* handler);
         /**
         This method is intended for use by loopback testing, where the test code can
         see (and potentially post-process) a message that it sent that has just been
@@ -96,5 +111,24 @@ class VMessageInputThread : public VSocketThread
 		VServer*        mServer;		///< The server object that owns us.
 
 	};
+
+/**
+VBentoMessageInputThread is a VMessageInputThread that can automatically
+handle no-such-handler or uncaught message dispatch exceptions, and in
+response send a Bento-based error reply back to the sender.
+*/
+class VBentoMessageInputThread : public VMessageInputThread
+    {
+    public:
+    
+		VBentoMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VMessagePool* messagePool);
+        ~VBentoMessageInputThread() {}
+
+    protected:
+    
+        virtual void _handleNoMessageHandler(VMessage* message);
+        virtual void _callProcessMessage(VMessageHandler* handler);
+
+    };
 
 #endif /* vmessageinputthread_h */
