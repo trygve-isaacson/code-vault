@@ -12,6 +12,8 @@ http://www.bombaydigital.com/
 #include "vstring.h"
 #include "vmutex.h"
 #include "vmessagequeue.h"
+#include "vsocketstream.h"
+#include "vbinaryiostream.h"
 
 /**
     @ingroup vsocket
@@ -139,6 +141,11 @@ class VClientSession
 
 		VMessageQueue   mStartupStandbyQueue;	///< A queue we use to hold outbound updates while this client session is starting up.
         SessionTaskList mTasks;                 ///< Tasks currently pointing to this session; shutdown() waits until they're gone.
+        
+        // We only access the socket i/o stream if postOutputMessage() is called
+        // and we are not set up to use a separate output message thread. 
+		VSocketStream   mSocketStream;  ///< The underlying raw socket stream over which this thread communicates.
+		VBinaryIOStream mIOStream;      ///< The binary-format i/o stream over the raw socket stream.
     };
 
 typedef std::vector<VClientSession*> VClientSessionList;

@@ -27,9 +27,11 @@ mClientPort(0),
 // mClientAddress -> empty
 mInputThread(NULL),
 mOutputThread(NULL),
-mIsShuttingDown(false)
+mIsShuttingDown(false),
 // mStartupStandbyQueue -> empty
 // mTasks -> empty
+mSocketStream(socket, "VClientSession"), // FIXME: find a way to get the IP address here or to set in ctor
+mIOStream(mSocketStream)
     {
 	socket->getHostName(mClientIP);
 	mClientPort = socket->getPortNumber();
@@ -116,8 +118,17 @@ bool VClientSession::postOutputMessage(VMessage* message, bool releaseIfNotPoste
 		    }
 		else
 		    {
-            // TODO: if mOutputThread == NULL, write message directly to socket stream
-            mOutputThread->postOutputMessage(message);
+            if (mOutputThread == NULL)
+                {
+                // Write the message directly to our output stream and release it.
+                message->send(mInputThread->name(), mIOStream); // FIXME: better "session label" needed
+                VMessagePool::releaseMessage(message, message->getPool());
+                }
+            else
+                {
+                // Post it to our async output thread, which will perform the actual i/o.
+                mOutputThread->postOutputMessage(message);
+                }
     		}
 
 		posted = true;
