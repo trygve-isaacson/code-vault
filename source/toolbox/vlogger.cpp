@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5.1
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -56,7 +56,7 @@ void VLogger::shutdown()
 VLogger* VLogger::getDefaultLogger()
     {
     // Install one if there isn't one yet.
-    
+
     if (gDefaultLogger == NULL)
         VLogger::installDefaultLogger();
 
@@ -76,14 +76,14 @@ VLogger* VLogger::getLogger(const VString& name)
         while (i != gLoggers.end())
             {
             VLogger*    logger = (*i);
-            
+
             if (logger->mName == name)
                 return logger;
-            
+
             ++i;
             }
         }
-        
+
     return VLogger::getDefaultLogger();
     }
 
@@ -97,13 +97,13 @@ VLogger* VLogger::findLogger(const VString& name)
     while (i != gLoggers.end())
         {
         VLogger*    logger = (*i);
-        
+
         if (logger->mName == name)
             return logger;
-        
+
         ++i;
         }
-        
+
     return NULL;
     }
 
@@ -111,21 +111,21 @@ VLogger* VLogger::findLogger(const VString& name)
 void VLogger::installLogger(VLogger* logger)
     {
     VMutexLocker    locker(_mutexInstance());
-    
+
     for (VLoggerIterator i = gLoggers.begin(); i != gLoggers.end(); ++i)
         {
         VLogger*    existingLogger = (*i);
-        
+
         // Protect agains caller accidentally installing the same logger object twice.
         // Otherwise, we'll end up deleting the object being installed.
         if (existingLogger == logger)
             return;
-        
+
         if (existingLogger->mName == logger->mName)
             {
             if (gDefaultLogger == existingLogger)
                 gDefaultLogger = logger;
-                
+
             *i = logger;            // replace the vector entry
             delete existingLogger;    // delete the one we're replacing
             return;
@@ -140,16 +140,16 @@ void VLogger::installLogger(VLogger* logger)
 void VLogger::deleteLogger(const VString& name)
     {
     VMutexLocker    locker(_mutexInstance());
-    
+
     for (VLoggerIterator i = gLoggers.begin(); i != gLoggers.end(); ++i)
         {
         VLogger*    existingLogger = (*i);
-        
+
         if (existingLogger->mName == name)
             {
             if (gDefaultLogger == existingLogger)
                 gDefaultLogger = NULL;
-                
+
             gLoggers.erase(i);        // erase only removes the vector element (the pointer)
             delete existingLogger;    // so we also must delete the object
             return;
@@ -176,10 +176,10 @@ void VLogger::setLogLevels(const VString& name, int logLevel)
     while (i != gLoggers.end())
         {
         VLogger*    logger = (*i);
-        
+
         if (name.isEmpty() || (logger->mName == name))
             logger->setLevel(logLevel);
-        
+
         ++i;
         }
     }
@@ -194,10 +194,10 @@ void VLogger::getLoggerInfo(VStringVector& resultStrings)
     while (i != gLoggers.end())
         {
         VLogger*    logger = (*i);
-        
+
         resultStrings.push_back(logger->mName);
         resultStrings.push_back(VString("%d", logger->mLogLevel));
-        
+
         ++i;
         }
     }
@@ -226,41 +226,42 @@ VLogger::~VLogger()
     {
     }
 
-void VLogger::log(int logLevel, const char* file, int line, const char* inFormat, ...)
+void VLogger::_breakpointLocationForLog()
     {
-    if (this->isEnabledFor(logLevel))
+    // Put a breakpoint here if you want to break on every message that
+    // is potentially logged, regardless of log level.
+    }
+
+void VLogger::_breakpointLocationForEmit()
+    {
+    // Put a breakpoint here if you want to break on every message that
+    // is actually logged after the logger checks the log level.
+    }
+
+void VLogger::log(int logLevel, const char* file, int line, const VString& message)
+    {
+    VLogger::_breakpointLocationForLog();
+
+	if (this->isEnabledFor(logLevel))
         {
-        VMutexLocker    locker(&mMutex);    // ensure multiple threads don't intertwine their log messages
-        va_list    args;
-        va_start(args, inFormat);
+        VLogger::_breakpointLocationForEmit();
 
-        this->emit(logLevel, file, line, inFormat, args);
-
-        va_end(args);
+        VMutexLocker locker(&mMutex);    // ensure multiple threads don't intertwine their log messages
+        this->emit(logLevel, file, line, message);
         }
     }
 
-void VLogger::log(int logLevel, const char* inFormat, ...)
-{
-    if (this->isEnabledFor(logLevel))
+void VLogger::log(int logLevel, const VString& message)
     {
-        va_list    args;
-        va_start(args, inFormat);
-
-        VMutexLocker    locker(&mMutex);    // ensure multiple threads don't intertwine their log messages
-        this->emit(logLevel, NULL, 0, inFormat, args);
-
-        va_end(args);
+    this->log(logLevel, NULL, 0, message);
     }
-}
-
 
 void VLogger::logHexDump(int logLevel, const VString& message, const Vu8* buffer, Vs64 length)
     {
     // Short circuit immediately if the detail level is too high.
     if (! this->isEnabledFor(logLevel))
         return;
-    
+
     this->log(logLevel, NULL, 0, message);
 
     // We use an optimization here if the supplied length is zero: rather than
@@ -268,7 +269,7 @@ void VLogger::logHexDump(int logLevel, const VString& message, const Vu8* buffer
     // length indicator message in our "preface" string and skip the hex part.
 
     VMutexLocker    locker(&mMutex);    // ensure multiple threads don't intertwine their log messages
-    
+
     if (length > 0)
         {
         VMemoryStream    tempBuffer;
@@ -277,7 +278,7 @@ void VLogger::logHexDump(int logLevel, const VString& message, const Vu8* buffer
         hex.printHex(buffer, length);
         Vu8                nullByte = 0;
         (void) tempBuffer.write(&nullByte, 1);    // null terminate so it is a valid C string
-        
+
         this->emitRawLine((char*) tempBuffer.getBuffer());
         }
     }
@@ -288,35 +289,21 @@ void VLogger::rawLog(const VString& message)
     this->emitRawLine(message);
     }
 
-void VLogger::emit(int logLevel, const char* file, int line, const char* inFormat, va_list args)
+void VLogger::emit(int logLevel, const char* file, int line, const VString& message)
     {
-    VString    message;
-    VLogger::vaFormat(message, logLevel, file, line, inFormat, args);
-    
-    this->emitRawLine(message);
+    VString    rawMessage;
+    VLogger::format(rawMessage, logLevel, file, line, message);
+
+    this->emitRawLine(rawMessage);
     }
 
 // static
-void VLogger::format(VString& stringToFormat, int logLevel, const char* file, int line, const char* inFormat, ...)
+void VLogger::format(VString& stringToFormat, int logLevel, const char* file, int line, const VString& message)
     {
-     va_list    args;
-    va_start(args, inFormat);
-
-    VLogger::vaFormat(stringToFormat, logLevel, file, line, inFormat, args);
-
-    va_end(args);
-    }
-
-// static
-void VLogger::vaFormat(VString& stringToFormat, int logLevel, const char* file, int line, const char* inFormat, va_list args)
-    {
-    VString    message;
-    message.vaFormat(inFormat, args);
-    
     VInstant    now;
-    VString        timeStampString;
+    VString     timeStampString;
     now.getLocalString(timeStampString);
-    
+
     VString    levelName;
     VLogger::getLevelName(logLevel, levelName);
 
@@ -324,7 +311,7 @@ void VLogger::vaFormat(VString& stringToFormat, int logLevel, const char* file, 
     if (file == NULL)
         stringToFormat.format("%s [%s] %s", timeStampString.chars(), levelName.chars(), message.chars());
     else
-        stringToFormat.format("%s [%s] @ %s line %d: %s", timeStampString.chars(), levelName.chars(), file, line, message.chars());
+        stringToFormat.format("%s [%s] @ %s:%d: %s", timeStampString.chars(), levelName.chars(), file, line, message.chars());
     }
 
 // static

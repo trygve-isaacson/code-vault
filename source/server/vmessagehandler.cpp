@@ -102,6 +102,6 @@ void VMessageHandler::logMessageDetails(const VString& details, VLogger* logger)
 		logger = this->_getDetailsLogger();
 	
 	if (logger != NULL)
-		logger->log(kMessageDispatchDetailLogLevel, NULL, 0, "[%s] %s", mThread->name().chars(), details.chars());
+		logger->log(kMessageDispatchDetailLogLevel, NULL, 0, VString("[%s] %s", mThread->name().chars(), details.chars()));
 	}
 

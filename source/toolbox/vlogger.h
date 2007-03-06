@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5.1
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -27,9 +27,9 @@ class VString;
 // Each macro has two versions: one using the default logger, one using a named logger.
 
 /** Emits a message at kFatal level to the default logger. */
-#define VLOGGER_FATAL(message) VLogger::getDefaultLogger()->log(VLogger::kFatal, NULL, 0, message)
+#define VLOGGER_FATAL(message) VLogger::getDefaultLogger()->log(VLogger::kFatal, __FILE__, __LINE__, message)
 /** Emits a message at kError level to the default logger. */
-#define VLOGGER_ERROR(message) VLogger::getDefaultLogger()->log(VLogger::kError, NULL, 0, message)
+#define VLOGGER_ERROR(message) VLogger::getDefaultLogger()->log(VLogger::kError, __FILE__, __LINE__, message)
 /** Emits a message at kWarn level to the default logger. */
 #define VLOGGER_WARN(message) VLogger::getDefaultLogger()->log(VLogger::kWarn, NULL, 0, message)
 /** Emits a message at kInfo level to the default logger. */
@@ -48,9 +48,9 @@ class VString;
 #define VLOGGER_WOULD_LOG(level) (VLogger::getDefaultLogger()->getLevel() => level)
 
 /** Emits a message at kFatal level to the specified logger. */
-#define VLOGGER_NAMED_FATAL(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kFatal, NULL, 0, message)
+#define VLOGGER_NAMED_FATAL(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kFatal, __FILE__, __LINE__, message)
 /** Emits a message at kError level to the specified logger. */
-#define VLOGGER_NAMED_ERROR(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kError, NULL, 0, message)
+#define VLOGGER_NAMED_ERROR(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kError, __FILE__, __LINE__, message)
 /** Emits a message at kWarn level to the specified logger. */
 #define VLOGGER_NAMED_WARN(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kWarn, NULL, 0, message)
 /** Emits a message at kInfo level to the specified logger. */
@@ -84,7 +84,7 @@ created as soon as it is needed, and it will log to std::cout.
 class VLogger
     {
     public:
-    
+
         /**
         Deletes all loggers, presumably at program termination.
         */
@@ -151,7 +151,7 @@ class VLogger
         @param    resultStrings    the string vector that will be modified
         */
         static void getLoggerInfo(VStringVector& resultStrings);
-    
+
         /**
         Constructs a new logger object.
         @param    logLevel    the level of detail for messages to emit
@@ -173,11 +173,10 @@ class VLogger
         @param    file        the file name that is emitting the log message;
                             NULL will suppress file and line in output
         @param    line        the line number that is emitting the log message
-        @param    inFormat        the formatting string
-        @param    ...            variable arguments for the formatting string
+        @param    message   the text to emit
         */
-        void log(int logLevel, const char* file, int line, const char* inFormat, ...);
-        void log(int logLevel, const char* inFormat, ...);
+        void log(int logLevel, const char* file, int line, const VString& message);
+        void log(int logLevel, const VString& message);
 
         /**
         Logs the specified message as if separately logged, followed by a hex
@@ -199,7 +198,7 @@ class VLogger
         @param    message the text to be logged
         */
         void rawLog(const VString& message);
-        
+
         /**
         Returns the current level of detail, below which messages are suppressed.
         @return the current level of detail
@@ -233,9 +232,9 @@ class VLogger
         static const int kDebug = 80;   ///< Level of detail to add fine-grained status messages.
         static const int kTrace = 100;  ///< Level of detail to add trace-level messages.
         static const int kAll   = 100;  ///< Level of detail to output all messages.
-        
+
         static const VString kDefaultLoggerName;
-        
+
     protected:
 
         /**
@@ -254,11 +253,10 @@ class VLogger
         @param    file        the file name that is emitting the log message;
                             NULL will suppress file and line in output
         @param    line        the line number that is emitting the log message
-        @param    inFormat    the formatting string
-        @param    args        the argument list
+        @param    message     the text to emit
         */
-        virtual void emit(int logLevel, const char* file, int line, const char* inFormat, va_list args);
-        
+        virtual void emit(int logLevel, const char* file, int line, const VString& message);
+
         /**
         Emits a raw line to the logger's output. Normally this is the function that
         concrete logger classes override, because the base class formats the message
@@ -269,7 +267,7 @@ class VLogger
         @param    line    the string to be emitted
         */
         virtual void emitRawLine(const VString& /*line*/) {}
-        
+
         /**
         Builds a string using the standard default logging output format.
         This is declared protected so that subclasses can format the message
@@ -283,22 +281,7 @@ class VLogger
         @param    inFormat        the formatting string
         @param    ...                variable arguments for the formatting string
         */
-        static void format(VString& stringToFormat, int logLevel, const char* file, int line, const char* inFormat, ...);
-
-        /**
-        Builds a string using the standard default logging output format.
-        This is declared protected so that subclasses can format the message
-        in the standard way if they need to. Most subclasses will just
-        override emitRawLine() and receive a message that has already been
-        formatted.
-        @param    stringToFormat    the string to be formatted
-        @param    logLevel        the level of detail of the message
-        @param    file            the file name that is emitting the log message
-        @param    line            the line number that is emitting the log message
-        @param    inFormat        the formatting string
-        @param    args            the argument list
-        */
-        static void vaFormat(VString& stringToFormat, int logLevel, const char* file, int line, const char* inFormat, va_list args);
+        static void format(VString& stringToFormat, int logLevel, const char* file, int line, const VString& message);
 
         /**
         Returns the log level as a short descriptive string ("warn", "error", etc.)
@@ -307,7 +290,7 @@ class VLogger
         @param    name        the string to format
         */
         static void getLevelName(int logLevel, VString& name);
-    
+
     private:
 
         /**
@@ -316,10 +299,13 @@ class VLogger
         */
         static void installDefaultLogger();
 
+        static void _breakpointLocationForLog();
+        static void _breakpointLocationForEmit();
+
         VMutex  mMutex;     ///< A mutex to protect against multiple threads' messages from being intertwined
         int     mLogLevel;  ///< Only messages with a detail level <= this will be emitted.
         VString mName;      ///< This logger's unique name so it can be looked up.
-        
+
         static VLoggerList  gLoggers;       ///< The list of installed loggers.
         static VLogger*     gDefaultLogger; ///< The default logger returned if get by name fails.
     };
@@ -333,7 +319,7 @@ want.
 class VSuppressionLogger : public VLogger
     {
     public:
-    
+
         /**
         Constructs a new suppression logger object.
         @param    name    the name of the logger, used for finding by name
@@ -351,7 +337,7 @@ VFileLogger is a logger that writes each message as a line in a text file.
 class VFileLogger : public VLogger
     {
     public:
-    
+
         /**
         Constructs a new file logger object.
         @param    logLevel    the level of detail for messages to emit
@@ -371,7 +357,7 @@ class VFileLogger : public VLogger
         @param    line    the string to be emitted
         */
         virtual void emitRawLine(const VString& line);
-    
+
     private:
 
         VBufferedFileStream    mFileStream;    ///< The underlying files stream we open and write to.
@@ -381,7 +367,7 @@ class VFileLogger : public VLogger
 class VCoutLogger : public VLogger
     {
     public:
-    
+
         /**
         Constructs a new standard output logger object.
         @param    logLevel    the level of detail for messages to emit
@@ -410,7 +396,7 @@ of via a throw.
 class VInterceptLogger : public VLogger
     {
     public:
-    
+
         /**
         Constructs a new suppression logger object.
         */
@@ -422,11 +408,11 @@ class VInterceptLogger : public VLogger
 
         bool sawExpectedMessage(const VString& inMessage);
         const VString& getLastMessage() const { return mLastLoggedMessage; }
-        
+
     protected:
         virtual void emit(int logLevel, const char* file, int line, const char* inFormat, va_list args);
         virtual void emitRawLine(const VString& line);
-        
+
     private:
         VString mLastLoggedMessage;
     };
