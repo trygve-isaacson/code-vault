@@ -678,6 +678,7 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
             else
                 {
                 mPendingToken += c;
+                mTokenEscapePending = false;
                 }
             break;
         case IN_ATTRIBUTE:
@@ -736,6 +737,7 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
             else
                 {
                 mPendingToken += c;
+                mTokenEscapePending = false;
                 }
             break;
         case IN_ATTRIBUTE_TYPE:
@@ -773,6 +775,7 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
                 {
                 mPendingToken += c;
                 mTokenState = IN_ATTRIBUTE_VALUE_UNQUOTED;
+                mTokenEscapePending = false;
                 }
             break;
         case IN_ATTRIBUTE_VALUE_QUOTED:
@@ -804,6 +807,7 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
             else
                 {
                 mPendingToken += c;
+                mTokenEscapePending = false;
                 }
             break;
         case IN_ATTRIBUTE_VALUE_UNQUOTED:
@@ -834,6 +838,7 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
             else
                 {
                 mPendingToken += c;
+                mTokenEscapePending = false;
                 }
             break;
         default:
@@ -908,13 +913,11 @@ static void _escapeString(VString& s)
     s.replace("{", "\\{");
     s.replace("}", "\\}");
     s.replace("\"", "\\\"");
-    s.replace(":", "\\:");
     }
 
 static void _unescapeString(VString& s)
     {
     // Remove any backslash that precedes a special character.
-    s.replace("\\:", ":");
     s.replace("\\\"", "\"");
     s.replace("\\}", "}");
     s.replace("\\{", "{");
