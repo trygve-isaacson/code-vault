@@ -645,7 +645,10 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
                 {
                 mTokenState = IN_NODE;
                 mParseNodeStack.pop_back(); // pop the last node
-                mPendingNode = mParseNodeStack.back(); // the new last node is now pending
+                if (mParseNodeStack.size() == 0)
+                    mPendingNode = NULL; // we're back at top level outside all nodes
+                else
+                    mPendingNode = mParseNodeStack.back(); // the new last node is now pending
                 }
             else
                 throw VException("Parser expected whitespace, node name, [, {, or } but got '%c'.", c.charValue());
