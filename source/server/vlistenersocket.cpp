@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -11,14 +11,12 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vsocketfactory.h"
 
-VListenerSocket::VListenerSocket(int portNumber, VSocketFactory* factory, int backlog) :
-VSocket(),
+VListenerSocket::VListenerSocket(int portNumber, const VString& bindAddress, VSocketFactory* factory, int backlog) :
+VSocket("n/a for listener", portNumber),
+mBindAddress(bindAddress),
+mBacklog(backlog),
 mFactory(factory)
     {
-    // Initialize fields of base classes.
-    mPortNumber = portNumber;
-    mListenBacklog = backlog;
-
     /*
     We need to have our listen() calls timeout if we expect to allow
     other threads (e.g., a thread that is handling a remote server
@@ -26,7 +24,7 @@ mFactory(factory)
     on listen() and never get a chance to even check isRunning().
     */
     struct timeval    timeout;
-    
+
     timeout.tv_sec = 5;
     timeout.tv_usec = 0;
 
@@ -36,7 +34,7 @@ mFactory(factory)
 VListenerSocket::~VListenerSocket()
     {
     }
-        
+
 VSocket* VListenerSocket::accept()
     {
     if (mSocketID == kNoSocketID)
@@ -76,7 +74,7 @@ VSocket* VListenerSocket::accept()
         {
         ::memset(&clientaddr, 0, static_cast<Vu32> (clientaddrLength));
         handlerSockID = ::accept(mSocketID, (struct sockaddr*) &clientaddr, &clientaddrLength);
-        
+
         if (handlerSockID < 0)
             {
             throw VException("VListenerSocket::accept accept error, errno=%s", ::strerror(errno));
@@ -88,5 +86,10 @@ VSocket* VListenerSocket::accept()
         }
 
     return handlerSocket;
+    }
+
+void VListenerSocket::listen()
+    {
+    this->_listen(mBindAddress, mBacklog);
     }
 

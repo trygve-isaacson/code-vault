@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -49,19 +49,22 @@ That's it!
 class VListenerThread : public VThread
     {
     public:
-    
+
         /**
         Constructs the listener thread to listen on a specified port.
-        
+
         If you are using a VManagementInterface to manage your server behavior,
         you can supply it to the VListenerThread so that it can let the
         manager know when the thread starts and ends.
-        
+
         @param    name              a name for the thread, useful for debugging purposes
         @param    deleteSelfAtEnd   @see VThread
         @param    createDetached    @see VThread
         @param    manager           the object that receives notifications for this thread, or NULL
         @param    portNumber        the port number to listen on
+        @param    bindAddress       if empty, the socket will bind to INADDR_ANY (usually a good
+                                    default); if a value is supplied the socket will bind to the
+                                    supplied IP address (can be useful on a multi-homed server)
         @param    socketFactory     a factory for creating a VSocket for each incoming connection
         @param    threadFactory     a factory for creating a VSocketThread for
                                         each incoming connection, if sessionFactory is
@@ -74,12 +77,12 @@ class VListenerThread : public VThread
         @param    initiallyListening    true if the thread should be listening when it first starts;
                                         false means it won't listen until you call startListening()
         */
-        VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, VClientSessionFactory* sessionFactory=NULL, bool initiallyListening=true);
+        VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, const VString& bindAddress, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, VClientSessionFactory* sessionFactory=NULL, bool initiallyListening=true);
         /**
         Destructor.
         */
         virtual ~VListenerThread();
-        
+
         /**
         Stops the thread; for VListenerThread this also stops listening
         and stops the socket threads (threads running connections established
@@ -89,7 +92,7 @@ class VListenerThread : public VThread
         /**
         Run method, listens and then goes into a loop that accepts incoming
         connections until the thread has been externally stopped.
-        
+
         Each new VSocketThread is kept track of internally.
         */
         virtual void    run();
@@ -100,13 +103,13 @@ class VListenerThread : public VThread
         @param    socketThread    the thread that ended
         */
         void socketThreadEnded(VSocketThread* socketThread);
-        
+
         /**
         Returns the port number we're listening on.
         @return    the port number
         */
         int    getPortNumber() const;
-        
+
         /**
         Returns a list of information about all of this listener's
         current socket threads; note that because this information is
@@ -116,13 +119,13 @@ class VListenerThread : public VThread
         since been closed.
         */
         VSocketInfoVector enumerateActiveSockets();
-        
+
         /**
         Attempts to stop the specified socket thread that was created by this
         listener. Throws a VException if that socket thread no longer exists.
         These two parameters are used to identify the socket because the sock
         ID can re-used by another socket after a given socket is closed.
-        
+
         @param    socketID            the socket ID
         @param    localPortNumber    the socket's port number
         */
@@ -155,7 +158,7 @@ class VListenerThread : public VThread
         bool isListening() const { return mShouldListen; }
 
     private:
-    
+
         // Prevent copy construction and assignment since there is no provision for sharing the underlying thread
         // or the pointer instance variables.
         VListenerThread(const VListenerThread& other);
@@ -163,11 +166,12 @@ class VListenerThread : public VThread
 
         /**
         Performs the run() loop operations needed when we should be listening.
-        The run() method calls this when we are listening. So 
+        The run() method calls this when we are listening. So
         */
         void _runListening();
-    
+
         int                     mPortNumber;            ///< The port number we are listening on.
+        VString                 mBindAddress;           ///< The address to bind to (INADDR_ANY is used if the address is empty)
         bool                    mShouldListen;          ///< True if we should be listening; false if we should not. Controls run loops.
         VSocketFactory*         mSocketFactory;         ///< A factory for each incoming connection's VSocket.
         VSocketThreadFactory*   mThreadFactory;         ///< A factory for each incoming connection's VSocketThread.

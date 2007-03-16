@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -24,12 +24,12 @@ http://www.bombaydigital.com/
     associate a stream with a socket, and the upper layer stream classes to perform
     the actual socket i/o. And server implementors will similarly just be attaching
     a stream object to each socket that gets created for an incoming client connection.
-    
+
     Each socket platform needs to define an implementation of the
     concrete subclass VSocket, so there is currently one defined when compiling for
     BSD/Unix sockets and one for WinSock, though these are very similar because their
     platform APIs are different mostly in small ways.
-    
+
     Client code that needs to connect will instantiate a VSocket (whether this is the
     BSD version or the WinSock version just depends on what platform you are compiling
     on), and then presumably use a VSocketStream and a VIOStream to do i/o
@@ -37,9 +37,9 @@ http://www.bombaydigital.com/
     use a VListenerSocket, and turn each incoming connection into a VSocket and
     VSocketThread, both created via a factory that you can supply to define the
     concrete classes that are instantiated for each.
-    
+
 */
-    
+
 // We have to define VSocketID here because we don't include platform (it includes us).
 #ifdef VPLATFORM_WIN
     typedef SOCKET VSocketID;    ///< The platform-dependent definition of a socket identifier.
@@ -91,7 +91,7 @@ io.flush();<br>
 response = io.readU32();<br>
 <br>
 return response;<br>
-}    
+}
 </tt>
 
 @see    VSocketFactory
@@ -109,7 +109,7 @@ socket is:
 class VSocketBase
     {
     public:
-    
+
         /**
         Returns the current processor's IP address. If an error occurs, this
         function throws an exception containing the error code and message.
@@ -140,23 +140,34 @@ class VSocketBase
         static void netAddrToIPAddressString(VNetAddr netAddr, VString& ipAddress);
 
         /**
-        Constructs the object; does NOT open a connection.
+        Constructs the object with an already-opened low-level
+        socket connection identified by its ID.
         */
-        VSocketBase();
+        VSocketBase(VSocketID id);
+        /**
+        Constructs the object to use the specified host and port, but
+        does NOT open a connection yet (you must call connect() later to
+        establish the connection).
+        */
+        VSocketBase(const VString& hostName, int portNumber);
         /**
         Destructor, cleans up by closing the socket.
         */
         virtual ~VSocketBase();
 
         /**
-        Initializes the socket object by attaching it to an already-open socket.
-        This is the init method you would use if you are handing off the
-        lower level sockets between VSocket objects, or if you are talking
-        to a different API that opens the socket but you want to use it
-        with the VSocket classes.
-        @param    id    the id of the already-open socket
+        Associates this socket object with the specified socket id. This is
+        something you might use if you are managing sockets externally and
+        want to have a socket object own a socket temporarily.
+
+        Note that this method does not cause a previous socket to be closed,
+        nor does it update the name and port number properties of this object.
+        If you want those things to happen, you can call close() and
+        discoverHostAndPort() separately.
+
+        @param    id    the socket id of the socket to manage
         */
-        virtual void init(VSocketID id);
+        void setSockID(VSocketID id);
         /**
         Initializes the socket object by opening a connection to a server at the
         specified host and port.
@@ -164,28 +175,15 @@ class VSocketBase
         @param    hostName    the host name, numeric or not is fine
         @param    portNumber    the port number to connect to on the host
         */
-        virtual void init(const VString& hostName, int portNumber);
-        
+        virtual void setHostAndPort(const VString& hostName, int portNumber);
+
         // --------------- These are the various utility and accessor methods.
-        
+
         /**
         Returns the socket id.
         @return    the socket id
         */
         VSocketID getSockID() const;
-        /**
-        Associates this socket object with the specified socket id. This is
-        something you might use if you are managing sockets externally and
-        want to have a socket object own a socket temporarily.
-        
-        Note that this method does not cause a previous socket to be closed,
-        nor does it update the name and port number properties of this object.
-        If you want those things to happen, you can call close() and
-        discoverHostAndPort() separately.
-        
-        @param    id    the socket id of the socket to manage
-        */
-        void setSockID(VSocketID id);
         /**
         Returns the name or address of the host to which this socket is
         connected.
@@ -244,22 +242,16 @@ class VSocketBase
         occurred on this socket.
         */
         VDuration getIdleTime() const;
-        
+
         // --------------- These are the pure virtual methods that only a platform
         // subclass can implement.
 
         /**
-        Connects to the server.
+        Connects to the server; only valid for a newly created VSocket that
+        was initialized with host and port in the constructor or with a
+        call to setHostAndPort().
         */
-        virtual void connect() = 0;
-        /**
-        Starts listening for incoming connections. Only useful to call
-        with a VListenerSocket subclass, but needed here for class
-        hierarchy implementation reasons (namely, it is implemented by
-        the VSocket platform-specific class that VListenerSocket
-        derives from).
-        */
-        virtual void listen() = 0;
+        virtual void connect();
         /**
         Returns the number of bytes that are available to be read on this
         socket. If you do a read() on that number of bytes, you know that
@@ -269,10 +261,10 @@ class VSocketBase
         virtual int available() = 0;
         /**
         Reads data from the socket.
-        
+
         If you don't have a read timeout set up for this socket, then
         read will block until all requested bytes have been read.
-        
+
         @param    buffer            the buffer to read into
         @param    numBytesToRead    the number of bytes to read from the socket
         @return    the number of bytes read
@@ -280,10 +272,10 @@ class VSocketBase
         virtual int read(Vu8* buffer, int numBytesToRead) = 0;
         /**
         Writes data to the socket.
-        
+
         If you don't have a write timeout set up for this socket, then
         write will block until all requested bytes have been written.
-        
+
         @param    buffer            the buffer to read out of
         @param    numBytesToWrite    the number of bytes to write to the socket
         @return    the number of bytes written
@@ -314,14 +306,28 @@ class VSocketBase
         @param    valueLength    the length of the data pointed to by valuePtr
         */
         virtual void setSockOpt(int level, int name, void* valuePtr, int valueLength) = 0;
-        
+
         static const VSocketID kNoSocketID = -1;        ///< The sock id for a socket that is not connected.
         static const int kDefaultBufferSize = 65535;    ///< The default buffer size.
         static const int kDefaultServiceType = 0x08;    ///< The default service type.
         static const int kDefaultNoDelay = 1;           ///< The default nodelay value.
 
     protected:
-    
+
+        /**
+        Connects to the server.
+        */
+        virtual void _connect() = 0;
+        /**
+        Starts listening for incoming connections. Only useful to call
+        from a VListenerSocket subclass that exposes a public listen() API.
+        @param  bindAddress if empty, the socket will bind to INADDR_ANY (usually a good
+                                default); if a value is supplied the socket will bind to the
+                                supplied IP address (can be useful on a multi-homed server)
+        @param  backlog     the backlog value to supply to the ::listen() function
+        */
+        virtual void _listen(const VString& bindAddress, int backlog) = 0;
+
         /** Asserts if any invariant is broken. */
         void assertInvariant() const;
 
@@ -332,7 +338,6 @@ class VSocketBase
         struct timeval  mReadTimeOut;           ///< The read timeout value, if used.
         bool            mWriteTimeOutActive;    ///< True if writes should time out.
         struct timeval  mWriteTimeOut;          ///< The write timeout value, if used.
-        int             mListenBacklog;         ///< The listen backlog value.
         bool            mRequireReadAll;        ///< True if we throw when read returns less than # bytes asked for.
         Vs64            mNumBytesRead;          ///< Number of bytes read from this socket.
         Vs64            mNumBytesWritten;       ///< Number of bytes written to this socket.
@@ -347,7 +352,7 @@ the VSocketInfo was created.
 class VSocketInfo
     {
     public:
-    
+
         /**
         Constructs the object by copying the info from the socket.
         @param    socket    the socket to take the information from
@@ -357,7 +362,7 @@ class VSocketInfo
         Destructor.
         */
         virtual ~VSocketInfo() {}
-    
+
         VSocketID   mSocketID;          ///< The sock id.
         VString     mHostName;          ///< The name of the host to which the socket is connected.
         int         mPortNumber;        ///< The port number on the host to which the socket is connected.

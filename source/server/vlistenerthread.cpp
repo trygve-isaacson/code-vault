@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -19,9 +19,10 @@ http://www.bombaydigital.com/
 #include "vmessageoutputthread.h"
 #include <algorithm>
 
-VListenerThread::VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, VClientSessionFactory* sessionFactory, bool initiallyListening) :
+VListenerThread::VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, const VString& bindAddress, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, VClientSessionFactory* sessionFactory, bool initiallyListening) :
 VThread(name, deleteSelfAtEnd, createDetached, manager),
 mPortNumber(portNumber),
+mBindAddress(bindAddress),
 mShouldListen(initiallyListening),
 mSocketFactory(socketFactory),
 mThreadFactory(threadFactory),
@@ -59,9 +60,9 @@ void VListenerThread::socketThreadEnded(VSocketThread* socketThread)
     {
     VMutexLocker                        locker(&mSocketThreadsMutex);
     VSocketThreadPtrVector::iterator    position;
-    
+
     position = std::find(mSocketThreads.begin(), mSocketThreads.end(), socketThread);
-    
+
     if (position != mSocketThreads.end())
         mSocketThreads.erase(position);
     }
@@ -82,7 +83,7 @@ VSocketInfoVector VListenerThread::enumerateActiveSockets()
 
         info.push_back(oneSocketInfo);
         }
-    
+
     return info;
     }
 
@@ -103,7 +104,7 @@ void VListenerThread::stopSocketThread(VSocketID socketID, int localPortNumber)
             thread->closeAndStop();
             }
         }
-    
+
     if (! found)
         throw VException("VListenerThread::stopSocketThread did not find a socket with id %d and port %d.", socketID, localPortNumber);
     }
@@ -129,7 +130,7 @@ void VListenerThread::_runListening()
 
     try
         {
-        listenerSocket = new VListenerSocket(mPortNumber, mSocketFactory);
+        listenerSocket = new VListenerSocket(mPortNumber, mBindAddress, mSocketFactory);
         listenerSocket->listen();
 
         if (mManager != NULL)
@@ -138,11 +139,11 @@ void VListenerThread::_runListening()
         while (mShouldListen && this->isRunning())
             {
             VSocket*    theSocket = listenerSocket->accept();
-            
+
             if (theSocket != NULL)
                 {
                 VMutexLocker    locker(&mSocketThreadsMutex);
-                
+
                 if (mSessionFactory == NULL)
                     {
                     VSocketThread*    thread = mThreadFactory->createThread(theSocket, this);

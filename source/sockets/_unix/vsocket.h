@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -62,11 +62,16 @@ the other platforms.
 class VSocket : public VSocketBase
     {
     public:
-    
+
         /**
-        Constructs the socket object without connecting.
+        Constructs the object with an already-opened low-level
+        socket connection identified by its ID.
         */
-        VSocket();
+        VSocket(VSocketID id);
+        /**
+        Constructs the object; does NOT open a connection.
+        */
+        VSocket(const VString& hostName, int portNumber);
         /**
         Destructor, cleans up by closing the socket.
         */
@@ -76,18 +81,6 @@ class VSocket : public VSocketBase
         // methods that only a platform subclass can implement.
 
         /**
-        Connects to the server.
-        */
-        virtual void connect();
-        /**
-        Starts listening for incoming connections. Only useful to call
-        with a VListenerSocket subclass, but needed here for class
-        hierarchy implementation reasons (namely, it is implemented by
-        the VSocket platform-specific class that VListenerSocket
-        derives from).
-        */
-        virtual void listen();
-        /**
         Returns the number of bytes that are available to be read on this
         socket. If you do a read() on that number of bytes, you know that
         it will not block.
@@ -96,10 +89,10 @@ class VSocket : public VSocketBase
         virtual int available();
         /**
         Reads data from the socket.
-        
+
         If you don't have a read timeout set up for this socket, then
         read will block until all requested bytes have been read.
-        
+
         @param    buffer            the buffer to read into
         @param    numBytesToRead    the number of bytes to read from the socket
         @return    the number of bytes read
@@ -107,10 +100,10 @@ class VSocket : public VSocketBase
         virtual int read(Vu8* buffer, int numBytesToRead);
         /**
         Writes data to the socket.
-        
+
         If you don't have a write timeout set up for this socket, then
         write will block until all requested bytes have been written.
-        
+
         @param    buffer            the buffer to read out of
         @param    numBytesToWrite    the number of bytes to write to the socket
         @return    the number of bytes written
@@ -139,7 +132,24 @@ class VSocket : public VSocketBase
         virtual void setSockOpt(int level, int name, void* valuePtr, int valueLength);
 
     protected:
-    
+
+        /**
+        Connects to the server.
+        */
+        virtual void _connect();
+        /**
+        Starts listening for incoming connections. Only useful to call
+        with a VListenerSocket subclass, but needed here for class
+        hierarchy implementation reasons (namely, it is implemented by
+        the VSocket platform-specific class that VListenerSocket
+        derives from).
+        @param  bindAddress if empty, the socket will bind to INADDR_ANY (usually a good
+                                default); if a value is supplied the socket will bind to the
+                                supplied IP address (can be useful on a multi-homed server)
+        @param  backlog     the backlog value to supply to the ::listen() function
+        */
+        virtual void _listen(const VString& bindAddress, int backlog);
+
         void assertInvariant() const;
 
 #ifdef V_BSD_ENHANCED_SOCKETS
@@ -149,11 +159,11 @@ class VSocket : public VSocketBase
         void _tcpGetAddrInfo(struct addrinfo **res);                                                ///< Calls low-level getaddrinfo()
         int _getAddrInfo(struct addrinfo* hints, struct addrinfo** res, bool useHostName=true);    ///< Calls low-level _getAddrInfo()
         VSocketID _tcpConnectWAddrInfo(struct addrinfo * const resInput);                                ///< Calls low-level socket() and connect()
-        
+
         static VMutex gAddrInfoMutex;    ///< getaddrinfo() is not thread-safe, so we have to protect ourselves.
 
 #endif /* V_BSD_ENHANCED_SOCKETS */
-        
+
         static bool gStaticInited;  ///< Used internally to initialize at startup.
         static bool staticInit();   ///< Used internally to initialize at startup.
     };

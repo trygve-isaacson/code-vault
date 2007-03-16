@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -20,17 +20,17 @@ void VSocketBase::getLocalHostIPAddress(VString& ipAddress)
         throw VException("VSocketBase::getLocalHostIPAddress: gethostname returned %d (errno %d = %s)", result, (int) errno, ::strerror(errno));
 
     struct hostent* ent = ::gethostbyname(name);
-    
+
     if (ent == NULL)
         throw VException("VSocketBase::getLocalHostIPAddress: gethostbyname returned null (h_errno %d)", (int) h_errno);
 
     in_addr        addr;
-    
+
     if (ent->h_addr_list[0] == NULL)
         throw VException("VSocketBase::getLocalHostIPAddress: no address entries.");
 
     addr.s_addr = *((in_addr_t*) (ent->h_addr_list[0]));
-    
+
     ipAddress = ::inet_ntoa(addr);
     }
 
@@ -45,21 +45,35 @@ VNetAddr VSocketBase::ipAddressStringToNetAddr(const VString& ipAddress)
 void VSocketBase::netAddrToIPAddressString(VNetAddr netAddr, VString& ipAddress)
     {
     in_addr    addr;
-    
+
     addr.s_addr = (in_addr_t) netAddr;
-    
+
     ipAddress = ::inet_ntoa(addr);
     }
 
-VSocketBase::VSocketBase() :
-mSocketID(kNoSocketID),
+VSocketBase::VSocketBase(VSocketID id) :
+mSocketID(id),
 // mHostName constructs to empty
 mPortNumber(0),
 mReadTimeOutActive(false),
 // mReadTimeOut is not active
 mWriteTimeOutActive(false),
 // mWriteTimeOut is not active
-mListenBacklog(0),
+mRequireReadAll(true),
+mNumBytesRead(0),
+mNumBytesWritten(0)
+// mLastEventTime constructs to now
+    {
+    }
+
+VSocketBase::VSocketBase(const VString& hostName, int portNumber) :
+mSocketID(kNoSocketID),
+mHostName(hostName),
+mPortNumber(portNumber),
+mReadTimeOutActive(false),
+// mReadTimeOut is not active
+mWriteTimeOutActive(false),
+// mWriteTimeOut is not active
 mRequireReadAll(true),
 mNumBytesRead(0),
 mNumBytesWritten(0)
@@ -72,20 +86,15 @@ VSocketBase::~VSocketBase()
     VSocketBase::close();
     }
 
-void VSocketBase::init(VSocketID id)
-    {
-    mSocketID = id;
-
-    this->discoverHostAndPort();
-    this->setDefaultSockOpt();
-    }
-
-void VSocketBase::init(const VString& hostName, int portNumber)
+void VSocketBase::setHostAndPort(const VString& hostName, int portNumber)
     {
     mHostName = hostName;
     mPortNumber = portNumber;
-    
-    this->connect();
+    }
+
+void VSocketBase::connect()
+    {
+    this->_connect();
     this->setDefaultSockOpt();
     }
 
