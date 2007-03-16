@@ -53,15 +53,15 @@ void VMessageOutputThread::run()
 		connection has been closed normally, because we are an output thread. So any exceptions
 		that land here uncaught are socket i/o errors and are logged as such.
 		*/
-		VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] VMessageOutputThread::run: Exiting due to top level exception #%d '%s'.", mName.chars(), ex.getError(), ex.what()));
+		VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageOutputThread::run: Exiting due to top level exception #%d '%s'.", mName.chars(), ex.getError(), ex.what()));
 		}
 	catch (std::exception& ex)
 		{
-		VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] VMessageOutputThread::run: Exiting due to top level exception '%s'.", mName.chars(), ex.what()));
+		VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageOutputThread::run: Exiting due to top level exception '%s'.", mName.chars(), ex.what()));
 		}
 	catch (...)
 		{
-		VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] VMessageOutputThread::run: Exiting due to top level unknown exception.", mName.chars()));
+		VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageOutputThread::run: Exiting due to top level unknown exception.", mName.chars()));
 		}
 
 	if (mSession != NULL)
@@ -101,7 +101,7 @@ void VMessageOutputThread::_processNextOutboundMessage()
 		{
 		if (this->_shouldSendOutboundMessage(message))
 		    {
-    		VLOGGER_NAMED_LEVEL(VMessage::kMessageLoggerName, VLogger::kDebug+3, VString("[%s] VMessageOutputThread::run: Sending message@0x%08X.", mName.chars(), message));
+    		VLOGGER_MESSAGE_LEVEL(VMessage::kDispatchDetailLevel, VString("[%s] VMessageOutputThread::run: Sending message@0x%08X.", mName.chars(), message));
 			message->send(mName, mOutputStream);
 			}
 
@@ -116,7 +116,7 @@ bool VMessageOutputThread::_shouldSendOutboundMessage(VMessage* message)
     // In that case, we do not want to send the message to this client.
 	if (mSession->isClientGoingOffline())
 	    {
-		VLOGGER_NAMED_WARN(VMessage::kMessageLoggerName, VString("VMessageOutputThread::_shouldSendOutboundMessage: NOT sending message@0x%08X to offline session [%s], presumably in process of session shutdown.", message, mSession->getClientAddress().chars()));
+		VLOGGER_MESSAGE_WARN(VString("VMessageOutputThread::_shouldSendOutboundMessage: NOT sending message@0x%08X to offline session [%s], presumably in process of session shutdown.", message, mSession->getClientAddress().chars()));
 	    return false;
 	    }
     

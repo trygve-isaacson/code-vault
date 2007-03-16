@@ -74,7 +74,7 @@ VMessage* VMessagePool::get(VMessageID messageID)
 		result = mFactory->instantiateNewMessage(messageID, this);
 		mNumMessagesCreated++;
 
-		VLOGGER_LEVEL(VMessage::kMessagePoolTraceLogLevel, VString("VMessagePool::get: created new message @0x%08X", result));
+		VLOGGER_MESSAGE_LEVEL(VMessage::kPoolTraceLevel, VString("VMessagePool::get: created new message @0x%08X", result));
 		}
 	else
 		{
@@ -85,7 +85,7 @@ VMessage* VMessagePool::get(VMessageID messageID)
 		
 		mNumMessagesReused++;
 
-		VLOGGER_LEVEL(VMessage::kMessagePoolTraceLogLevel, VString("VMessagePool::get: reused pool message @0x%08X", result));
+		VLOGGER_MESSAGE_LEVEL(VMessage::kPoolTraceLevel, VString("VMessagePool::get: reused pool message @0x%08X", result));
 		}
 
 	mCurrentOut++;
@@ -102,14 +102,14 @@ void VMessagePool::release(VMessage* message)
 	
 	if ((mMaxInPool == kUnlimitedPoolSize) || (((int) mPooledMessages.size()) < mMaxInPool))
 		{
-		VLOGGER_LEVEL(VMessage::kMessagePoolTraceLogLevel, VString("VMessagePool::release: pooling message @0x%08X", message));
+		VLOGGER_MESSAGE_LEVEL(VMessage::kPoolTraceLevel, VString("VMessagePool::release: pooling message @0x%08X", message));
 
 		mPooledMessages.push_back(message);
 		mHighWaterMarkIn = V_MAX(mHighWaterMarkIn, (int) mPooledMessages.size());
 		}
 	else
 		{
-		VLOGGER_LEVEL(VMessage::kMessagePoolTraceLogLevel, VString("VMessagePool::release: deleting message @0x%08X", message));
+		VLOGGER_MESSAGE_LEVEL(VMessage::kPoolTraceLevel, VString("VMessagePool::release: deleting message @0x%08X", message));
 
 		delete message;
 		mNumMessagesDestroyed++;
@@ -118,14 +118,18 @@ void VMessagePool::release(VMessage* message)
 
 void VMessagePool::printStats()
 	{
-	VLOGGER_LEVEL(VMessage::kMessagePoolTraceLogLevel, VString("VMessagePool.mMaxInPool            = %d", mMaxInPool));
-	VLOGGER_LEVEL(VMessage::kMessagePoolTraceLogLevel, VString("VMessagePool.mHighWaterMarkIn      = %d", mHighWaterMarkIn));
-	VLOGGER_LEVEL(VMessage::kMessagePoolTraceLogLevel, VString("VMessagePool.mPooledMessages.size  = %d", (int) mPooledMessages.size()));
-	VLOGGER_LEVEL(VMessage::kMessagePoolTraceLogLevel, VString("VMessagePool.mHighWaterMarkOut     = %d", mHighWaterMarkOut));
-	VLOGGER_LEVEL(VMessage::kMessagePoolTraceLogLevel, VString("VMessagePool.mCurrentOut           = %d", mCurrentOut));
-	VLOGGER_LEVEL(VMessage::kMessagePoolTraceLogLevel, VString("VMessagePool.mNumMessagesCreated   = %d", mNumMessagesCreated));
-	VLOGGER_LEVEL(VMessage::kMessagePoolTraceLogLevel, VString("VMessagePool.mNumMessagesDestroyed = %d", mNumMessagesDestroyed));
-	VLOGGER_LEVEL(VMessage::kMessagePoolTraceLogLevel, VString("VMessagePool.mNumMessagesReused    = %d", mNumMessagesReused));
+    VLogger* logger = VLogger::getLogger(VMessage::kMessageLoggerName);
+    if (! logger->isEnabledFor(VMessage::kPoolTraceLevel))
+        return;
+
+	logger->log(VMessage::kPoolTraceLevel, VString("VMessagePool.mMaxInPool            = %d", mMaxInPool));
+	logger->log(VMessage::kPoolTraceLevel, VString("VMessagePool.mHighWaterMarkIn      = %d", mHighWaterMarkIn));
+	logger->log(VMessage::kPoolTraceLevel, VString("VMessagePool.mPooledMessages.size  = %d", (int) mPooledMessages.size()));
+	logger->log(VMessage::kPoolTraceLevel, VString("VMessagePool.mHighWaterMarkOut     = %d", mHighWaterMarkOut));
+	logger->log(VMessage::kPoolTraceLevel, VString("VMessagePool.mCurrentOut           = %d", mCurrentOut));
+	logger->log(VMessage::kPoolTraceLevel, VString("VMessagePool.mNumMessagesCreated   = %d", mNumMessagesCreated));
+	logger->log(VMessage::kPoolTraceLevel, VString("VMessagePool.mNumMessagesDestroyed = %d", mNumMessagesDestroyed));
+	logger->log(VMessage::kPoolTraceLevel, VString("VMessagePool.mNumMessagesReused    = %d", mNumMessagesReused));
 
     Vs64 totalMessageBytes = 0;
 	VMutexLocker locker(&mMessagePoolMutex);
@@ -135,6 +139,6 @@ void VMessagePool::printStats()
 		}
     locker.unlock();
 
-	VLOGGER_LEVEL(VMessage::kMessagePoolTraceLogLevel, VString("VMessagePool.mPooledMessages bytes = %lld", totalMessageBytes));
+	logger->log(VMessage::kPoolTraceLevel, VString("VMessagePool.mPooledMessages bytes = %lld", totalMessageBytes));
 	}
 

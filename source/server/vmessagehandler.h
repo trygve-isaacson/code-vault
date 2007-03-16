@@ -138,10 +138,31 @@ class VMessageHandler
 	
 		/**
 		Logs (at the appropriate log level) the message handler name to
-		indicate that the handler has been dispatched to handle a message.
-		@param	messageHandlerName	the handler name, which will be logged
+		indicate that the handler has been invoked or has ended.
+		@param	dispatchInfo	the info to be logged
 		*/
-		void _logSimpleDispatch(const VString& messageHandlerName) const;
+		void _logSimpleDispatch(const VString& dispatchInfo) const;
+		/**
+		Logs (at the appropriate log level) highly detailed status info
+        about message handling dispatch.
+		@param	dispatchInfo	the info to be logged
+		*/
+		void _logDetailedDispatch(const VString& dispatchInfo) const;
+		/**
+		Logs (at the appropriate log level) simple content info for a message
+        that has been received or will be sent. You should only supply a
+        simple form of the data, not a full hex dump (see _logContentHexDump).
+		@param	contentInfo	the info to be logged
+		*/
+		void _logMessageContentInfo(const VString& contentInfo) const;
+		/**
+		Logs (at the appropriate log level) full hex dump content info for a message
+        that has been received or will be sent..
+		@param	info	informational text to label the output
+		@param	buffer	the buffer to dump in hex form
+		@param	length	the length of the buffer (or how much of it to dump)
+		*/
+		void _logMessageContentHexDump(const VString& info, const Vu8* buffer, Vs64 length) const;
 		/**
 		Returns a logger if message details should be logged. The message
 		handler classes will call this before emitting the detailed log output,
@@ -151,10 +172,6 @@ class VMessageHandler
 		@return	a logger, if message detail should be logged; NULL if not
 		*/
 		VLogger* _getDetailsLogger() const;
-	
-		static const int kMessageDispatchSimpleLogLevel = VLogger::kDebug;
-		static const int kMessageDispatchDetailLogLevel = VLogger::kDebug + 2;
-		static const int kMessageDispatchLifecycleLogLevel = VLogger::kTrace;
 
 		VMessage*		mMessage;	///< The message this handler is to process.
 		VServer*        mServer;	///< The server in which we are running.

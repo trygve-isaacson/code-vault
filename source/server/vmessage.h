@@ -28,6 +28,17 @@ typedef Vs16 VMessageID;        ///< Message identifier (verb) to distinguish it
 
 class VMessagePool;
 
+/** Emits a message at kFatal level to the message logger. */
+#define VLOGGER_MESSAGE_FATAL(message) VLogger::getLogger(VMessage::kMessageLoggerName)->log(VLogger::kFatal, __FILE__, __LINE__, message)
+/** Emits a message at kError level to the message logger. */
+#define VLOGGER_MESSAGE_ERROR(message) VLogger::getLogger(VMessage::kMessageLoggerName)->log(VLogger::kError, __FILE__, __LINE__, message)
+/** Emits a message at kWarn level to the message logger. */
+#define VLOGGER_MESSAGE_WARN(message) VLogger::getLogger(VMessage::kMessageLoggerName)->log(VLogger::kWarn, NULL, 0, message)
+/** Emits a message at specified level to the message logger; use the level constants defined in VMessage. */
+#define VLOGGER_MESSAGE_LEVEL(level, message) VLogger::getLogger(VMessage::kMessageLoggerName)->log(level, NULL, 0, message)
+/** Emits a hex dump at a specified level to the specified logger. */
+#define VLOGGER_MESSAGE_HEXDUMP(message, buffer, length) VLogger::getLogger(VMessage::kMessageLoggerName)->logHexDump(VMessage::kContentHexDumpLevel, message, buffer, length)
+
 /**
 VMessage is an abstract base class that implements the basic messaging
 capabilities; the concrete subclass must implement the send() and receive()
@@ -49,7 +60,7 @@ class VMessage : public VBinaryIOStream
 		suitable for use with receive(). You can also set the
 		message ID afterwards with setMessageID().
 		*/
-		VMessage(Vs64 initialBufferSize=1024);
+		VMessage();
 		/**
 		Constructs a message with a message ID, suitable for use
 		with send(), optionally writing message data first.
@@ -180,34 +191,28 @@ class VMessage : public VBinaryIOStream
 		*/
 		void removeBroadcastTarget();
 
-		/*
-		We use more granular log levels, so that the amount of log
-		output we generate can be fine-tuned by the user.
-		The message handlers emit a message at kDebug level when
-		they are called.
-		The message handlers emit a message at kDebug + 2 level
-		with their nicely-displayed message data.
-		The prettier but detailed message element logging is done
-		by the message handlers at kDebug + 2 level.
-		So:
-		kDebug + 0 : the dispatched message handler logs its name/ID.
-		kDebug + 1 : the message properties (ID,length) are logged before dispatch
-		kDebug + 2 : the dispatched message handler logs the message fields in readable form
-		kDebug + 3 : the message data is logged in hex before dispatch
-		(Similar behavior for outbound messages.)
-
-		Also, we trace some troubleshooting diagnostic items at level 100 (kAll).
-		*/
-		static const int kMessageReceiveSimpleLogLevel	= VLogger::kDebug + 1;
-		static const int kMessageReceiveHexDumpLogLevel	= VLogger::kDebug + 3;
-		static const int kMessageReceiveTraceLogLevel	= VLogger::kTrace;
-		static const int kMessageSendSimpleLogLevel		= VLogger::kDebug + 1;
-		static const int kMessagePostHexDumpLogLevel	= VLogger::kDebug + 3;
-		static const int kMessageSendHexDumpLogLevel	= VLogger::kDebug + 4;
-		static const int kMessagePoolTraceLogLevel		= VLogger::kTrace;
-		
+        /*
+        These are the log level definitions used for consistent logging
+        of message traffic, processing, pooling, and dispatch. Use these
+        levels and log to the logger named VMessage::kMessageLoggerName
+        in order to be consistent in message logging.
+        
+        The format of logged messages should be:
+         [session-label] data
+        where session-label is:
+         id:ip:port
+        where id is some descriptive name of the session that does not distinguish which
+        client it is (since the ip:port does that)
+        
+        Use the macros defined at the top of this file to emit message log output.
+        */
 		static const VString kMessageLoggerName;
-
+        static const int kDispatchLifecycleLevel    = VLogger::kInfo;
+        static const int kContentInfoLevel          = VLogger::kInfo;
+        static const int kContentHexDumpLevel       = VLogger::kDebug;
+        static const int kDispatchDetailLevel       = VLogger::kDebug;
+        static const int kPoolTraceLevel            = VLogger::kTrace;
+        
 	protected:
 
 		mutable VMemoryStream	mMessageDataBuffer;		///< The buffer that holds the message data. Mutable because copyMessageData needs to touch it and restore it.

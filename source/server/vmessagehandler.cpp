@@ -9,6 +9,7 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vsocketthread.h"
 #include "vmessagepool.h"
+#include "vclientsession.h"
 
 // VMessageHandler ------------------------------------------------------------
 
@@ -51,14 +52,14 @@ mThread(thread),
 mPool(pool),
 mLocker(mutex)
 	{
-	VLOGGER_NAMED_LEVEL(VMessage::kMessageLoggerName, kMessageDispatchLifecycleLogLevel, VString("[%s] VMessageHandler@0x%08X begin.", mThread->name().chars(), this));
+	this->_logDetailedDispatch(VString("VMessageHandler@0x%08X for message ID=%d constructed.", this, (int) m->getMessageID()));
 	}
 
 VMessageHandler::~VMessageHandler()
 	{
 	try
 		{
-		VLOGGER_NAMED_LEVEL(VMessage::kMessageLoggerName, kMessageDispatchLifecycleLogLevel, VString("[%s] VMessageHandler@0x%08X end.", mThread->name().chars(), this));
+		this->_logDetailedDispatch(VString("VMessageHandler@0x%08X destructed.", this));
 		}
 	catch (...) {} // prevent exception from propagating
 	}
@@ -74,23 +75,38 @@ VMessage* VMessageHandler::getMessage(VMessageID messageID)
 	if (mPool == NULL)
 	    {
 		VString error("VMessageHandler::getMessage: mPool is null.");
-		VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, error);
+		VLOGGER_MESSAGE_FATAL(error);
 		throw VException(error);
     	}
 
     return mPool->get(messageID);
 	}
 
-void VMessageHandler::_logSimpleDispatch(const VString& messageHandlerName) const
+void VMessageHandler::_logSimpleDispatch(const VString& dispatchInfo) const
 	{
-	VLOGGER_NAMED_LEVEL(VMessage::kMessageLoggerName, kMessageDispatchSimpleLogLevel, VString("[%s] VMessageHandler@0x%08X %s", mThread->name().chars(), this, messageHandlerName.chars()));
+	VLOGGER_MESSAGE_LEVEL(VMessage::kDispatchLifecycleLevel, VString("[%s] %s", (mSession == NULL ? mThread->name().chars() : mSession->getName().chars()), dispatchInfo.chars()));
+	}
+
+void VMessageHandler::_logDetailedDispatch(const VString& dispatchInfo) const
+	{
+	VLOGGER_MESSAGE_LEVEL(VMessage::kDispatchDetailLevel, VString("[%s] %s", (mSession == NULL ? mThread->name().chars() : mSession->getName().chars()), dispatchInfo.chars()));
+	}
+
+void VMessageHandler::_logMessageContentInfo(const VString& contentInfo) const
+	{
+	VLOGGER_MESSAGE_LEVEL(VMessage::kContentInfoLevel, VString("[%s] %s", (mSession == NULL ? mThread->name().chars() : mSession->getName().chars()), contentInfo.chars()));
+	}
+
+void VMessageHandler::_logMessageContentHexDump(const VString& info, const Vu8* buffer, Vs64 length) const
+	{
+	VLOGGER_MESSAGE_HEXDUMP(VString("[%s] %s", (mSession == NULL ? mThread->name().chars() : mSession->getName().chars()), info.chars()), buffer, length);
 	}
 
 VLogger* VMessageHandler::_getDetailsLogger() const
 	{
-	VLogger*	logger = VLogger::getLogger(VMessage::kMessageLoggerName);
+	VLogger* logger = VLogger::getLogger(VMessage::kMessageLoggerName);
 	
-	if (logger->isEnabledFor(kMessageDispatchDetailLogLevel))
+	if (logger->isEnabledFor(VMessage::kContentInfoLevel))
 		return logger;
 	else
 		return NULL;
@@ -102,6 +118,6 @@ void VMessageHandler::logMessageDetails(const VString& details, VLogger* logger)
 		logger = this->_getDetailsLogger();
 	
 	if (logger != NULL)
-		logger->log(kMessageDispatchDetailLogLevel, NULL, 0, VString("[%s] %s", mThread->name().chars(), details.chars()));
+		logger->log(VMessage::kContentInfoLevel, NULL, 0, VString("[%s] %s", (mSession == NULL ? mThread->name().chars() : mSession->getName().chars()), details.chars()));
 	}
 

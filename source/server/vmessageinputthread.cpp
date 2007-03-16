@@ -52,19 +52,19 @@ void VMessageInputThread::run()
 	catch (const VEOFException& /*ex*/)
 		{
 		// Usually just means the client has closed the connection.
-		VLOGGER_NAMED_DEBUG(VMessage::kMessageLoggerName, VString("[%s] VMessageInputThread connection closed.", mName.chars()));
+		VLOGGER_MESSAGE_LEVEL(VLogger::kDebug, VString("[%s] VMessageInputThread connection closed.", mName.chars()));
 		}
 	catch (const VException& ex)
 		{
-		VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] VMessageInputThread exiting due to top level exception #%d '%s'.", mName.chars(), ex.getError(), ex.what()));
+		VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageInputThread exiting due to top level exception #%d '%s'.", mName.chars(), ex.getError(), ex.what()));
 		}
 	catch (std::exception& ex)
 		{
-		VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] VMessageInputThread exiting due to top level exception '%s'.", mName.chars(), ex.what()));
+		VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageInputThread exiting due to top level exception '%s'.", mName.chars(), ex.what()));
 		}
 	catch (...)
 		{
-		VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] VMessageInputThread exiting due to top level unknown exception.", mName.chars()));
+		VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageInputThread exiting due to top level unknown exception.", mName.chars()));
 		}
 
 	// This thread is done. Print our accumulated stats.
@@ -119,7 +119,7 @@ void VMessageInputThread::_dispatchMessage(VMessage* message)
 	
 	if (handler == NULL)
 		{
-		VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] VMessageInputThread::_dispatchMessage: No message hander defined for message %d.", mName.chars(), (int) message->getMessageID()));
+		VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageInputThread::_dispatchMessage: No message hander defined for message %d.", mName.chars(), (int) message->getMessageID()));
         this->_handleNoMessageHandler(message);
 		VMessagePool::releaseMessage(message, mMessagePool);
 		}
@@ -139,15 +139,15 @@ void VMessageInputThread::_dispatchMessage(VMessage* message)
 			}
 		catch (const VException& ex)
 			{
-			VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] VMessageInputThread::_dispatchMessage: Caught exception for message %d: #%d %s", mName.chars(), (int) message->getMessageID(), ex.getError(), ex.what()));
+			VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageInputThread::_dispatchMessage: Caught exception for message %d: #%d %s", mName.chars(), (int) message->getMessageID(), ex.getError(), ex.what()));
 			}
 		catch (const std::exception& e)
 			{
-			VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] VMessageInputThread::_dispatchMessage: Caught exception for message ID %d: %s", mName.chars(), (int) message->getMessageID(), e.what()));
+			VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageInputThread::_dispatchMessage: Caught exception for message ID %d: %s", mName.chars(), (int) message->getMessageID(), e.what()));
 			}
 		catch (...)
 			{
-			VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] VMessageInputThread::_dispatchMessage: Caught unknown exception for message ID %d.", mName.chars(), (int) message->getMessageID()));
+			VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageInputThread::_dispatchMessage: Caught unknown exception for message ID %d.", mName.chars(), (int) message->getMessageID()));
 			}
 		
 		handler->releaseMessage();	// handler might not actually release message (processMessage may have re-used it)
@@ -175,7 +175,7 @@ void VBentoMessageInputThread::_handleNoMessageHandler(VMessage* message)
 
     VString bentoText;
     responseData.writeToBentoTextString(bentoText);
-    VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] Error Reply: %s", mName.chars(), bentoText.chars()));
+    VLOGGER_MESSAGE_ERROR(VString("[%s] Error Reply: %s", mName.chars(), bentoText.chars()));
 
 	VMessage* response = mMessagePool->get();
     responseData.writeToStream(*response);
@@ -198,7 +198,7 @@ void VBentoMessageInputThread::_callProcessMessage(VMessageHandler* handler)
 
         VString bentoText;
         responseData.writeToBentoTextString(bentoText);
-        VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, VString("[%s] Error Reply: %s", mName.chars(), bentoText.chars()));
+        VLOGGER_MESSAGE_ERROR(VString("[%s] Error Reply: %s", mName.chars(), bentoText.chars()));
 
         VMessage* response = mMessagePool->get();
         responseData.writeToStream(*response);

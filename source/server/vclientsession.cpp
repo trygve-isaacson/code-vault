@@ -18,7 +18,8 @@ http://www.bombaydigital.com/
 
 // VClientSession --------------------------------------------------------------
 
-VClientSession::VClientSession(VServer* server, const VString& clientType, VSocket* socket) :
+VClientSession::VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket) :
+mName(sessionBaseName),
 // mMutex -> unlocked
 mServer(server),
 mClientType(clientType),
@@ -36,6 +37,7 @@ mIOStream(mSocketStream)
 	socket->getHostName(mClientIP);
 	mClientPort = socket->getPortNumber();
     mClientAddress.format("%s:%d", mClientIP.chars(), mClientPort);
+    mName.format("%s:%s:%d", sessionBaseName.chars(), mClientIP.chars(), mClientPort);
     }
 
 VClientSession::~VClientSession()
@@ -72,9 +74,9 @@ void VClientSession::shutdown(VThread* callingThread)
 	mIsShuttingDown = true;
 
 	if (callingThread == NULL)
-		VLOGGER_INFO(VString("[%s] VClientSession::shutdown: Server requested shutdown of VClientSession@0x%08X.", this->getClientAddress().chars(), this));
+		VLOGGER_DEBUG(VString("[%s] VClientSession::shutdown: Server requested shutdown of VClientSession@0x%08X.", this->getClientAddress().chars(), this));
 	else
-		VLOGGER_INFO(VString("[%s] VClientSession::shutdown: Thread [%s] requested shutdown of VClientSession@0x%08X.", this->getClientAddress().chars(), callingThread->name().chars(), this));
+		VLOGGER_DEBUG(VString("[%s] VClientSession::shutdown: Thread [%s] requested shutdown of VClientSession@0x%08X.", this->getClientAddress().chars(), callingThread->name().chars(), this));
 
 	if (mInputThread != NULL)
 		{

@@ -45,11 +45,14 @@ class VClientSession
     
         /**
         Initializes the session object.
+        @param  sessionBaseName used to prefix unique info to build mName
         @param  server      the server that keeps track of the session
         @param  clientType  a string to distinguish the type of session
         @param  socket      the socket the session is using
         */
-        VClientSession(VServer* server, const VString& clientType, VSocket* socket);
+        VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket);
+        
+        const VString& getName() const { return mName; }
         
         const VString& getClientType() const { return mClientType; }
         VMessageInputThread* getInputThread() const { return mInputThread; }
@@ -124,6 +127,7 @@ class VClientSession
     
         virtual ~VClientSession(); // protected because only our _selfDestruct knows what how to delete us correctly
     
+        VString                 mName;          ///< A name for the session to use in logging; built from supplied base name + IP address + port.
         VMutex                  mMutex;         ///< A mutex we use to enforce sequential processing of outbound messages, and to protect our task list.
         VServer*                mServer;        ///< The server that keeps track of this session.
         VString                 mClientType;    ///< A string distinguishing this type of session.
