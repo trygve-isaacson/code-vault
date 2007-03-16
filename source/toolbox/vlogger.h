@@ -410,7 +410,7 @@ class VInterceptLogger : public VLogger
         const VString& getLastMessage() const { return mLastLoggedMessage; }
 
     protected:
-        virtual void emit(int logLevel, const char* file, int line, const char* inFormat, va_list args);
+        virtual void emit(int logLevel, const char* file, int line, const VString& message);
         virtual void emitRawLine(const VString& line);
 
     private:

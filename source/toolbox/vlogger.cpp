@@ -400,11 +400,11 @@ bool VInterceptLogger::sawExpectedMessage(const VString& inMessage)
     return (mLastLoggedMessage == inMessage);
     }
 
-
-void VInterceptLogger::emit(int /*logLevel*/, const char* /*file*/, int /*line*/, const char* inFormat, va_list args)
+void VInterceptLogger::emit(int /*logLevel*/, const char* /*file*/, int /*line*/, const VString& message)
     {
-    VString    message;
-    message.vaFormat(inFormat, args);
+    // The intercept logger does not want the supplied message to be
+    // time-stamped or have file/line information included, because a
+    // comparison will be done against just the logged message itself.
     this->emitRawLine(message);
     }
 
