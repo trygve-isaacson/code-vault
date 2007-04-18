@@ -33,7 +33,13 @@ bool VSocket::staticInit()
     return success;
     }
 
-VSocket::VSocket()
+VSocket::VSocket(VSocketID id) :
+VSocketBase(id)
+    {
+    }
+
+VSocket::VSocket(const VString& hostName, int portNumber) :
+VSocketBase(hostName, portNumber)
     {
     }
 

@@ -15,6 +15,9 @@ VSocketFactory::VSocketFactory()
 VSocket* VSocketFactory::createSocket(VSocketID socketID)
     {
     VSocket* theSocket = new VSocket(socketID);
+    theSocket->discoverHostAndPort();
+    theSocket->setDefaultSockOpt();
+
     return theSocket;
     }
 
