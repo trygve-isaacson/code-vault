@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -166,7 +166,16 @@ void VSettingsNode::getString(const VString& path, VString& value, const VString
     const VSettingsNode*    nodeForPath = this->findNode(path);
 
     if (nodeForPath != NULL)
-        nodeForPath->getStringValue(value);
+        {
+        try
+            {
+            nodeForPath->getStringValue(value);
+            }
+        catch (const VException& /*ex*/)
+            {
+            value = defaultValue;
+            }
+        }
     else
         value = defaultValue;
     }
@@ -993,6 +1002,23 @@ void VSettingsXMLParser::parseLine()
                     this->accumulate(c);
                 break;
 
+            case kXMLVersion1_open_question:
+                if (c.charValue() == '?')
+                    this->changeState(kXMLVersion3_close_question);
+                else if (c.charValue() == '\"')
+                    this->changeState(kXMLVersion2_in_quote);
+                break;
+
+            case kXMLVersion2_in_quote:
+                if (c.charValue() == '\"')
+                    this->changeState(kXMLVersion1_open_question);
+                break;
+
+            case kXMLVersion3_close_question:
+                if (c.charValue() == '>')
+                    this->changeState(kReady);
+                break;
+
             case kComment1_bang:
                 if (c.charValue() == '-')
                     this->changeState(kComment2_bang_dash);
@@ -1039,6 +1065,8 @@ void VSettingsXMLParser::parseLine()
             case kTag1_open:
                 if (c.charValue() == '!')
                     this->changeState(kComment1_bang);
+                else if (c.charValue() == '?')
+                    this->changeState(kXMLVersion1_open_question);
                 else if (c.charValue() == '/')
                     this->changeState(kCloseTag1_open_slash);
                 else if (c.isAlpha())

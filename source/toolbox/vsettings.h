@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+This file is part of the Code Vault version 2.7
 http://www.bombaydigital.com/
 */
 
@@ -231,6 +231,9 @@ class VSettingsXMLParser
         enum ParserState
             {
             kReady,
+            kXMLVersion1_open_question,
+            kXMLVersion2_in_quote,
+            kXMLVersion3_close_question,
             kComment1_bang,
             kComment2_bang_dash,
             kComment3_in_comment,
