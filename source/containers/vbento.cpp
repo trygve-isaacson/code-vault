@@ -494,12 +494,6 @@ class VBentoUnknownValue : public VBentoAttribute
         VMemoryStream mValue; ///< The attribute value.
     };
 
-static void _printIndent(VString& output, int indentLevel)
-    {
-    for (int i = 0; i < indentLevel; ++i)
-        output += "  ";
-    }
-
 // VBentoTextParser ----------------------------------------------------------
 
 /**
