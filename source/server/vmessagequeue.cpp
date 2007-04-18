@@ -98,7 +98,8 @@ void VMessageQueue::releaseAllMessages()
 		message = mQueuedMessages.front();
 		mQueuedMessages.pop_front();
 		
-		VMessagePool::releaseMessage(message, message->getPool());
+        if (message != NULL)
+            VMessagePool::releaseMessage(message, message->getPool());
 		}
     }
 

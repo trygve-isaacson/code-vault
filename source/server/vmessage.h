@@ -50,7 +50,7 @@ makes it ready to be used again as if it had been newly instantiated.
 class VMessage : public VBinaryIOStream
 	{
 	public:
-	
+
 		// Constants for the recycle() parameter makeEmpty.
 		static const bool kMakeEmpty = true;	///< (Default) The message buffer length will be set to zero, effectively resetting the message buffer to empty.
 		static const bool kKeepData = false;	///< The message buffer will be left alone so that the existing message data can be retained.
@@ -70,15 +70,15 @@ class VMessage : public VBinaryIOStream
 		/**
 		Virtual destructor.
 		*/
-		virtual ~VMessage() {}
-        
+		virtual ~VMessage();
+
         /**
         Returns the pool to which this message belongs; when releasing
         a message, it must be released to the correct pool.
         @return the pool this message belongs to
         */
         VMessagePool* getPool() const { return mPool; }
-		
+
 		/**
 		Re-initializes the message to be in a usable state as if
 		it had just been instantiated; useful when re-using a single
@@ -89,7 +89,7 @@ class VMessage : public VBinaryIOStream
 							and available as the recycled message's data
 		*/
 		void recycle(VMessageID messageID=0, bool makeEmpty=kMakeEmpty);
-		
+
 		/**
 		Sets the message ID, which is used when sending.
 		@param	messageID	the message ID
@@ -99,7 +99,7 @@ class VMessage : public VBinaryIOStream
 		Returns the message ID.
 		*/
 		VMessageID getMessageID() const { return mMessageID; }
-		
+
 		/**
 		Sends the message to the output stream, using the appropriate wire
 		protocol message format; for example, it might write the message
@@ -190,20 +190,23 @@ class VMessage : public VBinaryIOStream
 		Decrements this message's broadcast target count; caller must lock mutex as appropriate.
 		*/
 		void removeBroadcastTarget();
-
+		/**
+		The message is no longer used (and is queued).
+		*/
+		void release();
         /*
         These are the log level definitions used for consistent logging
         of message traffic, processing, pooling, and dispatch. Use these
         levels and log to the logger named VMessage::kMessageLoggerName
         in order to be consistent in message logging.
-        
+
         The format of logged messages should be:
          [session-label] data
         where session-label is:
          id:ip:port
         where id is some descriptive name of the session that does not distinguish which
         client it is (since the ip:port does that)
-        
+
         Use the macros defined at the top of this file to emit message log output.
         */
 		static const VString kMessageLoggerName;
@@ -212,16 +215,20 @@ class VMessage : public VBinaryIOStream
         static const int kContentHexDumpLevel       = VLogger::kDebug;
         static const int kDispatchDetailLevel       = VLogger::kDebug;
         static const int kPoolTraceLevel            = VLogger::kTrace;
-        
+
 	protected:
 
 		mutable VMemoryStream	mMessageDataBuffer;		///< The buffer that holds the message data. Mutable because copyMessageData needs to touch it and restore it.
 
 	private:
-	
+
+        /** Asserts if any invariant is broken. */
+        void assertInvariant() const;
+
 		VMessageID				mMessageID;				///< The message ID, either read during receive or to be written during send.
         VMessagePool*           mPool;                  ///< The pool where this message should be released to.
 		bool					mIsBeingBroadcast;		///< True if this message is an outbound broadcast message.
+		bool					mIsReleased;			///< True if this message has been deleted/released
 		int						mNumBroadcastTargets;	///< Number of pending broadcast targets, if for broadcast.
 		VMutex					mBroadcastMutex;		///< Mutex to control multiple threads using this message during broadcasting. This is declared public because the caller is responsible for locking this mutex via a VMutexLocker while posting for broadcast.
 	};
@@ -235,7 +242,7 @@ function to return a new VMessage of the desired subclass type.
 class VMessageFactory
 	{
 	public:
-	
+
 		VMessageFactory() {}
 		virtual ~VMessageFactory() {}
 
@@ -244,7 +251,7 @@ class VMessageFactory
 		new VMessage object of a concrete VMessage subclass type.
 		@param	messageID	the ID to supply to the message constructor
 		@return	pointer to a new message object
-		*/		
+		*/
 		virtual VMessage* instantiateNewMessage(VMessageID messageID, VMessagePool* pool) = 0;
 	};
 
