@@ -291,6 +291,11 @@ class VLogger
         */
         static void getLevelName(int logLevel, VString& name);
 
+        VMutex  mMutex;     ///< A mutex to protect against multiple threads' messages from being intertwined;
+                                // subclasses may access this carefully; note that it is locked prior to any
+                                // call to emit() or emitRawLine(), so implementors of those functions must
+                                // not re-lock because to do so would cause a deadlock.
+
     private:
 
         /**
@@ -302,7 +307,6 @@ class VLogger
         static void _breakpointLocationForLog();
         static void _breakpointLocationForEmit();
 
-        VMutex  mMutex;     ///< A mutex to protect against multiple threads' messages from being intertwined
         int     mLogLevel;  ///< Only messages with a detail level <= this will be emitted.
         VString mName;      ///< This logger's unique name so it can be looked up.
 
