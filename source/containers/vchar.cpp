@@ -8,6 +8,18 @@ http://www.bombaydigital.com/
 
 #include "vchar.h"
 
+/*
+The "null character" constant constructs to char value zero.
+This is used by VString to return a null char when an accessor
+reads the zero byte of an empty string.
+*/
+// static
+const VChar& VChar::NULL_CHAR()
+    {
+    static const VChar kNullChar;
+    return kNullChar;
+    }
+
 VChar::VChar() :
 mValue(0)
     {

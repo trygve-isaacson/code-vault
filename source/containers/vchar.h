@@ -33,6 +33,11 @@ class VChar
     public:
     
         /**
+        Returns a reference to the read-only null character value.
+        */
+        static const VChar& NULL_CHAR();
+    
+        /**
         Constructs a character with value zero.
         */
         VChar();

@@ -19,7 +19,7 @@ void VStringUnit::run()
     {
     // Start by testing assignment and concatenation.
     VString    s("(A)");
-    
+
     this->test(s, "(A)", "literal ctor");
 
     s += s;
@@ -33,23 +33,23 @@ void VStringUnit::run()
 
     s += "(C)";
     this->test(s, "(A)(A)(B)(A)(A)(B)(C)", "literal concat 2");
-    
+
     s = s;
     this->test(s, "(A)(A)(B)(A)(A)(B)(C)", "self assign");
-    
+
     s.toLowerCase();
     this->test(s, "(a)(a)(b)(a)(a)(b)(c)", "to lower case");
-    
+
     s.toUpperCase();
     this->test(s, "(A)(A)(B)(A)(A)(B)(C)", "to upper case");
-    
+
     // Test the length.
     this->test(s.length() == 21, "length");
-    
+
     // Test array indexing.
     this->test(s[19] == 'C', "array element");
     this->test(s.charAt(19) == 'C', "char at");
-    
+
     // Test operator+.
     VString    sum1 = VString('X') + 'Y';
     this->test(sum1 == "XY", "operator+ char");
@@ -57,7 +57,7 @@ void VStringUnit::run()
     this->test(sum2 == "schoolbus", "operator+ char*");
     VString    sum3 = VString("race") + VString("car");
     this->test(sum3 == "racecar", "operator+ VString&");
-    
+
     // Test comparison and equality.
     s = "Banana";
     this->test("Apple" < s, "operator <");
@@ -95,7 +95,7 @@ void VStringUnit::run()
     this->test(! s.endsWith("Yellow Banana"), "! endsWith literal 1");
     this->test(! s.endsWith("abcdefghijklmnopqrstuvwxyz"), "! endsWith literal 2");
     this->test(! s.endsWith('x'), "! endsWith char");
-    
+
     // Test empty string constant behavior.
     this->test(VString::EMPTY().isEmpty(), "kEmptyString is empty");
     this->test(VString::EMPTY().length() == 0, "kEmptyString length is zero");
@@ -119,24 +119,24 @@ void VStringUnit::run()
     this->test(s.isEmpty(), "Assign empty char*");
     s = (char*) NULL;
     this->test(s.isEmpty(), "Assign NULL char*");
-        
+
     // Test re-assignment and non-shared memory.
     VString    a("a");
     VString    b("b");
-    
+
     a = b;
     b = "something else";
-    
+
     this->test(a, "b", "reassignment 1");
     this->test(b, "something else", "reassignment 2");
-    
+
     // Test formatting.
     VString    formatted("%s is %d years old", "Spot", 5);
     this->test(formatted, "Spot is 5 years old", "ctor formatting");
-    
+
     formatted.format("%s is %d years old", "Rover", 3);
     this->test(formatted, "Rover is 3 years old", "sprintf");
-    
+
     VString preflightFail("d'oh!");
     try
         {
@@ -155,7 +155,7 @@ void VStringUnit::run()
         this->test(true, "Intentional preflight allocation failure"); // If we get here, the test succeeded.
         this->test(preflightFail, "d'oh!", "No change during preflight allocation failure"); // verify that the string was not changed during the failure
         }
-    
+
     // Test copying out.
     char    testBuffer[256];    // Largest legal Pascal string buffer.
     VString    testSource("This text should be copied out.");
@@ -176,7 +176,7 @@ void VStringUnit::run()
     this->test(testTarget.length() > 255, "copy to Pascal limit setup");
     testTarget.copyToPascalString(testBuffer);
     this->test((testBuffer[0] == (char) 0xFF) && (testBuffer[255] == testTarget[254]), "copy to Pascal limit");
-    
+
     // Test substring operations.
     s = "The Big Heat";
     VString    sub;
@@ -204,7 +204,7 @@ void VStringUnit::run()
     this->test(sub, "The Big Heat", "substring test 11");
     s.getSubstring(sub, -7, 70);        // entire string but start and end out of range
     this->test(sub, "The Big Heat", "substring test 12");
-    
+
     // Test substring-in-place operations.
     s = "The Big Heat"; s.substringInPlace(0, 3);            // start of string
     this->test(s, "The", "substring-in-place test 1");
@@ -230,7 +230,7 @@ void VStringUnit::run()
     this->test(s, "The Big Heat", "substring-in-place test 11");
     s = "The Big Heat"; s.substringInPlace(-7, 70);        // entire string but start and end out of range
     this->test(s, "The Big Heat", "substring-in-place test 12");
-    
+
     // Test insert operations.
     s = "ABCDEFGH";
     s.insert('x');    // insert char at start (0)
@@ -257,7 +257,7 @@ void VStringUnit::run()
     this->test(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
     s.insert("", s.length() - 1);    // insert empty string at (end - 1)
     this->test(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
-    
+
     // Test inserts on an empty string.
     s = VString::EMPTY();
     s.insert('x');
@@ -271,7 +271,7 @@ void VStringUnit::run()
     s = VString::EMPTY();
     s.insert("ABC", 5);    // this will also test out-of-bounds handling (currently it forces in-bounds; I think an exception would be better)
     this->test(s, "ABC", "insert test 10");
-    
+
     // What the heck, let's do those same tests with an unallocated string buffer. Should be the same since preflight will always allocate the required buffer.
     { VString s2;
         s2.insert('x');
@@ -285,7 +285,7 @@ void VStringUnit::run()
     { VString s2;
         s2.insert("ABC", 5);    // this will also test out-of-bounds handling (currently it forces in-bounds; I think an exception would be better)
         this->test(s2, "ABC", "insert test 14"); }
-    
+
     // We also need to verify that insert handles inserting from itself.
     s = "California";
     s.insert(s);
@@ -299,7 +299,7 @@ void VStringUnit::run()
     s = "Arizona";
     s.insert(s, s.length());
     this->test(s, "ArizonaArizona", "insert test 18");
-    
+
     // Test trim operation.
     s = "This string should not be trimmed.";
     s.trim();
@@ -319,7 +319,7 @@ void VStringUnit::run()
     s = "";
     s.trim();
     this->test(s, VString::EMPTY(), "trim test 6");
-    
+
     int    numCreatures;
     s = "one fish, two fish, red fish, blue fish, fishfishfish";
     // Test replacing with longer string.
@@ -403,7 +403,7 @@ void VStringUnit::run()
 //    s = b64; this->test(s == "?", "=b64");    // what is 64-bit "-5" as postive decimal? need 64-bit hex calculator
     s = n64; this->test(s == "-5", "=n64");
     s = p64; this->test(s == "5", "=p64");
-        
+
     // Test operator+= conversions.
 
     s = "x"; s += ni; this->test(s == "x-1", "+=ni");
@@ -424,19 +424,19 @@ void VStringUnit::run()
 //    s = "x"; s += b64; this->test(s == "x?", "+=b64");    // what is 64-bit "-5" as postive decimal? need 64-bit hex calculator
     s = "x"; s += n64; this->test(s == "x-5", "+=n64");
     s = "x"; s += p64; this->test(s == "x5", "+=p64");
-    
+
     // Miscellaneous API coverage.
     s = "12345";
     s.truncateLength(3);
     this->test(s == "123", "truncate length");
-    
+
     s = "foo";
     this->test(! s.isEmpty(), "not is empty");
     s = VString::EMPTY();
     this->test(s.isEmpty(), "is empty");
-    
+
     s = "hello";
-    
+
     VChar e = s.at(1);
     this->test(e == 'e', "at");
     e = s[1];
@@ -466,7 +466,7 @@ void VStringUnit::run()
     this->test(s.lastIndexOf("in", 5) == 3, "lastIndexOf(const VString&, n)");
     this->test(s.lastIndexOf("in", 2) == -1, "lastIndexOf(const VString&, n)");
     this->test(s.lastIndexOf("inordinate") == -1, "lastIndexOf(const VString&)");
-    
+
     VString    region1("Thunderhill");
     VString    region2("under");
     VString    region3("hil");
@@ -478,7 +478,7 @@ void VStringUnit::run()
 #ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
     boost::format formatter("Descending order arguments: %3% %2% %1%.");
     formatter % "one" % 2.47 % 3;
-    
+
     VString fmt1(formatter);
     this->test(fmt1 == "Descending order arguments: 3 2.47 one.", "format constructor");
 
@@ -494,12 +494,12 @@ void VStringUnit::run()
     fmt4 += formatter;
     this->test(fmt4 == "Append here: Descending order arguments: 3 2.47 one.", "format operator+=");
 #endif
-    
+
     // This set of tests covers valid and invalid input to postflight and thus _setLength.
     VString rangeTester;
     rangeTester.postflight(0); // should succeed since no buffer is necessary
     this->test(true, "postflight 0 for null buffer");
-    
+
     try
         {
         rangeTester.postflight(-1); // should throw a VRangeException
@@ -509,7 +509,7 @@ void VStringUnit::run()
         {
         this->test(true, "postflight -1 exception for null buffer");
         }
-    
+
     try
         {
         rangeTester.postflight(1); // should throw a VRangeException
@@ -519,13 +519,19 @@ void VStringUnit::run()
         {
         this->test(true, "postflight >0 exception for null buffer");
         }
-    
+
+    // Note: Now that VString uses chunk-sized allocations, a test
+    // of postflight cannot assume the exact buffer size created by
+    // preflight. So here our negative test uses a very large value
+    // that is larger than the chunk size; if the chunk size constant
+    // used by preflight is changed, this test may need to be updated.
+
     rangeTester.preflight(3); // just enough room for "abc"
     char* buffer = rangeTester.buffer();
     buffer[0] = 'a'; buffer[1] = 'b'; buffer[2] = 'c'; buffer[3] = 0;
     try
         {
-        rangeTester.postflight(4); // should throw a VRangeException
+        rangeTester.postflight(200); // should throw a VRangeException if value is too large compared to preflight chunk size
         this->test(false, "postflight >=mBufferLength exception");
         }
     catch (const VRangeException& /*ex*/)
@@ -546,7 +552,7 @@ void VStringUnit::run()
         {
         this->test(true, "preflight <0 exception");
         }
-    
+
     try
         {
         rangeTester.preflight(INT_MAX); // should throw a VRangeException
@@ -556,7 +562,7 @@ void VStringUnit::run()
         {
         this->test(true, "preflight INT_MAX exception");
         }
-    
+
     // This test covers a desired exception for deprecated API use.
     try
         {
@@ -568,6 +574,30 @@ void VStringUnit::run()
         {
         this->test(true, "copyFromBuffer with LONG_MAX exception");
         }
+
+    // Test handling of null terminating character access.
+    const VString nullCharString;
+    VChar nullVChar;
     
+    nullVChar = nullCharString.at(0);
+    this->test(nullVChar == VChar::NULL_CHAR(), "null VChar at(0)");
+    
+    nullVChar = nullCharString[0];
+    this->test(nullVChar == VChar::NULL_CHAR(), "null VChar [0]");
+    
+    char nullChar = nullCharString[0];
+    this->test(nullChar == (char) 0, "null char [0]");
+    
+    VString nonConstNullCharString;
+    // This one should go out of bounds and throw
+    try
+        {
+        nonConstNullCharString[0] = '!';
+        this->test(false, "null char& [0] did not throw the correct exception");
+        }
+    catch (const VException& /*ex*/)
+        {
+        this->test(true, "null char& [0] threw the correct exception");
+        }
     }
 
