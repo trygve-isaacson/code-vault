@@ -515,7 +515,9 @@ void VInstant::getUTCString(VString& s, bool fileNameSafe) const
 
 void VInstant::setUTCString(const VString& s)
     {
-    if (s == "PAST")
+    if (s == "NOW")
+        this->setNow();
+    else if (s == "PAST")
         mValue = kInfinitePastInternalValue;
     else if (s == "FUTURE")
         mValue = kInfiniteFutureInternalValue;
@@ -557,7 +559,9 @@ void VInstant::getLocalString(VString& s, bool fileNameSafe) const
 
 void VInstant::setLocalString(const VString& s)
     {
-    if (s == "PAST")
+    if (s == "NOW")
+        this->setNow();
+    else if (s == "PAST")
         mValue = kInfinitePastInternalValue;
     else if (s == "FUTURE")
         mValue = kInfiniteFutureInternalValue;
@@ -1025,10 +1029,19 @@ void VDate::setDay(int day)
 //lint -e421 "Caution -- function 'abort(void)' is considered dangerous [MISRA Rule 126]"
 void VDate::assertInvariant() const
     {
+	// 2007.03.22 ranstrom v1.3D ARGO-6599 Performance: each separate V_ASSERT is somewhat slow. Roll in to one call.
+	/*
     V_ASSERT(mMonth > 0);
     V_ASSERT(mMonth < 13);
     V_ASSERT(mDay > 0);
     V_ASSERT(mDay < 33); // 32 allowed when incrementing the date
+	*/
+	bool ok = true;
+	ok = ok && (mMonth > 0);
+	ok = ok && (mMonth < 13);
+	ok = ok && (mDay > 0);
+	ok = ok && (mDay < 33); 
+	V_ASSERT(ok);
     }
 
 // VTimeOfDay ----------------------------------------------------------------
@@ -1167,6 +1180,8 @@ void VTimeOfDay::setToStartOfDay()
 //lint -e421 "Caution -- function 'abort(void)' is considered dangerous [MISRA Rule 126]"
 void VTimeOfDay::assertInvariant() const
     {
+	// 2007.03.22 ranstrom v1.3D ARGO-6599 Performance: each separate V_ASSERT is somewhat slow. Roll in to one call.
+	/*
     V_ASSERT(mHour >= 0);
     V_ASSERT(mHour < 24);
     V_ASSERT(mMinute >= 0);
@@ -1175,6 +1190,17 @@ void VTimeOfDay::assertInvariant() const
     V_ASSERT(mSecond < 60);
     V_ASSERT(mMillisecond >= 0);
     V_ASSERT(mMillisecond < 1000);
+	*/
+	bool ok = true;
+	ok = ok && (mHour >= 0);
+	ok = ok && (mHour < 24);
+	ok = ok && (mMinute >= 0);
+	ok = ok && (mMinute < 60);
+	ok = ok && (mSecond >= 0);
+	ok = ok && (mSecond < 60);
+	ok = ok && (mMillisecond >= 0);
+	ok = ok && (mMillisecond < 1000);
+	V_ASSERT(ok);
     }
 
 // VDateAndTime --------------------------------------------------------------
