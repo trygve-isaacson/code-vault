@@ -37,7 +37,10 @@ class VMessagePool;
 /** Emits a message at specified level to the message logger; use the level constants defined in VMessage. */
 #define VLOGGER_MESSAGE_LEVEL(level, message) VLogger::getLogger(VMessage::kMessageLoggerName)->log(level, NULL, 0, message)
 /** Emits a hex dump at a specified level to the specified logger. */
-#define VLOGGER_MESSAGE_HEXDUMP(message, buffer, length) VLogger::getLogger(VMessage::kMessageLoggerName)->logHexDump(VMessage::kContentHexDumpLevel, message, buffer, length)
+#define VLOGGER_MESSAGE_HEXDUMP(message, buffer, length) { VLogger* vmxcond = VLogger::getLogger(VMessage::kMessageLoggerName); if (vmxcond->isEnabledFor(VMessage::kMessageContentHexDumpLevel)) vmxcond->logHexDump(VMessage::kMessageContentHexDumpLevel, message, buffer, length); }
+
+/** More efficient macro that avoids building log output unless log level is satisfied; Emits a message at specified level to the message logger; use the level constants defined in VMessage. */
+#define VLOGGER_CONDITIONAL_MESSAGE_LEVEL(level, message) { VLogger* vmlcond = VLogger::getLogger(VMessage::kMessageLoggerName); if (vmlcond->isEnabledFor(level)) vmlcond->log(level, NULL, 0, message); }
 
 /**
 VMessage is an abstract base class that implements the basic messaging
@@ -210,11 +213,17 @@ class VMessage : public VBinaryIOStream
         Use the macros defined at the top of this file to emit message log output.
         */
 		static const VString kMessageLoggerName;
-        static const int kDispatchLifecycleLevel    = VLogger::kInfo;
-        static const int kContentInfoLevel          = VLogger::kInfo;
-        static const int kContentHexDumpLevel       = VLogger::kDebug;
-        static const int kDispatchDetailLevel       = VLogger::kDebug;
-        static const int kPoolTraceLevel            = VLogger::kTrace;
+        static const int kMessageContentRecordingLevel  = VLogger::kInfo + 0;   // human-readable single-line form of message content (e.g., bento text format)
+        static const int kMessageHeaderLevel            = VLogger::kDebug + 0;  // message meta data such as ID, length, key, etc.
+        static const int kMessageContentFieldsLevel     = VLogger::kDebug + 1;  // human-readable multi-line form of message content (e.g., non-bento message fields)
+        static const int kMessageTrafficDetailsLevel    = VLogger::kDebug + 2;  // lower level details about message traffic
+        static const int kMessageHandlerDispatchLevel   = VLogger::kDebug + 3;  // _logSimpleDispatch <- start and end of every message handler
+        static const int kMessageHandlerDetailLevel     = VLogger::kDebug + 4;  // start and end of every message handler TASK, plus details of broadcast posting
+        static const int kMessageContentHexDumpLevel    = VLogger::kDebug + 5;  // hex dump of message content
+        static const int kMessageQueueOpsLevel          = VLogger::kDebug + 6;  // low-level operations of message i/o queues
+        static const int kMessageTraceDetailLevel       = VLogger::kTrace;      // extremely low-level message processing details
+        static const int kMessageHandlerLifecycleLevel  = VLogger::kTrace;      // message handler constructor and destructor
+        static const int kMessagePoolTraceLevel         = VLogger::kTrace;      // low-level operations of message reuse pools
 
 	protected:
 

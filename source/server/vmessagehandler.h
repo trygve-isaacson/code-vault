@@ -49,7 +49,7 @@ do it locally, long-running work will have to release the lock and reacquire
 it periodically, or other threads will be blocked for an unacceptably long
 time. And if appropriate, a handler or background task should try to release
 the lock as soon as possible when it no longer needs it, or if it doesn't
-really need it in the first place. 
+really need it in the first place.
 */
 class VMessageHandler
 	{
@@ -74,7 +74,7 @@ class VMessageHandler
 		ID.
 		*/
 		static void registerHandlerFactory(VMessageID messageID, VMessageHandlerFactory* factory);
-	
+
 		/**
 		Constructs a message handler with a message to handle and the
 		server in which it is running.
@@ -95,7 +95,7 @@ class VMessageHandler
 		caller.
 		*/
 		virtual ~VMessageHandler();
-		
+
 		/**
 		Processes the message.
 		*/
@@ -135,7 +135,7 @@ class VMessageHandler
 		void logMessageDetails(const VString& details, VLogger* logger=NULL) const;
 
 	protected:
-	
+
 		/**
 		Logs (at the appropriate log level) the message handler name to
 		indicate that the handler has been invoked or has ended.
@@ -154,7 +154,14 @@ class VMessageHandler
         simple form of the data, not a full hex dump (see _logContentHexDump).
 		@param	contentInfo	the info to be logged
 		*/
-		void _logMessageContentInfo(const VString& contentInfo) const;
+		void _logMessageContentRecord(const VString& contentInfo) const;
+		/**
+		Logs (at the appropriate log level) simple content info for a message
+        that has been received or will be sent. You should only supply a
+        simple form of the data, not a full hex dump (see _logContentHexDump).
+		@param	contentInfo	the info to be logged
+		*/
+		void _logMessageContentFields(const VString& contentInfo) const;
 		/**
 		Logs (at the appropriate log level) full hex dump content info for a message
         that has been received or will be sent..
@@ -179,7 +186,7 @@ class VMessageHandler
 		VSocketThread*	mThread;	///< The thread in which we are running.
         VMessagePool*   mPool;      ///< The pool to get/release messages from/to.
 		VMutexLocker	mLocker;	///< The mutex locker for the mutex we were given.
-		
+
 	private:
 
 		static VMessageHandlerFactoryMap* mapInstance();
@@ -197,10 +204,10 @@ implementation file.
 class VMessageHandlerFactory
 	{
 	public:
-	
+
 		VMessageHandlerFactory() {}
 		virtual ~VMessageHandlerFactory() {}
-		
+
 		/**
 		Instantiates a new message handler for the specified message's ID;
 		must be overridden by the concrete subclass.
@@ -250,7 +257,7 @@ session will know of its existence.
 class VMessageHandlerTask
     {
     public:
-    
+
         VMessageHandlerTask() {}
         virtual ~VMessageHandlerTask() {}
     };

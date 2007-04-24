@@ -101,7 +101,7 @@ void VMessageOutputThread::_processNextOutboundMessage()
 		{
 		if (this->_shouldSendOutboundMessage(message))
 		    {
-    		VLOGGER_MESSAGE_LEVEL(VMessage::kDispatchDetailLevel, VString("[%s] VMessageOutputThread::run: Sending message@0x%08X.", mName.chars(), message));
+    		VLOGGER_CONDITIONAL_MESSAGE_LEVEL(VMessage::kMessageQueueOpsLevel, VString("[%s] VMessageOutputThread::run: Sending message@0x%08X.", mName.chars(), message));
 			message->send(mName, mOutputStream);
 			}
 
