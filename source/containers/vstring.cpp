@@ -873,8 +873,10 @@ VChar VString::at(int i) const
     {
     ASSERT_INVARIANT();
 
-    if (i >= mStringLength)
+    if (i > mStringLength)
         throw VException("VString::at(%d) index out of range for length %d.", i, mStringLength);
+    else if (i == 0 && mStringLength == 0)
+        return VChar::NULL_CHAR();
 
     return VChar(mBuffer[i]);
     }
@@ -883,8 +885,10 @@ VChar VString::operator[](int i) const
     {
     ASSERT_INVARIANT();
 
-    if (i >= mStringLength)
+    if (i > mStringLength)
         throw VException("VString::operator[%d] index out of range for length %d.", i, mStringLength);
+    else if (i == 0 && mStringLength == 0)
+        return VChar::NULL_CHAR();
 
     return VChar(mBuffer[i]);
     }
@@ -903,8 +907,10 @@ char VString::charAt(int i) const
     {
     ASSERT_INVARIANT();
 
-    if (i >= mStringLength)
+    if (i > mStringLength)
         throw VException("VString::charAt(%d) index out of range for length %d.", i, mStringLength);
+    else if (i == 0 && mStringLength == 0)
+        return (char) 0;
 
     return mBuffer[i];
     }
@@ -1546,6 +1552,8 @@ Vu32 VString::getFourCharacterCode() const
     return result;
     }
 
+static const int kStringBufferChunkSize = 64;
+
 void VString::preflight(int stringLength)
     {
     ASSERT_INVARIANT();
@@ -1560,8 +1568,19 @@ void VString::preflight(int stringLength)
         {
         try
             {
+            // Allocate the buffer in reasonable sized chunks rather than using the exact size
+            // requested; this easily yields an order of magnitude improvement when a string is
+            // created with multiple appends.
+            int newBufferLength = stringLength + 1;
+            if (kStringBufferChunkSize != 1)
+                {
+                int remainder = newBufferLength % kStringBufferChunkSize;
+                int extra = kStringBufferChunkSize - remainder;
+                newBufferLength += extra;
+                }
+
             // This allocation will throw an exception if we run out of memory. Catch below.
-            char*    newBuffer = new char[stringLength + 1L];
+            char*    newBuffer = new char[newBufferLength];
 
             // Copy our old string, including the null terminator, to the new buffer.
             if (mBufferLength == 0)
@@ -1583,7 +1602,7 @@ void VString::preflight(int stringLength)
             // We haven't changed the mStringLength; we've merely copied data to a larger buffer.
             delete [] mBuffer;
             mBuffer = newBuffer;
-            mBufferLength = stringLength + 1;
+            mBufferLength = newBufferLength;
             }
         catch (...)
             {
@@ -1778,13 +1797,27 @@ Vu64 VString::_parseUnsignedInteger() const
 
 void VString::assertInvariant() const
     {
-    if (mBuffer != NULL)    // buffer pointer can be null, making other fields n/a
+
+	// 2007.03.22 ranstrom v1.3D ARGO-6599 Performance: each separate V_ASSERT is somewhat slow. Roll in to one call.
+	/*
+	V_ASSERT(mBuffer != (char*)0xfeeefeee); // 2007.03.08 JHR feeefeee is written by VC++ upon object deletion
+		
+	if (mBuffer != NULL)    // buffer pointer can be null, making other fields n/a
         {
         V_ASSERT(mStringLength >= 0);                // string length must be non-negative
         V_ASSERT(mBufferLength > mStringLength);    // buffer must be at least string length + 1
         V_ASSERT(mBuffer[mStringLength] == 0);    // null terminator must be in place
         }
-    }
+	*/
+	V_ASSERT(mBuffer != (char*)0xfeeefeee);
+ 	if (mBuffer != NULL){
+		bool ok = true;
+		ok = ok && (mStringLength >= 0);
+		ok = ok && (mBufferLength > mStringLength);
+		ok = ok && (mBuffer[mStringLength] == 0);
+		V_ASSERT(ok);
+		}
+	}
 
 #ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
 // static
