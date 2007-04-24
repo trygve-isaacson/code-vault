@@ -19,6 +19,8 @@ VBentoUnit::VBentoUnit(bool logOnSuccess, bool throwOnError)
 #define VERY_LONG_STRING "This is a string that needs to be longer than 252 characters in order to test the dynamic length prefix capability, where short data has a single byte length descriptor but longer data uses longer length descriptors. By making this string longer than 252 characters, it means that its length descriptor in the bento binary stream will require three bytes rather than one. But most strings only need one byte to describe their length."
 static const VFloat kTestFloatValue = 3.14f;
 static const VDouble kTestDoubleValue = 3.14159; // note: use of more than 6 decimal places here will cause the text i/o conversion test to fail because only 6 decimal places are written out
+static const VDuration kTestDurationValue = VDuration::MILLISECOND() * 42;
+static const VDateAndTime kTestInstantValue = VDateAndTime(2007, 04, 20, 7, 56, 23, 986);
 
 void VBentoUnit::run()
     {
@@ -91,10 +93,17 @@ void VBentoUnit::_buildTestData(VBentoNode& root)
     root.addBool("bool", true);
     root.addString("vstr", "bento unit test");
     root.addString("lstr", VERY_LONG_STRING);
+    root.addString("estr", VString::EMPTY());
     root.addInt("int", 900);
     root.addFloat("flot", kTestFloatValue);
     root.addDouble("doub", kTestDoubleValue);
     root.addChar("char", VChar('!'));
+    root.addChar("nulc", VChar::NULL_CHAR());
+    
+    root.addDuration("dura", kTestDurationValue);
+    VInstant instant;
+    instant.setDateAndTime(kTestInstantValue, VInstant::UTC_TIME_ZONE_ID());
+    root.addInstant("inst", instant);
 
     VBentoNode*    childNode = new VBentoNode("child"); // exercise the new + addChildNode method of adding
     childNode->addS32("ch32", 1000);
@@ -129,10 +138,17 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         this->test(s1 == "bento unit test", VString("%s vstr", labelPrefix.chars()));
         VString s2 = node.getString("lstr");
         this->test(s2 == VERY_LONG_STRING, VString("%s lstr", labelPrefix.chars()));
+        VString s3 = node.getString("estr");
+        this->test(s3 == VString::EMPTY(), VString("%s empty string", labelPrefix.chars()));
         this->test(node.getInt("int") == 900, VString("%s int", labelPrefix.chars()));
         this->test(node.getFloat("flot") == kTestFloatValue, VString("%s float", labelPrefix.chars()));
         this->test(node.getDouble("doub") == kTestDoubleValue, VString("%s double", labelPrefix.chars()));
         this->test(node.getChar("char") == '!', VString("%s char", labelPrefix.chars()));
+        this->test(node.getChar("nulc") == VChar::NULL_CHAR(), VString("%s null char", labelPrefix.chars()));
+        this->test(node.getDuration("dura") == kTestDurationValue, VString("%s duration", labelPrefix.chars()));
+        VInstant instant;
+        instant.setDateAndTime(kTestInstantValue, VInstant::UTC_TIME_ZONE_ID());
+        this->test(node.getInstant("inst") == instant, VString("%s instant", labelPrefix.chars()));
 
         const VBentoNode* child = node.findNode("child");
         this->test(child != NULL, VString("%s child", labelPrefix.chars()));
@@ -168,6 +184,11 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         this->test(node.getFloat("non-existent", kTestFloatValue) == kTestFloatValue, VString("%s default float", labelPrefix.chars()));
         this->test(node.getDouble("non-existent", kTestDoubleValue) == kTestDoubleValue, VString("%s default double", labelPrefix.chars()));
         this->test(node.getChar("non-existent", 'x') == 'x', VString("%s default char", labelPrefix.chars()));
+        VDuration defaultDuration = VDuration::MILLISECOND() * 986;
+        this->test(node.getDuration("non-existent", defaultDuration) == defaultDuration, VString("%s default duration", labelPrefix.chars()));
+        VInstant defaultInstant;
+        defaultInstant.setDateAndTime(VDateAndTime(2007, 3, 4, 5, 6, 7, 8), VInstant::UTC_TIME_ZONE_ID());
+        this->test(node.getInstant("non-existent", defaultInstant) == defaultInstant, VString("%s default instant", labelPrefix.chars()));
 
         // Test non-throwing missing value handling.
         // Each of these SHOULD throw an exception.
@@ -213,6 +234,12 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
 
         try { (void) node.getChar("non-existent"); this->test(false, VString("%s throw char", labelPrefix.chars())); }
             catch (const VException& /*ex*/) { this->test(true, VString("%s throw char", labelPrefix.chars()));}
+
+        try { (void) node.getDuration("non-existent"); this->test(false, VString("%s throw duration", labelPrefix.chars())); }
+            catch (const VException& /*ex*/) { this->test(true, VString("%s throw duration", labelPrefix.chars()));}
+
+        try { (void) node.getInstant("non-existent"); this->test(false, VString("%s throw instant", labelPrefix.chars())); }
+            catch (const VException& /*ex*/) { this->test(true, VString("%s throw instant", labelPrefix.chars()));}
 
         }
     catch (const VException& ex)

@@ -25,7 +25,7 @@ class VBentoAttribute
     {
     public:
 
-        VBentoAttribute(); ///< Constructs with unitinitialized name.
+        VBentoAttribute(); ///< Constructs with uninitialized name.
         VBentoAttribute(VBinaryIOStream& stream, const VString& dataType); ///< Constructs by reading from stream.
         VBentoAttribute(const VString& name, const VString& dataType); ///< Constructs with name and type. @param name the attribute name @param dataType the data type
         virtual ~VBentoAttribute(); ///< Destructor.
@@ -67,7 +67,7 @@ class VBentoS8 : public VBentoAttribute
 
         static const char* ID() { return "vs_8"; } ///< The data type name / class ID string.
 
-        VBentoS8() {} ///< Constructs with unitinitialized name and value.
+        VBentoS8() {} ///< Constructs with uninitialized name and value.
         VBentoS8(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readS8()) {} ///< Constructs by reading from stream. @param stream the stream to read
         VBentoS8(const VString& name, Vs8 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
         virtual ~VBentoS8() {} ///< Destructor.
@@ -98,7 +98,7 @@ class VBentoU8 : public VBentoAttribute
 
         static const char* ID() { return "vu_8"; } ///< The data type name / class ID string.
 
-        VBentoU8() {} ///< Constructs with unitinitialized name and value.
+        VBentoU8() {} ///< Constructs with uninitialized name and value.
         VBentoU8(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readU8()) {} ///< Constructs by reading from stream. @param stream the stream to read
         VBentoU8(const VString& name, Vu8 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
         virtual ~VBentoU8() {} ///< Destructor.
@@ -129,7 +129,7 @@ class VBentoS16 : public VBentoAttribute
 
         static const char* ID() { return "vs16"; } ///< The data type name / class ID string.
 
-        VBentoS16() {} ///< Constructs with unitinitialized name and value.
+        VBentoS16() {} ///< Constructs with uninitialized name and value.
         VBentoS16(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readS16()) {} ///< Constructs by reading from stream. @param stream the stream to read
         VBentoS16(const VString& name, Vs16 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
         virtual ~VBentoS16() {} ///< Destructor.
@@ -160,7 +160,7 @@ class VBentoU16 : public VBentoAttribute
 
         static const char* ID() { return "vu16"; } ///< The data type name / class ID string.
 
-        VBentoU16() {} ///< Constructs with unitinitialized name and value.
+        VBentoU16() {} ///< Constructs with uninitialized name and value.
         VBentoU16(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readU16()) {} ///< Constructs by reading from stream. @param stream the stream to read
         VBentoU16(const VString& name, Vu16 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
         virtual ~VBentoU16() {} ///< Destructor.
@@ -191,7 +191,7 @@ class VBentoS32 : public VBentoAttribute
 
         static const char* ID() { return "vs32"; } ///< The data type name / class ID string.
 
-        VBentoS32() {} ///< Constructs with unitinitialized name and value.
+        VBentoS32() {} ///< Constructs with uninitialized name and value.
         VBentoS32(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readS32()) {} ///< Constructs by reading from stream. @param stream the stream to read
         VBentoS32(const VString& name, Vs32 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
         virtual ~VBentoS32() {} ///< Destructor.
@@ -222,7 +222,7 @@ class VBentoU32 : public VBentoAttribute
 
         static const char* ID() { return "vu32"; } ///< The data type name / class ID string.
 
-        VBentoU32() {} ///< Constructs with unitinitialized name and value.
+        VBentoU32() {} ///< Constructs with uninitialized name and value.
         VBentoU32(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readU32()) {} ///< Constructs by reading from stream. @param stream the stream to read
         VBentoU32(const VString& name, Vu32 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
         virtual ~VBentoU32() {} ///< Destructor.
@@ -253,7 +253,7 @@ class VBentoS64 : public VBentoAttribute
 
         static const char* ID() { return "vs64"; } ///< The data type name / class ID string.
 
-        VBentoS64() {} ///< Constructs with unitinitialized name and value.
+        VBentoS64() {} ///< Constructs with uninitialized name and value.
         VBentoS64(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readS64()) {} ///< Constructs by reading from stream. @param stream the stream to read
         VBentoS64(const VString& name, Vs64 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
         virtual ~VBentoS64() {} ///< Destructor.
@@ -284,7 +284,7 @@ class VBentoU64 : public VBentoAttribute
 
         static const char* ID() { return "vu64"; } ///< The data type name / class ID string.
 
-        VBentoU64() {} ///< Constructs with unitinitialized name and value.
+        VBentoU64() {} ///< Constructs with uninitialized name and value.
         VBentoU64(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readU64()) {} ///< Constructs by reading from stream. @param stream the stream to read
         VBentoU64(const VString& name, Vu64 i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
         virtual ~VBentoU64() {} ///< Destructor.
@@ -315,7 +315,7 @@ class VBentoBool : public VBentoAttribute
 
         static const char* ID() { return "bool"; } ///< The data type name / class ID string.
 
-        VBentoBool() {} ///< Constructs with unitinitialized name and value.
+        VBentoBool() {} ///< Constructs with uninitialized name and value.
         VBentoBool(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(stream.readBool()) {} ///< Constructs by reading from stream. @param stream the stream to read
         VBentoBool(const VString& name, bool b) : VBentoAttribute(name, ID()), mValue(b) {} ///< Constructs from supplied name and value.
         virtual ~VBentoBool() {} ///< Destructor.
@@ -346,7 +346,7 @@ class VBentoString : public VBentoAttribute
 
         static const char* ID() { return "vstr"; } ///< The data type name / class ID string.
 
-        VBentoString() {} ///< Constructs with unitinitialized name and empty string.
+        VBentoString() {} ///< Constructs with uninitialized name and empty string.
         VBentoString(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()) { stream.readString(mValue); } ///< Constructs by reading from stream. @param stream the stream to read
         VBentoString(const VString& name, const VString& s) : VBentoAttribute(name, ID()), mValue(s) {} ///< Constructs from supplied name and value.
         virtual ~VBentoString() {} ///< Destructor.
@@ -377,7 +377,7 @@ class VBentoChar : public VBentoAttribute
 
         static const char* ID() { return "char"; } ///< The data type name / class ID string.
 
-        VBentoChar() : mValue(' ') {} ///< Constructs with unitinitialized name and a space char.
+        VBentoChar() : mValue(' ') {} ///< Constructs with uninitialized name and a space char.
         VBentoChar(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()) { mValue.set(static_cast<char>(stream.readU8())); } ///< Constructs by reading from stream. @param stream the stream to read
         VBentoChar(const VString& name, const VChar& c) : VBentoAttribute(name, ID()), mValue(c) {} ///< Constructs from supplied name and value.
         virtual ~VBentoChar() {} ///< Destructor.
@@ -408,7 +408,7 @@ class VBentoFloat : public VBentoAttribute
 
         static const char* ID() { return "flot"; } ///< The data type name / class ID string.
 
-        VBentoFloat() : mValue(0.0f) {} ///< Constructs with unitinitialized name and a 0 value.
+        VBentoFloat() : mValue(0.0f) {} ///< Constructs with uninitialized name and a 0 value.
         VBentoFloat(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()) { mValue = stream.readFloat(); } ///< Constructs by reading from stream. @param stream the stream to read
         VBentoFloat(const VString& name, VFloat f) : VBentoAttribute(name, ID()), mValue(f) {} ///< Constructs from supplied name and value.
         virtual ~VBentoFloat() {} ///< Destructor.
@@ -417,7 +417,7 @@ class VBentoFloat : public VBentoAttribute
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%f", mValue); }
 
         inline VFloat getValue() const { return mValue; } ///< Returns the attribute's value. @return a reference to the value object
-        inline void setValue(VFloat f) { mValue = f; } ///< Sets the attribute's value. @param c the attribute value
+        inline void setValue(VFloat f) { mValue = f; } ///< Sets the attribute's value. @param f the attribute value
 
     protected:
 
@@ -439,7 +439,7 @@ class VBentoDouble : public VBentoAttribute
 
         static const char* ID() { return "doub"; } ///< The data type name / class ID string.
 
-        VBentoDouble() : mValue(0.0) {} ///< Constructs with unitinitialized name and a 0 value.
+        VBentoDouble() : mValue(0.0) {} ///< Constructs with uninitialized name and a 0 value.
         VBentoDouble(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()) { mValue = stream.readDouble(); } ///< Constructs by reading from stream. @param stream the stream to read
         VBentoDouble(const VString& name, VDouble d) : VBentoAttribute(name, ID()), mValue(d) {} ///< Constructs from supplied name and value.
         virtual ~VBentoDouble() {} ///< Destructor.
@@ -448,7 +448,7 @@ class VBentoDouble : public VBentoAttribute
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%lf", mValue); } // Not: %lf uses 6 decimal places by default; this limits output resolution.
 
         inline VDouble getValue() const { return mValue; } ///< Returns the attribute's value. @return a reference to the value object
-        inline void setValue(VDouble d) { mValue = d; } ///< Sets the attribute's value. @param c the attribute value
+        inline void setValue(VDouble d) { mValue = d; } ///< Sets the attribute's value. @param d the attribute value
 
     protected:
 
@@ -460,6 +460,106 @@ class VBentoDouble : public VBentoAttribute
 
         VDouble mValue; ///< The attribute value.
     };
+
+/**
+VBentoDuration is a VBentoAttribute that holds a VDuration value.
+*/
+class VBentoDuration : public VBentoAttribute
+    {
+    public:
+
+        static const char* ID() { return "dura"; } ///< The data type name / class ID string.
+
+        VBentoDuration() : mValue() {} ///< Constructs with uninitialized name and a 0 value.
+        VBentoDuration(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()) { mValue = VDuration::MILLISECOND() * stream.readS64(); } ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoDuration(const VString& name, const VDuration& d) : VBentoAttribute(name, ID()), mValue(d) {} ///< Constructs from supplied name and value.
+        virtual ~VBentoDuration() {} ///< Destructor.
+
+        virtual void getValueAsString(VString& s) const { s.format("\"%lldms\"", mValue.getDurationMilliseconds()); }
+        virtual void getValueAsBentoTextString(VString& s) const { s.format("%lldms", mValue.getDurationMilliseconds()); }
+
+        inline const VDuration& getValue() const { return mValue; } ///< Returns the attribute's value. @return a reference to the value object
+        inline void setValue(const VDuration& d) { mValue = d; } ///< Sets the attribute's value. @param d the attribute value
+
+    protected:
+
+        virtual Vs64 getDataLength() const { return 8; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeS64(mValue.getDurationMilliseconds()); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%lldms",mValue.getDurationMilliseconds())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+
+    private:
+
+        VDuration mValue; ///< The attribute value.
+    };
+
+/**
+VBentoInstant is a VBentoAttribute that holds a VInstant value.
+*/
+class VBentoInstant : public VBentoAttribute
+    {
+    public:
+
+        static const char* ID() { return "inst"; } ///< The data type name / class ID string.
+
+        VBentoInstant() : mValue() {} ///< Constructs with uninitialized name and the current time as value.
+        VBentoInstant(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()) { mValue.setValue(stream.readS64()); } ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoInstant(const VString& name, const VInstant& i) : VBentoAttribute(name, ID()), mValue(i) {} ///< Constructs from supplied name and value.
+        virtual ~VBentoInstant() {} ///< Destructor.
+
+        virtual void getValueAsString(VString& s) const { mValue.getUTCString(s); }
+        virtual void getValueAsBentoTextString(VString& s) const { mValue.getUTCString(s); }
+
+        inline const VInstant& getValue() const { return mValue; } ///< Returns the attribute's value. @return a reference to the value object
+        inline void setValue(const VInstant& i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
+
+    protected:
+
+        virtual Vs64 getDataLength() const { return 8; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeS64(mValue.getValue()); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%lld",mValue.getValue())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+
+    private:
+
+        VInstant mValue; ///< The attribute value.
+    };
+
+#if 0
+/**
+VBentoBinary is a VBentoAttribute that holds untyped data.
+*/
+class VBentoBinary : public VBentoAttribute
+    {
+    public:
+/*    
+    xxxx to do xxxx
+    which of these methods need to seek in stream?
+    is binary i/o complete w.r.t. writing length + data?
+*/
+        static const char* ID() { return "inst"; } ///< The data type name / class ID string.
+
+        VBentoBinary() : mValue(0) {} ///< Constructs with uninitialized name and a zero-length buffer.
+        VBentoBinary(VBinaryIOStream& stream) : VBentoAttribute(stream, ID()), mValue(0) { Vs64 length = stream.readS64(); ::streamCopy(stream, mValue); } ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoBinary(const VString& name, const Vu8* data, Vs64 length) : VBentoAttribute(name, ID()), mValue(0) { (void) mValue.write(data, length); } ///< Constructs from supplied name and value.
+        VBentoBinary(const VString& name, const VMemoryStream& stream) : VBentoAttribute(name, ID()), mValue(0) { ::streamCopy(stream, mValue); } ///< Constructs from supplied name and value.
+        virtual ~VBentoBinary() {} ///< Destructor.
+
+        virtual void getValueAsString(VString& s) const { mValue.getUTCString(s); }
+        virtual void getValueAsBentoTextString(VString& s) const { mValue.getUTCString(s); }
+
+//        inline getValue(VMemoryStream& value) const { ::streamCopy(mValue, value); } ///< Returns the attribute's value. @param value the memory stream to write to
+//        inline void setValue(const VMemoryStream& stream) { ::streamCopy(stream, mValue); } ///< Sets the attribute's value. @param i the attribute value
+
+    protected:
+
+        virtual Vs64 getDataLength() const { return mValue.eofOffset(); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeS64(mValue.getValue()); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%lld",mValue.getValue())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+
+    private:
+
+        VMemoryStream mValue; ///< The attribute value.
+    };
+#endif
 
 /**
 VBentoUnknownValue is a VBentoAttribute that holds a value that is read from
@@ -474,7 +574,7 @@ class VBentoUnknownValue : public VBentoAttribute
 
         static const char* ID() { return "unkn"; } ///< The data type name / class ID string.
 
-        VBentoUnknownValue() {} ///< Constructs with unitinitialized name and empty stream.
+        VBentoUnknownValue() {} ///< Constructs with uninitialized name and empty stream.
         VBentoUnknownValue(VBinaryIOStream& stream, Vs64 dataLength, const VString& dataType); ///< Constructs by reading from stream. @param stream the stream to read @param dataLength the length of stream data to read @param dataType the original data type value
         virtual ~VBentoUnknownValue() {} ///< Destructor.
 
@@ -521,7 +621,8 @@ class VBentoTextNodeParser
             IN_ATTRIBUTE_NAME,
             IN_ATTRIBUTE_TYPE,
             IN_ATTRIBUTE_PRE_VALUE,
-            IN_ATTRIBUTE_VALUE_QUOTED,
+            IN_ATTRIBUTE_VALUE_DOUBLE_QUOTED,
+            IN_ATTRIBUTE_VALUE_SINGLE_QUOTED,
             IN_ATTRIBUTE_VALUE_UNQUOTED
 
             } TokenState;
@@ -765,7 +866,20 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
                 else
                     {
                     mPendingToken += c;
-                    mTokenState = IN_ATTRIBUTE_VALUE_QUOTED;
+                    mTokenState = IN_ATTRIBUTE_VALUE_DOUBLE_QUOTED;
+                    }
+                }
+            else if (c == '\'') // single-quote char
+                {
+                if (mTokenEscapePending)
+                    {
+                    mPendingToken += c;
+                    mTokenEscapePending = false;
+                    }
+                else
+                    {
+                    mPendingToken += c;
+                    mTokenState = IN_ATTRIBUTE_VALUE_SINGLE_QUOTED;
                     }
                 }
             else
@@ -775,7 +889,8 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
                 mTokenEscapePending = false;
                 }
             break;
-        case IN_ATTRIBUTE_VALUE_QUOTED:
+        case IN_ATTRIBUTE_VALUE_DOUBLE_QUOTED:
+        case IN_ATTRIBUTE_VALUE_SINGLE_QUOTED:
             if (c == '\\') // backslash (escape) char
                 {
                 if (mTokenEscapePending)
@@ -786,7 +901,8 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
                 else
                     mTokenEscapePending = true;
                 }
-            else if (c == '\"') // double-quote char
+            else if (((c == '\"') && (mTokenState == IN_ATTRIBUTE_VALUE_DOUBLE_QUOTED)) ||  // matched double-quote char
+                    ((c == '\'') && (mTokenState == IN_ATTRIBUTE_VALUE_SINGLE_QUOTED)))     // matched single-quote char
                 {
                 if (mTokenEscapePending)
                     {
@@ -910,11 +1026,13 @@ static void _escapeString(VString& s)
     s.replace("{", "\\{");
     s.replace("}", "\\}");
     s.replace("\"", "\\\"");
+    s.replace("'", "\\'");
     }
 
 static void _unescapeString(VString& s)
     {
     // Remove any backslash that precedes a special character.
+    s.replace("\\'", "\'");
     s.replace("\\\"", "\"");
     s.replace("\\}", "}");
     s.replace("\\{", "{");
@@ -933,12 +1051,14 @@ void VBentoAttribute::writeToBentoTextStream(VTextIOStream& stream) const
     // But String, bool, and vs32 are most common and we can infer them
     // from how we format them, so we can have a cleaner format for them.
     // - string are "quoted"
+    // - char are 'quoted'
     // - vs32 (int) are unquoted and are numeric (a leading minus sign is OK)
     // - bool are unquoted true or false
     // - every other type has a (type) before the equal sign and is quoted.
     // - unknown types are encoded in hex with a leading 0x
     // Examples:
     // - A string:           "address"="123 Main St."
+    // - A char:             "initial"(char)="X"
     // - An integer:         "speed"=70
     // - A boolean:          "active"=true
     // - An 16-bit unsigned: "message_id"(vu_8)="7"
@@ -947,6 +1067,10 @@ void VBentoAttribute::writeToBentoTextStream(VTextIOStream& stream) const
     if (mDataType == VBentoString::ID())
         {
         stream.writeString(VString("[ \"%s\"=\"%s\" ]", name.chars(), valueString.chars()));
+        }
+    else if (mDataType == VBentoChar::ID())
+        {
+        stream.writeString(VString("[ \"%s\"='%s' ]", name.chars(), valueString.chars()));
         }
     else if ((mDataType == VBentoS32::ID()) || (mDataType == VBentoBool::ID()))
         {
@@ -1020,6 +1144,10 @@ VBentoAttribute* VBentoAttribute::newObjectFromStream(VBinaryIOStream& stream)
         return new VBentoFloat(stream);
     else if (theDataType == VBentoDouble::ID())
         return new VBentoDouble(stream);
+    else if (theDataType == VBentoDuration::ID())
+        return new VBentoDuration(stream);
+    else if (theDataType == VBentoInstant::ID())
+        return new VBentoInstant(stream);
     else
         return new VBentoUnknownValue(stream, theDataLength, theDataType);
     }
@@ -1038,13 +1166,15 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
     // the value. We support:
     //   numeric value strings imply int (leading minus sign is allowed)
     //   "quoted" value strings imply string
+    //   'quoted' value strings imply char
     //   true or false value strings imply bool
+    //   NOW, PAST, FUTURE, NEVER value strings imply instant
     VBentoAttribute* result = NULL;
     VString actualValue = attributeValue;
 
     if (! attributeType.isEmpty())
         {
-        if (attributeValue.startsWith('\"'))
+        if (attributeValue.startsWith('\"') || attributeValue.startsWith('\''))
             {
             attributeValue.getSubstring(actualValue, 1, attributeValue.length() - 1);
             _unescapeString(actualValue);
@@ -1084,6 +1214,18 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
             ::sscanf(actualValue, "%lf", &d);
             result = new VBentoDouble(attributeName, d);
             }
+        else if (attributeType == VBentoDuration::ID())
+            {
+            Vs64 milliseconds;
+            ::sscanf(actualValue, "%lldms", &milliseconds);
+            result = new VBentoDuration(attributeName, VDuration::MILLISECOND() * milliseconds);
+            }
+        else if (attributeType == VBentoInstant::ID())
+            {
+            VInstant i;
+            i.setUTCString(actualValue);
+            result = new VBentoInstant(attributeName, i);
+            }
         else
             throw VException("Parser encountered unknown data type '%s'", attributeType.chars());
         }
@@ -1094,11 +1236,26 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
             {
             result = new VBentoBool(attributeName, attributeValue == "true");
             }
+        else if ((attributeValue == "NOW") || (attributeValue == "NEVER") || (attributeValue == "PAST") || (attributeValue == "FUTURE"))
+            {
+            VInstant when;
+            when.setLocalString(attributeValue);
+            result = new VBentoInstant(attributeName, when);
+            }
         else if (attributeValue.startsWith('\"'))
             {
             attributeValue.getSubstring(actualValue, 1, attributeValue.length() - 1);
             _unescapeString(actualValue);
             result = new VBentoString(attributeName, actualValue);
+            }
+        else if (attributeValue.startsWith('\''))
+            {
+            attributeValue.getSubstring(actualValue, 1, attributeValue.length() - 1);
+            _unescapeString(actualValue);
+            VChar c;
+            if (actualValue.length() > 0)
+                c = actualValue[0];
+            result = new VBentoChar(attributeName, c);
             }
         else
             {
@@ -1157,8 +1314,11 @@ VBentoNode* VBentoNode::addNewChildNode(const VString& name)
 void VBentoNode::addInt(const VString& name, int value) { this->addS32(name, static_cast<Vs32>(value)); }
 void VBentoNode::addBool(const VString& name, bool value) { this->_addAttribute(new VBentoBool(name, value)); }
 void VBentoNode::addString(const VString& name, const VString& value) { this->_addAttribute(new VBentoString(name, value)); }
+void VBentoNode::addStringIfNotEmpty(const VString& name, const VString& value) { if (!value.isEmpty()) this->_addAttribute(new VBentoString(name, value)); }
 void VBentoNode::addChar(const VString& name, const VChar& value) { this->_addAttribute(new VBentoChar(name, value)); }
 void VBentoNode::addDouble(const VString& name, VDouble value) { this->_addAttribute(new VBentoDouble(name, value)); }
+void VBentoNode::addDuration(const VString& name, const VDuration& value) { this->_addAttribute(new VBentoDuration(name, value)); }
+void VBentoNode::addInstant(const VString& name, const VInstant& value) { this->_addAttribute(new VBentoInstant(name, value)); }
 void VBentoNode::addS8(const VString& name, Vs8 value) { this->_addAttribute(new VBentoS8(name, value)); }
 void VBentoNode::addU8(const VString& name, Vu8 value) { this->_addAttribute(new VBentoU8(name, value)); }
 void VBentoNode::addS16(const VString& name, Vs16 value) { this->_addAttribute(new VBentoS16(name, value)); }
@@ -1365,6 +1525,46 @@ VDouble VBentoNode::getDouble(const VString& name) const
 
     if (attribute == NULL)
         throw VException("Attribute type '%s' name '%s' not found.", VBentoDouble::ID(), name.chars());
+    else
+        return attribute->getValue();
+    }
+
+const VDuration& VBentoNode::getDuration(const VString& name, const VDuration& defaultValue) const
+    {
+    const VBentoDuration*    attribute = dynamic_cast<const VBentoDuration*> (this->_findAttribute(name, VBentoDuration::ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VDuration& VBentoNode::getDuration(const VString& name) const
+    {
+    const VBentoDuration*    attribute = dynamic_cast<const VBentoDuration*> (this->_findAttribute(name, VBentoDuration::ID()));
+
+    if (attribute == NULL)
+        throw VException("Attribute type '%s' name '%s' not found.", VBentoDuration::ID(), name.chars());
+    else
+        return attribute->getValue();
+    }
+
+const VInstant& VBentoNode::getInstant(const VString& name, const VInstant& defaultValue) const
+    {
+    const VBentoInstant*    attribute = dynamic_cast<const VBentoInstant*> (this->_findAttribute(name, VBentoInstant::ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VInstant& VBentoNode::getInstant(const VString& name) const
+    {
+    const VBentoInstant*    attribute = dynamic_cast<const VBentoInstant*> (this->_findAttribute(name, VBentoInstant::ID()));
+
+    if (attribute == NULL)
+        throw VException("Attribute type '%s' name '%s' not found.", VBentoInstant::ID(), name.chars());
     else
         return attribute->getValue();
     }

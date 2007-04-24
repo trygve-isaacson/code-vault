@@ -13,6 +13,7 @@ http://www.bombaydigital.com/
 #include "vtextiostream.h"
 #include "vmemorystream.h"
 #include "vhex.h"
+#include "vinstant.h"
 
 /*
 VBento
@@ -140,6 +141,9 @@ typedef std::vector<VBentoAttribute*> VBentoAttributePtrVector;
 class VBentoNode;
 typedef std::vector<VBentoNode*> VBentoNodePtrVector;
 
+class DOMNode;
+class DOMElement;
+
 /**
 VBentoNode represents an object in the data hierarchy; objects can have
 named/typed attributes attached to them, as well as contained (child)
@@ -148,7 +152,7 @@ objects.
 class VBentoNode
     {
     public:
-    
+
         // Lifecycle methods -------------------------------------------------
 
         /**
@@ -156,9 +160,9 @@ class VBentoNode
         contained child objects.
         */
         virtual ~VBentoNode();
-        
+
         // Methods for creating and serializing a data hierarchy -------------
-        
+
         /**
         Constructs an uninitialized object.
         */
@@ -168,7 +172,7 @@ class VBentoNode
         @param    name    the name to assign to the object
         */
         VBentoNode(const VString& name);
-        /**
+         /**
         Adds a child to the object. This object will delete the child
         object when this object is destructed.
         @param    node    the child object node to add
@@ -181,16 +185,19 @@ class VBentoNode
         @return the newly created and added child
         */
         VBentoNode* addNewChildNode(const VString& name);
-        
+
         // It is best to use this first set of data types, because they
         // are more naturally represented in other languages. Note that
         // "int" is just a more convenient name here for S32.
         void addInt(const VString& name, int value);                  ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addBool(const VString& name, bool value);                ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addString(const VString& name, const VString& value);    ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
+        void addStringIfNotEmpty(const VString& name, const VString& value);    ///< Adds the specified string to the node if its length is non-zero. @param name the attribute name @param value the attribute value
         void addChar(const VString& name, const VChar& value);        ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addDouble(const VString& name, VDouble value);           ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        
+        void addDuration(const VString& name, const VDuration& value);///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
+        void addInstant(const VString& name, const VInstant& value);  ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
+
         void addS8(const VString& name, Vs8 value);                   ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addU8(const VString& name, Vu8 value);                   ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addS16(const VString& name, Vs16 value);                 ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
@@ -200,8 +207,10 @@ class VBentoNode
         void addS64(const VString& name, Vs64 value);                 ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addU64(const VString& name, Vu64 value);                 ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addFloat(const VString& name, VFloat value);             ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
+//        void addBinary(const VString& name, const Vu8* data, Vs64 length);///< Adds the specified attribute to the node. @param name the attribute name @param data the data buffer to add @param length the length of data to add
+//        void addBinary(const VString& name, const VMemoryStream& stream);///< Adds the specified attribute to the node. @param name the attribute name @param stream the memory stream to write
 
-        /**
+       /**
         Writes the object, including its attributes and contained child
         objects, to a binary data stream.
         @param    stream    the stream to write to
@@ -221,7 +230,7 @@ class VBentoNode
         void writeToBentoTextString(VString& s) const;
 
         // Methods for de-serializing and reading a data hierarchy -----------
-        
+
         /**
         Constructs an object by reading it (including its attributes and
         contained child objects) from a Bento binary data stream.
@@ -234,7 +243,7 @@ class VBentoNode
         @param    bentoTextStream    the stream to read from
         */
         VBentoNode(VTextIOStream& bentoTextStream);
-        
+
         /**
         Reads the object (including its attributes and contained child objects)
         from a Bento binary data stream. This is an alternative to simply constructing the object
@@ -265,7 +274,7 @@ class VBentoNode
         @param    bentoTextString    the string to read from
         */
         void readFromBentoTextString(const VString& bentoTextString);
-        
+
         /**
         Returns the vector of contained child objects attached to this object.
         @return    the objects vector, which is a vector of pointers
@@ -302,6 +311,10 @@ class VBentoNode
         const VChar& getChar(const VString& name) const; ///< Returns the value of the specified string attribute, or throws an exception if no such string attribute exists. @param name the attribute name @return the found attribute's value
         VDouble getDouble(const VString& name, VDouble defaultValue) const; ///< Returns the value of the specified bool attribute, or the supplied default value if no such bool attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
         VDouble getDouble(const VString& name) const; ///< Returns the value of the specified bool attribute, or throws an exception if no such bool attribute exists. @param name the attribute name @return the found attribute's value
+        const VDuration& getDuration(const VString& name, const VDuration& defaultValue) const; ///< Returns the value of the specified bool attribute, or the supplied default value if no such bool attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
+        const VDuration& getDuration(const VString& name) const; ///< Returns the value of the specified bool attribute, or throws an exception if no such bool attribute exists. @param name the attribute name @return the found attribute's value
+        const VInstant& getInstant(const VString& name, const VInstant& defaultValue) const; ///< Returns the value of the specified bool attribute, or the supplied default value if no such bool attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
+        const VInstant& getInstant(const VString& name) const; ///< Returns the value of the specified bool attribute, or throws an exception if no such bool attribute exists. @param name the attribute name @return the found attribute's value
 
         Vs8 getS8(const VString& name, Vs8 defaultValue) const;    ///< Returns the value of the specified Vs8 attribute, or the supplied default value if no such Vs8 attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
         Vs8 getS8(const VString& name) const;    ///< Returns the value of the specified Vs8 attribute, or throws an exception if no such Vs8 attribute exists. @param name the attribute name @return the found attribute's value
@@ -319,8 +332,9 @@ class VBentoNode
         Vs64 getS64(const VString& name) const;    ///< Returns the value of the specified Vs64 attribute, or throws an exception if no such Vs64 attribute exists. @param name the attribute name @return the found attribute's value
         Vu64 getU64(const VString& name, Vu64 defaultValue) const;    ///< Returns the value of the specified Vu64 attribute, or the supplied default value if no such Vu64 attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
         Vu64 getU64(const VString& name) const;    ///< Returns the value of the specified Vu64 attribute, or throws an exception if no such Vu64 attribute exists. @param name the attribute name @return the found attribute's value
-        VFloat getFloat(const VString& name, VFloat defaultValue) const; ///< Returns the value of the specified bool attribute, or the supplied default value if no such bool attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
-        VFloat getFloat(const VString& name) const; ///< Returns the value of the specified bool attribute, or throws an exception if no such bool attribute exists. @param name the attribute name @return the found attribute's value
+        VFloat getFloat(const VString& name, VFloat defaultValue) const; ///< Returns the value of the specified VFloat attribute, or the supplied default value if no such VFloat attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
+        VFloat getFloat(const VString& name) const; ///< Returns the value of the specified VFloat attribute, or throws an exception if no such VFloat attribute exists. @param name the attribute name @return the found attribute's value
+//        void getBinary(const VString& name, VMemoryStream& value) const; ///< Returns the value of the specified binary data attribute, or the supplied default value if no such binary data attribute exists; the binary data is written to the supplied memory stream at its current i/o offset. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
 
         /**
         Returns the node's name.
@@ -332,9 +346,9 @@ class VBentoNode
         @param name the name to give the node
         */
         void setName(const VString& name);
-        
+
         // Debugging and other miscellaneous methods -------------------------
-        
+
         /**
         Writes the object, including its attributes and contained child
         objects, to an XML text stream.
@@ -351,7 +365,7 @@ class VBentoNode
         Prints the node's binary stream layout to stdout for debugging purposes.
         */
         void printHexDump(VHex& hexDump) const;
-        
+
     private:
 
         /**
@@ -370,7 +384,7 @@ class VBentoNode
         @return    the total streamed node length
         */
         Vs64 _calculateTotalSize() const;
-    
+
         /**
         Adds an attribute to the object. This object will delete the attribute
         object when this object is destructed.
@@ -434,8 +448,8 @@ class VBentoNode
         size varies.
         */
         static Vs64 _getBinaryStringLength(const VString& s);
-    
-        VString                     mName;          ///< The object's name.
+
+		VString                     mName;          ///< The object's name.
         VBentoAttributePtrVector    mAttributes;    ///< The object's attributes.
         VBentoNodePtrVector         mChildNodes;    ///< The object's contained child objects.
 
@@ -443,7 +457,7 @@ class VBentoNode
         VBentoNode(const VBentoNode&);
         /** Don't allow copy assignment -- default constructor has own heap memory. */
         void operator=(const VBentoNode&);
-        
+
         // These related classes use some of our private static utility functions.
         friend class VBentoAttribute;
         friend class VBentoCallbackParser;
@@ -465,7 +479,7 @@ readAttributeData, the data is skipped over in the input stream.
 class VBentoCallbackParser
     {
     public:
-    
+
         /**
         Constructs a callback parser.
         @param    stream    the input stream to read from
@@ -474,7 +488,7 @@ class VBentoCallbackParser
         virtual ~VBentoCallbackParser() {}    ///< Destructor.
 
     protected:
-    
+
         /**
         Processes a single node, including all its children (used recursively).
         @param    depth    the depth of this node in the hierarchy
