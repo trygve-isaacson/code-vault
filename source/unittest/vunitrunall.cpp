@@ -29,10 +29,21 @@ http://www.bombaydigital.com/
 #define UNIT_TEST(classname) \
     {  \
     classname u(logOnSuccess, throwOnError); \
-    VUnit::runUnit(u, xmlOutputStream); \
-    success = success && u.success(); \
-    numSuccessfulTests += u.getNumSuccessfulTests(); \
-    numFailedTests += u.getNumFailedTests(); \
+    try \
+        { \
+        VUnit::runUnit(u, xmlOutputStream); \
+        success = success && u.success(); \
+        numSuccessfulTests += u.getNumSuccessfulTests(); \
+        numFailedTests += u.getNumFailedTests(); \
+        } \
+    catch (...) \
+        { \
+        success = false; \
+        numSuccessfulTests += u.getNumSuccessfulTests(); \
+        numFailedTests += u.getNumFailedTests(); \
+        if (throwOnError) \
+            throw; \
+        } \
     }
 
 void runAllVUnitTests(bool logToFile, bool logOnSuccess, bool throwOnError, bool& success, int& numSuccessfulTests, int& numFailedTests, VTextIOStream* xmlOutputStream)
