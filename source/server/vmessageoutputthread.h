@@ -83,6 +83,12 @@ class VMessageOutputThread : public VSocketThread
         queue at the time the session shuts down are not sent.
         */
         void releaseAllQueuedMessages();
+        
+        /**
+        Returns the number of messages that are sitting on the output queue
+        that have yet to be sent.
+        */
+        int getOutputQueueSize() const;
 
 	private:
 	

@@ -44,7 +44,9 @@ VListenerThread* VSocketThread::getOwnerThread() const
 
 void VSocketThread::closeAndStop()
     {
-    mSocket->close();
+    if (mSocket != NULL)
+        mSocket->close();
+
     this->stop();
     }
 

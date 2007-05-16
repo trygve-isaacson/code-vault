@@ -116,6 +116,9 @@ class VClientSession
         virtual const VString& getClientAddress() const { return mClientAddress; }
         
     protected:
+
+        void _moveStandbyMessagesToAsyncOutputQueue();  ///< Moves messages from mStartupStandbyQueue to the output queue.
+        int _getOutputQueueSize() const;
     
         /**
         This method is called in response to shutdown if both the input and
@@ -140,7 +143,6 @@ class VClientSession
         
     private:
 
-        void _moveStandbyMessagesToAsyncOutputQueue();  ///< Moves messages from mStartupStandbyQueue to the output queue.
         void _releaseQueuedClientMessages();            ///< Releases all pending queued message back to the pool (called during shutdown).
 
 		VMessageQueue   mStartupStandbyQueue;	///< A queue we use to hold outbound updates while this client session is starting up.

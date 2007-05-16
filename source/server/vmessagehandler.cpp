@@ -85,6 +85,24 @@ VMessage* VMessageHandler::getMessage(VMessageID messageID)
     return mPool->get(messageID);
 	}
 
+void VMessageHandler::logMessageContentRecord(const VString& details, VLogger* logger) const
+	{
+	if (logger == NULL)
+		logger = this->_getMessageContentRecordLogger();
+	
+	if (logger != NULL)
+		logger->log(VMessage::kMessageContentRecordingLevel, NULL, 0, VString("[%s] %s", (mSession == NULL ? mThread->name().chars() : mSession->getName().chars()), details.chars()));
+	}
+
+void VMessageHandler::logMessageContentFields(const VString& details, VLogger* logger) const
+	{
+	if (logger == NULL)
+		logger = this->_getMessageContentFieldsLogger();
+	
+	if (logger != NULL)
+		logger->log(VMessage::kMessageContentFieldsLevel, NULL, 0, VString("[%s] %s", (mSession == NULL ? mThread->name().chars() : mSession->getName().chars()), details.chars()));
+	}
+
 void VMessageHandler::_logSimpleDispatch(const VString& dispatchInfo) const
 	{
 	VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerDispatchLevel, VString("[%s] %s", (mSession == NULL ? mThread->name().chars() : mSession->getName().chars()), dispatchInfo.chars()));
@@ -110,7 +128,17 @@ void VMessageHandler::_logMessageContentHexDump(const VString& info, const Vu8* 
 	VLOGGER_MESSAGE_HEXDUMP(VString("[%s] %s", (mSession == NULL ? mThread->name().chars() : mSession->getName().chars()), info.chars()), buffer, length);
 	}
 
-VLogger* VMessageHandler::_getDetailsLogger() const
+VLogger* VMessageHandler::_getMessageContentRecordLogger() const
+	{
+	VLogger* logger = VLogger::getLogger(VMessage::kMessageLoggerName);
+	
+	if (logger->isEnabledFor(VMessage::kMessageContentRecordingLevel))
+		return logger;
+	else
+		return NULL;
+	}
+
+VLogger* VMessageHandler::_getMessageContentFieldsLogger() const
 	{
 	VLogger* logger = VLogger::getLogger(VMessage::kMessageLoggerName);
 	
@@ -118,14 +146,5 @@ VLogger* VMessageHandler::_getDetailsLogger() const
 		return logger;
 	else
 		return NULL;
-	}
-
-void VMessageHandler::logMessageDetails(const VString& details, VLogger* logger) const
-	{
-	if (logger == NULL)
-		logger = this->_getDetailsLogger();
-	
-	if (logger != NULL)
-		logger->log(VMessage::kMessageContentFieldsLevel, NULL, 0, VString("[%s] %s", (mSession == NULL ? mThread->name().chars() : mSession->getName().chars()), details.chars()));
 	}
 

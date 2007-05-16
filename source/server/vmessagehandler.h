@@ -117,22 +117,41 @@ class VMessageHandler
 		/**
 		Logs (at the appropriate log level) the supplied information about the
 		message being handled. A message handler should call this to log the
-		data contained in the inbound message, one element at a time. An
+		data contained in the inbound message, one whole message at a time. An
 		optional facility here is that the caller may supplie the logger object
 		to which the output will be written, and may obtain that object via
-		a prior call to _getDetailsLogger(), which may return NULL. This allows
-		the caller to: first call _getDetailsLogger() to obtain the logger
+		a prior call to _getMessageContentRecordLogger(), which may return NULL. This allows
+		the caller to: first call _getMessageContentRecordLogger() to obtain the logger
 		object; if it's NULL (indicating the log level would emit nothing), it
-		can avoid calling _logMessageDetails() at all and also avoid building
+		can avoid calling logMessageContentRecord() at all and also avoid building
 		the log message strings; and if the logger is not NULL (indicating the
 		log level would emit data) then it can supply the logger to
-		_logMessageDetails() so that this function doesn't have to keep re-finding
+		logMessageContentRecord() so that this function doesn't have to keep re-finding
 		the logger over repeated calls.
 		@param	details	the text to be logged
 		@param	logger	the logger to write to, or NULL to force the function to
 						look up the logger
 		*/
-		void logMessageDetails(const VString& details, VLogger* logger=NULL) const;
+		void logMessageContentRecord(const VString& details, VLogger* logger=NULL) const;
+		/**
+		Logs (at the appropriate log level) the supplied information about the
+		message being handled. A message handler should call this to log the
+		data contained in the inbound message, one field at a time. An
+		optional facility here is that the caller may supply the logger object
+		to which the output will be written, and may obtain that object via
+		a prior call to _getMessageContentFieldsLogger(), which may return NULL. This allows
+		the caller to: first call _getMessageContentFieldsLogger() to obtain the logger
+		object; if it's NULL (indicating the log level would emit nothing), it
+		can avoid calling logMessageContentFields() at all and also avoid building
+		the log message strings; and if the logger is not NULL (indicating the
+		log level would emit data) then it can supply the logger to
+		logMessageContentFields() so that this function doesn't have to keep re-finding
+		the logger over repeated calls.
+		@param	details	the text to be logged
+		@param	logger	the logger to write to, or NULL to force the function to
+						look up the logger
+		*/
+		void logMessageContentFields(const VString& details, VLogger* logger=NULL) const;
 
 	protected:
 
@@ -155,6 +174,7 @@ class VMessageHandler
 		@param	contentInfo	the info to be logged
 		*/
 		void _logMessageContentRecord(const VString& contentInfo) const;
+		VLogger* _getMessageContentRecordLogger() const; ///< Returns the logger for message content, or NULL if that level is not enabled.
 		/**
 		Logs (at the appropriate log level) simple content info for a message
         that has been received or will be sent. You should only supply a
@@ -162,6 +182,7 @@ class VMessageHandler
 		@param	contentInfo	the info to be logged
 		*/
 		void _logMessageContentFields(const VString& contentInfo) const;
+		VLogger* _getMessageContentFieldsLogger() const; ///< Returns the logger for message fields, or NULL if that level is not enabled.
 		/**
 		Logs (at the appropriate log level) full hex dump content info for a message
         that has been received or will be sent..
@@ -170,15 +191,9 @@ class VMessageHandler
 		@param	length	the length of the buffer (or how much of it to dump)
 		*/
 		void _logMessageContentHexDump(const VString& info, const Vu8* buffer, Vs64 length) const;
-		/**
-		Returns a logger if message details should be logged. The message
-		handler classes will call this before emitting the detailed log output,
-		in order to be more efficient. If NULL is returned, the caller
-		shouldn't log the message details; otherwise, the returned logger
-		is the one it should log to, at kMessageDispatchDetailLogLevel level.
-		@return	a logger, if message detail should be logged; NULL if not
-		*/
-		VLogger* _getDetailsLogger() const;
+        /*
+        These methods
+        */
 
 		VMessage*		mMessage;	///< The message this handler is to process.
 		VServer*        mServer;	///< The server in which we are running.

@@ -174,6 +174,14 @@ void VClientSession::_moveStandbyMessagesToAsyncOutputQueue()
 	    }
     }
 
+int VClientSession::_getOutputQueueSize() const
+    {
+    if (mOutputThread == NULL)
+        return 0;
+    else
+        return mOutputThread->getOutputQueueSize();
+    }
+
 void VClientSession::_releaseQueuedClientMessages()
     {
 	VMutexLocker locker(&mMutex); // protect the mStartupStandbyQueue during queue operations

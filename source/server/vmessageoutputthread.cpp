@@ -89,6 +89,11 @@ void VMessageOutputThread::releaseAllQueuedMessages()
     mOutputQueue.releaseAllMessages();
     }
 
+int VMessageOutputThread::getOutputQueueSize() const
+    {
+    return static_cast<int>(mOutputQueue.getQueueSize());
+    }
+
 void VMessageOutputThread::_processNextOutboundMessage()
 	{
 	VMessage*	message = mOutputQueue.blockUntilNextMessage();
