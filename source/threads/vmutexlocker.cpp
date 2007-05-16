@@ -56,9 +56,15 @@ void VMutexLocker::unlock()
 
 void VMutexLocker::yield()
     {
-    this->unlock();
+    bool wasLocked = this->isLocked();
+    
+    if (wasLocked)
+        this->unlock();
+
     VThread::yield();
-    this->lock();
+
+    if (wasLocked)
+        this->lock();
     }
 
 // VMutexUnlocker --------------------------------------------------------------
