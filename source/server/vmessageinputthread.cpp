@@ -42,6 +42,9 @@ void VMessageInputThread::run()
 	and if we catch an exception we complete the thread, which will cause
 	the connection to be shut down (the subclass may need to shut down
 	additional resources by overridding run() and post-processing it).
+    Note that in the "error" exceptions below, we don't bother logging if
+    we know that the exception is due to expected input thread shutdown,
+    recognized by the fact that we are no longer in running state.
 	*/
 	
 	try
@@ -56,15 +59,18 @@ void VMessageInputThread::run()
 		}
 	catch (const VException& ex)
 		{
-		VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageInputThread exiting due to top level exception #%d '%s'.", mName.chars(), ex.getError(), ex.what()));
+        if (this->isRunning())
+            VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageInputThread exiting due to top level exception #%d '%s'.", mName.chars(), ex.getError(), ex.what()));
 		}
 	catch (std::exception& ex)
 		{
-		VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageInputThread exiting due to top level exception '%s'.", mName.chars(), ex.what()));
+        if (this->isRunning())
+            VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageInputThread exiting due to top level exception '%s'.", mName.chars(), ex.what()));
 		}
 	catch (...)
 		{
-		VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageInputThread exiting due to top level unknown exception.", mName.chars()));
+        if (this->isRunning())
+            VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageInputThread exiting due to top level unknown exception.", mName.chars()));
 		}
 
 	// This thread is done. Print our accumulated stats.
