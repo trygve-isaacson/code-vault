@@ -421,6 +421,28 @@ class VInterceptLogger : public VLogger
         VString mLastLoggedMessage;
     };
 
+/**
+VRawFileLogger is a VFileLogger that does not format the output in any way
+(no timestamp or log level indication).
+*/
+class VRawFileLogger : public VFileLogger
+    {
+    public:
+
+        /**
+        Constructs a new suppression logger object.
+        */
+        VRawFileLogger(int logLevel, const VString& name, const VString& filePath);
+        /**
+        Destructor.
+        */
+        virtual ~VRawFileLogger() {}
+
+    protected:
+
+        virtual void emit(int logLevel, const char* file, int line, const VString& message);
+
+    };
 
 #endif /* vlogplus_h */
 

@@ -413,3 +413,18 @@ void VInterceptLogger::emitRawLine(const VString& line)
     mLastLoggedMessage = line;
     }
 
+// VRawFileLogger ---------------------------------------------------------------
+
+VRawFileLogger::VRawFileLogger(int logLevel, const VString& name, const VString& filePath) :
+VFileLogger(logLevel, name, filePath)
+    {
+    }
+
+void VRawFileLogger::emit(int /*logLevel*/, const char* /*file*/, int /*line*/, const VString& message)
+    {
+    // The raw file logger does not want the supplied message to be
+    // time-stamped or have file/line information included, because a
+    // comparison will be done against just the logged message itself.
+    this->emitRawLine(message);
+    }
+
