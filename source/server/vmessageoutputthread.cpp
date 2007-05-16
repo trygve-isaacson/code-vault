@@ -119,7 +119,7 @@ bool VMessageOutputThread::_shouldSendOutboundMessage(VMessage* message)
     // The message may have been posted to the output queue while the session was
     // "alive", but by the time we were called the session began to shut down.
     // In that case, we do not want to send the message to this client.
-	if (mSession->isClientGoingOffline())
+	if ((mSession != NULL) && mSession->isClientGoingOffline())
 	    {
 		VLOGGER_MESSAGE_WARN(VString("VMessageOutputThread::_shouldSendOutboundMessage: NOT sending message@0x%08X to offline session [%s], presumably in process of session shutdown.", message, mSession->getClientAddress().chars()));
 	    return false;
