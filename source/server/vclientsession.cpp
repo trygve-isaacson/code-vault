@@ -14,6 +14,7 @@ http://www.bombaydigital.com/
 #include "vmessageoutputthread.h"
 #include "vmessagepool.h"
 #include "vsocket.h"
+#include "vbento.h"
 #include <algorithm> // for std::find
 
 // VClientSession --------------------------------------------------------------
@@ -140,6 +141,18 @@ bool VClientSession::postOutputMessage(VMessage* message, bool releaseIfNotPoste
 		VMessagePool::releaseMessage(message, message->getPool());
 
 	return posted;
+    }
+
+VBentoNode* VClientSession::getSessionInfo() const
+    {
+    VBentoNode* result = new VBentoNode(mName);
+    
+    result->addString("name", mName);
+    result->addString("type", mClientType);
+    result->addString("address", mClientAddress);
+    result->addString("shutting", mIsShuttingDown ? "yes":"no");
+    
+    return result;
     }
 
 void VClientSession::_selfDestruct()

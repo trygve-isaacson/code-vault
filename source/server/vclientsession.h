@@ -28,6 +28,7 @@ class VListenerThread;
 class VMessage;
 class VMessageHandlerTask;
 class VServer;
+class VBentoNode;
 
 typedef std::vector<const VMessageHandlerTask*> SessionTaskList;
 
@@ -42,7 +43,7 @@ that it is not destructed until pending attached threaded tasks complete
 class VClientSession
     {
     public:
-    
+
         /**
         Initializes the session object.
         @param  sessionBaseName used to prefix unique info to build mName
@@ -51,13 +52,13 @@ class VClientSession
         @param  socket      the socket the session is using
         */
         VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket);
-        
+
         const VString& getName() const { return mName; }
-        
+
         const VString& getClientType() const { return mClientType; }
         VMessageInputThread* getInputThread() const { return mInputThread; }
         VMessageOutputThread* getOutputThread() const { return mOutputThread; }
-        
+
         /**
         Adds a task to the session's task list; when the session is
         shut down, it will delay destruction until the task list is
@@ -115,11 +116,19 @@ class VClientSession
         */
         virtual const VString& getClientAddress() const { return mClientAddress; }
         
+        /**
+        Returns a new bento node with attributes describing the session. Subclasses
+        may override this, call inherited, and then add their own attributes to the
+        node. It is recommended to make all attributes strings since this is primarily
+        used to display diagnostic information.
+        */
+        virtual VBentoNode* getSessionInfo() const;
+
     protected:
 
         void _moveStandbyMessagesToAsyncOutputQueue();  ///< Moves messages from mStartupStandbyQueue to the output queue.
-        int _getOutputQueueSize() const;
-    
+        int _getOutputQueueSize() const; ///< Returns the number of messages currently queued on the output thread.
+
         /**
         This method is called in response to shutdown if both the input and
         output threads have ended; it waits until all attached tasks complete, and then
@@ -127,9 +136,9 @@ class VClientSession
         return from _selfDestruct(), because the session will be gone.
         */
         void _selfDestruct();
-    
+
         virtual ~VClientSession(); // protected because only our _selfDestruct knows what how to delete us correctly
-    
+
         VString                 mName;          ///< A name for the session to use in logging; built from supplied base name + IP address + port.
         VMutex                  mMutex;         ///< A mutex we use to enforce sequential processing of outbound messages, and to protect our task list.
         VServer*                mServer;        ///< The server that keeps track of this session.
@@ -140,16 +149,16 @@ class VClientSession
         VMessageInputThread*    mInputThread;   ///< The thread that is reading inbound messages from the client.
         VMessageOutputThread*   mOutputThread;  ///< If using a separate output thread, this is it (may be NULL for sync i/o model).
         bool                    mIsShuttingDown;///< True if we are in the process of tearing down the session.
-        
+
     private:
 
         void _releaseQueuedClientMessages();            ///< Releases all pending queued message back to the pool (called during shutdown).
 
 		VMessageQueue   mStartupStandbyQueue;	///< A queue we use to hold outbound updates while this client session is starting up.
         SessionTaskList mTasks;                 ///< Tasks currently pointing to this session; shutdown() waits until they're gone.
-        
+
         // We only access the socket i/o stream if postOutputMessage() is called
-        // and we are not set up to use a separate output message thread. 
+        // and we are not set up to use a separate output message thread.
 		VSocketStream   mSocketStream;  ///< The underlying raw socket stream over which this thread communicates.
 		VBinaryIOStream mIOStream;      ///< The binary-format i/o stream over the raw socket stream.
     };
@@ -165,7 +174,7 @@ VListenerThread constructor.
 class VClientSessionFactory
     {
     public:
-    
+
         /**
         Initializes the factory.
         @param  manager the manager to be supplied to sessions that are created
@@ -181,7 +190,7 @@ class VClientSessionFactory
         @param  ownerThread the listener thread that accepted the connection
         */
         virtual VClientSession* createSession(VSocket* socket, VListenerThread* ownerThread) = 0;
-        
+
         /**
         Adds the specified session to the server; the server keeps track of
         its sessions for purposes of broadcasting, clean shutdown, etc.
@@ -196,9 +205,9 @@ class VClientSessionFactory
         @param  manager the manager to notify, or NULL
         */
         void setManager(VManagementInterface* manager) { mManager = manager; }
-        
+
     protected:
-    
+
         VManagementInterface*   mManager;   ///< The object that will be notified of session events.
         VServer*                mServer;    ///< The server that will be notified of session creation.
     };
