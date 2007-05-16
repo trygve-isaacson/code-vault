@@ -1299,6 +1299,20 @@ VBentoNode::~VBentoNode()
         delete mChildNodes[i];
     }
 
+void VBentoNode::clear()
+    {
+    VSizeType    numAttributes = mAttributes.size();
+    for (VSizeType i = 0; i < numAttributes; ++i)
+        delete mAttributes[i];
+
+    VSizeType    numChildNodes = mChildNodes.size();
+    for (VSizeType i = 0; i < numChildNodes; ++i)
+        delete mChildNodes[i];
+
+    mAttributes.clear();
+    mChildNodes.clear();
+    }
+
 void VBentoNode::addChildNode(VBentoNode* node)
     {
     mChildNodes.push_back(node);

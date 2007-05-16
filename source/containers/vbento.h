@@ -365,6 +365,16 @@ class VBentoNode
         Prints the node's binary stream layout to stdout for debugging purposes.
         */
         void printHexDump(VHex& hexDump) const;
+        
+        /**
+        Deletes all attributes and children (recursive) from this node. This node
+        remains with the same name, but everything beneath it is destroyed. Be certain
+        that no one has retained pointers to child nodes nor references to
+        attributes of this or any child node, before calling this method. This method
+        may be useful if you build a Bento hierarchy, serialize it, and then wish to
+        re-use the base node.
+        */
+        void clear();
 
     private:
 
