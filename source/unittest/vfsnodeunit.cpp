@@ -265,37 +265,40 @@ void VFSNodeUnit::_testDirectoryIteration(const VFSNode& dir)
     }
 
     { // list() names test
+    int index = 0;
     VStringVector fileNames;
     dir.list(fileNames);
-    this->test(fileNames.size() == NUM_FILES_TO_CREATE, "list names size");
-    for (int i = 0; i < fileNames.size(); ++i)
+    this->test(static_cast<int>(fileNames.size()) == NUM_FILES_TO_CREATE, "list names size");
+    for (VStringVector::const_iterator i = fileNames.begin(); i != fileNames.end(); ++i, ++index)
         {
-        VString testIterFileName("iter_test_%d.txt", i);
-        this->test(fileNames[i] == testIterFileName, VString("list names #%d", i));
+        VString testIterFileName("iter_test_%d.txt", index);
+        this->test(*i == testIterFileName, VString("list names #%d", index));
         }
     }
 
     { // list() nodes test
+    int index = 0;
     VFSNodeVector fileNodes;
     dir.list(fileNodes);
-    this->test(fileNodes.size() == NUM_FILES_TO_CREATE, "list nodes size");
-    for (int i = 0; i < fileNodes.size(); ++i)
+    this->test(static_cast<int>(fileNodes.size()) == NUM_FILES_TO_CREATE, "list nodes size");
+    for (VFSNodeVector::const_iterator i = fileNodes.begin(); i != fileNodes.end(); ++i, ++index)
         {
-        VString testIterFileName("iter_test_%d.txt", i);
+        VString testIterFileName("iter_test_%d.txt", index);
         VString nodeFileName;
-        fileNodes[i].getName(nodeFileName);
-        this->test(nodeFileName == testIterFileName, VString("list nodes #%d", i));
+        i->getName(nodeFileName);
+        this->test(nodeFileName == testIterFileName, VString("list nodes #%d", index));
         }
     }
 
     { // iterate() test
+    int index = 0;
     VFSNodeIterateTestCallback callback;
     dir.iterate(callback);
-    this->test(callback.fNodeNames.size() == NUM_FILES_TO_CREATE, "iterate size");
-    for (int i = 0; i < callback.fNodeNames.size(); ++i)
+    this->test(static_cast<int>(callback.fNodeNames.size()) == NUM_FILES_TO_CREATE, "iterate size");
+    for (VStringVector::const_iterator i = callback.fNodeNames.begin(); i != callback.fNodeNames.end(); ++i, ++index)
         {
-        VString testIterFileName("iter_test_%d.txt", i);
-        this->test(callback.fNodeNames[i] == testIterFileName, VString("iterate nodes #%d", i));
+        VString testIterFileName("iter_test_%d.txt", index);
+        this->test(*i == testIterFileName, VString("iterate nodes #%d", index));
         }
     }
 
