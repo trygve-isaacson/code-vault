@@ -151,10 +151,10 @@ void VInstantUnit::run()
     // threads that get the current time from VInstant will see weirdness.)
     VInstant base0;
     VInstant basePlus1Minute = base0; basePlus1Minute += VDuration::MINUTE();
-    VInstant::incrementSimulatedClockOffset(CONST_S64(120000)); // this should move the universe to about base0 + 2 minutes
+    VInstant::incrementSimulatedClockOffset(2 * VDuration::MINUTE()); // should put us forward about 2 additional minutes
     VInstant fakeFutureNow;
     this->test(fakeFutureNow > basePlus1Minute, "advance simulated clock offset");
-    VInstant::setSimulatedClockOffset(0); // restore the time continuum to normal
+    VInstant::setSimulatedClockOffset(VDuration::ZERO()); // restore the time continuum to normal
     VInstant normalNow;
     this->test(normalNow >= base0, "restore simulated clock offset part 1");
     this->test(normalNow < basePlus1Minute, "restore simulated clock offset part 2"); // can only fail if it takes > 1 real minute to execute the last 5 lines of code
