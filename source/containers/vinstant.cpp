@@ -572,7 +572,7 @@ void VInstant::setLocalString(const VString& s)
         VInstantStruct when;
         when.mDayOfWeek = 0;
 
-        ::sscanf(s, "%d-%02d-%02d %02d:%02d:%02d.%03d UTC", &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
+        ::sscanf(s, "%d-%02d-%02d %02d:%02d:%02d.%03d", &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
 
         mValue = VInstant::_platform_offsetFromLocalStruct(when);
         }
@@ -893,15 +893,28 @@ VDuration VInstant::snapshotDelta(Vs64 snapshotValue)
     }
 
 // static
-void VInstant::incrementSimulatedClockOffset(Vs64 delta)
+void VInstant::incrementSimulatedClockOffset(const VDuration& delta)
     {
-    gSimulatedClockOffset += delta;
+    gSimulatedClockOffset += delta.getDurationMilliseconds();
     }
 
 // static
-void VInstant::setSimulatedClockOffset(Vs64 offsetValue)
+void VInstant::setSimulatedClockOffset(const VDuration& offset)
     {
-    gSimulatedClockOffset = offsetValue;
+    gSimulatedClockOffset = offset.getDurationMilliseconds();
+    }
+
+// static
+void VInstant::setSimulatedClockValue(const VInstant& simulatedCurrentTime)
+    {
+    VInstant now;
+    VInstant::setSimulatedClockOffset(simulatedCurrentTime - now);
+    }
+
+// static
+VDuration VInstant::getSimulatedClockOffset()
+    {
+    return VDuration::MILLISECOND() * gSimulatedClockOffset;
     }
 
 // VDate ---------------------------------------------------------------------

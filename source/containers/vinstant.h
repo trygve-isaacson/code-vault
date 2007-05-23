@@ -564,8 +564,9 @@ class VInstant
         code constructs may behave badly if time flows backwards. However, you may
         be able to apply an initial backwards offset if you wish to start your
         program running in a simulated time in the past.
+        @param delta the amount of offset to add/delete
         */
-        static void incrementSimulatedClockOffset(Vs64 delta);
+        static void incrementSimulatedClockOffset(const VDuration& delta);
         /**
         Sets the simulated clock offset. The simulated clock offset is applied
         by _platform_now() and _platform_snapshot() to the values they return. This
@@ -574,8 +575,20 @@ class VInstant
         code constructs may behave badly if time flows backwards. However, you may
         be able to apply an initial backwards offset if you wish to start your
         program running in a simulated time in the past.
+        @param offsetValue the simulated clock offset
         */
-        static void setSimulatedClockOffset(Vs64 offsetValue);
+        static void setSimulatedClockOffset(const VDuration& offset);
+        static void setSimulatedClockValue(const VInstant& simulatedCurrentTime);
+        /**
+        Returns the simulated clock offset. The simulated clock offset is applied
+        by _platform_now() and _platform_snapshot() to the values they return. This
+        can be used to simulate a faster passing of time, by adjusting the clock
+        forward. It may be impractical to adjust the clock backwards, because some
+        code constructs may behave badly if time flows backwards. However, you may
+        be able to apply an initial backwards offset if you wish to start your
+        program running in a simulated time in the past.
+        */
+        static VDuration getSimulatedClockOffset();
 
     private:
 
