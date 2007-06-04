@@ -155,48 +155,7 @@ mStringLength(0),
 mBufferLength(0),
 mBuffer(NULL)
     {
-    const char* buffer = CFStringGetCStringPtr(s, kCFStringEncodingUTF8);
-    if (buffer != NULL) // was able to get fast direct buffer access
-        {
-        this->copyFromBuffer(buffer, 0, strlen(buffer));
-        }
-    else
-        {
-        bool success = false;
-        int originalLength = static_cast<int>(CFStringGetLength(s));
-        int length = originalLength;
-
-        // Because of expansion that can happen during transcoding, the number of bytes we need
-        // might be more than the number of "characters" in the CFString. We start by trying with
-        // a buffer of the exact size, and if that fails, we try with double the space, and finally
-        // with quadruple the space. The only way this will fail is if the string contains
-        // mostly non-Roman characters and thus has lots of multi-byte data. (If CFString could
-        // tell us the output length ahead of time or upon failure, we could use that. Or, we
-        // could use a doubling factor and keep trying until we get it.)
-        this->preflight(length);
-        success = CFStringGetCString(s, mBuffer, static_cast<CFIndex>(length+1), kCFStringEncodingUTF8);
-
-        // try with a 2x buffer
-        if (! success)
-            {
-            length *= 2;
-            this->preflight(length);
-            success = CFStringGetCString(s, mBuffer, static_cast<CFIndex>(length+1), kCFStringEncodingUTF8);
-            }
-
-        // try with a 4x buffer
-        if (! success)
-            {
-            length *= 2;
-            this->preflight(length);
-            success = CFStringGetCString(s, mBuffer, static_cast<CFIndex>(length+1), kCFStringEncodingUTF8);
-            }
-
-        if (! success)
-            throw VException("VString CFStringRef constructor allocated up to %d bytes, which was insufficient for CFStringRef of length %d.", length, originalLength);
-
-        this->_setLength(length);
-        }
+    this->_assignFromCFString(s);
 
     ASSERT_INVARIANT();
     }
@@ -283,49 +242,8 @@ VString& VString::operator=(const boost::format& fmt)
 VString& VString::operator=(const CFStringRef& s)
     {
     ASSERT_INVARIANT();
-
-    const char* buffer = CFStringGetCStringPtr(s, kCFStringEncodingUTF8);
-    if (buffer != NULL) // was able to get fast direct buffer access
-        {
-        this->copyFromBuffer(buffer, 0, strlen(buffer));
-        }
-    else
-        {
-        bool success = false;
-        int originalLength = static_cast<int>(CFStringGetLength(s));
-        int length = originalLength;
-
-        // Because of expansion that can happen during transcoding, the number of bytes we need
-        // might be more than the number of "characters" in the CFString. We start by trying with
-        // a buffer of the exact size, and if that fails, we try with double the space, and finally
-        // with quadruple the space. The only way this will fail is if the string contains
-        // mostly non-Roman characters and thus has lots of multi-byte data. (If CFString could
-        // tell us the output length ahead of time or upon failure, we could use that. Or, we
-        // could use a doubling factor and keep trying until we get it.)
-        this->preflight(length);
-        success = CFStringGetCString(s, mBuffer, static_cast<CFIndex>(length+1), kCFStringEncodingUTF8);
-
-        // try with a 2x buffer
-        if (! success)
-            {
-            length *= 2;
-            this->preflight(length);
-            success = CFStringGetCString(s, mBuffer, static_cast<CFIndex>(length+1), kCFStringEncodingUTF8);
-            }
-
-        // try with a 4x buffer
-        if (! success)
-            {
-            length *= 2;
-            this->preflight(length);
-            success = CFStringGetCString(s, mBuffer, static_cast<CFIndex>(length+1), kCFStringEncodingUTF8);
-            }
-
-        if (! success)
-            throw VException("VString CFStringRef constructor allocated up to %d bytes, which was insufficient for CFStringRef of length %d.", length, originalLength);
-
-        this->_setLength(length);
-        }
+    
+    this->_assignFromCFString(s);
 
     ASSERT_INVARIANT();
 
@@ -1844,6 +1762,54 @@ int VString::_determineSprintfLength(const char* formatText, va_list args)
     va_end(args);
 
     return theLength;
+    }
+#endif
+
+#ifdef VAULT_CORE_FOUNDATION_SUPPORT
+void VString::_assignFromCFString(const CFStringRef& s)
+    {
+    const char* buffer = CFStringGetCStringPtr(s, kCFStringEncodingUTF8);
+    if (buffer != NULL) // was able to get fast direct buffer access
+        {
+        this->copyFromBuffer(buffer, 0, strlen(buffer));
+        }
+    else
+        {
+        bool success = false;
+        int originalLength = static_cast<int>(CFStringGetLength(s));
+        int length = originalLength;
+
+        // Because of expansion that can happen during transcoding, the number of bytes we need
+        // might be more than the number of "characters" in the CFString. We start by trying with
+        // a buffer of the exact size, and if that fails, we try with double the space, and finally
+        // with quadruple the space. The only way this will fail is if the string contains
+        // mostly non-Roman characters and thus has lots of multi-byte data. (If CFString could
+        // tell us the output length ahead of time or upon failure, we could use that. Or, we
+        // could use a doubling factor and keep trying until we get it.)
+        this->preflight(length);
+        success = CFStringGetCString(s, mBuffer, static_cast<CFIndex>(length+1), kCFStringEncodingUTF8);
+
+        // try with a 2x buffer
+        if (! success)
+            {
+            length *= 2;
+            this->preflight(length);
+            success = CFStringGetCString(s, mBuffer, static_cast<CFIndex>(length+1), kCFStringEncodingUTF8);
+            }
+
+        // try with a 4x buffer
+        if (! success)
+            {
+            length *= 2;
+            this->preflight(length);
+            success = CFStringGetCString(s, mBuffer, static_cast<CFIndex>(length+1), kCFStringEncodingUTF8);
+            }
+
+        if (! success)
+            throw VException("VString CFStringRef constructor allocated up to %d bytes, which was insufficient for CFStringRef of length %d.", length, originalLength);
+
+        this->_setLength(length);
+        }
     }
 #endif
 

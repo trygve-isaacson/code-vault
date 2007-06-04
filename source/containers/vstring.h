@@ -177,7 +177,7 @@ class VString
 
 #ifdef VAULT_CORE_FOUNDATION_SUPPORT
         /**
-        Copy constructor from CFStringRef.
+        Assign from CFStringRef.
         @param    s    the CFStringRef to copy
         */
         VString& operator=(const CFStringRef& s);
@@ -830,6 +830,10 @@ class VString
         @param    args        the argument list
         */
         static int _determineSprintfLength(const char* formatText, va_list args);
+#endif
+
+#ifdef VAULT_CORE_FOUNDATION_SUPPORT
+        void _assignFromCFString(const CFStringRef& s);
 #endif
     
         int     mStringLength;  ///< The length of the string.
