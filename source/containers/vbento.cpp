@@ -1313,6 +1313,31 @@ void VBentoNode::clear()
     mChildNodes.clear();
     }
 
+void VBentoNode::orphanAttributes()
+    {
+    mAttributes.clear(); // does not actually delete the objects
+    }
+
+void VBentoNode::orphanNodes()
+    {
+    mChildNodes.clear(); // does not actually delete the objects
+    }
+
+void VBentoNode::adoptFrom(VBentoNode* node)
+    {
+    // Destroy any existing attributes and children of this node.
+    this->clear();
+    
+    // Copy that node's name, then adopt its attributes and child nodes using shallow vector copy.
+    mName = node->getName();
+    mAttributes = node->mAttributes;
+    mChildNodes = node->mChildNodes;
+    
+    // We now own that node's attribute and child objects. Tell it to let go of them.
+    node->orphanAttributes();
+    node->orphanNodes();
+    }
+
 void VBentoNode::addChildNode(VBentoNode* node)
     {
     mChildNodes.push_back(node);

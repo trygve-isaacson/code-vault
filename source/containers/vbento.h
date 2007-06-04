@@ -375,6 +375,22 @@ class VBentoNode
         re-use the base node.
         */
         void clear();
+        /**
+        Removes all attribute references from this node. Presumably the caller is
+        now responsible for those objects, including their deletion.
+        */
+        void orphanAttributes();
+        /**
+        Removes all child node references from this node. Presumably the caller is
+        now responsible for those nodes, including their deletion.
+        */
+        void orphanNodes();
+        /**
+        Adopts the entire set of attributes and children from the specified node.
+        The supplied node will be modified with calls to orphanAttributes and
+        orphanNodes, because this node now owns those objects in memory.
+        */
+        void adoptFrom(VBentoNode* node);
 
     private:
 
