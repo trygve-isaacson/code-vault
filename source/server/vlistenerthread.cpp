@@ -17,7 +17,6 @@ http://www.bombaydigital.com/
 #include "vlogger.h"
 #include "vmessageinputthread.h"
 #include "vmessageoutputthread.h"
-#include <algorithm>
 
 VListenerThread::VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, const VString& bindAddress, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, VClientSessionFactory* sessionFactory, bool initiallyListening) :
 VThread(name, deleteSelfAtEnd, createDetached, manager),

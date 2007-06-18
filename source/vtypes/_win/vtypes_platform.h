@@ -101,6 +101,7 @@ needed.
 #include <io.h>
 #include <direct.h>
 #include <fcntl.h>
+#include <algorithm> // for std::find
 
 // If Windows globally #defines these as preprocessor macros, they cannot
 // be used as method names! Get rid of them.

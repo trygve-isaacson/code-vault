@@ -15,7 +15,6 @@ http://www.bombaydigital.com/
 #include "vmessagepool.h"
 #include "vsocket.h"
 #include "vbento.h"
-#include <algorithm> // for std::find
 
 // VClientSession --------------------------------------------------------------
 
