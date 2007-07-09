@@ -716,6 +716,18 @@ VBentoNode::~VBentoNode()
         delete mChildNodes[i];
     }
 
+VBentoNode::VBentoNode(const VBentoNode& original) :
+mName(original.getName())
+    {
+    const VBentoAttributePtrVector& originalAttributes = original._getAttributes();
+    for (VBentoAttributePtrVector::const_iterator i = originalAttributes.begin(); i != originalAttributes.end(); ++i)
+        mAttributes.push_back((*i)->clone());
+
+    const VBentoNodePtrVector& originalNodes = original.getNodes();
+    for (VBentoNodePtrVector::const_iterator i = originalNodes.begin(); i != originalNodes.end(); ++i)
+        mChildNodes.push_back(new VBentoNode(**i));
+    }
+
 void VBentoNode::clear()
     {
     VSizeType    numAttributes = mAttributes.size();
@@ -760,6 +772,50 @@ void VBentoNode::adoptFrom(VBentoNode* node)
     // We now own that node's attribute and child objects. Tell it to let go of them.
     node->orphanAttributes();
     node->orphanNodes();
+    }
+
+void VBentoNode::updateFrom(const VBentoNode& source)
+    {
+    // Copy the name if not empty.
+    if (source.getName().isNotEmpty())
+        mName = source.getName();
+
+    // Copy (adding as necessary) the attributes.
+    const VBentoAttributePtrVector& sourceAttributes = source._getAttributes();
+    for (VBentoAttributePtrVector::const_iterator i = sourceAttributes.begin(); i != sourceAttributes.end(); ++i)
+        {
+        const VBentoAttribute* targetAttribute = this->_findAttribute((*i)->getName(), (*i)->getDataType());
+        if (targetAttribute == NULL)
+            {
+            // Clone the source attribute and add it.
+            VBentoAttribute* clonedAttribute = (*i)->clone();
+            this->_addAttribute(clonedAttribute);
+            }
+        else
+            {
+            // Copy source attribute to target using VBentoAttribute assignment operator.
+            VBentoAttribute* source = *i;
+            VBentoAttribute* target = const_cast<VBentoAttribute*>(targetAttribute);
+            *target = *source;
+            }
+        }
+
+    const VBentoNodePtrVector& sourceChildren = source.getNodes();
+    for (VBentoNodePtrVector::const_iterator i = sourceChildren.begin(); i != sourceChildren.end(); ++i)
+        {
+        const VBentoNode* targetChild = this->findNode((*i)->getName());
+        if (targetChild == NULL)
+            {
+            // Clone the source node and add it.
+            VBentoNode* clonedChild = new VBentoNode(**i);
+            this->addChildNode(clonedChild);
+            }
+        else
+            {
+            // Recursively update the target child node.
+            const_cast<VBentoNode*>(targetChild)->updateFrom(**i);
+            }
+        }
     }
 
 void VBentoNode::addChildNode(VBentoNode* node)
