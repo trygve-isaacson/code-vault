@@ -111,6 +111,19 @@ class VClientSession
         */
 		virtual bool postOutputMessage(VMessage* message, bool releaseIfNotPosted=true, bool queueStandbyIfStartingUp=false);
         /**
+        Sends a message immediately to the supplied output stream, if the session
+        is in a valid state (not in the middle of shutting down). The VMessageOutputThread
+        class must use this to send asynchronous output messages in order to guarantee
+        that the test for state and the act of sending is done in an atomic fashion with
+        respect to the session state. We use our mMutex to protect the send operation
+        and the session shutdown procedure from each other. This means that this method
+        must not be called from inside one of our own methods that has the mutex locked.
+        @param  message         the message to send; the caller still owns it afterward
+		@param	sessionLabel	a label to use in log output, to identify the session
+		@param	out				the stream to write to
+        */
+        void sendMessageToClient(VMessage* message, const VString& sessionLabel, VBinaryIOStream& out);
+        /**
         Returns a string containing the client's address in address:port form.
         @return obvious
         */

@@ -109,10 +109,10 @@ bool VClientSession::postOutputMessage(VMessage* message, bool releaseIfNotPoste
     {
 	bool posted = false;
 
+    VMutexLocker locker(&mMutex); // protect the mStartupStandbyQueue during queue operations
+
 	if ((! mIsShuttingDown) && (! this->isClientGoingOffline())) // don't post if client is doing a disconnect
 		{
-		VMutexLocker locker(&mMutex); // protect the mStartupStandbyQueue during queue operations
-
 		if (queueStandbyIfStartingUp && ! this->isClientOnline())
 		    {
 		    VLOGGER_DEBUG(VString("[%s] SPARCSClientSession::postOutputMessage: Placing message message@0x%08X on standby queue.", this->getClientAddress().chars(), message));
@@ -140,6 +140,22 @@ bool VClientSession::postOutputMessage(VMessage* message, bool releaseIfNotPoste
 		VMessagePool::releaseMessage(message, message->getPool());
 
 	return posted;
+    }
+
+void VClientSession::sendMessageToClient(VMessage* message, const VString& sessionLabel, VBinaryIOStream& out)
+    {
+	VMutexLocker locker(&mMutex); // protect from session state changes while testing state and sending
+
+    if (mIsShuttingDown || this->isClientGoingOffline())
+        {
+        locker.unlock(); // unlock ASAP, before logging
+		VLOGGER_MESSAGE_WARN(VString("VClientSession::sendMessageToClient: NOT sending message@0x%08X to offline session [%s], presumably in process of session shutdown.", message, mClientAddress.chars()));
+        }
+    else
+        {
+        VLOGGER_CONDITIONAL_MESSAGE_LEVEL(VMessage::kMessageQueueOpsLevel, VString("[%s] VClientSession::sendMessageToClient: Sending message@0x%08X.", sessionLabel.chars(), message));
+        message->send(sessionLabel, out);
+        }
     }
 
 VBentoNode* VClientSession::getSessionInfo() const

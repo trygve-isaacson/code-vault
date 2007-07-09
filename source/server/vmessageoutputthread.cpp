@@ -97,35 +97,23 @@ int VMessageOutputThread::getOutputQueueSize() const
 void VMessageOutputThread::_processNextOutboundMessage()
 	{
 	VMessage*	message = mOutputQueue.blockUntilNextMessage();
-	
+
 	if (message == NULL)
 		{
 		// OK -- means we were awakened from block but w/o a message actually available
 		}
 	else
 		{
-		if (this->_shouldSendOutboundMessage(message))
-		    {
-    		VLOGGER_CONDITIONAL_MESSAGE_LEVEL(VMessage::kMessageQueueOpsLevel, VString("[%s] VMessageOutputThread::run: Sending message@0x%08X.", mName.chars(), message));
-			message->send(mName, mOutputStream);
-			}
+        if (mSession != NULL)
+            mSession->sendMessageToClient(message, mName, mOutputStream);
+        else
+            {
+            // We are just a client. No "session". Just send.
+            VLOGGER_CONDITIONAL_MESSAGE_LEVEL(VMessage::kMessageQueueOpsLevel, VString("[%s] VMessageOutputThread::_processNextOutboundMessage: Sending message@0x%08X.", mName.chars(), message));
+            message->send(mName, mOutputStream);
+            }
 
 		VMessagePool::releaseMessage(message, mMessagePool);
 		}
 	}
 
-bool VMessageOutputThread::_shouldSendOutboundMessage(VMessage* message)
-	{
-    // The message may have been posted to the output queue while the session was
-    // "alive", but by the time we were called the session began to shut down.
-    // In that case, we do not want to send the message to this client.
-	if ((mSession != NULL) && mSession->isClientGoingOffline())
-	    {
-		VLOGGER_MESSAGE_WARN(VString("VMessageOutputThread::_shouldSendOutboundMessage: NOT sending message@0x%08X to offline session [%s], presumably in process of session shutdown.", message, mSession->getClientAddress().chars()));
-	    return false;
-	    }
-    
-    // TODO: record statistics
-
-    return true;
-	}

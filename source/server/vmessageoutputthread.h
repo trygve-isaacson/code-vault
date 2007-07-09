@@ -28,7 +28,7 @@ and writing it to the output stream.
 class VMessageOutputThread : public VSocketThread
 	{
 	public:
-	
+
 		/**
 		Constructs the output thread. The supplied message pool and message
 		queue, server, and session are still owned by the caller; this class
@@ -49,7 +49,7 @@ class VMessageOutputThread : public VSocketThread
 		Virtual destructor.
 		*/
 		virtual ~VMessageOutputThread();
-	
+
 		/**
 		Handles requests and responses for the socket.
 		*/
@@ -76,14 +76,14 @@ class VMessageOutputThread : public VSocketThread
         @param  message the message to post (and send)
         */
 		void postOutputMessage(VMessage* message);
-        
+
         /**
         Releases all queued message back to the pool. This is called when
         the session shuts down. That is, any messages sitting on the output
         queue at the time the session shuts down are not sent.
         */
         void releaseAllQueuedMessages();
-        
+
         /**
         Returns the number of messages that are sitting on the output queue
         that have yet to be sent.
@@ -91,22 +91,12 @@ class VMessageOutputThread : public VSocketThread
         int getOutputQueueSize() const;
 
 	private:
-	
+
         /**
         Processes the next queued message, blocking if there is nothing queued.
         */
 		void _processNextOutboundMessage();
-		
-		/**
-        Returns true if the message should actually be sent; typically, the
-        only case where this is false is if the session is going offline (in
-        the process of shutting down) at the time of the call.
-		@param	message	the message to look at
-		@return true if the message should be sent; false if not; in either case
-				the message will ultimately be released back into the pool
-		*/
-		bool _shouldSendOutboundMessage(VMessage* message);
-	
+
 		VMessagePool*   mMessagePool;	///< The message pool where messages are released after they are sent.
 		VMessageQueue   mOutputQueue;	///< The output queue that this thread pulls messages from.
 		VSocketStream   mSocketStream;	///< The underlying raw stream the message data is written to.
