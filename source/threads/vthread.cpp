@@ -14,6 +14,10 @@ http://www.bombaydigital.com/
 #include "vlogger.h"
 #include "vmutexlocker.h"
 
+#ifdef VAULT_USER_STACKCRAWL_SUPPORT
+#include "vstackcrawl_user.h"
+#endif
+
 int VThread::smNumVThreads = 0;
 int VThread::smNumThreadMains = 0;
 int VThread::smNumVThreadsCreated = 0;
@@ -66,8 +70,12 @@ void VThread::start()
         return;
 
     mIsRunning = true;
-    
+
+#ifdef VAULT_USER_STACKCRAWL_SUPPORT
+    if (!VThread::threadCreate(&mThreadID, mCreateDetached, VStackCrawl_userThreadMain, (void*) this))
+#else    
     if (!VThread::threadCreate(&mThreadID, mCreateDetached, VThread::threadMain, (void*) this))
+#endif
         {
         mIsRunning = false;
         throw VException("VThread::start failed to start thread.");
