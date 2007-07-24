@@ -1,0 +1,33 @@
+/*
+This is an example file. You should copy it to the appropriate location in your
+application source code, remove the .txt suffix, remove this paragraph, and
+customize the values below.
+
+vconfigure.h for Code Vault
+
+This file is where you can define the switches that control which features are enabled
+or disabled in the Vault library.
+You should have a separate copy of this header file for each application, since each
+application may have different requirements.
+I recommend that you simply comment or un-comment the values below, so that it is
+clear by reading which ones you are not using.
+*/
+
+/* This flag enables formatting VString with the vararg ctor and the format() method. */
+#define VAULT_VARARG_STRING_FORMATTING_SUPPORT
+
+/* This flag enables formatting VString with boost:format on several methods. */
+/* It is only available if you are using Boost. */
+#define VAULT_BOOST_STRING_FORMATTING_SUPPORT
+
+/* This flag enables converting between VString and CFStringRef, and wrapping OSStatus errors in a VException. */
+/* It is only available when building a native Mac OS X Cocoa or Carbon application. */
+#define VAULT_CORE_FOUNDATION_SUPPORT
+
+/* This flag enables converting between VString and QString. */
+/* It is only available if you are using Qt. */
+#define VAULT_QT_SUPPORT
+
+/* This flag enables use of a user-defined stack crawl handler hook in VThread and Vassert. */
+/* It requires you to create a stack crawl header file that contains certain items (see VThread.cpp). */
+#define VAULT_USER_STACKCRAWL_SUPPORT
