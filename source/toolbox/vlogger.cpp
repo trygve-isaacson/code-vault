@@ -16,6 +16,103 @@ http://www.bombaydigital.com/
 
 V_STATIC_INIT_TRACE
 
+// VLoggerRepetitionFilter ---------------------------------------------------
+
+VLoggerRepetitionFilter::VLoggerRepetitionFilter() :
+mEnabled(true),
+mHasSavedMessage(false),
+mNumSuppressedOccurrences(0),
+mTimeOfLastOccurrence(VInstant::NEVER_OCCURRED()),
+mLogLevel(0),
+mFile(NULL),
+mLine(0)
+// mMessage -> empty
+    {
+    }
+
+void VLoggerRepetitionFilter::reset()
+    {
+    mHasSavedMessage = false;
+    mNumSuppressedOccurrences = 0;
+    mTimeOfLastOccurrence = VInstant::NEVER_OCCURRED();
+    mLogLevel = 0;
+    mFile = NULL;
+    mLine = 0;
+    mMessage = VString::EMPTY();
+    }
+
+bool VLoggerRepetitionFilter::checkMessage(VLogger* logger, int logLevel, const char* file, int line, const VString& message)
+    {
+    if (!mEnabled)
+        return true;
+
+    bool isRepeatMessage = mHasSavedMessage &&
+        (logLevel == mLogLevel) &&
+        (file == mFile) &&
+        (line == mLine) &&
+        (message == mMessage);
+
+    if (isRepeatMessage)
+        {
+        // This is a repeat message. Update our info and return false to indicate that
+        // this message should not yet be emitted.
+        ++mNumSuppressedOccurrences;
+        mTimeOfLastOccurrence.setNow();
+        }
+    else
+        {
+        // This is not a repeat message. Emit any pending saved recurring message,
+        // then reset to store this message, and return true to indicate that
+        // this message should be emitted (the first occurrence of a message is
+        // always emitted).
+        
+        // Emit pending saved message.
+        if (mHasSavedMessage && (mNumSuppressedOccurrences > 0))
+            this->_emitSuppressedMessages(logger);
+        
+        // Reset and store this new message.
+        mHasSavedMessage = true;
+        mNumSuppressedOccurrences = 0;
+        mTimeOfLastOccurrence.setNow();
+        mLogLevel = logLevel;
+        mFile = file;
+        mLine = line;
+        mMessage = message;
+        }
+    
+    return ! isRepeatMessage;
+    }
+
+void VLoggerRepetitionFilter::checkTimeout(VLogger* logger)
+    {
+    if (!mEnabled)
+        return;
+
+    if (mHasSavedMessage && (mNumSuppressedOccurrences > 0))
+        {
+        VInstant now;
+        if ((now - mTimeOfLastOccurrence) > VDuration::MINUTE())
+            this->_emitSuppressedMessages(logger);
+        }
+    }
+
+void VLoggerRepetitionFilter::_emitSuppressedMessages(VLogger* logger)
+    {
+    // If there was only 1 suppressed message, no need to mark it.
+    if (mNumSuppressedOccurrences > 1)
+        {
+        VString tweakedMessage("[%dx] %s", mNumSuppressedOccurrences, mMessage.chars());
+        logger->emit(mLogLevel, mFile, mLine, tweakedMessage);
+        }
+    else
+        {
+        logger->emit(mLogLevel, mFile, mLine, mMessage);
+        }
+
+    mHasSavedMessage = false;
+    mNumSuppressedOccurrences = 0;
+    }
+
 // VLogger -------------------------------------------------------------------
 
 // This style of static mutex declaration and access ensures correct
@@ -219,6 +316,7 @@ void VLogger::installDefaultLogger()
 VLogger::VLogger(int logLevel, const VString& name) :
 mLogLevel(logLevel),
 mName(name)
+// mRepetitionFilter -> initialized
     {
     }
 
@@ -241,13 +339,20 @@ void VLogger::_breakpointLocationForEmit()
 void VLogger::log(int logLevel, const char* file, int line, const VString& message)
     {
     VLogger::_breakpointLocationForLog();
+    
+    if (mRepetitionFilter.isEnabled()) // avoid mutex if no need to check filter
+        {
+        VMutexLocker timeoutLocker(&mMutex);
+        mRepetitionFilter.checkTimeout(this);
+        }
 
 	if (this->isEnabledFor(logLevel))
         {
         VLogger::_breakpointLocationForEmit();
 
         VMutexLocker locker(&mMutex);    // ensure multiple threads don't intertwine their log messages
-        this->emit(logLevel, file, line, message);
+        if (mRepetitionFilter.checkMessage(this, logLevel, file, line, message))
+            this->emit(logLevel, file, line, message);
         }
     }
 
@@ -398,6 +503,12 @@ VLogger(logLevel, name)
 bool VInterceptLogger::sawExpectedMessage(const VString& inMessage)
     {
     return (mLastLoggedMessage == inMessage);
+    }
+
+void VInterceptLogger::reset()
+    {
+    mLastLoggedMessage = VString::EMPTY();
+    mRepetitionFilter.reset();
     }
 
 void VInterceptLogger::emit(int /*logLevel*/, const char* /*file*/, int /*line*/, const VString& message)

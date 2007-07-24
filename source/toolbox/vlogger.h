@@ -14,6 +14,7 @@ http://www.bombaydigital.com/
 #include "vbufferedfilestream.h"
 #include "vsocketstream.h"
 #include "vtextiostream.h"
+#include "vinstant.h"
 
 #include <vector>
 
@@ -70,6 +71,74 @@ class VString;
 
 class VLogger;
 typedef std::vector<VLogger*> VLoggerList;
+
+/**
+VLoggerRepetitionFilter provides VLogger a simple way of preventing runaway
+repetitive log output. If the same text is emitted multiple times in succession,
+only the first and last occurrence is emitted (the last one is adorned with an
+indication of how many occurrences were suppressed, if any).
+*/
+class VLoggerRepetitionFilter
+    {
+    public:
+    
+        VLoggerRepetitionFilter();
+        virtual ~VLoggerRepetitionFilter() {}
+        
+        /**
+        Some VLogger subclasses may want to simply disable filtering.
+        This allows them to do so in their constructor, for example.
+        @param enabled true if enabling, false if disabling
+        */
+        void setEnabled(bool enabled) { mEnabled = enabled; }
+        /**
+        Returns true if the filter is enabled.
+        @return true if the filter is enabled
+        */
+        bool isEnabled() const { return mEnabled; }
+        
+        /**
+        Clears any pending message so that the filter is back
+        to an initial state. This does not change the enabled state.
+        */
+        void reset();
+        
+        /**
+        Checks the proposed log message; may save it or increment the internal counter;
+        may emit a pending saved message; returns true if the caller should proceed to
+        emit the message normally.
+        @param    logLevel    the level of detail of the message
+        @param    file        the file name that is emitting the log message;
+                                NULL will suppress file and line in output
+        @param    line        the line number that is emitting the log message
+        @param    message     the text to emit
+        @return true if the caller should proceed to emit the message, false if not
+        */
+        bool checkMessage(VLogger* logger, int logLevel, const char* file, int line, const VString& message);
+        
+        /**
+        Checks to see if a long time has elapsed since the pending repeat has been sitting
+        here. This is called by the logger before checking the log level. This prevents the case
+        where a repeat never gets output just because there's nothing after it that fits the
+        log level.
+        */
+        void checkTimeout(VLogger* logger);
+    
+    private:
+    
+        void _emitSuppressedMessages(VLogger* logger);
+
+        bool        mEnabled; // Certain logger subclasses may want to turn off filtering entirely.
+
+        // Information defining the saved output.
+        bool        mHasSavedMessage;
+        int         mNumSuppressedOccurrences;
+        VInstant    mTimeOfLastOccurrence;
+        int         mLogLevel;
+        const char* mFile;
+        int         mLine;
+        VString     mMessage;
+    };
 
 /**
 VLogger provides a logging interface that looks very similar to log4j in C++.
@@ -296,6 +365,8 @@ class VLogger
                                 // call to emit() or emitRawLine(), so implementors of those functions must
                                 // not re-lock because to do so would cause a deadlock.
 
+        VLoggerRepetitionFilter mRepetitionFilter;  ///< Used to prevent repetitive info from clogging output.
+
     private:
 
         /**
@@ -312,6 +383,8 @@ class VLogger
 
         static VLoggerList  gLoggers;       ///< The list of installed loggers.
         static VLogger*     gDefaultLogger; ///< The default logger returned if get by name fails.
+        
+        friend class VLoggerRepetitionFilter; // It will call our emit() function to emit saved messages.
     };
 
 /**
@@ -412,12 +485,16 @@ class VInterceptLogger : public VLogger
 
         bool sawExpectedMessage(const VString& inMessage);
         const VString& getLastMessage() const { return mLastLoggedMessage; }
+        
+        virtual void reset();
 
     protected:
+
         virtual void emit(int logLevel, const char* file, int line, const VString& message);
         virtual void emitRawLine(const VString& line);
 
     private:
+
         VString mLastLoggedMessage;
     };
 

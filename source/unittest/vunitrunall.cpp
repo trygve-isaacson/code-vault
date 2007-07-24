@@ -25,6 +25,7 @@ http://www.bombaydigital.com/
 #include "vtextiostream.h"
 #include "vthreadsunit.h"
 #include "vmessageunit.h"
+#include "vloggerunit.h"
 
 #define UNIT_TEST(classname) \
     {  \
@@ -78,6 +79,7 @@ void runAllVUnitTests(bool logToFile, bool logOnSuccess, bool throwOnError, bool
     UNIT_TEST(VStringUnit)
     UNIT_TEST(VThreadsUnit)
     UNIT_TEST(VMessageUnit)
+    UNIT_TEST(VLoggerUnit)
 
     }
 
