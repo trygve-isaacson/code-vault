@@ -12,7 +12,11 @@ http://www.bombaydigital.com/
 
 // VMessageQueue --------------------------------------------------------------
 
-VMessageQueue::VMessageQueue()
+VMessageQueue::VMessageQueue() :
+// mQueuedMessages -> empty
+mQueuedMessagesDataSize(0)
+// mMessageQueueMutex -> unlocked
+// mMessageQueueSemaphore -> unsignaled
 	{
 	}
 
@@ -35,26 +39,21 @@ void VMessageQueue::postMessage(VMessage* message)
 
 	mQueuedMessages.push_back(message);
 
+    if (message != NULL)
+        mQueuedMessagesDataSize += message->getMessageDataLength();
+
 	locker.unlock();	// otherwise signal() will deadlock
 	mMessageQueueSemaphore.signal();
 	}
 
 VMessage* VMessageQueue::blockUntilNextMessage()
 	{
-/*
-FIXME: Gotta figure out how to normalize Semaphore signal/wait between the
-Unix and Win models. For now, what works is:
-On Windows, wait on the semaphore and then get the next message.
-On Unix, get the next message if there is one; then wait-and-get as w/ Windows.
-*/
-#ifndef VPLATFORM_WIN
-	
+	// If there is a message on the queue, we can simply return it.
 	VMessage* message = this->getNextMessage();
 	if (message != NULL)
 		return message;
 
-#endif
-
+    // There is nothing on the queue, so wait until someone posts a message.
 	VMutex	dummy;
 	mMessageQueueSemaphore.wait(&dummy, VDuration::ZERO()); // possible FIXME: we may want to timeout after a couple of seconds (supply non-ZERO 2nd parameter)
 	
@@ -71,6 +70,9 @@ VMessage* VMessageQueue::getNextMessage()
 		{
 		message = mQueuedMessages.front();
 		mQueuedMessages.pop_front();
+
+        if (message != NULL)
+            mQueuedMessagesDataSize -= message->getMessageDataLength();
 		}
 	
 	return message;
@@ -85,6 +87,12 @@ VSizeType VMessageQueue::getQueueSize() const
 	{
 	// No need to lock here, nothing bad can happen underneath us.
 	return mQueuedMessages.size();
+	}
+
+Vs64 VMessageQueue::getQueueDataSize() const
+	{
+	// No need to lock here, nothing bad can happen underneath us.
+	return mQueuedMessagesDataSize;
 	}
 
 void VMessageQueue::releaseAllMessages()

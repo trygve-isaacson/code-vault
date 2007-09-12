@@ -83,6 +83,11 @@ class VMessageQueue
 		*/
 		VSizeType getQueueSize() const;
 		/**
+		Returns the number of message bytes currently in the queue.
+		@return obvious
+		*/
+		Vs64 getQueueDataSize() const;
+		/**
 		Releases all messages in the queue.
 		*/
 		void releaseAllMessages();
@@ -90,6 +95,7 @@ class VMessageQueue
 	protected:
 
 		MessageQueueT	mQueuedMessages;		///< The actual queue of messages.
+		Vs64            mQueuedMessagesDataSize;///< The number of bytes in the queued messages.
 		VMutex			mMessageQueueMutex;		///< The mutex used to synchronize.
 		VSemaphore		mMessageQueueSemaphore;	///< The semaphore used to block/awaken.
 	};

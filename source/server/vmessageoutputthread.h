@@ -43,8 +43,14 @@ class VMessageOutputThread : public VSocketThread
 		@param	messagePool	the pool from which new VMessage objects are created;
 							the caller retains ownership of the pool (it is not
 							deleted by this object upon its destruction)
+		@param maxQueueSize if non-zero, the max number of queued messages allowed; if a call
+		                    to postOutputMessage() occurs when the limit has been exceeded,
+		                    the call will just close the socket and return
+		@param maxQueueDataSize if non-zero, the max data size of queued messages allowed; if a call
+		                    to postOutputMessage() occurs when the limit has been exceeded,
+		                    the call will just close the socket and return
 		*/
-		VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSession* session, VMessagePool* messagePool);
+		VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSession* session, VMessagePool* messagePool, int maxQueueSize=0, Vs64 maxQueueDataSize=0);
 		/**
 		Virtual destructor.
 		*/
@@ -72,7 +78,9 @@ class VMessageOutputThread : public VSocketThread
         Posts a message to the output thread's output queue; the output thread
         will send the message in order of posting. If the output thread is
         blocked when the message is posted, the posting causes the output
-        thread to wake up.
+        thread to wake up. If the mMaxQueueSize or mMaxQueueDataSize has already
+        been exceeded, this method causes the socket to be closed and does not
+        post the message.
         @param  message the message to post (and send)
         */
 		void postOutputMessage(VMessage* message);
@@ -103,6 +111,8 @@ class VMessageOutputThread : public VSocketThread
 		VBinaryIOStream mOutputStream;	///< The formatted stream the message data is written to.
 		VServer*		mServer;        ///< The server object.
 		VClientSession*	mSession;       ///< The session object.
+        int             mMaxQueueSize;  ///< If non-zero, if a message is posted when there are already this many messages queued, we close the socket.
+        Vs64            mMaxQueueDataSize;///< If non-zero, if a message is posted when there are already this many bytes queued, we close the socket.
 	};
 
 #endif /* vmessageoutputthread_h */

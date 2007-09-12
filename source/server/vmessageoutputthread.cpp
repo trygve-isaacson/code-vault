@@ -9,17 +9,20 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vclientsession.h"
 #include "vmessagepool.h"
+#include "vsocket.h"
 
 // VMessageOutputThread -------------------------------------------------------
 
-VMessageOutputThread::VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSession* session, VMessagePool* messagePool)
+VMessageOutputThread::VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSession* session, VMessagePool* messagePool, int maxQueueSize, Vs64 maxQueueDataSize)
 : VSocketThread(name, socket, ownerThread),
 mMessagePool(messagePool),
 // mOutputQueue -> empty
 mSocketStream(socket, "VMessageOutputThread"),
 mOutputStream(mSocketStream),
 mServer(server),
-mSession(session)
+mSession(session),
+mMaxQueueSize(maxQueueSize),
+mMaxQueueDataSize(maxQueueDataSize)
 	{
 	}
 
@@ -81,6 +84,17 @@ void VMessageOutputThread::attachSession(VClientSession* session)
 
 void VMessageOutputThread::postOutputMessage(VMessage* message)
     {
+    int queueSize = static_cast<int>(mOutputQueue.getQueueSize());
+    Vs64 queueDataSize = mOutputQueue.getQueueDataSize();
+
+    if (((mMaxQueueSize != 0) && (queueSize >= mMaxQueueSize)) ||
+        ((mMaxQueueDataSize != 0) && (queueDataSize >= mMaxQueueDataSize)))
+        {
+        VLOGGER_ERROR(VString("[%s] VMessageOutputThread::run: Closing socket because of output queue excessive backlog of %d messages and %lld bytes.", mName.chars(), queueSize, queueDataSize));
+        mSocketStream.getSocket()->close();
+        return;
+        }
+
     mOutputQueue.postMessage(message);
     }
 
