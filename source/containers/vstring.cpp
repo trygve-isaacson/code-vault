@@ -73,9 +73,12 @@ mBufferLength(0),
 mBuffer(NULL)
     {
     int theLength = s.length();
-    this->preflight(theLength);
-    s.copyToBuffer(mBuffer, theLength+1);
-    this->_setLength(theLength);
+    if (theLength > 0)
+        {
+        this->preflight(theLength);
+        s.copyToBuffer(mBuffer, theLength+1);
+        this->_setLength(theLength);
+        }
 
     ASSERT_INVARIANT();
     }
