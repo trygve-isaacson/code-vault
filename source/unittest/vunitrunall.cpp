@@ -59,7 +59,7 @@ void runAllVUnitTests(bool logToFile, bool logOnSuccess, bool throwOnError, bool
         now.getLocalString(nowString, true);
         
         VString filePath("unit_%s.txt", nowString.chars());
-        VLogger::installLogger(new VFileLogger(VLogger::kDebug, "VUnit", filePath));
+        VLogger::installLogger(new VFileLogger(VLogger::kDebug, "VUnit", VString::EMPTY(), filePath));
         }
 
     success = true;

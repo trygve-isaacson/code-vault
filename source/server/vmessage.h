@@ -35,12 +35,12 @@ class VMessagePool;
 /** Emits a message at kWarn level to the message logger. */
 #define VLOGGER_MESSAGE_WARN(message) VLogger::getLogger(VMessage::kMessageLoggerName)->log(VLogger::kWarn, NULL, 0, message)
 /** Emits a message at specified level to the message logger; use the level constants defined in VMessage. */
-#define VLOGGER_MESSAGE_LEVEL(level, message) VLogger::getLogger(VMessage::kMessageLoggerName)->log(level, NULL, 0, message)
+#define VLOGGER_MESSAGE_LEVEL(level, message) do { VLogger* vmxcond = VLogger::getLoggerConditional(VMessage::kMessageLoggerName, level); if (vmxcond != NULL) vmxcond->log(level, NULL, 0, message); } while (false)
 /** Emits a hex dump at a specified level to the specified logger. */
-#define VLOGGER_MESSAGE_HEXDUMP(message, buffer, length) { VLogger* vmxcond = VLogger::getLogger(VMessage::kMessageLoggerName); if (vmxcond->isEnabledFor(VMessage::kMessageContentHexDumpLevel)) vmxcond->logHexDump(VMessage::kMessageContentHexDumpLevel, message, buffer, length); }
-
+#define VLOGGER_MESSAGE_HEXDUMP(message, buffer, length) do { VLogger* vmxcond = VLogger::getLoggerConditional(VMessage::kMessageLoggerName, VMessage::kMessageContentHexDumpLevel); if (vmxcond != NULL) vmxcond->logHexDump(VMessage::kMessageContentHexDumpLevel, message, buffer, length); } while (false)
 /** More efficient macro that avoids building log output unless log level is satisfied; Emits a message at specified level to the message logger; use the level constants defined in VMessage. */
-#define VLOGGER_CONDITIONAL_MESSAGE_LEVEL(level, message) { VLogger* vmlcond = VLogger::getLogger(VMessage::kMessageLoggerName); if (vmlcond->isEnabledFor(level)) vmlcond->log(level, NULL, 0, message); }
+#define VLOGGER_CONDITIONAL_MESSAGE_LEVEL(level, message) do { VLogger* vmxcond = VLogger::getLoggerConditional(VMessage::kMessageLoggerName, level); if (vmxcond != NULL) vmxcond->log(level, NULL, 0, message); } while (false)
+// VLOGGER_CONDITIONAL_MESSAGE_LEVEL is no longer necessary since VLOGGER_MESSAGE_LEVEL now does the same conditional check.
 
 /**
 VMessage is an abstract base class that implements the basic messaging
@@ -91,7 +91,7 @@ class VMessage : public VBinaryIOStream
 							leaves the message buffer alone so the data there remains intact
 							and available as the recycled message's data
 		*/
-		void recycle(VMessageID messageID=0, bool makeEmpty=kMakeEmpty);
+		virtual void recycle(VMessageID messageID=0, bool makeEmpty=kMakeEmpty);
 
 		/**
 		Sets the message ID, which is used when sending.
@@ -217,8 +217,8 @@ class VMessage : public VBinaryIOStream
         static const int kMessageHeaderLevel            = VLogger::kDebug + 0;  // message meta data such as ID, length, key, etc.
         static const int kMessageContentFieldsLevel     = VLogger::kDebug + 1;  // human-readable multi-line form of message content (e.g., non-bento message fields)
         static const int kMessageTrafficDetailsLevel    = VLogger::kDebug + 2;  // lower level details about message traffic
-        static const int kMessageHandlerDispatchLevel   = VLogger::kDebug + 3;  // _logSimpleDispatch <- start and end of every message handler
-        static const int kMessageHandlerDetailLevel     = VLogger::kDebug + 4;  // start and end of every message handler TASK, plus details of broadcast posting
+        static const int kMessageHandlerDispatchLevel   = VLogger::kDebug + 3;  // start and end of every message handler
+        static const int kMessageHandlerDetailLevel     = VLogger::kDebug + 4;  // start and end of every message handler task, plus details of broadcast posting
         static const int kMessageContentHexDumpLevel    = VLogger::kDebug + 5;  // hex dump of message content
         static const int kMessageQueueOpsLevel          = VLogger::kDebug + 6;  // low-level operations of message i/o queues
         static const int kMessageTraceDetailLevel       = VLogger::kTrace;      // extremely low-level message processing details

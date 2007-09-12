@@ -65,11 +65,11 @@ bool VLoggerRepetitionFilter::checkMessage(VLogger* logger, int logLevel, const 
         // then reset to store this message, and return true to indicate that
         // this message should be emitted (the first occurrence of a message is
         // always emitted).
-        
+
         // Emit pending saved message.
         if (mHasSavedMessage && (mNumSuppressedOccurrences > 0))
             this->_emitSuppressedMessages(logger);
-        
+
         // Reset and store this new message.
         mHasSavedMessage = true;
         mNumSuppressedOccurrences = 0;
@@ -79,7 +79,7 @@ bool VLoggerRepetitionFilter::checkMessage(VLogger* logger, int logLevel, const 
         mLine = line;
         mMessage = message;
         }
-    
+
     return ! isRepeatMessage;
     }
 
@@ -182,6 +182,19 @@ VLogger* VLogger::getLogger(const VString& name)
         }
 
     return VLogger::getDefaultLogger();
+    }
+
+// static
+VLogger* VLogger::getLoggerConditional(const VString& name, int logLevel)
+    {
+    VLogger* logger = VLogger::getLogger(name);
+
+    while ((logger != NULL) && (logger->getLevel() < logLevel))
+        {
+        logger = logger->_getNextLogger();
+        }
+
+    return logger;
     }
 
 // static
@@ -306,16 +319,17 @@ void VLogger::installDefaultLogger()
 
     if (gDefaultLogger == NULL)
         {
-        VLogger*        logger = new VCoutLogger(kWarn, "default");
+        VLogger* logger = new VCoutLogger(kWarn, "default", VString::EMPTY());
 
         gLoggers.push_back(logger);
         gDefaultLogger = logger;
         }
     }
 
-VLogger::VLogger(int logLevel, const VString& name) :
+VLogger::VLogger(int logLevel, const VString& name, const VString& nextLoggerName) :
 mLogLevel(logLevel),
-mName(name)
+mName(name),
+mNextLoggerName(nextLoggerName)
 // mRepetitionFilter -> initialized
     {
     }
@@ -339,7 +353,7 @@ void VLogger::_breakpointLocationForEmit()
 void VLogger::log(int logLevel, const char* file, int line, const VString& message)
     {
     VLogger::_breakpointLocationForLog();
-    
+
     if (mRepetitionFilter.isEnabled()) // avoid mutex if no need to check filter
         {
         VMutexLocker timeoutLocker(&mMutex);
@@ -354,6 +368,8 @@ void VLogger::log(int logLevel, const char* file, int line, const VString& messa
         if (mRepetitionFilter.checkMessage(this, logLevel, file, line, message))
             this->emit(logLevel, file, line, message);
         }
+
+    this->_forwardLog(logLevel, file, line, message);
     }
 
 void VLogger::log(int logLevel, const VString& message)
@@ -364,28 +380,27 @@ void VLogger::log(int logLevel, const VString& message)
 void VLogger::logHexDump(int logLevel, const VString& message, const Vu8* buffer, Vs64 length)
     {
     // Short circuit immediately if the detail level is too high.
-    if (! this->isEnabledFor(logLevel))
-        return;
-
-    this->log(logLevel, NULL, 0, message);
-
-    // We use an optimization here if the supplied length is zero: rather than
-    // go through the hex dump object to get nothing, we just stick a zero
-    // length indicator message in our "preface" string and skip the hex part.
-
-    VMutexLocker    locker(&mMutex);    // ensure multiple threads don't intertwine their log messages
-
-    if (length > 0)
+    if (this->isEnabledFor(logLevel))
         {
-        VMemoryStream    tempBuffer;
-        VTextIOStream    stream(tempBuffer);
-        VHex            hex(&stream);
-        hex.printHex(buffer, length);
-        Vu8                nullByte = 0;
-        (void) tempBuffer.write(&nullByte, 1);    // null terminate so it is a valid C string
+        VMutexLocker locker(&mMutex);    // ensure multiple threads don't intertwine their log messages
 
-        this->emitRawLine((char*) tempBuffer.getBuffer());
+        this->emit(logLevel, NULL, 0, message);
+
+        // If the length is zero, we don't output any lines at all.
+        if (length > 0)
+            {
+            VMemoryStream    tempBuffer;
+            VTextIOStream    stream(tempBuffer);
+            VHex            hex(&stream);
+            hex.printHex(buffer, length);
+            Vu8                nullByte = 0;
+            (void) tempBuffer.write(&nullByte, 1);    // null terminate so it is a valid C string
+
+            this->emitRawLine((char*) tempBuffer.getBuffer());
+            }
         }
+
+    this->_forwardLogHexDump(logLevel, message, buffer, length);
     }
 
 void VLogger::rawLog(const VString& message)
@@ -400,6 +415,34 @@ void VLogger::emit(int logLevel, const char* file, int line, const VString& mess
     VLogger::format(rawMessage, logLevel, file, line, message);
 
     this->emitRawLine(rawMessage);
+    }
+
+void VLogger::_forwardLog(int logLevel, const char* file, int line, const VString& message)
+    {
+    VLogger* next = this->_getNextLogger();
+    if (next != NULL)
+        next->log(logLevel, file, line, message);
+    }
+
+void VLogger::_forwardLogHexDump(int logLevel, const VString& message, const Vu8* buffer, Vs64 length)
+    {
+    VLogger* next = this->_getNextLogger();
+    if (next != NULL)
+        next->logHexDump(logLevel, message, buffer, length);
+    }
+
+VLogger* VLogger::_getNextLogger() const
+    {
+    VLogger* result = NULL;
+
+    if (mNextLoggerName.isNotEmpty())
+        {
+        VLogger* next = VLogger::getLogger(mNextLoggerName);
+        if ((next != NULL) && (next != this))
+            result = next;
+        }
+
+    return result;
     }
 
 // static
@@ -448,10 +491,17 @@ void VLogger::getLevelName(int logLevel, VString& name)
         name.format("%5d", logLevel);
     }
 
+// VForwardingLogger ---------------------------------------------------------------
+
+VForwardingLogger::VForwardingLogger(const VString& name, const VString& nextLoggerName) :
+VLogger(kOff, name, nextLoggerName)
+    {
+    }
+
 // VSuppressionLogger ---------------------------------------------------------------
 
 VSuppressionLogger::VSuppressionLogger(const VString& name) :
-VLogger(kOff, name)
+VLogger(kOff, name, VString::EMPTY())
     {
     }
 
@@ -461,8 +511,8 @@ VLogger(kOff, name)
 // files for logging. So if running Mac, use Unix rather than "native" line endings.
 // Otherwise things like "tail -f" won't be useful.
 
-VFileLogger::VFileLogger(int logLevel, const VString& name, const VString& filePath) :
-VLogger(logLevel, name),
+VFileLogger::VFileLogger(int logLevel, const VString& name, const VString& nextLoggerName, const VString& filePath) :
+VLogger(logLevel, name, nextLoggerName),
 mFileStream(VFSNode(filePath)),
 mOutputStream(mFileStream)
     {
@@ -480,8 +530,8 @@ void VFileLogger::emitRawLine(const VString& line)
 
 // VCoutLogger ---------------------------------------------------------------
 
-VCoutLogger::VCoutLogger(int logLevel, const VString& name) :
-VLogger(logLevel, name)
+VCoutLogger::VCoutLogger(int logLevel, const VString& name, const VString& nextLoggerName) :
+VLogger(logLevel, name, nextLoggerName)
     {
     std::cout << std::endl;
     }
@@ -494,8 +544,8 @@ void VCoutLogger::emitRawLine(const VString& line)
 
 // VInterceptLogger ---------------------------------------------------------------
 
-VInterceptLogger::VInterceptLogger(int logLevel, const VString& name) :
-VLogger(logLevel, name)
+VInterceptLogger::VInterceptLogger(int logLevel, const VString& name, const VString& nextLoggerName) :
+VLogger(logLevel, name, nextLoggerName)
 // mLastLoggedMessage constructs to empty string
     {
     }
@@ -526,8 +576,8 @@ void VInterceptLogger::emitRawLine(const VString& line)
 
 // VRawFileLogger ---------------------------------------------------------------
 
-VRawFileLogger::VRawFileLogger(int logLevel, const VString& name, const VString& filePath) :
-VFileLogger(logLevel, name, filePath)
+VRawFileLogger::VRawFileLogger(int logLevel, const VString& name, const VString& nextLoggerName, const VString& filePath) :
+VFileLogger(logLevel, name, nextLoggerName, filePath)
     {
     }
 

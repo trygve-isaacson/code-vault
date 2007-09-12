@@ -17,7 +17,7 @@ class V2xInterceptLogger : public VInterceptLogger
     {
     public:
 
-        V2xInterceptLogger(int logLevel, const VString& name) : VInterceptLogger(logLevel, name), mNumRawLinesEmitted(0) {}
+        V2xInterceptLogger(int logLevel, const VString& name) : VInterceptLogger(logLevel, name, VString::EMPTY()), mNumRawLinesEmitted(0) {}
         virtual ~V2xInterceptLogger() {}
 
         const VString& get2ndLastMessage() const { return m2ndLastLoggedMessage; }

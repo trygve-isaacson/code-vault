@@ -36,15 +36,15 @@ class VString;
 /** Emits a message at kInfo level to the default logger. */
 #define VLOGGER_INFO(message) VLogger::getDefaultLogger()->log(VLogger::kInfo, NULL, 0, message)
 /** Emits a message at kDebug level to the default logger. */
-#define VLOGGER_DEBUG(message) VLogger::getDefaultLogger()->log(VLogger::kDebug, NULL, 0, message)
+#define VLOGGER_DEBUG(message) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), VLogger::kDebug); if (vlcond != NULL) vlcond->log(VLogger::kDebug, NULL, 0, message); } while (false)
 /** Emits a message at kTrace level to the default logger. */
-#define VLOGGER_TRACE(message) VLogger::getDefaultLogger()->log(VLogger::kTrace, NULL, 0, message)
+#define VLOGGER_TRACE(message) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), VLogger::kTrace); if (vlcond != NULL) vlcond->log(VLogger::kTrace, NULL, 0, message); } while (false)
 /** Emits a message at a specified level to the default logger. */
-#define VLOGGER_LEVEL(level, message) VLogger::getDefaultLogger()->log(level, NULL, 0, message)
+#define VLOGGER_LEVEL(level, message) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), level); if (vlcond != NULL) vlcond->log(level, NULL, 0, message); } while (false)
 /** Emits a message at a specified level, including file and line number, to the default logger. */
-#define VLOGGER_LINE(level, message) VLogger::getDefaultLogger()->log(level, __FILE__, __LINE__, message)
+#define VLOGGER_LINE(level, message) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), level); if (vlcond != NULL) vlcond->log(level, __FILE__, __LINE__, message); } while (false)
 /** Emits a hex dump at a specified level to the default logger. */
-#define VLOGGER_HEXDUMP(level, message, buffer, length) VLogger::getDefaultLogger()->logHexDump(level, message, buffer, length)
+#define VLOGGER_HEXDUMP(level, message, buffer, length) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), level); if (vlcond != NULL) vlcond->logHexDump(level, message, buffer, length); } while (false)
 /** Returns true if the default logger would emit at the specified level. */
 #define VLOGGER_WOULD_LOG(level) (VLogger::getDefaultLogger()->getLevel() >= level)
 
@@ -57,17 +57,17 @@ class VString;
 /** Emits a message at kInfo level to the specified logger. */
 #define VLOGGER_NAMED_INFO(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kInfo, NULL, 0, message)
 /** Emits a message at kDebug level to the specified logger. */
-#define VLOGGER_NAMED_DEBUG(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kDebug, NULL, 0, message)
+#define VLOGGER_NAMED_DEBUG(loggername, message) do { VLogger* vlcond = VLogger::getLoggerConditional(loggername, VLogger::kDebug); if (vlcond != NULL) vlcond->log(VLogger::kDebug, NULL, 0, message); } while (false)
 /** Emits a message at kTrace level to the specified logger. */
-#define VLOGGER_NAMED_TRACE(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kTrace, NULL, 0, message)
+#define VLOGGER_NAMED_TRACE(loggername, message) do { VLogger* vlcond = VLogger::getLoggerConditional(loggername, VLogger::kTrace); if (vlcond != NULL) vlcond->log(VLogger::kTrace, NULL, 0, message); } while (false)
 /** Emits a message at a specified level to the specified logger. */
-#define VLOGGER_NAMED_LEVEL(loggername, level, message) VLogger::getLogger(loggername)->log(level, NULL, 0, message)
+#define VLOGGER_NAMED_LEVEL(loggername, level, message) do { VLogger* vlcond = VLogger::getLoggerConditional(loggername, level); if (vlcond != NULL) vlcond->log(level, NULL, 0, message); } while (false)
 /** Emits a message at a specified level, including file and line number, to the specified logger. */
-#define VLOGGER_NAMED_LINE(loggername, level, message) VLogger::getLogger(loggername)->log(level, __FILE__, __LINE__, message)
+#define VLOGGER_NAMED_LINE(loggername, level, message) do { VLogger* vlcond = VLogger::getLoggerConditional(loggername, level); if (vlcond != NULL) vlcond->log(level, __FILE__, __LINE__, message); } while (false)
 /** Emits a hex dump at a specified level to the specified logger. */
-#define VLOGGER_NAMED_HEXDUMP(loggername, level, message, buffer, length) VLogger::getLogger(loggername)->logHexDump(level, message, buffer, length)
+#define VLOGGER_NAMED_HEXDUMP(loggername, level, message, buffer, length) do { VLogger* vlcond = VLogger::getLoggerConditional(loggername, level); if (vlcond != NULL) vlcond->logHexDump(level, message, buffer, length); } while (false)
 /** Returns true if the specified logger would emit at the specified level. */
-#define VLOGGER_NAMED_WOULD_LOG(loggername, level) (VLogger::getLogger(loggername)->getLevel() >= level)
+#define VLOGGER_NAMED_WOULD_LOG(loggername, level) do { VLogger* vlcond = VLogger::getLoggerConditional(loggername, level); return (vlcond != NULL); } while (false)
 
 class VLogger;
 typedef std::vector<VLogger*> VLoggerList;
@@ -81,10 +81,10 @@ indication of how many occurrences were suppressed, if any).
 class VLoggerRepetitionFilter
     {
     public:
-    
+
         VLoggerRepetitionFilter();
         virtual ~VLoggerRepetitionFilter() {}
-        
+
         /**
         Some VLogger subclasses may want to simply disable filtering.
         This allows them to do so in their constructor, for example.
@@ -96,13 +96,13 @@ class VLoggerRepetitionFilter
         @return true if the filter is enabled
         */
         bool isEnabled() const { return mEnabled; }
-        
+
         /**
         Clears any pending message so that the filter is back
         to an initial state. This does not change the enabled state.
         */
         void reset();
-        
+
         /**
         Checks the proposed log message; may save it or increment the internal counter;
         may emit a pending saved message; returns true if the caller should proceed to
@@ -115,7 +115,7 @@ class VLoggerRepetitionFilter
         @return true if the caller should proceed to emit the message, false if not
         */
         bool checkMessage(VLogger* logger, int logLevel, const char* file, int line, const VString& message);
-        
+
         /**
         Checks to see if a long time has elapsed since the pending repeat has been sitting
         here. This is called by the logger before checking the log level. This prevents the case
@@ -123,9 +123,9 @@ class VLoggerRepetitionFilter
         log level.
         */
         void checkTimeout(VLogger* logger);
-    
+
     private:
-    
+
         void _emitSuppressedMessages(VLogger* logger);
 
         bool        mEnabled; // Certain logger subclasses may want to turn off filtering entirely.
@@ -175,6 +175,21 @@ class VLogger
         */
         static VLogger* getLogger(const VString& name);
         /**
+        Returns the named logger, or the default logger if there is no logger
+        with the specified name, but will return NULL if the resulting logger
+        (specified or default) would not emit at the specified log level nor
+        would any of its forward loggers. So you must check for a NULL result.
+        This function is most useful in conditional logging macros. Note that
+        the returned logger itself might not log at the specified level, but
+        it or one of its forward loggers will.
+        @param    name      the name of the logger to access
+        @param    logLevel  the log level at which output would log
+        @return a logger that will emit at the specified level, or NULL if none
+            will, search starting at the specified logger, falling back to the
+            default logger if the specified logger is not found
+        */
+        static VLogger* getLoggerConditional(const VString& name, int logLevel);
+        /**
         Returns the named logger, or NULL if there is no logger with that name.
         @param    name    the name of the logger to access
         @return the specified logger, or NULL if not found
@@ -223,10 +238,11 @@ class VLogger
 
         /**
         Constructs a new logger object.
-        @param    logLevel    the level of detail for messages to emit
-        @param    name        the name of the logger, used for finding by name
+        @param  logLevel        the level of detail for messages to emit
+        @param  name            the name of the logger, used for finding by name
+        @param  nextLoggerName  the name of the next logger in chain, or empty if none
         */
-        VLogger(int logLevel, const VString& name);
+        VLogger(int logLevel, const VString& name, const VString& nextLoggerName);
         /**
         Destructor.
         */
@@ -378,20 +394,62 @@ class VLogger
         static void _breakpointLocationForLog();
         static void _breakpointLocationForEmit();
 
-        int     mLogLevel;  ///< Only messages with a detail level <= this will be emitted.
-        VString mName;      ///< This logger's unique name so it can be looked up.
+        /**
+        Forwards the log output to the next logger in the chain if applicable.
+        */
+        void _forwardLog(int logLevel, const char* file, int line, const VString& message);
+        /**
+        Forwards the hex dump log output to thenext logger in the chain if applicable.
+        */
+        void _forwardLogHexDump(int logLevel, const VString& message, const Vu8* buffer, Vs64 length);
+        /**
+        Returns the next logger in the chain, or NULL if mNextLoggerName is empty or resolves
+        to this logger itself.
+        */
+        VLogger* _getNextLogger() const;
+
+        int     mLogLevel;          ///< Only messages with a detail level <= this will be emitted.
+        VString mName;              ///< This logger's unique name so it can be looked up.
+        VString mNextLoggerName;    ///< Name of the next logger in the chain, or empty if none.
 
         static VLoggerList  gLoggers;       ///< The list of installed loggers.
         static VLogger*     gDefaultLogger; ///< The default logger returned if get by name fails.
-        
+
         friend class VLoggerRepetitionFilter; // It will call our emit() function to emit saved messages.
+    };
+
+/**
+VForwardingLogger is a logger that produces no output of its own but can
+be initialized with a "next" logger to which output is forwarded; its
+purpose is to allow chaining of loggers to facilitate multiple named
+loggers having output implemented in one logger. For example, you could
+define a file logger named "abc", and have several forwarding loggers
+with particular names whose output goes to the "abc" logger. You can do
+this with other logger classes but they also emit their output to
+concrete destinations. This one just forwards.
+*/
+class VForwardingLogger : public VLogger
+    {
+    public:
+
+        /**
+        Constructs a new forwarding logger object.
+        @param  name            the name of the logger, used for finding by name
+        @param  nextLoggerName  the name of the next logger in chain; empty makes no sense but is allowed
+        */
+        VForwardingLogger(const VString& name, const VString& nextLoggerName);
+        /**
+        Destructor.
+        */
+        virtual ~VForwardingLogger() {}
     };
 
 /**
 VSuppressionLogger is a logger that eats everything. You could install
 it as the default logger to make sure nothing is emitted to cout since
 normally a VCoutLogger is installed as the default, if that's what you
-want.
+want. This type of logger never chains to a next logger because its
+purpose is to consume all of its output.
 */
 class VSuppressionLogger : public VLogger
     {
@@ -417,11 +475,12 @@ class VFileLogger : public VLogger
 
         /**
         Constructs a new file logger object.
-        @param    logLevel    the level of detail for messages to emit
-        @param    name        the name of the logger, used for finding by name
-        @param    filePath    the path of the file to create and write to
+        @param  logLevel        the level of detail for messages to emit
+        @param  name            the name of the logger, used for finding by name
+        @param  nextLoggerName  the name of the next logger in chain, or empty if none
+        @param  filePath        the path of the file to create and write to
         */
-        VFileLogger(int logLevel, const VString& name, const VString& filePath);
+        VFileLogger(int logLevel, const VString& name, const VString& nextLoggerName, const VString& filePath);
         /**
         Destructor.
         */
@@ -447,10 +506,11 @@ class VCoutLogger : public VLogger
 
         /**
         Constructs a new standard output logger object.
-        @param    logLevel    the level of detail for messages to emit
-        @param    name        the name of the logger, used for finding by name
+        @param  logLevel        the level of detail for messages to emit
+        @param  name            the name of the logger, used for finding by name
+        @param  nextLoggerName  the name of the next logger in chain, or empty if none
         */
-        VCoutLogger(int logLevel, const VString& name);
+        VCoutLogger(int logLevel, const VString& name, const VString& nextLoggerName);
         /**
         Destructor.
         */
@@ -475,9 +535,12 @@ class VInterceptLogger : public VLogger
     public:
 
         /**
-        Constructs a new suppression logger object.
+        Constructs a new intercept logger object.
+        @param  logLevel        the level of detail for messages to emit
+        @param  name            the name of the logger, used for finding by name
+        @param  nextLoggerName  the name of the next logger in chain, or empty if none
         */
-        VInterceptLogger(int logLevel, const VString& name);
+        VInterceptLogger(int logLevel, const VString& name, const VString& nextLoggerName);
         /**
         Destructor.
         */
@@ -485,7 +548,7 @@ class VInterceptLogger : public VLogger
 
         bool sawExpectedMessage(const VString& inMessage);
         const VString& getLastMessage() const { return mLastLoggedMessage; }
-        
+
         virtual void reset();
 
     protected:
@@ -507,9 +570,13 @@ class VRawFileLogger : public VFileLogger
     public:
 
         /**
-        Constructs a new suppression logger object.
+        Constructs a new raw file logger object.
+        @param  logLevel        the level of detail for messages to emit
+        @param  name            the name of the logger, used for finding by name
+        @param  nextLoggerName  the name of the next logger in chain, or empty if none
+        @param  filePath        the path of the file to create and write to
         */
-        VRawFileLogger(int logLevel, const VString& name, const VString& filePath);
+        VRawFileLogger(int logLevel, const VString& name, const VString& nextLoggerName, const VString& filePath);
         /**
         Destructor.
         */
