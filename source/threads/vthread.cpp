@@ -134,7 +134,7 @@ void* VThread::threadMain(void* arg)
     VThread*    thread = static_cast<VThread*> (arg);
     VString        threadName = thread->name();
     
-    VLOGGER_DEBUG(VString("VThread::threadMain: started thread '%s'.", threadName.chars()));
+    VLOGGER_DEBUG(VString("VThread::threadMain: start of thread '%s' id 0x%08X.", threadName.chars(), thread->threadID()));
     
     bool        deleteAtEnd = thread->getDeleteAtEnd();
     
