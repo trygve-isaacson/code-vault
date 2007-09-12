@@ -46,7 +46,7 @@ class VString;
 /** Emits a hex dump at a specified level to the default logger. */
 #define VLOGGER_HEXDUMP(level, message, buffer, length) VLogger::getDefaultLogger()->logHexDump(level, message, buffer, length)
 /** Returns true if the default logger would emit at the specified level. */
-#define VLOGGER_WOULD_LOG(level) (VLogger::getDefaultLogger()->getLevel() => level)
+#define VLOGGER_WOULD_LOG(level) (VLogger::getDefaultLogger()->getLevel() >= level)
 
 /** Emits a message at kFatal level to the specified logger. */
 #define VLOGGER_NAMED_FATAL(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kFatal, __FILE__, __LINE__, message)
@@ -67,7 +67,7 @@ class VString;
 /** Emits a hex dump at a specified level to the specified logger. */
 #define VLOGGER_NAMED_HEXDUMP(loggername, level, message, buffer, length) VLogger::getLogger(loggername)->logHexDump(level, message, buffer, length)
 /** Returns true if the specified logger would emit at the specified level. */
-#define VLOGGER_NAMED_WOULD_LOG(loggername, level) (VLogger::getLogger(loggername)->getLevel() => level)
+#define VLOGGER_NAMED_WOULD_LOG(loggername, level) (VLogger::getLogger(loggername)->getLevel() >= level)
 
 class VLogger;
 typedef std::vector<VLogger*> VLoggerList;
