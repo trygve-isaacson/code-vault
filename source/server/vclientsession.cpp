@@ -97,10 +97,11 @@ void VClientSession::shutdown(VThread* callingThread)
 	if ((mInputThread == NULL) &&
 		(mOutputThread == NULL))
 		{
+		locker.unlock(); // must be unlocked before removeClientSession() or our _selfDestruct()
+
         if (mServer != NULL)
             mServer->removeClientSession(this);
 
-		locker.unlock();// otherwise, we violate the "delete this" caveat of the next line
         this->_selfDestruct(); // illegal to refer to "this" after this line of code
 		}
     }
