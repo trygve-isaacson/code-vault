@@ -72,23 +72,19 @@ void VThreadsUnit::run()
 
         {    
         VMutexLocker locker(&mutex1);
-        this->test(mutex1.isLocked() && locker.isLocked(), "mutex locker initial lock");
+        this->test(locker.isLocked(), "mutex locker initial lock");
         }
-
-    this->test(! mutex1.isLocked(), "mutex locker scope unlock");
 
         {    
         VMutexLocker locker(&mutex1, false);
-        this->test(! mutex1.isLocked() && ! locker.isLocked(), "mutex locker initial unlock");
+        this->test(! locker.isLocked(), "mutex locker initial unlock");
 
         locker.lock();
-        this->test(mutex1.isLocked() && locker.isLocked(), "mutex locker explicit lock");
+        this->test(locker.isLocked(), "mutex locker explicit lock");
 
         locker.unlock();
-        this->test(! mutex1.isLocked() && ! locker.isLocked(), "mutex locker explicit unlock");
+        this->test(! locker.isLocked(), "mutex locker explicit unlock");
         }
-
-    this->test(! mutex1.isLocked(), "mutex locker scope leave unlock");
 
     // Test creating a couple of threads, join to them, and verify that they ran.
     // We give each one a different sleep duration, so they behave a little differently.
