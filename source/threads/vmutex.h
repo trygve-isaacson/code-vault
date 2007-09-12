@@ -34,7 +34,7 @@ being raised.
 class VMutex
     {
     public:
-    
+
         /**
         Creates and initializes the mutex.
         */
@@ -43,7 +43,7 @@ class VMutex
         Destructs the mutex.
         */
         virtual ~VMutex();
-        
+
         /**
         Acquires the mutex lock; if the mutex is currently locked by another
         thread, this call blocks until the mutex lock can be acquired (if
@@ -57,24 +57,19 @@ class VMutex
         this thread releases it.
         */
         void unlock();
-        /**
-        Returns true if this mutex is locked.
-        @return    true if this mutex is locked
-        */
-        bool isLocked() const { return mIsLocked; }
-        
+
         /**
         Returns a pointer to the raw OS mutex handle.
         @return    a pointer to the raw OS mutex handle
         */
         VMutex_Type* mutex();
-    
+
         /* PLATFORM-SPECIFIC STATIC FUNCTIONS --------------------------------
         The remaining functions defined here are the low-level interfaces to
         the platform-specific threading APIs. These are implemented in each
         platform-specific version of vthread_platform.cpp.
         */
-        
+
         /**
         Initializes the platform mutex value.
         Wrapper on Unix for pthread_mutex_init.
@@ -82,14 +77,14 @@ class VMutex
         @return true on success; false on failure
         */
         static bool mutexInit(VMutex_Type* mutex);
-        
+
         /**
         Destroys the platform mutex value.
         Wrapper on Unix for pthread_mutex_destroy.
         @param    mutex    pointer to the platform mutex
         */
         static void mutexDestroy(VMutex_Type* mutex);
-        
+
         /**
         Locks the platform mutex value.
         Wrapper on Unix for pthread_mutex_lock.
@@ -105,9 +100,9 @@ class VMutex
         static bool mutexUnlock(VMutex_Type* mutex);
 
     private:
-    
+
         VMutex_Type mMutex;     ///< The OS mutex handle.
-        bool        mIsLocked;  ///< True if this object has the mutex lock.
+        VThreadID_Type mLastLockThread; ///< If locked, the thread that acquired the lock.
     };
 
 #endif /* vmutex_h */

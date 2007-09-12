@@ -9,9 +9,10 @@ http://www.bombaydigital.com/
 #include "vmutex.h"
 
 #include "vexception.h"
+#include "vthread.h"
 
 VMutex::VMutex() :
-mIsLocked(false)
+mLastLockThread((VThreadID_Type) -1)
     {
     if (! VMutex::mutexInit(&mMutex))
         throw VException("VMutex::VMutex unable to initialize mutex.");
@@ -25,16 +26,14 @@ VMutex::~VMutex()
 void VMutex::lock()
     {
     if (VMutex::mutexLock(&mMutex))
-        mIsLocked = true;
+        mLastLockThread = VThread::threadSelf();
     else
         throw VException("VMutex::lock unable to lock mutex.");
     }
 
 void VMutex::unlock()
     {
-    if (VMutex::mutexUnlock(&mMutex))
-        mIsLocked = false;
-    else
+    if (! VMutex::mutexUnlock(&mMutex))
         throw VException("VMutex::unlock unable to unlock mutex.");
     }
 
