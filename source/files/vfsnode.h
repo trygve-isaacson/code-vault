@@ -145,6 +145,10 @@ class VFSNode
         */
         VFSNode();
         /**
+        Copy constructor.
+        */
+        VFSNode(const VFSNode& rhs);
+        /**
         Constructs a VFSNode with a path.
         @param    path    the path of the file or directory
         */

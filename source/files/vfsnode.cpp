@@ -16,14 +16,14 @@ http://www.bombaydigital.com/
 class VFSNodeListCallback : public VDirectoryIterationCallback
     {
     public:
-    
+
         VFSNodeListCallback(VFSNodeVector& nodeList) : VDirectoryIterationCallback(), mNodeList(nodeList) {}
         virtual ~VFSNodeListCallback() {}
 
         virtual bool handleNextNode(const VFSNode& node);
 
     private:
-    
+
         VFSNodeVector& mNodeList;
     };
 
@@ -38,14 +38,14 @@ bool VFSNodeListCallback::handleNextNode(const VFSNode& node)
 class VFSNodeNameCallback : public VDirectoryIterationCallback
     {
     public:
-    
+
         VFSNodeNameCallback(VStringVector& nameList) : VDirectoryIterationCallback(), mNameList(nameList) {}
         virtual ~VFSNodeNameCallback() {}
 
         virtual bool handleNextNode(const VFSNode& node);
 
     private:
-    
+
         VStringVector& mNameList;
     };
 
@@ -62,17 +62,17 @@ bool VFSNodeNameCallback::handleNextNode(const VFSNode& node)
 class VFSNodeFindCallback : public VDirectoryIterationCallback
     {
     public:
-    
+
         VFSNodeFindCallback(const VString& nameToMatch);
         virtual ~VFSNodeFindCallback() {}
 
         virtual bool handleNextNode(const VFSNode& node);
-        
+
         bool found() const { return mFound; }
         void getMatchedNode(VFSNode& node) const { node = mMatchedNode; }
 
     private:
-    
+
         bool    mFound;
         VString mNameToMatchLowerCase;
         VFSNode mMatchedNode;
@@ -91,14 +91,14 @@ bool VFSNodeFindCallback::handleNextNode(const VFSNode& node)
     VString nodeNameLowerCase;
     node.getName(nodeNameLowerCase);
     nodeNameLowerCase.toLowerCase();
-    
+
     if (nodeNameLowerCase == mNameToMatchLowerCase)
         {
         mFound = true;
         mMatchedNode = node;
         return false; // we found a match, so stop looking
         }
-    
+
     return true;
     }
 
@@ -117,6 +117,11 @@ void VFSNode::denormalizePath(VString& path)
     }
 
 VFSNode::VFSNode()
+    {
+    }
+
+VFSNode::VFSNode(const VFSNode& node) :
+mPath(node.mPath)
     {
     }
 
@@ -166,7 +171,7 @@ void VFSNode::getParentPath(VString& parentPath) const
 void VFSNode::getParentNode(VFSNode& parent) const
     {
     VString    parentPath;
-    
+
     this->getParentPath(parentPath);
     parent.setPath(parentPath);
     }
@@ -179,7 +184,7 @@ void VFSNode::getChildPath(const VString& childName, VString& childPath) const
 void VFSNode::getChildNode(const VString& childName, VFSNode& child) const
     {
     VString    childPath;
-    
+
     this->getChildPath(childName, childPath);
     child.setPath(childPath);
     }
@@ -189,14 +194,14 @@ void VFSNode::mkdirs() const
     // If this directory already exists, we are done.
     if (this->exists())
         return;
-    
+
     // Create the parent directory (and its parents etc.) if necessary.
     VFSNode    parentNode;
     this->getParentNode(parentNode);
-    
+
     if (! parentNode.getPath().isEmpty())    // root or parent of supplied path must be assumed to exist
         parentNode.mkdirs();
-    
+
     // Create this directory specifically.
     this->mkdir();
     }
@@ -222,7 +227,7 @@ bool VFSNode::rm() const
 
     if (isDir)
         success = this->rmDirContents();
-    
+
     if (success)
         {
         if (isDir)
@@ -238,14 +243,14 @@ bool VFSNode::rmDirContents() const
     {
     bool            allSucceeded = true;
     VFSNodeVector    children;
-    
+
     this->list(children);
-    
+
     for (VSizeType i = 0; i < children.size(); ++i)
         {
         allSucceeded = allSucceeded && children[i].rm();
         }
-    
+
     return allSucceeded;
     }
 
@@ -253,7 +258,7 @@ void VFSNode::renameToPath(const VString& newPath) const
     {
     VFSNode newNode(newPath);
     VString newName;
-    
+
     newNode.getName(newName);
 
     this->_platform_renameNode(newName);
@@ -270,10 +275,10 @@ void VFSNode::renameToName(const VString& newName, VFSNode& nodeToUpdate) const
 
     VFSNode    parentNode;
     this->getParentNode(parentNode);
-    
+
     VString    newPath;
     parentNode.getChildPath(newName, newPath);
-    
+
     nodeToUpdate.setPath(newPath);    // it IS allowed for nodeToUpdate to be this
     }
 
@@ -282,7 +287,7 @@ void VFSNode::renameToNode(const VFSNode& newNode) const
     VString    newPath;
 
     newNode.getPath(newPath);
-    
+
     this->renameToPath(newPath);
     }
 
@@ -307,11 +312,11 @@ bool VFSNode::find(const VString& name, VFSNode& node) const
     {
     VFSNodeFindCallback callback(name);
     this->_platform_directoryIterate(callback);
-    
+
     bool found = callback.found();
     if (found)
         callback.getMatchedNode(node);
-    
+
     return found;
     }
 
@@ -358,7 +363,7 @@ bool VFSNode::isFile() const
     {
     VFSNodeInfo info;
     bool exists = this->_platform_getNodeInfo(info);
-    
+
     return exists && info.mIsFile;
     }
 
@@ -366,7 +371,7 @@ bool VFSNode::isDirectory() const
     {
     VFSNodeInfo info;
     bool exists = this->_platform_getNodeInfo(info);
-    
+
     return exists && info.mIsDirectory;
     }
 
@@ -380,21 +385,21 @@ static void _debugCheck(bool success)
         s = NULL;    // avoid compiler warning for unused variable s
         }
     }
-    
+
 // static
 int VFSNode::_wrap_mkdir(const char* path, mode_t mode)
     {
     int        result;
     bool    done = false;
-    
+
     while (! done)
         {
         result = vault::mkdir(path, mode);
-        
+
         if ((result == 0) || (errno != EINTR))
             done = true;
         }
-    
+
     /*
     If two threads are competing to create the same directory, even if they
     both check for its existence, they might end up trying to create it at
@@ -402,7 +407,7 @@ int VFSNode::_wrap_mkdir(const char* path, mode_t mode)
     The best thing for our interface is to have mkdir succeed if the directory
     already exists.
     */
-    
+
     if ((result == -1) && (errno == EEXIST))
         {
         // Call stat to determine whether the existent node is a directory.
@@ -426,11 +431,11 @@ int VFSNode::_wrap_rename(const char* oldName, const char* newName)
     while (! done)
         {
         result = vault::rename(oldName, newName);
-        
+
         if ((result == 0) || (errno != EINTR))
             done = true;
         }
-    
+
     _debugCheck(result == 0);
 
     return result;
@@ -445,11 +450,11 @@ int VFSNode::_wrap_stat(const char* path, struct stat* buf)
     while (! done)
         {
         result = vault::stat(path, buf);
-        
+
         if ((result == 0) || (errno != EINTR))
             done = true;
         }
-    
+
     _debugCheck(result == 0);
 
     return result;
@@ -464,11 +469,11 @@ int VFSNode::_wrap_unlink(const char* path)
     while (! done)
         {
         result = vault::unlink(path);
-        
+
         if ((result == 0) || (errno != EINTR))
             done = true;
         }
-    
+
     _debugCheck(result == 0);
 
     return result;
@@ -483,11 +488,11 @@ int VFSNode::_wrap_rmdir(const char* path)
     while (! done)
         {
         result = vault::rmdir(path);
-        
+
         if ((result == 0) || (errno != EINTR))
             done = true;
         }
-    
+
     _debugCheck(result == 0);
 
     return result;
