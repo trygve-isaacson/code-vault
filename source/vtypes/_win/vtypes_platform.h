@@ -166,29 +166,49 @@ Intel byte order.
 
 #define VBYTESWAP_NEEDED
 
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_HTONS_GET(x)         vault::VbyteSwap16((Vu16) x)
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_NTOHS_GET(x)         vault::VbyteSwap16((Vu16) x)
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_HTONS_IN_PLACE(x)    ((x) = (vault::VbyteSwap16((Vu16) x)))
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_NTOHS_IN_PLACE(x)    ((x) = (vault::VbyteSwap16((Vu16) x)))
 
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_HTONL_GET(x)         vault::VbyteSwap32((Vu32) x)
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_NTOHL_GET(x)         vault::VbyteSwap32((Vu32) x)
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_HTONL_IN_PLACE(x)    ((x) = (vault::VbyteSwap32((Vu32) x)))
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_NTOHL_IN_PLACE(x)    ((x) = (vault::VbyteSwap32((Vu32) x)))
 
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_HTON64_GET(x)        vault::VbyteSwap64((Vu64) x)
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_NTOH64_GET(x)        vault::VbyteSwap64((Vu64) x)
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_HTON64_IN_PLACE(x)   ((x) = (vault::VbyteSwap64((Vu64) x)))
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_NTOH64_IN_PLACE(x)   ((x) = (vault::VbyteSwap64((Vu64) x)))
 
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_HTONF_GET(x)         vault::VbyteSwapFloat((VFloat) x)
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_NTOHF_GET(x)         vault::VbyteSwapFloat((VFloat) x)
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_HTONF_IN_PLACE(x)    ((x) = (vault::VbyteSwapFloat((VFloat) x)))
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_NTOHF_IN_PLACE(x)    ((x) = (vault::VbyteSwapFloat((VFloat) x)))
 
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_HTOND_GET(x)			vault::VbyteSwapDouble((VDouble) x)
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_NTOHD_GET(x)			vault::VbyteSwapDouble((VDouble) x)
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_HTOND_IN_PLACE(x)	((x) = (vault::VbyteSwapDouble((VDouble) x)))
+//lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_NTOHD_IN_PLACE(x)	((x) = (vault::VbyteSwapDouble((VDouble) x)))
 
 typedef size_t ssize_t;
@@ -258,6 +278,8 @@ inline int rmdir(const char* path) { return ::_rmdir(path); }
 inline int unlink(const char* path) { return ::_unlink(path); }
 inline int rename(const char* oldName, const char* newName) { return ::rename(oldName, newName); }
 inline int stat(const char* path, struct stat* buf) { return ::stat(path, buf); }
+inline int strcasecmp(const char* s1, const char* s2) { return ::_stricmp(s1, s2); }
+inline int strncasecmp(const char* s1, const char* s2, size_t length) { return ::_strnicmp(s1, s2, length); }
 inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args) { return ::_vsnprintf(buffer, length, format, args); }
 
 inline int snprintf(char* buffer, size_t length, const char* format, ...)
@@ -284,6 +306,8 @@ inline int rmdir(const char* path) { return ::_rmdir(path); }
 inline int unlink(const char* path) { return ::unlink(path); }
 inline int rename(const char* oldName, const char* newName) { return ::rename(oldName, newName); }
 inline int stat(const char* path, struct stat* buf) { return ::stat(path, buf); }
+inline int strcasecmp(const char* s1, const char* s2) { return ::_stricmp(s1, s2); }
+inline int strncasecmp(const char* s1, const char* s2, size_t length) { return ::_strnicmp(s1, s2, length); }
 inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args) { return ::_vsnprintf(buffer, length, format, args); }
 
 inline int snprintf(char* buffer, size_t length, const char* format, ...)

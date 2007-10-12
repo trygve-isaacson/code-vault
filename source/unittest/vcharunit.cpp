@@ -74,6 +74,22 @@ void VCharUnit::run()
     this->test(! (j1 <= i1), "not LTE");
     this->test(! (i1 >= j1), "not GTE");
     
+    this->test(VChar::equalsIgnoreCase(VChar('x'), VChar('X')), "equalsIgnoreCase 1");
+    this->test(VChar::equalsIgnoreCase('x', VChar('X')), "equalsIgnoreCase 2");
+    this->test(VChar::equalsIgnoreCase(VChar('x'), 'X'), "equalsIgnoreCase 3");
+    this->test(VChar::equalsIgnoreCase('x', 'X'), "equalsIgnoreCase 4");
+    this->test(VChar::equalsIgnoreCase(VChar('5'), VChar('5')), "equalsIgnoreCase 5"); // test numbers
+    this->test(VChar::equalsIgnoreCase(VChar('!'), VChar('!')), "equalsIgnoreCase 6"); // test punctuation
+    this->test(VChar::equalsIgnoreCase(VChar(' '), VChar(' ')), "equalsIgnoreCase 7"); // test whitespace
+
+    this->test(!VChar::equalsIgnoreCase(VChar('x'), VChar('y')), "!equalsIgnoreCase 1");
+    this->test(!VChar::equalsIgnoreCase('x', VChar('y')), "!equalsIgnoreCase 2");
+    this->test(!VChar::equalsIgnoreCase(VChar('x'), 'y'), "!equalsIgnoreCase 3");
+    this->test(!VChar::equalsIgnoreCase('x', 'y'), "!equalsIgnoreCase 4");
+    this->test(!VChar::equalsIgnoreCase(VChar('5'), VChar('6')), "!equalsIgnoreCase 5"); // test numbers
+    this->test(!VChar::equalsIgnoreCase(VChar('!'), VChar('@')), "!equalsIgnoreCase 6"); // test punctuation
+    this->test(!VChar::equalsIgnoreCase(VChar(' '), VChar('\t')), "!equalsIgnoreCase 7"); // test whitespace
+    
     // Test the known ranges of alpha/numeric/whitespace values.
     for (int i = 0; i < 256; ++i)
         {

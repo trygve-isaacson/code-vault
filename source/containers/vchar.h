@@ -124,6 +124,11 @@ class VChar
         bool isNumeric() const;            ///< Returns true if the character is a digit.
         bool isAlphaNumeric() const;    ///< Returns true if the character is alpha or numeric.
         bool isWhitespace() const;        ///< Returns true if the character is non-printing.
+        
+        static bool equalsIgnoreCase(const VChar& c1, const VChar& c2);
+        static bool equalsIgnoreCase(const VChar& c1, char c2);
+        static bool equalsIgnoreCase(char c1, const VChar& c2);
+        static bool equalsIgnoreCase(char c1, char c2);
 
         friend inline bool operator==(const VChar& c1, const VChar& c2);
         friend inline bool operator==(const VChar& c1, char c2);

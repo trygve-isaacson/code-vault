@@ -73,12 +73,12 @@ mBufferLength(0),
 mBuffer(NULL)
     {
     int theLength = s.length();
-    if (theLength > 0)
-        {
-        this->preflight(theLength);
-        s.copyToBuffer(mBuffer, theLength+1);
-        this->_setLength(theLength);
-        }
+	if (theLength > 0)
+	    {
+		this->preflight(theLength);
+		s.copyToBuffer(mBuffer, theLength+1);
+		this->_setLength(theLength);
+	    }
 
     ASSERT_INVARIANT();
     }
@@ -245,7 +245,7 @@ VString& VString::operator=(const boost::format& fmt)
 VString& VString::operator=(const CFStringRef& s)
     {
     ASSERT_INVARIANT();
-    
+
     this->_assignFromCFString(s);
 
     ASSERT_INVARIANT();
@@ -916,19 +916,10 @@ int VString::compareIgnoreCase(const char* s) const
     {
     ASSERT_INVARIANT();
 
-    /*
-    FIXME:
-    Need to figure out "correct" way to reference strcasecmp in the
-    various compilers (which includes, etc.). For now, do it the slow way.
-    fast way: return ::strcasecmp(mBuffer, s);
-    */
-    VString    thisString((mBuffer == NULL) ? "" : mBuffer);
-    VString    otherString(s);
-
-    thisString.toLowerCase();
-    otherString.toLowerCase();
-
-    return ::strcmp(thisString, otherString);
+    if (mBuffer == NULL)
+        return vault::strcasecmp("", s);
+    else
+        return vault::strcasecmp(mBuffer, s);
     }
 
 bool VString::startsWith(const VString& s) const
@@ -939,15 +930,11 @@ bool VString::startsWith(const VString& s) const
     }
 
 bool VString::startsWithIgnoreCase(const VString& s) const
-{
-	VString    thisString((mBuffer == NULL) ? "" : mBuffer);
-    VString    otherString(s);
+    {
+    ASSERT_INVARIANT();
 
-    thisString.toLowerCase();
-    otherString.toLowerCase();
-
-	return this->regionMatches(0, otherString, 0, otherString.length());
-}
+    return this->regionMatches(0, s, 0, s.length(), /* caseSensitive = */ false);
+    }
 
 bool VString::startsWith(char aChar) const
     {
@@ -994,6 +981,20 @@ int VString::indexOf(char c, int fromIndex) const
     return -1;
     }
 
+int VString::indexOfIgnoreCase(char c, int fromIndex) const
+    {
+    ASSERT_INVARIANT();
+
+    if (mBuffer != NULL)
+        for (int i = fromIndex; i < mStringLength; ++i)
+            {
+            if (VChar::equalsIgnoreCase(mBuffer[i], c))
+                return i;
+            }
+
+    return -1;
+    }
+
 int VString::indexOf(const VString& s, int fromIndex) const
     {
     ASSERT_INVARIANT();
@@ -1003,6 +1004,21 @@ int VString::indexOf(const VString& s, int fromIndex) const
     for (int i = fromIndex; i < mStringLength; ++i)
         {
         if (this->regionMatches(i, s, 0, otherLength))
+            return i;
+        }
+
+    return -1;
+    }
+
+int VString::indexOfIgnoreCase(const VString& s, int fromIndex) const
+    {
+    ASSERT_INVARIANT();
+
+    int    otherLength = s.length();
+
+    for (int i = fromIndex; i < mStringLength; ++i)
+        {
+        if (this->regionMatches(i, s, 0, otherLength, /* caseSensitive = */ false))
             return i;
         }
 
@@ -1020,6 +1036,23 @@ int VString::lastIndexOf(char c, int fromIndex) const
         for (int i = fromIndex; i >= 0; --i)
             {
             if (mBuffer[i] == c)
+                return i;
+            }
+
+    return -1;
+    }
+
+int VString::lastIndexOfIgnoreCase(char c, int fromIndex) const
+    {
+    ASSERT_INVARIANT();
+
+    if (fromIndex == -1)
+        fromIndex = mStringLength - 1;
+
+    if (mBuffer != NULL)
+        for (int i = fromIndex; i >= 0; --i)
+            {
+            if (VChar::equalsIgnoreCase(mBuffer[i], c))
                 return i;
             }
 
@@ -1044,7 +1077,25 @@ int VString::lastIndexOf(const VString& s, int fromIndex) const
     return -1;
     }
 
-bool VString::regionMatches(int thisOffset, const VString& otherString, int otherOffset, int regionLength) const
+int VString::lastIndexOfIgnoreCase(const VString& s, int fromIndex) const
+    {
+    ASSERT_INVARIANT();
+
+    int    otherLength = s.length();
+
+    if (fromIndex == -1)
+        fromIndex = mStringLength;
+
+    for (int i = fromIndex; i >= 0; --i)
+        {
+        if (this->regionMatches(i, s, 0, otherLength, /* caseSensitive = */ false))
+            return i;
+        }
+
+    return -1;
+    }
+
+bool VString::regionMatches(int thisOffset, const VString& otherString, int otherOffset, int regionLength, bool caseSensitive) const
     {
     ASSERT_INVARIANT();
 
@@ -1060,12 +1111,15 @@ bool VString::regionMatches(int thisOffset, const VString& otherString, int othe
         (otherOffset + regionLength > otherStringLength))
         return false;
 
-    result = ::strncmp(this->chars() + thisOffset, otherString.chars() + otherOffset, static_cast<VSizeType> (regionLength));
+    if (caseSensitive)
+        result = ::strncmp(this->chars() + thisOffset, otherString.chars() + otherOffset, static_cast<VSizeType> (regionLength));
+    else
+        result = vault::strncasecmp(this->chars() + thisOffset, otherString.chars() + otherOffset, static_cast<VSizeType> (regionLength));
 
     return (result == 0);
     }
 
-int VString::replace(const VString& searchString, const VString& replacementString)
+int VString::replace(const VString& searchString, const VString& replacementString, bool caseSensitiveSearch)
     {
     ASSERT_INVARIANT();
 
@@ -1076,7 +1130,7 @@ int VString::replace(const VString& searchString, const VString& replacementStri
 
     int    replacementLength = replacementString.length();
     int    numReplacements = 0;
-    int    currentOffset = this->indexOf(searchString);
+    int    currentOffset = caseSensitiveSearch ? this->indexOf(searchString) : this->indexOfIgnoreCase(searchString);
 
     while ((currentOffset != -1) && (mBuffer != NULL))
         {
@@ -1122,7 +1176,7 @@ int VString::replace(const VString& searchString, const VString& replacementStri
         ++numReplacements;
 
         // See if there is another occurrence to replace.
-        currentOffset = this->indexOf(searchString, currentOffset);
+        currentOffset = caseSensitiveSearch ? this->indexOf(searchString, currentOffset) : this->indexOfIgnoreCase(searchString, currentOffset);
         }
 
     ASSERT_INVARIANT();
@@ -1130,7 +1184,7 @@ int VString::replace(const VString& searchString, const VString& replacementStri
     return numReplacements;
     }
 
-int VString::replace(const VChar& searchChar, const VChar& replacementChar)
+int VString::replace(const VChar& searchChar, const VChar& replacementChar, bool caseSensitiveSearch)
     {
     ASSERT_INVARIANT();
 
@@ -1141,7 +1195,7 @@ int VString::replace(const VChar& searchChar, const VChar& replacementChar)
     if (mBuffer != NULL)
         for (int i = 0; i < mStringLength; ++i)
             {
-            if (mBuffer[i] == match)
+            if (mBuffer[i] == match || (!caseSensitiveSearch && VChar::equalsIgnoreCase(mBuffer[i], searchChar)))
                 {
                 mBuffer[i] = replacement;
                 ++numReplacements;
@@ -1722,7 +1776,7 @@ void VString::assertInvariant() const
 	// 2007.03.22 ranstrom v1.3D ARGO-6599 Performance: each separate V_ASSERT is somewhat slow. Roll in to one call.
 	/*
 	V_ASSERT(mBuffer != (char*)0xfeeefeee); // 2007.03.08 JHR feeefeee is written by VC++ upon object deletion
-		
+
 	if (mBuffer != NULL)    // buffer pointer can be null, making other fields n/a
         {
         V_ASSERT(mStringLength >= 0);                // string length must be non-negative

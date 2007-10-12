@@ -126,3 +126,30 @@ bool VChar::isWhitespace() const
     int    value = this->intValue();
     return (value <= 0x20) || (value == 0x7F);
     }
+
+// static
+bool VChar::equalsIgnoreCase(const VChar& c1, const VChar& c2)
+    {
+    return c1 == c2 ||
+        c1.upperCase() == c2 ||
+        c2.upperCase() == c1;
+    }
+
+// static
+bool VChar::equalsIgnoreCase(const VChar& c1, char c2)
+    {
+    return VChar::equalsIgnoreCase(c1, VChar(c2));
+    }
+
+// static
+bool VChar::equalsIgnoreCase(char c1, const VChar& c2)
+    {
+    return VChar::equalsIgnoreCase(VChar(c1), c2);
+    }
+
+// static
+bool VChar::equalsIgnoreCase(char c1, char c2)
+    {
+    return VChar::equalsIgnoreCase(VChar(c1), VChar(c2));
+    }
+

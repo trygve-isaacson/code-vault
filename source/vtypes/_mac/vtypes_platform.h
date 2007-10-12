@@ -226,6 +226,8 @@ inline int rmdir(const char* path) { return ::rmdir(path); }
 inline int unlink(const char* path) { return ::unlink(path); }
 inline int rename(const char* oldName, const char* newName) { return ::rename(oldName, newName); }
 inline int stat(const char* path, struct stat* buf) { return ::stat(path, buf); }
+inline int strcasecmp(const char* s1, const char* s2) { return ::strcasecmp(s1, s2); }
+inline int strncasecmp(const char* s1, const char* s2, size_t length) { return ::strncasecmp(s1, s2, length); }
 inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args) { return ::vsnprintf(buffer, length, format, args); }
 
 inline int snprintf(char* buffer, size_t length, const char* format, ...)

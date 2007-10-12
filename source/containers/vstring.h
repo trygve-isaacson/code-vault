@@ -568,12 +568,28 @@ class VString
         */
         int indexOf(char c, int fromIndex=0) const;
         /**
+        Returns the index of the first occurrence of the specified character,
+        using a case-insensitive comparison.
+        @param    c            the character to search for
+        @param    fromIndex    index in this string to start the search from
+        @return    the index where the character was found, or -1 if not found
+        */
+        int indexOfIgnoreCase(char c, int fromIndex=0) const;
+        /**
         Returns the index of the first occurrence of the specified string.
         @param    s            the string to look for
         @param    fromIndex    index in this string to start the search from
         @return    the index where the string was found, or -1 if not found
         */
         int indexOf(const VString& s, int fromIndex=0) const;
+        /**
+        Returns the index of the first occurrence of the specified string,
+        using a case-insensitive comparison.
+        @param    s            the string to look for
+        @param    fromIndex    index in this string to start the search from
+        @return    the index where the string was found, or -1 if not found
+        */
+        int indexOfIgnoreCase(const VString& s, int fromIndex=0) const;
         /**
         Returns the index of the last occurrence of the specified character.
         @param    c            the character to search for
@@ -583,6 +599,15 @@ class VString
         */
         int lastIndexOf(char c, int fromIndex=-1) const;
         /**
+        Returns the index of the last occurrence of the specified character,
+        using a case-insensitive comparison.
+        @param    c            the character to search for
+        @param    fromIndex    index in this string to start the backward search from,
+                            with -1 indicating a search from the end
+        @return    the index where the character was found, or -1 if not found
+        */
+        int lastIndexOfIgnoreCase(char c, int fromIndex=-1) const;
+        /**
         Returns the index of the last occurrence of the specified string.
         @param    s            the string to look for
         @param    fromIndex    index in this string to start the backward search from,
@@ -590,6 +615,15 @@ class VString
         @return    the index where the string was found, or -1 if not found
         */
         int lastIndexOf(const VString& s, int fromIndex=-1) const;
+        /**
+        Returns the index of the last occurrence of the specified string,
+        using a case-insensitive comparison.
+        @param    s            the string to look for
+        @param    fromIndex    index in this string to start the backward search from,
+                            with -1 indicating a search from the end
+        @return    the index where the string was found, or -1 if not found
+        */
+        int lastIndexOfIgnoreCase(const VString& s, int fromIndex=-1) const;
         /**
         Returns true if the specified range of this string matches the
         specified range of the specified string. If the characters in
@@ -600,27 +634,30 @@ class VString
         @param    otherString        the string to match
         @param    otherIndex        the start index (0 to other otherString.length()-1) in the other string to start the match
         @param    regionLength    the number of characters to compare
+        @param    caseSensitive   true if the comparison should be case-sensitive
         @return true if the ranges match
         */
-        bool regionMatches(int thisIndex, const VString& otherString, int otherIndex, int regionLength) const;
+        bool regionMatches(int thisIndex, const VString& otherString, int otherIndex, int regionLength, bool caseSensitive=true) const;
         /**
         Replaces every occurrence of the specified search string with the supplied
         replacement string. Returns the number of replacements performed, which may
         be zero.
         @param    searchString        the string to search for
         @param    replacementString    the string to replace the search string with
+        @param    caseSensitiveSearch  true if the search match should be case-sensitive
         @return the number of replaced occurrences
         */
-        int replace(const VString& searchString, const VString& replacementString);
+        int replace(const VString& searchString, const VString& replacementString, bool caseSensitiveSearch=true);
         /**
         Replaces every occurrence of the specified search string with the supplied
         replacement string. Returns the number of replacements performed, which may
         be zero.
         @param    searchChar        the character to search for
         @param    replacementChar    the character to replace the search character with
+        @param    caseSensitiveSearch  true if the search match should be case-sensitive
         @return the number of replaced occurrences
         */
-        int replace(const VChar& searchChar, const VChar& replacementChar);
+        int replace(const VChar& searchChar, const VChar& replacementChar, bool caseSensitiveSearch=true);
 
         /**
         Folds the string to lower case using tolower().
@@ -835,7 +872,7 @@ class VString
 #ifdef VAULT_CORE_FOUNDATION_SUPPORT
         void _assignFromCFString(const CFStringRef& s);
 #endif
-    
+
         int     mStringLength;  ///< The length of the string.
         int     mBufferLength;  ///< The length of the buffer (at least 1 longer than the string).
         char*   mBuffer;        ///< The character buffer, containing the string plus a null terminator, and possibly unused bytes beyond that.

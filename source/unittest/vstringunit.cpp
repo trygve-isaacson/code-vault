@@ -363,6 +363,16 @@ void VStringUnit::run()
     s.set(20, 'e');
     s.set(21, 'u');
     this->test(s, "OnE , Two , REd , Bleu , ", "set() assignment");
+    
+    // Case-insensitive replace() validation:
+    int numOccurrences;
+    s = "Send lawyers, guns, more LAWYERS, and money.";
+    numOccurrences = s.replace("Lawyers", "doctors", false /* not case-sensitive search */);
+    this->test(s, "Send doctors, guns, more doctors, and money.", "replace test case-insensitive 1a");
+    this->test(numOccurrences == 2, "replace test case-insensitive 1b");
+    numOccurrences = s.replace(VChar('S'), VChar('X'), false /* not case-sensitive search */);
+    this->test(s, "Xend doctorX, gunX, more doctorX, and money.", "replace test case-insensitive 2a");
+    this->test(numOccurrences == 4, "replace test case-insensitive 2b");
 
     // Test operator= conversions.
     // For each integer size/kind, we make sure to test unsigned, "big" unsigned (too big for signed), negative, and postive.
@@ -456,6 +466,18 @@ void VStringUnit::run()
     this->test(s.indexOf("in", 7) == 12, "indexOf(const VString&, n)");
     this->test(s.indexOf("in", 13) == -1, "indexOf(const VString&, n)");
     this->test(s.indexOf("inordinate") == -1, "indexOf(const VString&)");
+
+    this->test(s.indexOfIgnoreCase('I') == 3, "indexOfIgnoreCase(char)");
+    this->test(s.indexOfIgnoreCase('I', 4) == 6, "indexOfIgnoreCase(char, n)");
+    this->test(s.indexOfIgnoreCase('I', 7) == 12, "indexOfIgnoreCase(char, n)");
+    this->test(s.indexOfIgnoreCase('I', 13) == -1, "indexOfIgnoreCase(char, n)");
+    this->test(s.indexOfIgnoreCase('Z') == -1, "indexOfIgnoreCase(char, n)");
+    this->test(s.indexOfIgnoreCase("In") == 3, "indexOfIgnoreCase(const VString&)");
+    this->test(s.indexOfIgnoreCase("In", 4) == 6, "indexOfIgnoreCase(const VString&, n)");
+    this->test(s.indexOfIgnoreCase("In", 7) == 12, "indexOfIgnoreCase(const VString&, n)");
+    this->test(s.indexOfIgnoreCase("In", 13) == -1, "indexOfIgnoreCase(const VString&, n)");
+    this->test(s.indexOfIgnoreCase("Inordinate") == -1, "indexOfIgnoreCase(const VString&)");
+
     this->test(s.lastIndexOf('i') == 12, "lastIndexOf(char)");
     this->test(s.lastIndexOf('i', 11) == 6, "lastIndexOf(char, n)");
     this->test(s.lastIndexOf('i', 5) == 3, "lastIndexOf(char, n)");
@@ -467,13 +489,31 @@ void VStringUnit::run()
     this->test(s.lastIndexOf("in", 2) == -1, "lastIndexOf(const VString&, n)");
     this->test(s.lastIndexOf("inordinate") == -1, "lastIndexOf(const VString&)");
 
+    this->test(s.lastIndexOfIgnoreCase('I') == 12, "lastIndexOfIgnoreCase(char)");
+    this->test(s.lastIndexOfIgnoreCase('I', 11) == 6, "lastIndexOfIgnoreCase(char, n)");
+    this->test(s.lastIndexOfIgnoreCase('I', 5) == 3, "lastIndexOfIgnoreCase(char, n)");
+    this->test(s.lastIndexOfIgnoreCase('I', 2) == -1, "lastIndexOfIgnoreCase(char, n)");
+    this->test(s.lastIndexOfIgnoreCase('Z') == -1, "lastIndexOfIgnoreCase(char, n)");
+    this->test(s.lastIndexOfIgnoreCase("In") == 12, "lastIndexOfIgnoreCase(const VString&)");
+    this->test(s.lastIndexOfIgnoreCase("In", 11) == 6, "lastIndexOfIgnoreCase(const VString&, n)");
+    this->test(s.lastIndexOfIgnoreCase("In", 5) == 3, "lastIndexOfIgnoreCase(const VString&, n)");
+    this->test(s.lastIndexOfIgnoreCase("In", 2) == -1, "lastIndexOfIgnoreCase(const VString&, n)");
+    this->test(s.lastIndexOfIgnoreCase("Inordinate") == -1, "lastIndexOfIgnoreCase(const VString&)");
+
     VString    region1("Thunderhill");
+    VString    region1mixed("tHunderHill");
     VString    region2("under");
+    VString    region2mixed("uNDEr");
     VString    region3("hil");
+    VString    region3mixed("hIL");
     this->test(region1.regionMatches(2, region2, 0, 5), "regionMatches 1");
     this->test(region1.regionMatches(7, region3, 0, 3), "regionMatches 2");
     this->test(! region1.regionMatches(7, region3, 0, 4), "! regionMatches 1");
     this->test(! region2.regionMatches(0, region3, 0, 3), "! regionMatches 2");
+    this->test(region1mixed.regionMatches(2, region2mixed, 0, 5, false /* not case-sensitive */), "regionMatches 1 case insensitive");
+    this->test(region1mixed.regionMatches(7, region3mixed, 0, 3, false /* not case-sensitive */), "regionMatches 2 case insensitive");
+    this->test(! region1mixed.regionMatches(7, region3mixed, 0, 4, false /* not case-sensitive */), "! regionMatches 1 case insensitive");
+    this->test(! region2mixed.regionMatches(0, region3mixed, 0, 3, false /* not case-sensitive */), "! regionMatches 2 case insensitive");
 
 #ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
     boost::format formatter("Descending order arguments: %3% %2% %1%.");
