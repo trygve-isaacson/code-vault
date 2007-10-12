@@ -719,7 +719,7 @@ VBentoNode::~VBentoNode()
 VBentoNode::VBentoNode(const VBentoNode& original) :
 mName(original.getName())
     {
-    const VBentoAttributePtrVector& originalAttributes = original._getAttributes();
+    const VBentoAttributePtrVector& originalAttributes = original.getAttributes();
     for (VBentoAttributePtrVector::const_iterator i = originalAttributes.begin(); i != originalAttributes.end(); ++i)
         mAttributes.push_back((*i)->clone());
 
@@ -781,7 +781,7 @@ void VBentoNode::updateFrom(const VBentoNode& source)
         mName = source.getName();
 
     // Copy (adding as necessary) the attributes.
-    const VBentoAttributePtrVector& sourceAttributes = source._getAttributes();
+    const VBentoAttributePtrVector& sourceAttributes = source.getAttributes();
     for (VBentoAttributePtrVector::const_iterator i = sourceAttributes.begin(); i != sourceAttributes.end(); ++i)
         {
         const VBentoAttribute* targetAttribute = this->_findAttribute((*i)->getName(), (*i)->getDataType());
@@ -1268,6 +1268,11 @@ VFloat VBentoNode::getFloat(const VString& name) const
         return attribute->getValue();
     }
 
+const VBentoAttributePtrVector& VBentoNode::getAttributes() const
+    {
+    return mAttributes;
+    }
+
 const VString& VBentoNode::getName() const
     {
     return mName;
@@ -1395,11 +1400,6 @@ Vs64 VBentoNode::_calculateTotalSize() const
 void VBentoNode::_addAttribute(VBentoAttribute* attribute)
     {
     mAttributes.push_back(attribute);
-    }
-
-const VBentoAttributePtrVector& VBentoNode::_getAttributes() const
-    {
-    return mAttributes;
     }
 
 const VBentoAttribute* VBentoNode::_findAttribute(const VString& name, const VString& dataType) const

@@ -342,6 +342,12 @@ class VBentoNode
 //        void getBinary(const VString& name, VMemoryStream& value) const; ///< Returns the value of the specified binary data attribute, or the supplied default value if no such binary data attribute exists; the binary data is written to the supplied memory stream at its current i/o offset. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
 
         /**
+        Returns the vector of attribute objects attached to this object.
+        @return    the attributes vector, which is a vector of pointers
+        */
+        const VBentoAttributePtrVector& getAttributes() const;
+
+        /**
         Returns the node's name.
         @return    a reference to the name string
         */
@@ -444,11 +450,6 @@ class VBentoNode
         */
         void _addAttribute(VBentoAttribute* attribute);
 
-        /**
-        Returns the vector of attribute objects attached to this object.
-        @return    the attributes vector, which is a vector of pointers
-        */
-        const VBentoAttributePtrVector&    _getAttributes() const;
         /**
         Returns an attribute object, searched by name and data type, that is
         attached to this object. This method does NOT search the object's
@@ -636,6 +637,7 @@ class VBentoAttribute
 
         const VString& getName() const; ///< Returns the attribute name. @return a reference to the attribute name string.
         const VString& getDataType() const; ///< Returns the data type name. @return a reference to the data type name string.
+        virtual void getValueAsPlainText(VString& s) const = 0; ///< Returns the attribute value in its plain, unadorned text form.
         virtual void getValueAsString(VString& s) const = 0; ///< Returns a printable form of the attribute value.
         virtual void getValueAsBentoTextString(VString& s) const = 0; ///< Returns a Bento Text form of the attribute value.
 
@@ -679,6 +681,7 @@ class VBentoS8 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoS8(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoS8&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s.format("%d", mValue); }
         virtual void getValueAsString(VString& s) const { s.format("%d 0x%02X", mValue, mValue); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%d", mValue); }
 
@@ -713,6 +716,7 @@ class VBentoU8 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoU8(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoU8&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s.format("%u", mValue); }
         virtual void getValueAsString(VString& s) const { s.format("%u 0x%02X", mValue, mValue); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%u", mValue); }
 
@@ -747,6 +751,7 @@ class VBentoS16 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoS16(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoS16&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s.format("%hd", mValue); }
         virtual void getValueAsString(VString& s) const { s.format("%hd 0x%04X", mValue, mValue); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%hd", mValue); }
 
@@ -781,6 +786,7 @@ class VBentoU16 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoU16(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoU16&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s.format("%hu", mValue); }
         virtual void getValueAsString(VString& s) const { s.format("%hu 0x%04X", mValue, mValue); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%hu", mValue); }
 
@@ -815,6 +821,7 @@ class VBentoS32 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoS32(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoS32&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s.format("%ld", mValue); }
         virtual void getValueAsString(VString& s) const { s.format("%ld 0x%08X", mValue, mValue); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%ld", mValue); }
 
@@ -849,6 +856,7 @@ class VBentoU32 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoU32(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoU32&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s.format("%lu", mValue); }
         virtual void getValueAsString(VString& s) const { s.format("%lu 0x%08X", mValue, mValue); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%lu", mValue); }
 
@@ -883,6 +891,7 @@ class VBentoS64 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoS64(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoS64&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s.format("%lld", mValue); }
         virtual void getValueAsString(VString& s) const { s.format("%lld 0x%016llX", mValue, mValue); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%lld", mValue); }
 
@@ -917,6 +926,7 @@ class VBentoU64 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoU64(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoU64&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s.format("%llu", mValue); }
         virtual void getValueAsString(VString& s) const { s.format("%llu 0x%016llX", mValue, mValue); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%llu", mValue); }
 
@@ -951,6 +961,7 @@ class VBentoBool : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoBool(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoBool&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s.format("%s", (mValue ? "true":"false")); }
         virtual void getValueAsString(VString& s) const { s.format("%s 0x%02X", (mValue ? "true":"false"), static_cast<Vu8>(mValue)); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%s", (mValue ? "true":"false")); }
 
@@ -985,6 +996,7 @@ class VBentoString : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoString(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoString&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s = mValue; }
         virtual void getValueAsString(VString& s) const { s.format("\"%s\"", mValue.chars()); }
         virtual void getValueAsBentoTextString(VString& s) const { s = mValue; }
 
@@ -1019,6 +1031,7 @@ class VBentoChar : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoChar(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoChar&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s = mValue; }
         virtual void getValueAsString(VString& s) const { s.format("\"%c\"", mValue.charValue()); }
         virtual void getValueAsBentoTextString(VString& s) const { s = mValue; }
 
@@ -1053,6 +1066,7 @@ class VBentoFloat : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoFloat(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoFloat&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s.format("%f", mValue); }
         virtual void getValueAsString(VString& s) const { s.format("\"%f\"", mValue); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%f", mValue); }
 
@@ -1087,6 +1101,7 @@ class VBentoDouble : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoDouble(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoDouble&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s.format("%lf", mValue); }
         virtual void getValueAsString(VString& s) const { s.format("\"%lf\"", mValue); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%lf", mValue); } // Not: %lf uses 6 decimal places by default; this limits output resolution.
 
@@ -1121,6 +1136,7 @@ class VBentoDuration : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoDuration(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoDuration&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { s.format("%lld", mValue.getDurationMilliseconds()); }
         virtual void getValueAsString(VString& s) const { s.format("\"%lldms\"", mValue.getDurationMilliseconds()); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%lldms", mValue.getDurationMilliseconds()); }
 
@@ -1155,6 +1171,7 @@ class VBentoInstant : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoInstant(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoInstant&>(rhs).mValue; return *this; }
 
+        virtual void getValueAsPlainText(VString& s) const { mValue.getUTCString(s); }
         virtual void getValueAsString(VString& s) const { mValue.getUTCString(s); }
         virtual void getValueAsBentoTextString(VString& s) const { mValue.getUTCString(s); }
 
@@ -1195,8 +1212,9 @@ class VBentoBinary : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoBinary(this->getName(), mValue); }
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { VBentoAttribute::operator=(rhs); mValue = static_cast<const VBentoBinary&>(rhs).mValue; return *this; }
 
-        virtual void getValueAsString(VString& s) const { mValue.getUTCString(s); }
-        virtual void getValueAsBentoTextString(VString& s) const { mValue.getUTCString(s); }
+        virtual void getValueAsPlainText(VString& s) const { s.format(xxxxxxxxxxxxxxxxxx); }
+        virtual void getValueAsString(VString& s) const { s.format(xxxxxxxxxxxxxxxxxx); }
+        virtual void getValueAsBentoTextString(VString& s) const { s.format(xxxxxxxxxxxxxxxxxx); }
 
 //        inline getValue(VMemoryStream& value) const { ::streamCopy(mValue, value); } ///< Returns the attribute's value. @param value the memory stream to write to
 //        inline void setValue(const VMemoryStream& stream) { ::streamCopy(stream, mValue); } ///< Sets the attribute's value. @param i the attribute value
@@ -1233,6 +1251,7 @@ class VBentoUnknownValue : public VBentoAttribute
         virtual VBentoAttribute* clone() const { throw VException("VBentoUnknownValue does not support clone()."); }
         VBentoAttribute& operator=(const VBentoAttribute& /*rhs*/) { throw VException("VBentoUnknownValue does not support operator=()."); }
 
+        virtual void getValueAsPlainText(VString& s) const { s = VString::EMPTY(); }
         virtual void getValueAsString(VString& s) const { VHex::bufferToHexString(mValue.getBuffer(), mValue.eofOffset(), s, true/* want leading "0x" */); }
         virtual void getValueAsBentoTextString(VString& s) const { VHex::bufferToHexString(mValue.getBuffer(), mValue.eofOffset(), s, true/* want leading "0x" */); }
 
