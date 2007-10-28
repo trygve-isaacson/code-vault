@@ -36,12 +36,16 @@ class VString;
 /** Emits a message at kInfo level to the default logger. */
 #define VLOGGER_INFO(message) VLogger::getDefaultLogger()->log(VLogger::kInfo, NULL, 0, message)
 /** Emits a message at kDebug level to the default logger. */
+//lint -e717 do ... while(0);
 #define VLOGGER_DEBUG(message) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), VLogger::kDebug); if (vlcond != NULL) vlcond->log(VLogger::kDebug, NULL, 0, message); } while (false)
 /** Emits a message at kTrace level to the default logger. */
+//lint -e717 do ... while(0);
 #define VLOGGER_TRACE(message) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), VLogger::kTrace); if (vlcond != NULL) vlcond->log(VLogger::kTrace, NULL, 0, message); } while (false)
 /** Emits a message at a specified level to the default logger. */
+//lint -e717 do ... while(0);
 #define VLOGGER_LEVEL(level, message) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), level); if (vlcond != NULL) vlcond->log(level, NULL, 0, message); } while (false)
 /** Emits a message at a specified level, including file and line number, to the default logger. */
+//lint -e717 do ... while(0);
 #define VLOGGER_LINE(level, message) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), level); if (vlcond != NULL) vlcond->log(level, __FILE__, __LINE__, message); } while (false)
 /** Emits a hex dump at a specified level to the default logger. */
 #define VLOGGER_HEXDUMP(level, message, buffer, length) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), level); if (vlcond != NULL) vlcond->logHexDump(level, message, buffer, length); } while (false)
@@ -320,6 +324,14 @@ class VLogger
 
         static const VString kDefaultLoggerName;
 
+        /**
+        Returns the log level as a short descriptive string ("warn", "error", etc.)
+        for use in formatted message output.
+        @param    logLevel    the level of detail
+        @param    name        the string to format
+        */
+        static void getLevelName(int logLevel, VString& name);
+
     protected:
 
         /**
@@ -367,14 +379,6 @@ class VLogger
         @param    ...                variable arguments for the formatting string
         */
         static void format(VString& stringToFormat, int logLevel, const char* file, int line, const VString& message);
-
-        /**
-        Returns the log level as a short descriptive string ("warn", "error", etc.)
-        for use in formatted message output.
-        @param    logLevel    the level of detail
-        @param    name        the string to format
-        */
-        static void getLevelName(int logLevel, VString& name);
 
         VMutex  mMutex;     ///< A mutex to protect against multiple threads' messages from being intertwined;
                                 // subclasses may access this carefully; note that it is locked prior to any
