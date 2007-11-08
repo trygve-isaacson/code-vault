@@ -100,7 +100,7 @@ mStringLength(0),
 mBufferLength(0),
 mBuffer(NULL)
     {
-    if (s != NULL)    // if s is NULL, leave as initialized to empty
+    if ((s != NULL) || (s[0] != '\0')) // if s is NULL or zero length, leave as initialized to empty
         {
         int    theLength = (int) ::strlen(s);
         this->preflight(theLength);
@@ -120,7 +120,8 @@ mBuffer(NULL)
     va_list args;
     va_start(args, formatText);
 
-    this->vaFormat(formatText, args);
+    if ((formatText != NULL) || (formatText[0] != '\0')) // if formatText is NULL or zero length, leave as initialized to empty
+        this->vaFormat(formatText, args);
 
     va_end(args);
 

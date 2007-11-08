@@ -131,9 +131,16 @@ void VBinaryIOStream::readString(VString& s)
     if (length > V_MAX_S32)
         throw VException("String with unsupported length > 2GB encountered in stream.");
 
-    s.preflight((int) length);
-    this->readGuaranteed(reinterpret_cast<Vu8*> (s.buffer()), length);
-    s.postflight((int) length);
+    if (length == 0) // Avoid forced allocation of a buffer if none is needed.
+        {
+        s = VString::EMPTY();
+        }
+    else
+        {
+        s.preflight((int) length);
+        this->readGuaranteed(reinterpret_cast<Vu8*> (s.buffer()), length);
+        s.postflight((int) length);
+        }
     }
 
 VString VBinaryIOStream::readString()
