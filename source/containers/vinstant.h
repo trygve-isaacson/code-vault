@@ -352,11 +352,13 @@ class VInstant
         Returns a UTC string representation of the instant.
         @param    s                the string to be formatted
         @param    fileNameSafe    if true, the returned string is stripped of the
-                                punctuation formatting chars, yielding YYYYMMDDHHMMSS;
+                                punctuation formatting chars, yielding YYYYMMDDHHMMSSmmm;
                                 if false (the default), the returned string is
                                 formatted using standard time notation.
+        @param    wantMilliseconds  if true (the default), the string includes the
+                                milliseconds; if not, it only goes to seconds
         */
-        void getUTCString(VString& s, bool fileNameSafe=false) const;
+        void getUTCString(VString& s, bool fileNameSafe=false, bool wantMilliseconds=true) const;
         /**
         Sets the instant from a UTC string representation.
         You must use the same string format as returned by getUTCString.
@@ -368,11 +370,13 @@ class VInstant
         Returns a local string representation of the instant.
         @param    s                the string to be formatted
         @param    fileNameSafe    if true, the returned string is stripped of the
-                                punctuation formatting chars, yielding YYYYMMDDHHMMSS.
+                                punctuation formatting chars, yielding YYYYMMDDHHMMSSmmm.
                                 if false (the default), the returned string is
                                 formatted using standard time notation.
+        @param    wantMilliseconds  if true (the default), the string includes the
+                                milliseconds; if not, it only goes to seconds
         */
-        void getLocalString(VString& s, bool fileNameSafe=false) const;
+        void getLocalString(VString& s, bool fileNameSafe=false, bool wantMilliseconds=true) const;
         /**
         Sets the instant from a local string representation.
         You must use the same string format as returned by getLocalString.

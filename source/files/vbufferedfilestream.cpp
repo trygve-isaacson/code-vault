@@ -177,8 +177,8 @@ void VBufferedFileStream::flush()
         {
         VString    path;
         mNode.getPath(path);
-
-        throw VException(result, "VBufferedFileStream::flush to '%s' failed with errno=%d.", path.chars(), errno);
+        //2007.11.13 ECheung ARGO-8596 Include system error message with error number. 
+        throw VException(result, "VBufferedFileStream::flush to '%s' failed (errno=%d : %s)", path.chars(), errno, ::strerror(errno));
         }
     }
 

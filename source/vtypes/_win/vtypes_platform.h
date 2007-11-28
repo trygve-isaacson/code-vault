@@ -66,16 +66,24 @@ needed.
 
 #endif
 
+#ifdef __MWERKS__
+    #define VCOMPILER_CODEWARRIOR
+    #define VLIBRARY_METROWERKS	/* might want to consider adding a check for using CW but not MSL */
+#endif
+
 // The Code Vault does not currently support Unicode strings.
 // If we let UNICODE be defined by VC++ it causes problems when
 // we call the directory iterator APIs with non-Unicode strings.
 #undef UNICODE
 
-#ifdef VCOMPILER_MSVC
+#ifdef VCOMPILER_CODEWARRIOR
+#include <ctime>
+#endif
+
+#ifndef VPLATFORM_CW_FEWER_INCLUDES
 #include <sys/types.h>
 #include <sys/stat.h>
 #endif
-
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -85,10 +93,29 @@ needed.
 #include <time.h>
 #include <string.h>
 #include <limits.h>
+#ifndef VPLATFORM_CW_FEWER_INCLUDES
 #include <math.h>
+#endif
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
+
+#ifdef VPLATFORM_CW_FEWER_INCLUDES
+typedef unsigned int off_t;
+typedef unsigned char mode_t;
+#ifndef VPLATFORM_HAS_BOOLEAN_TYPEDEF
+typedef unsigned char bool;
+#endif
+inline int _mkdir(const char* /*path*/) { return -1; }
+inline int stat(const char* /*path*/, struct stat* /*buf*/) { return -1; }
+#endif
+
+#ifdef VCOMPILER_CODEWARRIOR
+#include <cassert>                              // used by Vassert
+#define __assert(cond, file, line) assert(cond) // used by Vassert
+#endif
+
+typedef signed long ssize_t;                    // used by _wrap_read, _wrap_write
 
 #ifndef VCOMPILER_MSVC
 #include <unistd.h> /* n/a for VC++, needed elsewhere */
@@ -100,7 +127,6 @@ needed.
 #include <windows.h>
 #include <io.h>
 #include <direct.h>
-#include <fcntl.h>
 #include <algorithm> // for std::find
 
 // If Windows globally #defines these as preprocessor macros, they cannot
@@ -211,7 +237,6 @@ Intel byte order.
 //lint -e961 "Violates MISRA Advisory Rule 44, redundant explicit casting"
 #define V_BYTESWAP_NTOHD_IN_PLACE(x)	((x) = (vault::VbyteSwapDouble((VDouble) x)))
 
-typedef size_t ssize_t;
 /* #define S_ISLNK(x) ... Would need equivalent for stat.mode on Win32, see VFSNode::isDirectory() */
 #define SHUT_RD SD_RECEIVE
 #define SHUT_WR SD_SEND
@@ -223,8 +248,10 @@ typedef size_t ssize_t;
     #define S_IRWXU    _S_IREAD | _S_IWRITE
 #endif
 
-// On Windows, we implement snapshot using _ftime64(), which is UTC-based.
+// On VC++ but not CodeWarrior, we implement snapshot using _ftime64(), which is UTC-based.
+#ifdef VCOMPILER_MSVC
 #define V_INSTANT_SNAPSHOT_IS_UTC    // platform_snapshot() gives us a UTC time suitable for platform_now()
+#endif
 
 // We have to implement timegm() because there's no equivalent Win32 function.
 extern time_t timegm(struct tm* t);
@@ -263,7 +290,36 @@ namespace vault {
 // For a few of these functions, the VC++ version does not have the same parameter list
 // as the normal POSIX function, either in number of parameters or their types.
 
-#if _MSC_VER >= 1400
+#ifdef VCOMPILER_CODEWARRIOR
+
+inline int putenv(char* env) { return ::_putenv(env); }
+inline char* getenv(const char* name) { return ::getenv(name); }
+inline int strcasecmp(const char* s1, const char* s2) { return ::_stricmp(s1, s2); }
+inline int strncasecmp(const char* s1, const char* s2, size_t length) { return ::_strnicmp(s1, s2, length); }
+inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args) { return ::vsnprintf(buffer, length, format, args); }
+inline ssize_t read(int fd, void* buffer, size_t numBytes) { return ::_read(fd, buffer, static_cast<unsigned int>(numBytes)); }
+inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::_write(fd, buffer, static_cast<unsigned int>(numBytes)); }
+inline off_t lseek(int fd, off_t offset, int whence) { return ::_lseek(fd, offset, whence); }
+inline int close(int fd) { return ::_close(fd); }
+inline int mkdir(const char* path, mode_t /*mode*/) { return ::_mkdir(path); }
+inline int rename(const char* oldName, const char* newName) { return ::rename(oldName, newName); }
+inline int stat(const char* path, struct stat* buf) { return ::stat(path, buf); }
+inline int unlink(const char* path) { return ::_unlink(path); }
+inline int rmdir(const char* path) { return ::_rmdir(path); }
+
+// The POSIX open() API (or _open() on newer VC++ runtimes) is not available on
+// CW+Win32. It's painful to code around, so we just throw an exception if anyone
+// calls it. The only user in Vault is VDirectIOFileStream, which is almost never
+// used because VBufferedFileStream is almost always better.
+#define O_RDONLY 0
+#define O_WRONLY 0
+#define O_BINARY 0
+#define O_RDWR 0
+#define O_CREAT 0
+#define O_TRUNC 0
+extern int open(const char* path, int flags, mode_t mode); // Per comments above: this always throws.
+
+#elif _MSC_VER >= 1400
 // VC++ 8.0 makes many of these function names start with an underscore.
 
 inline int putenv(char* env) { return ::_putenv(env); }

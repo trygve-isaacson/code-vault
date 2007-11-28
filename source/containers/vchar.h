@@ -131,13 +131,17 @@ class VChar
         static bool equalsIgnoreCase(char c1, char c2);
 
         friend inline bool operator==(const VChar& c1, const VChar& c2);
+#ifndef VPLATFORM_DISALLOW_VCHAR_OPERATOR_EQUALS_CHAR
         friend inline bool operator==(const VChar& c1, char c2);
         friend inline bool operator==(char c1, const VChar& c2);
+#endif
     
         friend inline bool operator!=(const VChar& c1, const VChar& c2);
+#ifndef VPLATFORM_DISALLOW_VCHAR_OPERATOR_EQUALS_CHAR
         friend inline bool operator!=(const VChar& c1, char c2);
         friend inline bool operator!=(char c1, const VChar& c2);
-    
+#endif
+
         friend inline bool operator>=(const VChar& c1, const VChar& c2);
         friend inline bool operator>=(const VChar& c1, char c2);
         friend inline bool operator>=(char c1, const VChar& c2);
@@ -160,12 +164,16 @@ class VChar
     };
 
 inline bool operator==(const VChar& c1, const VChar& c2) { return c1.mValue == c2.mValue; }    ///< Compares c1 and c2. @param    c1 a VChar @param c2 a VChar @return true if c1 == c2
+#ifndef VPLATFORM_DISALLOW_VCHAR_OPERATOR_EQUALS_CHAR
 inline bool operator==(const VChar& c1, char c2) { return c1.mValue == c2; }                ///< Compares c1 and c2. @param    c1 a VChar @param c2 a char @return true if c1 == c2
 inline bool operator==(char c1, const VChar& c2) { return c1 == c2.mValue; }                ///< Compares c1 and c2. @param    c1 a char @param c2 a VChar @return true if c1 == c2
+#endif
 
 inline bool operator!=(const VChar& c1, const VChar& c2) { return c1.mValue != c2.mValue; }    ///< Compares c1 and c2. @param    c1 a VChar @param c2 a VChar @return true if c1 != c2
+#ifndef VPLATFORM_DISALLOW_VCHAR_OPERATOR_EQUALS_CHAR
 inline bool operator!=(const VChar& c1, char c2) { return c1.mValue != c2; }                ///< Compares c1 and c2. @param    c1 a VChar @param c2 a char @return true if c1 != c2
 inline bool operator!=(char c1, const VChar& c2) { return c1 != c2.mValue; }                ///< Compares c1 and c2. @param    c1 a char @param c2 a VChar @return true if c1 != c2
+#endif
 
 inline bool operator>=(const VChar& c1, const VChar& c2) { return c1.mValue >= c2.mValue; }    ///< Compares c1 and c2. @param    c1 a VChar @param c2 a VChar @return true if c1 >= c2
 inline bool operator>=(const VChar& c1, char c2) { return c1.mValue >= c2; }                ///< Compares c1 and c2. @param    c1 a VChar @param c2 a char @return true if c1 >= c2

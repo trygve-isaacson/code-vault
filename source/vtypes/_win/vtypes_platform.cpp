@@ -39,7 +39,7 @@ static void getCurrentTZ(VString& tz)
     char*    tzEnvString = vault::getenv("TZ");
     
     if (tzEnvString == NULL)
-        tz = VString::kEmptyString;
+        tz = VString::EMPTY();
     else
         tz = tzEnvString;
     }
@@ -68,3 +68,10 @@ time_t timegm(struct tm* t)
     return result;
     }
 
+#ifdef VCOMPILER_CODEWARRIOR
+#include "vexception.h"
+int vault::open(const char* path, int flags, mode_t mode)
+    {
+    throw VException(VString("Error opening '%s': POSIX open() is not supported by CodeWarrior on Windows.", path));
+    }
+#endif

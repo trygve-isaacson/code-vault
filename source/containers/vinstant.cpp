@@ -490,20 +490,45 @@ void VInstant::setNow()
     mValue = VInstant::_platform_now();
     }
 
-void VInstant::getUTCString(VString& s, bool fileNameSafe) const
+#define FORMAT_FILE_NAME_SAFE_WITH_MILLISECONDS     "%d%02d%02d%02d%02d%02d%03d"
+#define FORMAT_FILE_NAME_SAFE_WITHOUT_MILLISECONDS  "%d%02d%02d%02d%02d%02d"
+#define FORMAT_UTC_WITH_MILLISECONDS                "%d-%02d-%02d %02d:%02d:%02d.%03d UTC"
+#define FORMAT_UTC_WITHOUT_MILLISECONDS             "%d-%02d-%02d %02d:%02d:%02d UTC"
+#define FORMAT_LOCAL_WITH_MILLISECONDS              "%d-%02d-%02d %02d:%02d:%02d.%03d"
+#define FORMAT_LOCAL_WITHOUT_MILLISECONDS           "%d-%02d-%02d %02d:%02d:%02d"
+
+static void _formatInstantString(const VInstantStruct& when, bool isUTC, VString& s, bool fileNameSafe, bool wantMilliseconds)
+    {
+    if (fileNameSafe)
+        {
+        if (wantMilliseconds)
+            s.format(FORMAT_FILE_NAME_SAFE_WITH_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
+        else
+            s.format(FORMAT_FILE_NAME_SAFE_WITHOUT_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond);
+        }
+    else if (isUTC)
+        {
+        if (wantMilliseconds)
+            s.format(FORMAT_UTC_WITH_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
+        else
+            s.format(FORMAT_UTC_WITHOUT_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond);
+        }
+    else
+        {
+        if (wantMilliseconds)
+            s.format(FORMAT_LOCAL_WITH_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
+        else
+            s.format(FORMAT_LOCAL_WITHOUT_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond);
+        }
+    }
+
+void VInstant::getUTCString(VString& s, bool fileNameSafe, bool wantMilliseconds) const
     {
     if (this->isSpecific())
         {
         VInstantStruct    when;
-
         VInstant::_platform_offsetToUTCStruct(mValue, when);
-
-        if (fileNameSafe)
-            s.format("%d%02d%02d%02d%02d%02d%03d",
-                when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
-        else
-            s.format("%d-%02d-%02d %02d:%02d:%02d.%03d UTC",
-                when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
+        _formatInstantString(when, true/*utc*/, s, fileNameSafe, wantMilliseconds);
         }
     else if (*this == VInstant::INFINITE_PAST())
         s = "PAST";
@@ -528,26 +553,19 @@ void VInstant::setUTCString(const VString& s)
         VInstantStruct when;
         when.mDayOfWeek = 0;
 
-        ::sscanf(s, "%d-%02d-%02d %02d:%02d:%02d.%03d UTC", &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
+        ::sscanf(s, FORMAT_UTC_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
 
         mValue = VInstant::_platform_offsetFromUTCStruct(when);
         }
     }
 
-void VInstant::getLocalString(VString& s, bool fileNameSafe) const
+void VInstant::getLocalString(VString& s, bool fileNameSafe, bool wantMilliseconds) const
     {
     if (this->isSpecific())
         {
         VInstantStruct    when;
-
         VInstant::_platform_offsetToLocalStruct(mValue, when);
-
-        if (fileNameSafe)
-            s.format("%d%02d%02d%02d%02d%02d%03d",
-                when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
-        else
-            s.format("%d-%02d-%02d %02d:%02d:%02d.%03d",
-                when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
+        _formatInstantString(when, false/*not utc*/, s, fileNameSafe, wantMilliseconds);
         }
     else if (*this == VInstant::INFINITE_PAST())
         s = "PAST";
@@ -572,7 +590,7 @@ void VInstant::setLocalString(const VString& s)
         VInstantStruct when;
         when.mDayOfWeek = 0;
 
-        ::sscanf(s, "%d-%02d-%02d %02d:%02d:%02d.%03d", &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
+        ::sscanf(s, FORMAT_LOCAL_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
 
         mValue = VInstant::_platform_offsetFromLocalStruct(when);
         }
