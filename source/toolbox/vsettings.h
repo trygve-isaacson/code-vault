@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -10,6 +10,7 @@ http://www.bombaydigital.com/
 /** @file */
 
 #include "vstring.h"
+#include "vbento.h"
 
 class VTextIOStream;
 
@@ -44,6 +45,8 @@ class VSettingsNode
         VSettingsNode& operator=(const VSettingsNode& other);
 
         virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0) = 0;
+		// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
+		virtual VBentoNode* writeToBento() const = 0;	
 
         virtual const VSettingsNode* findNode(const VString& path) const;
         virtual int countNodes(const VString& path) const;
@@ -65,11 +68,15 @@ class VSettingsNode
         virtual void getString(const VString& path, VString& value, const VString& defaultValue) const;
         virtual void getString(const VString& path, VString& value) const;
         virtual void getStringValue(VString& value) const = 0;
+        virtual VDouble getDouble(const VString& path, VDouble defaultValue) const;
+        virtual VDouble getDouble(const VString& path) const;
+        virtual VDouble getDoubleValue() const = 0;
         virtual bool nodeExists(const VString& path) const;
         
         virtual void addIntValue(const VString& path, int value);
         virtual void addBooleanValue(const VString& path, bool value);
         virtual void addStringValue(const VString& path, const VString& value);
+        virtual void addDoubleValue(const VString& path, VDouble value);
         virtual void addItem(const VString& path);
         virtual void setIntValue(const VString& path, int value);
         virtual void setBooleanValue(const VString& path, bool value);
@@ -109,7 +116,9 @@ class VSettings : public VSettingsNode
         
         virtual void readFromStream(VTextIOStream& inputStream);
         virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0);
-        void debugPrint();
+ 		// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
+		virtual VBentoNode* writeToBento() const;
+		void debugPrint();
 
         virtual const VSettingsNode* findNode(const VString& path) const;
         virtual int countNamedChildren(const VString& name) const;
@@ -119,12 +128,14 @@ class VSettings : public VSettingsNode
         virtual int getIntValue() const;
         virtual bool getBooleanValue() const;
         virtual void getStringValue(VString& value) const;
+        virtual VDouble getDoubleValue() const;
 
         virtual void addChildNode(VSettingsNode* node);
 
         // String value converters.
         static int stringToInt(const VString& value);
         static bool stringToBoolean(const VString& value);
+        static VDouble stringToDouble(const VString& value);
         
         // Path navigation utilities.
         static bool isPathLeaf(const VString& path);
@@ -148,6 +159,8 @@ class VSettingsTag : public VSettingsNode
         virtual ~VSettingsTag();
 
         virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0);
+		// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
+ 		virtual VBentoNode* writeToBento() const;
 
         virtual int countNamedChildren(const VString& name) const;
         virtual const VSettingsNode* getNamedChild(const VString& name, int inIndex) const;
@@ -159,6 +172,7 @@ class VSettingsTag : public VSettingsNode
         virtual int getIntValue() const;
         virtual bool getBooleanValue() const;
         virtual void getStringValue(VString& value) const;
+        virtual VDouble getDoubleValue() const;
 
         virtual void setLiteral(const VString& value);
 
@@ -183,10 +197,13 @@ class VSettingsAttribute : public VSettingsNode
         virtual ~VSettingsAttribute() {}
 
         virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0);
+		// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
+ 		virtual VBentoNode* writeToBento() const;
 
         virtual int getIntValue() const;
         virtual bool getBooleanValue() const;
         virtual void getStringValue(VString& value) const;
+        virtual VDouble getDoubleValue() const;
 
         virtual void setLiteral(const VString& value);
         
@@ -206,10 +223,13 @@ class VSettingsCDATA : public VSettingsNode
         virtual ~VSettingsCDATA() {}
 
         virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0);
+		// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
+ 		virtual VBentoNode* writeToBento() const;
 
         virtual int getIntValue() const;
         virtual bool getBooleanValue() const;
         virtual void getStringValue(VString& value) const;
+        virtual VDouble getDoubleValue() const;
 
         virtual void setLiteral(const VString& value);
         
@@ -231,9 +251,6 @@ class VSettingsXMLParser
         enum ParserState
             {
             kReady,
-            kXMLVersion1_open_question,
-            kXMLVersion2_in_quote,
-            kXMLVersion3_close_question,
             kComment1_bang,
             kComment2_bang_dash,
             kComment3_in_comment,

@@ -1,6 +1,6 @@
 /*
 Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+This file is part of the Code Vault version 2.5
 http://www.bombaydigital.com/
 */
 
@@ -166,16 +166,7 @@ void VSettingsNode::getString(const VString& path, VString& value, const VString
     const VSettingsNode*    nodeForPath = this->findNode(path);
 
     if (nodeForPath != NULL)
-        {
-        try
-            {
-            nodeForPath->getStringValue(value);
-            }
-        catch (const VException& /*ex*/)
-            {
-            value = defaultValue;
-            }
-        }
+        nodeForPath->getStringValue(value);
     else
         value = defaultValue;
     }
@@ -188,6 +179,28 @@ void VSettingsNode::getString(const VString& path, VString& value) const
         nodeForPath->getStringValue(value);
     else
         this->throwNotFound("String", path);
+    }
+
+VDouble VSettingsNode::getDouble(const VString& path, VDouble defaultValue) const
+    {
+    const VSettingsNode*    nodeForPath = this->findNode(path);
+
+    if (nodeForPath != NULL)
+        return nodeForPath->getDoubleValue();
+    else
+        return defaultValue;
+    }
+
+VDouble VSettingsNode::getDouble(const VString& path) const
+    {
+    const VSettingsNode*    nodeForPath = this->findNode(path);
+
+    if (nodeForPath != NULL)
+        return nodeForPath->getDoubleValue();
+
+    this->throwNotFound("Double", path);
+    
+    return 0.0;    // (will never reach this statement because of throw)
     }
 
 bool VSettingsNode::nodeExists(const VString& path) const
@@ -210,6 +223,12 @@ void VSettingsNode::addBooleanValue(const VString& path, bool value)
 void VSettingsNode::addStringValue(const VString& path, const VString& value)
     {
     this->add(path, true, value);
+    }
+
+void VSettingsNode::addDoubleValue(const VString& path, VDouble value)
+    {
+    VString    valueString("%lf", value);
+    this->addStringValue(path, valueString);
     }
 
 void VSettingsNode::addItem(const VString& path)
@@ -365,6 +384,20 @@ void VSettings::writeToStream(VTextIOStream& outputStream, int indentLevel)
         mNodes[i]->writeToStream(outputStream, indentLevel);
     }
 
+// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
+VBentoNode* VSettings::writeToBento() const
+	{
+	VBentoNode* topNode = new VBentoNode();
+
+    for (VSizeType i = 0; i < mNodes.size(); ++i)
+	{
+		VBentoNode* theNode = mNodes[i]->writeToBento();
+		topNode->addChildNode(theNode);
+	}
+
+	return topNode;
+	}
+
 void VSettings::debugPrint()
     {
     VMemoryStream    memoryStream;
@@ -498,6 +531,14 @@ void VSettings::getStringValue(VString& /*value*/) const
     throw VException("Tried to get raw string value on top level settings object.");
     }
 
+VDouble VSettings::getDoubleValue() const
+    {
+    throw VException("Tried to get raw double value on top level settings object.");
+
+    //lint -e527 "Unreachable code at token 'return' [MISRA Rule 52]"
+    return 0.0;    // (will never reach this statement because of throw)
+    }
+
 void VSettings::addChildNode(VSettingsNode* node)
     {
     mNodes.push_back(node);
@@ -521,6 +562,14 @@ bool VSettings::stringToBoolean(const VString& value)
         value == "true" ||
         value == "YES" ||
         value == "yes");
+    }
+
+// static
+VDouble VSettings::stringToDouble(const VString& value)
+    {
+    VDouble d;
+    ::sscanf(value, "%lf", &d);
+    return d;
     }
 
 // static
@@ -646,6 +695,39 @@ void VSettingsTag::writeToStream(VTextIOStream& outputStream, int indentLevel)
         }
 
     }
+
+// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
+VBentoNode* VSettingsTag::writeToBento() const
+	{   
+	VBentoNode* tagNode = new VBentoNode(mName);
+
+    if (mAttributes.size() > 0)
+        {
+        // Write each attribute
+        for (VSizeType i = 0; i < mAttributes.size(); ++i)
+            {
+				VString attributeName;
+				VString attributeValue;
+
+				mAttributes[i]->getName(attributeName);
+				mAttributes[i]->getStringValue(attributeValue);
+
+				tagNode->addString(attributeName, attributeValue);
+            }
+        }
+
+    if (!mChildNodes.empty())
+	{
+        // Write each child node
+        for (VSizeType i = 0; i < mChildNodes.size(); ++i)
+            {
+				VBentoNode* childNode = mChildNodes[i]->writeToBento();
+				tagNode->addChildNode(childNode);
+            }
+    }
+
+	return tagNode;
+	}
 
 int VSettingsTag::countNamedChildren(const VString& name) const
     {
@@ -786,6 +868,19 @@ void VSettingsTag::getStringValue(VString& value) const
         this->throwNotFound("String", "<cdata>");
     }
 
+VDouble VSettingsTag::getDoubleValue() const
+    {
+    VSettingsNode*    cdataNode = this->_findChildTag("<cdata>");
+    
+    if (cdataNode != NULL)
+        return cdataNode->getDoubleValue();
+
+    this->throwNotFound("Double", "<cdata>");
+
+    //lint -e527 "Unreachable code at token 'return' [MISRA Rule 52]"
+    return 0.0;    // (will never reach this statement because of throw)
+    }
+
 void VSettingsTag::setLiteral(const VString& value)
     {
     VSettingsNode*    cdataNode = this->_findChildTag("<cdata>");
@@ -874,6 +969,12 @@ void VSettingsAttribute::writeToStream(VTextIOStream& outputStream, int /*indent
         }
     }
 
+// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
+VBentoNode* VSettingsAttribute::writeToBento() const
+	{   
+	return NULL;		// This doesn't create a node
+	}
+
 int VSettingsAttribute::getIntValue() const
     {
     return VSettings::stringToInt(mValue);
@@ -887,6 +988,11 @@ bool VSettingsAttribute::getBooleanValue() const
 void VSettingsAttribute::getStringValue(VString& value) const
     {
     value = mValue;
+    }
+
+VDouble VSettingsAttribute::getDoubleValue() const
+    {
+    return VSettings::stringToDouble(mValue);
     }
 
 void VSettingsAttribute::setLiteral(const VString& value)
@@ -919,6 +1025,14 @@ void VSettingsCDATA::writeToStream(VTextIOStream& outputStream, int indentLevel)
     outputStream.writeLine(mCDATA);
     }
 
+// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
+VBentoNode* VSettingsCDATA::writeToBento() const
+	{   
+	VBentoNode* cDataNode = new VBentoNode(mName);
+	cDataNode->addString(mName, mCDATA);
+	return cDataNode;
+	}
+
 int VSettingsCDATA::getIntValue() const
     {
     return VSettings::stringToInt(mCDATA);
@@ -932,6 +1046,11 @@ bool VSettingsCDATA::getBooleanValue() const
 void VSettingsCDATA::getStringValue(VString& value) const
     {
     value = mCDATA;
+    }
+
+VDouble VSettingsCDATA::getDoubleValue() const
+    {
+    return VSettings::stringToDouble(mCDATA);
     }
 
 void VSettingsCDATA::setLiteral(const VString& value)
@@ -1002,23 +1121,6 @@ void VSettingsXMLParser::parseLine()
                     this->accumulate(c);
                 break;
 
-            case kXMLVersion1_open_question:
-                if (c.charValue() == '?')
-                    this->changeState(kXMLVersion3_close_question);
-                else if (c.charValue() == '\"')
-                    this->changeState(kXMLVersion2_in_quote);
-                break;
-
-            case kXMLVersion2_in_quote:
-                if (c.charValue() == '\"')
-                    this->changeState(kXMLVersion1_open_question);
-                break;
-
-            case kXMLVersion3_close_question:
-                if (c.charValue() == '>')
-                    this->changeState(kReady);
-                break;
-
             case kComment1_bang:
                 if (c.charValue() == '-')
                     this->changeState(kComment2_bang_dash);
@@ -1065,8 +1167,6 @@ void VSettingsXMLParser::parseLine()
             case kTag1_open:
                 if (c.charValue() == '!')
                     this->changeState(kComment1_bang);
-                else if (c.charValue() == '?')
-                    this->changeState(kXMLVersion1_open_question);
                 else if (c.charValue() == '/')
                     this->changeState(kCloseTag1_open_slash);
                 else if (c.isAlpha())
