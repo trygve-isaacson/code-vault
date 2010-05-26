@@ -1,17 +1,18 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
 /** @file */
 
 #include "vabstractfilestream.h"
+#include "vtypes_internal_platform.h"
 
 #include "vexception.h"
 
-VAbstractFileStream::VAbstractFileStream()
-// mNode constructs to an empty path
+VAbstractFileStream::VAbstractFileStream() :
+mNode() // -> empty path
     {
     }
 
@@ -35,6 +36,6 @@ const VFSNode& VAbstractFileStream::getNode() const
 void VAbstractFileStream::_throwIfOpenFailed(const VString& failedMethod, const VString& path)
     {
     if (! this->isOpen())
-        throw VException(errno, "%s failed to open '%s'. Error %d (%s).", failedMethod.chars(), path.chars(), errno, ::strerror(errno));
+        throw VException(errno, VString("%s failed to open '%s'. Error %d (%s).", failedMethod.chars(), path.chars(), errno, ::strerror(errno)));
     }
 

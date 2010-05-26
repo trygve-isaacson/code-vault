@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -102,20 +102,20 @@ class VDirectIOFileStream : public VAbstractFileStream
         @param    numBytesToRead    the number of bytes to read
         @return    the actual number of bytes that could be read
         */
-        virtual Vs64    read(Vu8* targetBuffer, Vs64 numBytesToRead);
+        virtual Vs64 read(Vu8* targetBuffer, Vs64 numBytesToRead);
         /**
         Writes bytes to the stream.
         @param    buffer            the buffer containing the data
         @param    numBytesToWrite    the number of bytes to write to the stream
         @return the actual number of bytes written
         */
-        virtual Vs64    write(const Vu8* buffer, Vs64 numBytesToWrite);
+        virtual Vs64 write(const Vu8* buffer, Vs64 numBytesToWrite);
         /**
         Flushes any pending or buffered write data to the stream. Until you
         call flush, you cannot guarantee that your data has actually been
         written to the underlying physical stream.
         */
-        virtual void    flush();
+        virtual void flush();
         /**
         Skips forward in the stream a specified number of bytes. For memory
         and file streams, this means advancing the i/o offset by the specified
@@ -123,20 +123,20 @@ class VDirectIOFileStream : public VAbstractFileStream
         the specified number of bytes.
         @param    numBytesToSkip    the number of bytes to skip
         */
-        virtual bool    skip(Vs64 numBytesToSkip);
+        virtual bool skip(Vs64 numBytesToSkip);
         /**
         Seeks in the stream using Unix seek() semantics.
         @param    offset    the offset, meaning depends on whence value
         @param    whence    SEEK_SET, SEEK_CUR, or SEEK_END
         @return true if the seek was successful
         */
-        virtual bool    seek(Vs64 inOffset, int whence);
+        virtual bool seek(Vs64 offset, int whence);
         /**
         Returns the current offset in the stream. For file streams, this
         is an illegal operation and throws an exception.
         @return the current offset
         */
-        virtual Vs64    offset() const;
+        virtual Vs64 getIOOffset() const;
         /**
         Returns the number of bytes that are available to be read from this
         stream. For file and memory streams, this means the number of bytes
@@ -146,7 +146,7 @@ class VDirectIOFileStream : public VAbstractFileStream
         be read on the socket at this time).
         @return the number of bytes currently available for reading
         */
-        virtual Vs64    available() const;
+        virtual Vs64 available() const;
     
     private:
     
@@ -154,12 +154,6 @@ class VDirectIOFileStream : public VAbstractFileStream
         VDirectIOFileStream(const VDirectIOFileStream& other);
         VDirectIOFileStream& operator=(const VDirectIOFileStream& other);
 
-        static int      _wrap_open(const char* path, int flags);                    ///< Calls POSIX open in a way that is safe even if a signal is caught inside the function.
-        static ssize_t  _wrap_read(int fd, void* buffer, size_t numBytes);          ///< Calls POSIX read in a way that is safe even if a signal is caught inside the function.
-        static ssize_t  _wrap_write(int fd, const void* buffer, size_t numBytes);   ///< Calls POSIX write in a way that is safe even if a signal is caught inside the function.
-        static off_t    _wrap_lseek(int fd, off_t inOffset, int whence);            ///< Calls POSIX lseek in a way that is safe even if a signal is caught inside the function.
-        static int      _wrap_close(int fd);                                        ///< Calls POSIX close in a way that is safe even if a signal is caught inside the function.
-    
         int     mFile;              ///< The Unix API file descriptor.
         bool    mCloseOnDestruct;   ///< True if we'll close on destruct, set false on setFile.
     };

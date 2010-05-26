@@ -1,10 +1,11 @@
 /*
-Copyright c1997-2007 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
 #include "vclientsession.h"
+#include "vtypes_internal.h"
 
 #include "vmutexlocker.h"
 #include "vserver.h"
@@ -18,26 +19,39 @@ http://www.bombaydigital.com/
 
 // VClientSession --------------------------------------------------------------
 
-VClientSession::VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket) :
+VClientSession::VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket, const VDuration& standbyTimeLimit) :
 mName(sessionBaseName),
-// mMutex -> unlocked
+mMutex(VString::EMPTY()/*name will be set in body*/), // -> unlocked
 mServer(server),
 mClientType(clientType),
-// mClientIP -> empty
+mClientIP(), // -> empty
 mClientPort(0),
-// mClientAddress -> empty
+mClientAddress(), // -> empty
 mInputThread(NULL),
 mOutputThread(NULL),
 mIsShuttingDown(false),
-// mStartupStandbyQueue -> empty
-// mTasks -> empty
+mStartupStandbyQueue(), // -> empty
+mStandbyStartTime(VInstant::NEVER_OCCURRED()),
+mStandbyTimeLimit(standbyTimeLimit),
+mSocket(socket),
 mSocketStream(socket, "VClientSession"), // FIXME: find a way to get the IP address here or to set in ctor
-mIOStream(mSocketStream)
+mIOStream(mSocketStream),
+mReferenceCount(0),
+mReferenceCountMutex(VString::EMPTY()/*name will be set in body*/)
     {
-	socket->getHostName(mClientIP);
-	mClientPort = socket->getPortNumber();
+    socket->getHostName(mClientIP);
+    mClientPort = socket->getPortNumber();
     mClientAddress.format("%s:%d", mClientIP.chars(), mClientPort);
     mName.format("%s:%s:%d", sessionBaseName.chars(), mClientIP.chars(), mClientPort);
+    mMutex.setName(VString("VClientSession[%s]::mMutex", mName.chars()));
+    mReferenceCountMutex.setName(VString("VClientSession[%s]::mReferenceCountMutex", mName.chars()));
+
+    if (mServer == NULL)
+        {
+        VString message("[%s] VClientSession: No server specified.", this->getClientAddress().chars());
+        VLOGGER_ERROR(message);
+        throw VException(message);
+        }
     }
 
 VClientSession::~VClientSession()
@@ -50,81 +64,84 @@ VClientSession::~VClientSession()
 
     mInputThread = NULL;
     mOutputThread = NULL;
-    }
-    
-void VClientSession::attachTask(const VMessageHandlerTask* task)
-    {
-    VMutexLocker tasksLocker(&mMutex);
-    mTasks.push_back(task);
-    }
 
-void VClientSession::detachTask(const VMessageHandlerTask* task)
-    {
-    VMutexLocker tasksLocker(&mMutex);
-    SessionTaskList::iterator position = std::find(mTasks.begin(), mTasks.end(), task);
-
-    if (position != mTasks.end())
-        mTasks.erase(position); // we're removing the task from our list, not deleting the task itself
+    delete mSocket;
     }
 
 void VClientSession::shutdown(VThread* callingThread)
     {
-	VMutexLocker locker(&mMutex);
+    VMutexLocker locker(&mMutex, VString("[%s]VClientSession::shutdown() %s", this->getName().chars(), (callingThread == NULL ? "":callingThread->getName().chars())));
 
-	mIsShuttingDown = true;
+    mIsShuttingDown = true;
 
-	if (callingThread == NULL)
-		VLOGGER_DEBUG(VString("[%s] VClientSession::shutdown: Server requested shutdown of VClientSession@0x%08X.", this->getClientAddress().chars(), this));
-	else
-		VLOGGER_DEBUG(VString("[%s] VClientSession::shutdown: Thread [%s] requested shutdown of VClientSession@0x%08X.", this->getClientAddress().chars(), callingThread->name().chars(), this));
+    if (callingThread == NULL)
+        VLOGGER_DEBUG(VString("[%s] VClientSession::shutdown: Server requested shutdown of VClientSession@0x%08X.", this->getName().chars(), this));
 
-	if (mInputThread != NULL)
-		{
-		if (callingThread == mInputThread)
-			mInputThread = NULL;
-		else
-			mInputThread->stop();
-		}
+    if (mInputThread != NULL)
+        {
+        if (callingThread == mInputThread)
+            {
+            mInputThread = NULL;
+            VLOGGER_DEBUG(VString("[%s] VClientSession::shutdown: Input Thread [%s] requested shutdown of VClientSession@0x%08X.", this->getName().chars(), callingThread->getName().chars(), this));
+            }
+        else
+            mInputThread->stop();
+        }
 
-	if (mOutputThread != NULL)
-		{
-		if (callingThread == mOutputThread)
-			mOutputThread = NULL;
-		else
-			mOutputThread->stop();
-		}
+    if (mOutputThread != NULL)
+        {
+        if (callingThread == mOutputThread)
+            {
+            mOutputThread = NULL;
+            VLOGGER_DEBUG(VString("[%s] VClientSession::shutdown: Output Thread [%s] requested shutdown of VClientSession@0x%08X.", this->getName().chars(), callingThread->getName().chars(), this));
+            }
+        else
+            mOutputThread->stop();
+        }
 
-	if ((mInputThread == NULL) &&
-		(mOutputThread == NULL))
-		{
-		locker.unlock(); // must be unlocked before removeClientSession() or our _selfDestruct()
-
-        if (mServer != NULL)
-            mServer->removeClientSession(this);
-
-        this->_selfDestruct(); // illegal to refer to "this" after this line of code
-		}
+    // Remove this session from the server's lists of active sessions,
+    // so that it can be garbage collected.
+    locker.unlock(); // must be unlocked before removeClientSession() (is this still true?)
+    mServer->removeClientSession(this);
+    mServer->clientSessionTerminating(this);
     }
 
 bool VClientSession::postOutputMessage(VMessage* message, bool releaseIfNotPosted, bool queueStandbyIfStartingUp)
     {
-	bool posted = false;
+    bool posted = false;
 
-    VMutexLocker locker(&mMutex); // protect the mStartupStandbyQueue during queue operations
+    VMutexLocker locker(&mMutex, VString("[%s]VClientSession::postOutputMessage()", this->getName().chars())); // protect the mStartupStandbyQueue during queue operations
 
-	if ((! mIsShuttingDown) && (! this->isClientGoingOffline())) // don't post if client is doing a disconnect
-		{
-		if (queueStandbyIfStartingUp && ! this->isClientOnline())
-		    {
-		    VLOGGER_DEBUG(VString("[%s] SPARCSClientSession::postOutputMessage: Placing message message@0x%08X on standby queue.", this->getClientAddress().chars(), message));
-		    mStartupStandbyQueue.postMessage(message);
-		    }
-		else
-		    {
+    if ((! mIsShuttingDown) && (! this->isClientGoingOffline())) // don't post if client is doing a disconnect
+        {
+        if (queueStandbyIfStartingUp && ! this->isClientOnline())
+            {
+            VInstant now;
+
+            if (mStandbyStartTime == VInstant::NEVER_OCCURRED())
+                {
+                mStandbyStartTime = now;
+                }
+            
+            if ((mStandbyTimeLimit == VDuration::ZERO()) || (now <= mStandbyStartTime + mStandbyTimeLimit))
+                {
+                VLOGGER_DEBUG(VString("[%s] VClientSession::postOutputMessage: Placing message message@0x%08X ID=%d on standby queue for not-online session.", this->getName().chars(), message, message->getMessageID()));
+                mStartupStandbyQueue.postMessage(message);
+                posted = true;
+                }
+            else
+                {
+                // We have hit the standby time limit. Do not post. Initiate a shutdown of this session.
+                VLOGGER_ERROR(VString("[%s] VClientSession::postOutputMessage: Reached standby time limit of %s. Not posting message ID=%d. Closing socket to force shutdown of session and its i/o threads.", this->getName().chars(), mStandbyTimeLimit.getDurationString().chars(), message->getMessageID()));
+                mSocket->close(); // Don't call this->shutdown() -- it will recursive deadlock mMutex. Closing socket is cleaner, input thread will see exception just as if client connection went down, things will cleanly tear down.
+                }
+            }
+        else
+            {
             if (mOutputThread == NULL)
                 {
                 // Write the message directly to our output stream and release it.
-                message->send(mInputThread->name(), mIOStream); // FIXME: better "session label" needed
+                message->send(mInputThread->getName(), mIOStream); // FIXME: better "session label" needed
                 VMessagePool::releaseMessage(message, message->getPool());
                 }
             else
@@ -132,25 +149,23 @@ bool VClientSession::postOutputMessage(VMessage* message, bool releaseIfNotPoste
                 // Post it to our async output thread, which will perform the actual i/o.
                 mOutputThread->postOutputMessage(message);
                 }
-    		}
 
-		posted = true;
-		}
+            posted = true;
+            }
+        }
 
-	if (releaseIfNotPosted && !posted)
-		VMessagePool::releaseMessage(message, message->getPool());
+    if (releaseIfNotPosted && !posted)
+        VMessagePool::releaseMessage(message, message->getPool());
 
-	return posted;
+    return posted;
     }
 
 void VClientSession::sendMessageToClient(VMessage* message, const VString& sessionLabel, VBinaryIOStream& out)
     {
-	VMutexLocker locker(&mMutex); // protect from session state changes while testing state and sending
-
+    // No longer a need to lock mMutex, because session is ref counted and cannot disappear from under us here.
     if (mIsShuttingDown || this->isClientGoingOffline())
         {
-        locker.unlock(); // unlock ASAP, before logging
-		VLOGGER_MESSAGE_WARN(VString("VClientSession::sendMessageToClient: NOT sending message@0x%08X to offline session [%s], presumably in process of session shutdown.", message, mClientAddress.chars()));
+        VLOGGER_MESSAGE_WARN(VString("VClientSession::sendMessageToClient: NOT sending message@0x%08X to offline session [%s], presumably in process of session shutdown.", message, mClientAddress.chars()));
         }
     else
         {
@@ -162,30 +177,25 @@ void VClientSession::sendMessageToClient(VMessage* message, const VString& sessi
 VBentoNode* VClientSession::getSessionInfo() const
     {
     VBentoNode* result = new VBentoNode(mName);
-    
+
     result->addString("name", mName);
     result->addString("type", mClientType);
     result->addString("address", mClientAddress);
     result->addString("shutting", mIsShuttingDown ? "yes":"no");
-    
-    return result;
-    }
 
-void VClientSession::_selfDestruct()
-    {
-    // Wait until any pending tasks finish.
-    // Create a scope for the locker.
+    int standbyQueueSize = (int) mStartupStandbyQueue.getQueueSize();
+    if (standbyQueueSize != 0)
         {
-        VMutexLocker tasksLocker(&mMutex);
-        while (! mTasks.empty())
-            {
-            tasksLocker.unlock();
-            VThread::sleep(VDuration::SECOND());
-            tasksLocker.lock();
-            }
+        result->addInt("standby-queue-size", mStartupStandbyQueue.getQueueSize());
+        result->addS64("standby-queue-data-size", mStartupStandbyQueue.getQueueDataSize());
         }
-    
-    delete this;	// illegal to refer to "this" after this line of code
+
+    if (mOutputThread != NULL)
+        {
+        result->addInt("output-queue-size", mOutputThread->getOutputQueueSize());
+        }
+
+    return result;
     }
 
 void VClientSession::_moveStandbyMessagesToAsyncOutputQueue()
@@ -193,14 +203,16 @@ void VClientSession::_moveStandbyMessagesToAsyncOutputQueue()
     // Note that we rely on the caller to lock the mMutex before calling us.
     // changeInitalizationState calls us but needs to lock a larger scope,
     // so we don't want to do the locking.
-	VMessage* m = mStartupStandbyQueue.getNextMessage();
+    VMessage* m = mStartupStandbyQueue.getNextMessage();
 
-	while (m != NULL)
-	    {
-	    VLOGGER_DEBUG(VString("[%s] VClientSession::_moveStandbyMessagesToAsyncOutputQueue: Moving message message@0x%08X from standby queue to output queue.", this->getClientAddress().chars(), m));
-	    mOutputThread->postOutputMessage(m);
-	    m = mStartupStandbyQueue.getNextMessage();
-	    }
+    while (m != NULL)
+        {
+        VLOGGER_TRACE(VString("[%s] VClientSession::_moveStandbyMessagesToAsyncOutputQueue: Moving message message@0x%08X from standby queue to output queue.", this->getName().chars(), m));
+        this->_postStandbyMessageToAsyncOutputQueue(m);
+        m = mStartupStandbyQueue.getNextMessage();
+        }
+
+    mStandbyStartTime = VInstant::NEVER_OCCURRED(); // We are no longer in standby queuing mode (until next time we queue).
     }
 
 int VClientSession::_getOutputQueueSize() const
@@ -211,16 +223,21 @@ int VClientSession::_getOutputQueueSize() const
         return mOutputThread->getOutputQueueSize();
     }
 
+void VClientSession::_postStandbyMessageToAsyncOutputQueue(VMessage* message)
+    {
+    mOutputThread->postOutputMessage(message, false /* do not respect the queue limits, just move all messages onto the queue */);
+    }
+
 void VClientSession::_releaseQueuedClientMessages()
     {
-	VMutexLocker locker(&mMutex); // protect the mStartupStandbyQueue during queue operations
+    VMutexLocker locker(&mMutex, VString("[%s]VClientSession::_releaseQueuedClientMessages()", this->getName().chars())); // protect the mStartupStandbyQueue during queue operations
 
-	// Order probably does not matter, but it makes sense to pop them in the order they would have been sent.
+    // Order probably does not matter, but it makes sense to pop them in the order they would have been sent.
 
     if (mOutputThread != NULL)
         mOutputThread->releaseAllQueuedMessages();
 
-	mStartupStandbyQueue.releaseAllMessages();
+    mStartupStandbyQueue.releaseAllMessages();
     }
 
 // VClientSessionFactory -----------------------------------------------------------
@@ -229,5 +246,37 @@ void VClientSessionFactory::addSessionToServer(VClientSession* session)
     {
     if (mServer != NULL)
         mServer->addClientSession(session);
+    }
+
+// VClientSessionReference ---------------------------------------------------------
+
+VClientSessionReference::VClientSessionReference(VClientSession* session) :
+mSession(NULL)
+    {
+    this->setSession(session);
+    }
+
+VClientSessionReference::~VClientSessionReference()
+    {
+    this->setSession(NULL);
+    }
+
+void VClientSessionReference::setSession(VClientSession* session)
+    {
+    // Un-reference the existing session, if any.
+    if (mSession != NULL)
+        {
+        VMutexLocker locker(&mSession->mReferenceCountMutex, VString("VClientSessionReference::setSession() decr %s", mSession->getName().chars()));
+        --(mSession->mReferenceCount);
+        mSession = NULL;
+        }
+
+    // Reference the new session, if supplied.
+    if (session != NULL)
+        {
+        VMutexLocker locker(&session->mReferenceCountMutex, VString("VClientSessionReference::setSession() incr %s", session->getName().chars()));
+        ++(session->mReferenceCount);
+        mSession = session;
+        }
     }
 

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -97,10 +97,10 @@ class VSingleton : public MShutdownHandler
     
         /**
         Constructs the singleton holder.
-        @param    holderDeletionPolicy    specifies whether the holder can be deleted
-        @param    threadSafetyPolicy        specifies whether a mutex is used to access the instance
-        @param    shutdownPolicy            specifies whether the instance is shut down via the shutdown registry
-        @param    resurrectionPolicy        specifies whether the instance can be re-created after being previously destroyed
+        @param    holderDeletionPolicy  specifies whether the holder can be deleted
+        @param    threadSafetyPolicy    specifies whether a mutex is used to access the instance
+        @param    shutdownPolicy        specifies whether the instance is shut down via the shutdown registry
+        @param    resurrectionPolicy    specifies whether the instance can be re-created after being previously destroyed
         */
         VSingleton(HolderDeletionPolicy holderDeletionPolicy,
                         ThreadSafetyPolicy threadSafetyPolicy,
@@ -123,7 +123,7 @@ class VSingleton : public MShutdownHandler
         */
         T* instance()
             {
-            VMutexLocker locker(&gMutex, mThreadSafe);
+            VMutexLocker locker(&gMutex, "VSingleton::instance()", mThreadSafe);
             
             if (gInstance == NULL)
                 {
@@ -144,7 +144,7 @@ class VSingleton : public MShutdownHandler
         */
         void deleteInstance()
             {
-            VMutexLocker locker(&gMutex, mThreadSafe);
+            VMutexLocker locker(&gMutex, "VSingleton::deleteInstance()", mThreadSafe);
             delete gInstance;
             gInstance = NULL;
             gInstanceDeleted = true;
@@ -173,7 +173,7 @@ class VSingleton : public MShutdownHandler
         
     };
 
-template <class T> VMutex VSingleton<T>::gMutex;
+template <class T> VMutex VSingleton<T>::gMutex("VSingleton::gMutex");
 template <class T> T* VSingleton<T>::gInstance = NULL;
 template <class T> bool VSingleton<T>::gInstanceDeleted = false;
 

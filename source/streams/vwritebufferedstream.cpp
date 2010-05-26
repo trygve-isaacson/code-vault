@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -19,15 +19,13 @@ mRawStream(rawStream)
 Vs64 VWriteBufferedStream::read(Vu8* /*targetBuffer*/, Vs64 /*numBytesToRead*/)
     {
     throw VException("VWriteBufferedStream::read: Read is not permitted on buffered write stream.");
-
-    return CONST_S64(0);
     }
 
 void VWriteBufferedStream::flush()
     {
     // Flush the complete contents of our buffer to the raw stream.
     this->seek(SEEK_SET, 0);    // set our i/o offset back to 0
-    (void) streamCopy(*this, mRawStream, this->eofOffset());
+    (void) VStream::streamCopy(*this, mRawStream, this->getEOFOffset());
     
     // Reset ourself to be "empty" and at i/o offset 0.
     this->seek(SEEK_SET, 0);
@@ -37,7 +35,5 @@ void VWriteBufferedStream::flush()
 bool VWriteBufferedStream::skip(Vs64 /*numBytesToSkip*/)
     {
     throw VException("VWriteBufferedStream::skip: Skip is not permitted on buffered write stream.");
-
-    return false;
     }
 

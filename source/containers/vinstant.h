@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -78,6 +78,16 @@ class VDuration
         /** Non-virtual destructor. This class is not intended to be subclassed. */
         ~VDuration() {}
 
+        /**
+        Rather than have a constructor that takes a string, and risk unintended overloading,
+        we define a static helper if you want to construct a VDuration from a duration string.
+        It uses setDurationString internally to do the work.
+        @see setDurationString
+        @param  s   the string indicating the duration
+        @return the VDuration
+        */
+        static VDuration createFromDurationString(const VString& s);
+
         /** Assignment operator. @param d a duration to assign from */
         VDuration& operator=(const VDuration& d) { if (this != &d) mDurationMilliseconds = d.getDurationMilliseconds(); return *this; }
         /** Increment operator. @param forwardOffset a duration to add */
@@ -103,6 +113,10 @@ class VDuration
         int getDurationHours() const { return static_cast<int>(mDurationMilliseconds / kMillisecondsPerHour); }
         /** Returns the duration in whole days, using simple truncating division of milliseconds. @return obvious */
         int getDurationDays() const { return static_cast<int>(mDurationMilliseconds / kMillisecondsPerDay); }
+        /** Returns a string formatted as in the simplest integer+suffix possible as described in setDurationString() docs below. @return obvious */
+        VString getDurationString() const;
+        /** Returns a string formatted as s.uuu, the number of seconds and milliseconds. @return obvious */
+        VString getDurationStringFractionalSeconds() const;
 
         /** Sets the duration in milliseconds. @param durationMilliseconds the duration to set, in milliseconds */
         void setDurationMilliseconds(Vs64 durationMilliseconds) { mDurationMilliseconds = durationMilliseconds; }
@@ -115,6 +129,40 @@ class VDuration
         /** Sets the duration in 24-hour days (no DST calculations are done). @param durationDays the duration to set, in 24-hour days */
         void setDurationDays(int durationDays) { mDurationMilliseconds = kMillisecondsPerDay * static_cast<Vs64>(durationDays); }
 
+        /**
+        Sets the duration via a simple human-readable format that indicates value and magnitude.
+        Please note that because this requires string parsing, it is less efficient than using
+        VDuration constants and mulitplication.
+        If present, the suffix of s must be one of: ms | s | m | h | d
+        The prefix is an integer (leading minus sign allowed).
+        If the suffix is omitted the string must be in the form s.mmm just like what
+        getDurationString() returns. This is to allow get/set symmetry.
+        Whitespace between the prefix and suffix is allowed but not preferred.
+        Here are examples with each allowed suffix and the (obvious) meaning:
+            27ms
+            23472ms (meaning 23.472 seconds)
+            5s
+            107s (meaning 1 minute 47 seconds)
+            8m
+            152m (meaning 2 hours 32 minutes)
+            3h
+            7d
+            5.273 (meaning 5.273 seconds)
+        The prefix value is simply multiplied out to get the raw number of milliseconds to store in
+        the object. No calendar-like operations are done, which is why "weeks", "months", etc. are
+        not supported.
+        
+        For symmetry of getDurationString/setDurationString, the following strings are used for the
+        special durations. (They are case-insensitive on input, and written as upper case on output.)
+        "INFINITY"    <-> VDuration::POSITIVE_INFINITY()
+        "-INFINITY"   <-> VDuration::NEGATIVE_INFINITY()
+        "UNSPECIFIED" <-> VDuration::UNSPECIFIED()
+        
+        @param  s   the string indicating the duration
+        @throws VRangeException if the string is malformed
+        */
+        void setDurationString(const VString& s);
+        
         friend inline bool operator==(const VDuration& d1, const VDuration& d2);    ///< Compares d1 and d2 for equality in milliseconds using ==.
         friend inline bool operator!=(const VDuration& d1, const VDuration& d2);    ///< Compares d1 and d2 for equality in milliseconds using !=.
         friend inline bool operator>=(const VDuration& d1, const VDuration& d2);    ///< Compares d1 and d2 for equality in milliseconds using >=.
@@ -179,19 +227,25 @@ class VDuration
 // Inline implementations of some of the above VDuration operators.
 // The purpose is to make simple operations quick, and divert the complex versions
 // to the separate functions.
-inline bool    operator==(const VDuration& d1, const VDuration& d2) { return d1.mDurationMilliseconds == d2.mDurationMilliseconds; }
-inline bool    operator!=(const VDuration& d1, const VDuration& d2) { return d1.mDurationMilliseconds != d2.mDurationMilliseconds; }
-inline bool    operator>=(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return d1.mDurationMilliseconds >= d2.mDurationMilliseconds; else return VDuration::_complexGTE(d1, d2); }
-inline bool    operator<=(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return d1.mDurationMilliseconds <= d2.mDurationMilliseconds; else return VDuration::_complexLTE(d1, d2); }
-inline bool    operator>(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return d1.mDurationMilliseconds > d2.mDurationMilliseconds; else return VDuration::_complexGT(d1, d2); }
-inline bool    operator<(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return d1.mDurationMilliseconds < d2.mDurationMilliseconds; else return VDuration::_complexLT(d1, d2); }
+inline bool operator==(const VDuration& d1, const VDuration& d2) { return d1.mDurationMilliseconds == d2.mDurationMilliseconds; }
+inline bool operator!=(const VDuration& d1, const VDuration& d2) { return d1.mDurationMilliseconds != d2.mDurationMilliseconds; }
+inline bool operator>=(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return d1.mDurationMilliseconds >= d2.mDurationMilliseconds; else return VDuration::_complexGTE(d1, d2); }
+inline bool operator<=(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return d1.mDurationMilliseconds <= d2.mDurationMilliseconds; else return VDuration::_complexLTE(d1, d2); }
+inline bool operator>(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return d1.mDurationMilliseconds > d2.mDurationMilliseconds; else return VDuration::_complexGT(d1, d2); }
+inline bool operator<(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return d1.mDurationMilliseconds < d2.mDurationMilliseconds; else return VDuration::_complexLT(d1, d2); }
 inline VDuration operator+(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return VDuration(d1.mDurationMilliseconds + d2.mDurationMilliseconds); else return VDuration::_complexAdd(d1, d2); }
 inline VDuration operator-(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return VDuration(d1.mDurationMilliseconds - d2.mDurationMilliseconds); else return VDuration::_complexSubtract(d1, d2); }
 inline VDuration operator*(Vs64 multiplier, const VDuration& d) { if (d.isSpecific()) return VDuration(d.mDurationMilliseconds * multiplier); else return VDuration::_complexMultiply(d, multiplier); }
 inline VDuration operator*(const VDuration& d, Vs64 multiplier) { if (d.isSpecific()) return VDuration(d.mDurationMilliseconds * multiplier); else return VDuration::_complexMultiply(d, multiplier); }
 inline VDuration VDuration::min(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return (d1 < d2) ? d1 : d2; else return VDuration::_complexMin(d1, d2); }
 inline VDuration VDuration::max(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return (d1 > d2) ? d1 : d2; else return VDuration::_complexMax(d1, d2); }
-inline VDuration VDuration::abs(const VDuration& d) { if (d.isSpecific()) return (d.mDurationMilliseconds < CONST_S64(0)) ? d : VDuration(-d.mDurationMilliseconds); else return VDuration::_complexAbs(d); }
+inline VDuration VDuration::abs(const VDuration& d) { if (d.isSpecific()) return (d.mDurationMilliseconds < CONST_S64(0)) ? -d : d; else return VDuration::_complexAbs(d); }
+
+/**
+VDurationVector is simply a vector of VDuration objects. Note that the vector
+elements are objects, not pointers to objects.
+*/
+typedef std::vector<VDuration> VDurationVector;
 
 /**
 This structure is passed to or returned by the core functions to
@@ -299,7 +353,11 @@ class VInstant
         @return an instant representing the specified time
         */
         static VInstant instantFromRawValue(Vs64 value) { return VInstant(value); }
-        /**
+
+		//Returns a raw value from an instant. Need to write this.
+        //Vs64 VInstant instantToRawValue(const VInstant& instant);
+
+       /**
         Returns an instant created from a POSIX time_t value, which is defined as the
         number of seconds since UTC 1970 00:00:00.000.
         @param    value    the POSIX time value (seconds since UTC 1970 00:00:00.000) (negative values
@@ -349,16 +407,33 @@ class VInstant
         */
         void setNow();
         /**
+        Sets the instant to the actual current time not offset by simulation or frozen time.
+        */
+        void setTrueNow();
+        /**
         Returns a UTC string representation of the instant.
         @param    s                the string to be formatted
         @param    fileNameSafe    if true, the returned string is stripped of the
                                 punctuation formatting chars, yielding YYYYMMDDHHMMSSmmm;
                                 if false (the default), the returned string is
-                                formatted using standard time notation.
+                                formatted as "YYYY-MM-DD HH:MM:SS.mmm UTC".
         @param    wantMilliseconds  if true (the default), the string includes the
                                 milliseconds; if not, it only goes to seconds
         */
         void getUTCString(VString& s, bool fileNameSafe=false, bool wantMilliseconds=true) const;
+        /**
+        Convenience version of getUTCString that returns the string as the
+        function result. May involve one extra string copy depending on use case
+        and compiler.
+        @param    fileNameSafe    if true, the returned string is stripped of the
+                                punctuation formatting chars, yielding YYYYMMDDHHMMSSmmm.
+                                if false (the default), the returned string is
+                                formatted as "YYYY-MM-DD HH:MM:SS.mmm UTC".
+        @param    wantMilliseconds  if true (the default), the string includes the
+                                milliseconds; if not, it only goes to seconds
+        @return formatted UTC time string (ends in " UTC")
+        */
+        VString getUTCString(bool fileNameSafe=false, bool wantMilliseconds=true) const;
         /**
         Sets the instant from a UTC string representation.
         You must use the same string format as returned by getUTCString.
@@ -372,11 +447,24 @@ class VInstant
         @param    fileNameSafe    if true, the returned string is stripped of the
                                 punctuation formatting chars, yielding YYYYMMDDHHMMSSmmm.
                                 if false (the default), the returned string is
-                                formatted using standard time notation.
+                                formatted as "YYYY-MM-DD HH:MM:SS.mmm".
         @param    wantMilliseconds  if true (the default), the string includes the
                                 milliseconds; if not, it only goes to seconds
         */
         void getLocalString(VString& s, bool fileNameSafe=false, bool wantMilliseconds=true) const;
+        /**
+        Convenience version of getLocalString that returns the string as the
+        function result. May involve one extra string copy depending on use case
+        and compiler.
+        @param    fileNameSafe    if true, the returned string is stripped of the
+                                punctuation formatting chars, yielding YYYYMMDDHHMMSSmmm.
+                                if false (the default), the returned string is
+                                formatted as "YYYY-MM-DD HH:MM:SS.mmm".
+        @param    wantMilliseconds  if true (the default), the string includes the
+                                milliseconds; if not, it only goes to seconds
+        @return formatted local time string
+        */
+        VString getLocalString(bool fileNameSafe=false, bool wantMilliseconds=true) const;
         /**
         Sets the instant from a local string representation.
         You must use the same string format as returned by getLocalString.
@@ -560,6 +648,8 @@ class VInstant
         */
         static MRemoteTimeZoneConverter* getRemoteTimeZoneConverter();
 
+        // Time simulation features. Note that if "frozen time" is in effect, the
+        // "clock offset" information is not used.
         /**
         Adjusts the simulated clock offset. The simulated clock offset is applied
         by _platform_now() and _platform_snapshot() to the values they return. This
@@ -573,7 +663,7 @@ class VInstant
         static void incrementSimulatedClockOffset(const VDuration& delta);
         /**
         Sets the simulated clock offset. The simulated clock offset is applied
-        by _platform_now() and _platform_snapshot() to the values they return. This
+        by setNow() and snapshot() to the values they return. This
         can be used to simulate a faster passing of time, by adjusting the clock
         forward. It may be impractical to adjust the clock backwards, because some
         code constructs may behave badly if time flows backwards. However, you may
@@ -582,6 +672,17 @@ class VInstant
         @param offsetValue the simulated clock offset
         */
         static void setSimulatedClockOffset(const VDuration& offset);
+        /**
+        Sets the simulated clock offset implied by the specified absolute time value.
+        The simulated clock offset is applied
+        by setNow() and snapshot() to the values they return. This
+        can be used to simulate a faster passing of time, by adjusting the clock
+        forward. It may be impractical to adjust the clock backwards, because some
+        code constructs may behave badly if time flows backwards. However, you may
+        be able to apply an initial backwards offset if you wish to start your
+        program running in a simulated time in the past.
+        @param simulatedCurrentTime the simulated time from which to calculate the offset
+        */
         static void setSimulatedClockValue(const VInstant& simulatedCurrentTime);
         /**
         Returns the simulated clock offset. The simulated clock offset is applied
@@ -593,6 +694,32 @@ class VInstant
         program running in a simulated time in the past.
         */
         static VDuration getSimulatedClockOffset();
+        /**
+        Freezes the flow of time by specifying an absolute time that will be returned
+        by any call to setNow(), as well as any use of snapshot() to track time deltas.
+        @param frozenTimeValue the time value that is frozen
+        */
+        static void freezeTime(const VInstant& frozenTimeValue);
+        /**
+        Shifts the frozen time value by the specified amount. This can be used to freeze
+        time and then cause it to flow slowly or quickly by manually rolling time forward at
+        the desired rate.
+        @param delta the duration by which to offset the frozen time; negative values
+                        may have strange effects
+        */
+        static void shiftFrozenTime(const VDuration& delta);
+        /**
+        Unfreezes time and resumes real-time operation. If you previously used a future
+        time for freezing, you should probably install a clock offset value before
+        unfreezing, to ensure that time proceeds forward; otherwise you will unfreeze
+        and end up in an earlier time (now).
+        */
+        static void unfreezeTime();
+        /**
+        Returns true if time is currently frozen.
+        @return true if time is frozen
+        */
+        static bool isTimeFrozen();
 
     private:
 
@@ -711,27 +838,34 @@ class VInstant
         static Vs64 _platform_snapshot();
 
         static Vs64 gSimulatedClockOffset; ///< Value applied by _platform_now() and _platform_snapshot() to simulate non-real-time flow.
+        static Vs64 gFrozenClockValue;     ///< If non-zero, the "current time" returned is always this value; time is effectively frozen.
         static MRemoteTimeZoneConverter* gRemoteTimeZoneConverter; ///< The converter for RTZ conversion, or NULL.
 
         // Let VDate call the getTimeValue() bottleneck for getting the day of
         // week, but don't make it a public API since it's exposing the tm
         // structure which is dependent on time.h functionality.
         friend class VDate;
-        friend class VInstantUnit;    // Let unit test validate our internal APIs.
+        friend class VInstantUnit;  // Let unit test validate our internal APIs.
     };
 
 // Inline implementations of some of the above VInstant operators.
-inline bool    operator==(const VInstant& i1, const VInstant& i2) { return i1.mValue == i2.mValue; }
-inline bool    operator!=(const VInstant& i1, const VInstant& i2) { return i1.mValue != i2.mValue; }
-inline bool    operator>=(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return i1.mValue >= i2.mValue; else return VInstant::_complexGTE(i1, i2); }
-inline bool    operator<=(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return i1.mValue <= i2.mValue; else return VInstant::_complexLTE(i1, i2); }
-inline bool    operator>(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return i1.mValue > i2.mValue; else return VInstant::_complexGT(i1, i2); }
-inline bool    operator<(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return i1.mValue < i2.mValue; else return VInstant::_complexLT(i1, i2); }
+inline bool operator==(const VInstant& i1, const VInstant& i2) { return i1.mValue == i2.mValue; }
+inline bool operator!=(const VInstant& i1, const VInstant& i2) { return i1.mValue != i2.mValue; }
+inline bool operator>=(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return i1.mValue >= i2.mValue; else return VInstant::_complexGTE(i1, i2); }
+inline bool operator<=(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return i1.mValue <= i2.mValue; else return VInstant::_complexLTE(i1, i2); }
+inline bool operator>(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return i1.mValue > i2.mValue; else return VInstant::_complexGT(i1, i2); }
+inline bool operator<(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return i1.mValue < i2.mValue; else return VInstant::_complexLT(i1, i2); }
 inline VDuration operator-(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return VDuration::MILLISECOND() * (i1.mValue - i2.mValue); else return VDuration(); }
 inline VInstant operator+(const VInstant& i1, const VDuration& forwardDuration) { VInstant result = i1; result += forwardDuration; return result; }
 inline VInstant operator-(const VInstant& i1, const VDuration& backwardDuration) { VInstant result = i1; result -= backwardDuration; return result; }
 inline VInstant VInstant::min(const VInstant& i1, const VInstant& i2) { return (i1 < i2) ? i1 : i2; }
 inline VInstant VInstant::max(const VInstant& i1, const VInstant& i2) { return (i1 > i2) ? i1 : i2; }
+
+/**
+VInstantVector is simply a vector of VInstant objects. Note that the vector
+elements are objects, not pointers to objects.
+*/
+typedef std::vector<VInstant> VInstantVector;
 
 /**
 VDate represents a calendar date: a year/month/day.
@@ -762,7 +896,7 @@ class VDate
         @param    month    the month (1 to 12)
         @param    day        the day of the month (1 to 31*)
         */
-        VDate(int inYear, int inMonth, int inDay);
+        VDate(int year, int month, int day);
         /**
         Destructor.
         */
@@ -795,7 +929,7 @@ class VDate
         @param    month    the month of the year (1 to 12)
         @param    day        the day of the month (1 to 31*)
         */
-        void set(int inYear, int inMonth, int inDay);
+        void set(int year, int month, int day);
         /**
         Sets the year of the date.
         @param    year    the year
@@ -823,12 +957,12 @@ class VDate
         static const VChar& getLocalDateSeparator() { return kLocalDateSeparator; }
 
         enum {
-            kYMD,        ///< Year/Month/Day
-            kYDM,        ///< Year/Day/Month
-            kMYD,        ///< Month/Year/Day
-            kMDY,        ///< Year/Day/Month
-            kDYM,        ///< Day/Year/Month
-            kDMY,        ///< Day/Month/Year
+            kYMD,   ///< Year/Month/Day
+            kYDM,   ///< Year/Day/Month
+            kMYD,   ///< Month/Year/Day
+            kMDY,   ///< Year/Day/Month
+            kDYM,   ///< Day/Year/Month
+            kDMY    ///< Day/Month/Year
             };
 
         /**
@@ -853,13 +987,13 @@ class VDate
     private:
 
         /** Asserts if any invariant is broken. */
-        void assertInvariant() const;
+        void _assertInvariant() const;
 
-        int    mYear;    ///< The year.
-        int    mMonth;    ///< The month (1 to 12).
-        int    mDay;    ///< The day of the month (1 to 31*).
+        int mYear;  ///< The year.
+        int mMonth; ///< The month (1 to 12).
+        int mDay;   ///< The day of the month (1 to 31*).
 
-        static const VChar kLocalDateSeparator;    ///< The character to separate M/D/Y
+        static const VChar kLocalDateSeparator; ///< The character to separate M/D/Y
     };
 
 inline bool operator==(const VDate& d1, const VDate& d2) { return (d1.mYear == d2.mYear) && (d1.mMonth == d2.mMonth) && (d1.mDay == d2.mDay); }
@@ -891,7 +1025,7 @@ class VTimeOfDay
         @param    second    the second of the minute (0 to 59)
         @param    millisecond    the millisecond of the second (0 to 999)
         */
-        VTimeOfDay(int inHour, int inMinute, int inSecond, int inMillisecond);
+        VTimeOfDay(int hour, int minute, int second, int millisecond);
         /**
         Destructor.
         */
@@ -965,12 +1099,12 @@ class VTimeOfDay
     private:
 
         /** Asserts if any invariant is broken. */
-        void assertInvariant() const;
+        void _assertInvariant() const;
 
-        int    mHour;        ///< The hour of day (0 to 23).
-        int    mMinute;    ///< The minute of the hour (0 to 59).
-        int    mSecond;    ///< The second of the minute (0 to 59).
-        int    mMillisecond;///< The millisecond of the second (0 to 999).
+        int mHour;          ///< The hour of day (0 to 23).
+        int mMinute;        ///< The minute of the hour (0 to 59).
+        int mSecond;        ///< The second of the minute (0 to 59).
+        int mMillisecond;   ///< The millisecond of the second (0 to 999).
 
         static const VChar kLocalTimeSeparator;    ///< The character to separate HH:MM:SS
     };

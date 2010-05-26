@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -23,8 +23,8 @@ class ADynamicClass
 DEFINE_CLASSFACTORY(ADynamicClass, FactoryFor_ADynamicClass);
 DECLARE_CLASSFACTORY(ADynamicClass, FactoryFor_ADynamicClass);
 
-VClassRegistryUnit::VClassRegistryUnit(bool logOnSuccess, bool throwOnError)
-: VUnit("VClassRegistryUnit", logOnSuccess, throwOnError)
+VClassRegistryUnit::VClassRegistryUnit(bool logOnSuccess, bool throwOnError) :
+VUnit("VClassRegistryUnit", logOnSuccess, throwOnError)
     {
     }
 
@@ -39,6 +39,7 @@ void VClassRegistryUnit::run()
 
     this->test(dynamicObject != NULL, "class registry 1");
     this->test(dynamicObject->mTestValue == 42, "class registry 2");
+    delete dynamicObject;
 
     // Verify that specifying a bogus class name results in an exception.
     bool caughtException = false;

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -44,43 +44,78 @@ class VSettingsNode
 
         VSettingsNode& operator=(const VSettingsNode& other);
 
-        virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0) = 0;
-		// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
-		virtual VBentoNode* writeToBento() const = 0;	
+        virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0) const = 0;
+        virtual VBentoNode* writeToBento() const = 0;    
 
         virtual const VSettingsNode* findNode(const VString& path) const;
+        virtual VSettingsNode* findMutableNode(const VString& path);
         virtual int countNodes(const VString& path) const;
         virtual int countNamedChildren(const VString& /*name*/) const { return 0; }
-        virtual const VSettingsNode* getNamedChild(const VString& /*name*/, int /*inIndex*/) const { return NULL; }
+        virtual const VSettingsNode* getNamedChild(const VString& /*name*/, int /*index*/) const { return NULL; }
         virtual void deleteNode(const VString& path);
         virtual void deleteNamedChildren(const VString& /*name*/) {}
 
-        virtual void getName(VString& name) const;
-        virtual void getPath(VString& path) const;
-        virtual bool isNamed(const VString& name) const;
+        const VString& getName() const;
+        VString getPath() const;
+        bool isNamed(const VString& name) const;
 
         virtual int getInt(const VString& path, int defaultValue) const;
         virtual int getInt(const VString& path) const;
-        virtual int getIntValue() const = 0;
+        int getIntValue() const; // Because it all comes from text, int is just cast from getS64() parsed value.
+        virtual Vs64 getS64(const VString& path, Vs64 defaultValue) const;
+        virtual Vs64 getS64(const VString& path) const;
+        virtual Vs64 getS64Value() const = 0;
         virtual bool getBoolean(const VString& path, bool defaultValue) const;
         virtual bool getBoolean(const VString& path) const;
         virtual bool getBooleanValue() const = 0;
-        virtual void getString(const VString& path, VString& value, const VString& defaultValue) const;
-        virtual void getString(const VString& path, VString& value) const;
-        virtual void getStringValue(VString& value) const = 0;
+        virtual VString getString(const VString& path, const VString& defaultValue) const;
+        virtual VString getString(const VString& path) const;
+        virtual VString getStringValue() const = 0;
         virtual VDouble getDouble(const VString& path, VDouble defaultValue) const;
         virtual VDouble getDouble(const VString& path) const;
         virtual VDouble getDoubleValue() const = 0;
+        virtual VSize getSize(const VString& path, const VSize& defaultValue) const;
+        virtual VSize getSize(const VString& path) const;
+        virtual VSize getSizeValue() const = 0;
+        virtual VPoint getPoint(const VString& path, const VPoint& defaultValue) const;
+        virtual VPoint getPoint(const VString& path) const;
+        virtual VPoint getPointValue() const = 0;
+        virtual VRect getRect(const VString& path, const VRect& defaultValue) const;
+        virtual VRect getRect(const VString& path) const;
+        virtual VRect getRectValue() const = 0;
+        virtual VPolygon getPolygon(const VString& path, const VPolygon& defaultValue) const;
+        virtual VPolygon getPolygon(const VString& path) const;
+        virtual VPolygon getPolygonValue() const = 0;
+        virtual VColor getColor(const VString& path, const VColor& defaultValue) const;
+        virtual VColor getColor(const VString& path) const;
+        virtual VColor getColorValue() const = 0;
+        virtual VDuration getDuration(const VString& path, const VDuration& defaultValue) const;
+        virtual VDuration getDuration(const VString& path) const;
+        virtual VDuration getDurationValue() const = 0;
         virtual bool nodeExists(const VString& path) const;
         
         virtual void addIntValue(const VString& path, int value);
+        virtual void addS64Value(const VString& path, Vs64 value);
         virtual void addBooleanValue(const VString& path, bool value);
         virtual void addStringValue(const VString& path, const VString& value);
         virtual void addDoubleValue(const VString& path, VDouble value);
+        virtual void addSizeValue(const VString& path, const VSize& value);
+        virtual void addPointValue(const VString& path, const VPoint& value);
+        virtual void addRectValue(const VString& path, const VRect& value);
+        virtual void addPolygonValue(const VString& path, const VPolygon& value);
+        virtual void addColorValue(const VString& path, const VColor& value);
+        virtual void addDurationValue(const VString& path, const VDuration& value);
         virtual void addItem(const VString& path);
         virtual void setIntValue(const VString& path, int value);
         virtual void setBooleanValue(const VString& path, bool value);
         virtual void setStringValue(const VString& path, const VString& value);
+        virtual void setDoubleValue(const VString& path, VDouble value);
+        virtual void setSizeValue(const VString& path, const VSize& value);
+        virtual void setPointValue(const VString& path, const VPoint& value);
+        virtual void setRectValue(const VString& path, const VRect& value);
+        virtual void setPolygonValue(const VString& path, const VPolygon& value);
+        virtual void setColorValue(const VString& path, const VColor& value);
+        virtual void setDurationValue(const VString& path, const VDuration& value);
         virtual void setLiteral(const VString& /*value*/) {};
 
         virtual void add(const VString& path, bool hasValue, const VString& value);
@@ -97,13 +132,14 @@ class VSettingsNode
         virtual VSettingsTag* _findChildTag(const VString& /*name*/) const { return NULL; }
         virtual void _addLeafValue(const VString& name, bool hasValue, const VString& value);
         virtual void _removeAttribute(VSettingsAttribute* /*attribute*/) {}
+        virtual void _removeChildNode(VSettingsNode* /*child*/) {}
         
         void throwNotFound(const VString& dataKind, const VString& missingTrail) const;
         
-        static const char    kPathDelimiterChar;
+        static const char kPathDelimiterChar;
 
-        VSettingsTag*    mParent;
-        VString            mName;
+        VSettingsTag*   mParent;
+        VString         mName;
     };
 
 class VSettings : public VSettingsNode
@@ -111,31 +147,37 @@ class VSettings : public VSettingsNode
     public:
         
         VSettings();
+        VSettings(const VFSNode& file);
         VSettings(VTextIOStream& inputStream);
         virtual ~VSettings();
         
-        virtual void readFromStream(VTextIOStream& inputStream);
-        virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0);
- 		// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
-		virtual VBentoNode* writeToBento() const;
-		void debugPrint();
+        void readFromFile(const VFSNode& file);
+        void writeToFile(const VFSNode& file) const;
+        void readFromStream(VTextIOStream& inputStream);
+        virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0) const;
+        virtual VBentoNode* writeToBento() const;
+        void debugPrint() const;
 
         virtual const VSettingsNode* findNode(const VString& path) const;
         virtual int countNamedChildren(const VString& name) const;
-        virtual const VSettingsNode* getNamedChild(const VString& name, int inIndex) const;
+        virtual const VSettingsNode* getNamedChild(const VString& name, int index) const;
         virtual void deleteNamedChildren(const VString& name);
 
-        virtual int getIntValue() const;
+        virtual Vs64 getS64Value() const;
         virtual bool getBooleanValue() const;
-        virtual void getStringValue(VString& value) const;
+        virtual VString getStringValue() const;
         virtual VDouble getDoubleValue() const;
+        virtual VSize getSizeValue() const;
+        virtual VPoint getPointValue() const;
+        virtual VRect getRectValue() const;
+        virtual VPolygon getPolygonValue() const;
+        virtual VColor getColorValue() const;
+        virtual VDuration getDurationValue() const;
 
         virtual void addChildNode(VSettingsNode* node);
 
         // String value converters.
-        static int stringToInt(const VString& value);
         static bool stringToBoolean(const VString& value);
-        static VDouble stringToDouble(const VString& value);
         
         // Path navigation utilities.
         static bool isPathLeaf(const VString& path);
@@ -146,8 +188,10 @@ class VSettings : public VSettingsNode
     
         virtual VSettingsTag* _findChildTag(const VString& /*name*/) const;
         virtual void _addLeafValue(const VString& name, bool hasValue, const VString& value);
-        
-        VSettingsNodePtrVector    mNodes;
+    
+    private:
+    
+        VSettingsNodePtrVector mNodes;
         
     };
 
@@ -155,24 +199,30 @@ class VSettingsTag : public VSettingsNode
     {
     public:
         
+        // In reality, the parent can be a VSettings object; but no other kind of VSettings Node (i.e., attributes).
         VSettingsTag(VSettingsTag* parent, const VString& name);
         virtual ~VSettingsTag();
 
-        virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0);
-		// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
- 		virtual VBentoNode* writeToBento() const;
+        virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0) const;
+        virtual VBentoNode* writeToBento() const;
 
         virtual int countNamedChildren(const VString& name) const;
-        virtual const VSettingsNode* getNamedChild(const VString& name, int inIndex) const;
+        virtual const VSettingsNode* getNamedChild(const VString& name, int index) const;
         virtual void deleteNamedChildren(const VString& name);
 
         void addAttribute(VSettingsAttribute* attribute);
         virtual void addChildNode(VSettingsNode* node);
         
-        virtual int getIntValue() const;
+        virtual Vs64 getS64Value() const;
         virtual bool getBooleanValue() const;
-        virtual void getStringValue(VString& value) const;
+        virtual VString getStringValue() const;
         virtual VDouble getDoubleValue() const;
+        virtual VSize getSizeValue() const;
+        virtual VPoint getPointValue() const;
+        virtual VRect getRectValue() const;
+        virtual VPolygon getPolygonValue() const;
+        virtual VColor getColorValue() const;
+        virtual VDuration getDurationValue() const;
 
         virtual void setLiteral(const VString& value);
 
@@ -182,9 +232,12 @@ class VSettingsTag : public VSettingsNode
         virtual VSettingsTag* _findChildTag(const VString& name) const;
         virtual void _addLeafValue(const VString& name, bool hasValue, const VString& value);
         virtual void _removeAttribute(VSettingsAttribute* attribute);
+        virtual void _removeChildNode(VSettingsNode* child);
 
-        VSettingsAttributePtrVector    mAttributes;
-        VSettingsNodePtrVector        mChildNodes;
+    private:
+
+        VSettingsAttributePtrVector mAttributes;
+        VSettingsNodePtrVector      mChildNodes;
     
     };
 
@@ -196,23 +249,28 @@ class VSettingsAttribute : public VSettingsNode
         VSettingsAttribute(VSettingsTag* parent, const VString& name);
         virtual ~VSettingsAttribute() {}
 
-        virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0);
-		// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
- 		virtual VBentoNode* writeToBento() const;
+        virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0) const;
+        virtual VBentoNode* writeToBento() const;
 
-        virtual int getIntValue() const;
+        virtual Vs64 getS64Value() const;
         virtual bool getBooleanValue() const;
-        virtual void getStringValue(VString& value) const;
+        virtual VString getStringValue() const;
         virtual VDouble getDoubleValue() const;
+        virtual VSize getSizeValue() const;
+        virtual VPoint getPointValue() const;
+        virtual VRect getRectValue() const;
+        virtual VPolygon getPolygonValue() const;
+        virtual VColor getColorValue() const;
+        virtual VDuration getDurationValue() const;
 
         virtual void setLiteral(const VString& value);
         
         bool hasValue() const;
         
-    protected:
+    private:
     
         bool    mHasValue;
-        VString    mValue;
+        VString mValue;
     };
 
 class VSettingsCDATA : public VSettingsNode
@@ -222,20 +280,25 @@ class VSettingsCDATA : public VSettingsNode
         VSettingsCDATA(VSettingsTag* parent, const VString& cdata);
         virtual ~VSettingsCDATA() {}
 
-        virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0);
-		// 07.02.01 JHR ARGO-6092 Configurable Gate Queues for XPS
- 		virtual VBentoNode* writeToBento() const;
+        virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0) const;
+        virtual VBentoNode* writeToBento() const;
 
-        virtual int getIntValue() const;
+        virtual Vs64 getS64Value() const;
         virtual bool getBooleanValue() const;
-        virtual void getStringValue(VString& value) const;
+        virtual VString getStringValue() const;
         virtual VDouble getDoubleValue() const;
+        virtual VSize getSizeValue() const;
+        virtual VPoint getPointValue() const;
+        virtual VRect getRectValue() const;
+        virtual VPolygon getPolygonValue() const;
+        virtual VColor getColorValue() const;
+        virtual VDuration getDurationValue() const;
 
         virtual void setLiteral(const VString& value);
         
-    protected:
+    private:
     
-        VString    mCDATA;
+        VString mCDATA;
     };
 
 class VSettingsXMLParser
@@ -248,6 +311,7 @@ class VSettingsXMLParser
         void parse();
 
     protected:
+
         enum ParserState
             {
             kReady,
@@ -283,17 +347,15 @@ class VSettingsXMLParser
         void emitCloseTagName();
         void emitEndSoloTag();
     
-        VTextIOStream&            mInputStream;
-        VSettingsNodePtrVector*    mNodes;
-        VString                    mCurrentLine;
-        int                        mCurrentLineNumber;
-        int                        mCurrentColumnNumber;
-        
-        ParserState        mParserState;
-        VString    mElement;
-    
-        VSettingsTag*    mCurrentTag;
-        VString            mPendingAttributeName;
+        VTextIOStream&          mInputStream;
+        VSettingsNodePtrVector* mNodes;
+        VString                 mCurrentLine;
+        int                     mCurrentLineNumber;
+        int                     mCurrentColumnNumber;
+        ParserState             mParserState;
+        VString                 mElement;
+        VSettingsTag*           mCurrentTag;
+        VString                 mPendingAttributeName;
         
         static bool isValidTagNameChar(const VChar& c);
         static bool isValidAttributeNameChar(const VChar& c);

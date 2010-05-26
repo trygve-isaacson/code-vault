@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -34,6 +34,13 @@ class VExceptionUnit : public VUnit
         */
         virtual void run();
 
+    private:
+    
+        void _testConstructors();
+        void _testCatchHierarchy();
+        void _testCheckedDynamicCast();
+        void _testWin32SEH();
+        
     };
 
 #endif /* vexceptionunit_h */

@@ -1,5 +1,5 @@
-# Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-# This file is part of the Code Vault version 2.5
+# Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+# This file is part of the Code Vault version 3.0
 # http://www.bombaydigital.com/
 
 #
@@ -36,6 +36,7 @@ INCLUDEPATH += $${VAULT_BASE}/source/threads/_unix
 INCLUDEPATH += $${VAULT_BASE}/source/sockets/_unix
 INCLUDEPATH += $${VAULT_BASE}/source/files/_unix
 
+HEADERS += $${VAULT_BASE}/source/vtypes/_mac/vtypes_internal_platform.h
 HEADERS += $${VAULT_BASE}/source/vtypes/_mac/vtypes_platform.h
 SOURCES += $${VAULT_BASE}/source/vtypes/_mac/vtypes_platform.cpp
 SOURCES += $${VAULT_BASE}/source/containers/_unix/vinstant_platform.cpp
@@ -57,6 +58,7 @@ INCLUDEPATH += $${VAULT_BASE}/source/threads/_unix
 INCLUDEPATH += $${VAULT_BASE}/source/sockets/_unix
 INCLUDEPATH += $${VAULT_BASE}/source/files/_unix
 
+HEADERS += $${VAULT_BASE}/source/vtypes/_unix/vtypes_internal_platform.h
 HEADERS += $${VAULT_BASE}/source/vtypes/_unix/vtypes_platform.h
 SOURCES += $${VAULT_BASE}/source/vtypes/_unix/vtypes_platform.cpp
 SOURCES += $${VAULT_BASE}/source/containers/_unix/vinstant_platform.cpp
@@ -78,6 +80,7 @@ INCLUDEPATH += $${VAULT_BASE}/source/threads/_win
 INCLUDEPATH += $${VAULT_BASE}/source/sockets/_win
 INCLUDEPATH += $${VAULT_BASE}/source/files/_win
 
+HEADERS += $${VAULT_BASE}/source/vtypes/_win/vtypes_internal_platform.h
 HEADERS += $${VAULT_BASE}/source/vtypes/_win/vtypes_platform.h
 SOURCES += $${VAULT_BASE}/source/vtypes/_win/vtypes_platform.cpp
 SOURCES += $${VAULT_BASE}/source/containers/_win/vinstant_platform.cpp
@@ -112,14 +115,20 @@ INCLUDEPATH += $${VAULT_BASE}/source/vtypes
 
 HEADERS += $${VAULT_BASE}/source/vault.h
 #HEADERS += $${VAULT_BASE}/source/vconfigure.h
+HEADERS += $${VAULT_BASE}/source/vtypes/vtypes_internal.h
+SOURCES += $${VAULT_BASE}/source/vtypes/vtypes_internal.cpp
 HEADERS += $${VAULT_BASE}/source/vtypes/vtypes.h
 SOURCES += $${VAULT_BASE}/source/vtypes/vtypes.cpp
 HEADERS += $${VAULT_BASE}/source/containers/vbento.h
 SOURCES += $${VAULT_BASE}/source/containers/vbento.cpp
 HEADERS += $${VAULT_BASE}/source/containers/vchar.h
 SOURCES += $${VAULT_BASE}/source/containers/vchar.cpp
+HEADERS += $${VAULT_BASE}/source/containers/vcolor.h
+SOURCES += $${VAULT_BASE}/source/containers/vcolor.cpp
 HEADERS += $${VAULT_BASE}/source/containers/vexception.h
 SOURCES += $${VAULT_BASE}/source/containers/vexception.cpp
+HEADERS += $${VAULT_BASE}/source/containers/vgeometry.h
+SOURCES += $${VAULT_BASE}/source/containers/vgeometry.cpp
 HEADERS += $${VAULT_BASE}/source/containers/vinstant.h
 SOURCES += $${VAULT_BASE}/source/containers/vinstant.cpp
 HEADERS += $${VAULT_BASE}/source/containers/vstring.h
@@ -190,6 +199,7 @@ HEADERS += $${VAULT_BASE}/source/toolbox/vhex.h
 SOURCES += $${VAULT_BASE}/source/toolbox/vhex.cpp
 HEADERS += $${VAULT_BASE}/source/toolbox/vlogger.h
 SOURCES += $${VAULT_BASE}/source/toolbox/vlogger.cpp
+SOURCES += $${VAULT_BASE}/source/toolbox/vmemorytracker.cpp
 HEADERS += $${VAULT_BASE}/source/toolbox/vsettings.h
 SOURCES += $${VAULT_BASE}/source/toolbox/vsettings.cpp
 HEADERS += $${VAULT_BASE}/source/toolbox/vshutdownregistry.h

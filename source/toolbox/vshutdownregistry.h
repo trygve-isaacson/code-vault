@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5.1
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -9,8 +9,6 @@ http://www.bombaydigital.com/
 
 #include "vtypes.h"
 #include "vmutex.h"
-
-#include <vector>
 
 /**
     @ingroup toolbox
@@ -107,7 +105,7 @@ class VShutdownRegistry
         VShutdownRegistry() : mHandlers(), mFunctions() {}
         ~VShutdownRegistry();
         
-        static VShutdownRegistry*    gInstance; ///< The registry as a singleton object.
+        static VShutdownRegistry* gInstance; ///< The registry as a singleton object.
         
         ShutdownHandlerList     mHandlers;  ///< The handlers that have been registered with us.
         ShutdownFunctionList    mFunctions; ///< The functions that have been registered with us.

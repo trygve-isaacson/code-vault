@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2007 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -10,7 +10,6 @@ http://www.bombaydigital.com/
 #include "vtypes.h"
 #include "vmutex.h"
 #include "vsemaphore.h"
-#include <deque>
 
 /** @file */
 
@@ -21,7 +20,7 @@ http://www.bombaydigital.com/
 class VMessage;
 class VMessagePool;
 
-typedef std::deque<VMessage*> MessageQueueT;	///< A deque of VMessage object pointers.
+typedef std::deque<VMessage*> MessageQueueT;    ///< A deque of VMessage object pointers.
 
 /**
 VMessageQueue is a thread-safe FIFO queue of messages. Multiple threads may
@@ -37,67 +36,83 @@ needlessly (for UI apps this may mean a notification scheme so that the app's
 UI thread only looks at the queue when something gets posted to it).
 */
 class VMessageQueue
-	{
-	public:
-	
-		/**
-		Constructs the queue.
-		*/
-		VMessageQueue();
-		/**
-		Virtual destructor.
-		*/
-		virtual ~VMessageQueue();
-		
-		/**
-		Posts a message to the back of the queue. May be safely called from
-		any thread.
-		@param	message	the message object to be posted; the queue becomes
-						owner of the object while it is in the queue
-		*/
-		virtual void postMessage(VMessage* message);
-		/**
-		Returns the message at the front of the queue, blocking if the queue
-		is empty. May be safely called from any thread.
-		@return the message at the front of the queue; the caller becomes
-						owner of the object
-		*/
-		VMessage* blockUntilNextMessage();
-		/**
-		Returns the message at the front of the queue, or NULL if the queue
-		is empty.
-		@return the message at the front of the queue, or NULL; the caller
-				becomes owner of the object
-		*/
-		VMessage* getNextMessage();
-		/**
-		Wakes up the thread in case it is necessary to let the thread cycle
-		even though there are no messages and it is blocked. This is used
-		during the shutdown process to allow the blocking thread to notice
-		that it has been asked to terminate.
-		*/
-		void wakeUp();
-		/**
-		Returns the number of messages currently in the queue.
-		@return obvious
-		*/
-		VSizeType getQueueSize() const;
-		/**
-		Returns the number of message bytes currently in the queue.
-		@return obvious
-		*/
-		Vs64 getQueueDataSize() const;
-		/**
-		Releases all messages in the queue.
-		*/
-		void releaseAllMessages();
-	
-	protected:
+    {
+    public:
+    
+        /**
+        Constructs the queue.
+        */
+        VMessageQueue();
+        /**
+        Virtual destructor.
+        */
+        virtual ~VMessageQueue();
+        
+        /**
+        Posts a message to the back of the queue. May be safely called from
+        any thread.
+        @param    message    the message object to be posted; the queue becomes
+                        owner of the object while it is in the queue
+        */
+        virtual void postMessage(VMessage* message);
+        /**
+        Returns the message at the front of the queue, blocking if the queue
+        is empty. May be safely called from any thread.
+        @return the message at the front of the queue; the caller becomes
+                        owner of the object
+        */
+        VMessage* blockUntilNextMessage();
+        /**
+        Returns the message at the front of the queue, or NULL if the queue
+        is empty.
+        @return the message at the front of the queue, or NULL; the caller
+                becomes owner of the object
+        */
+        VMessage* getNextMessage();
+        /**
+        Wakes up the thread in case it is necessary to let the thread cycle
+        even though there are no messages and it is blocked. This is used
+        during the shutdown process to allow the blocking thread to notice
+        that it has been asked to terminate.
+        */
+        void wakeUp();
+        /**
+        Returns the number of messages currently in the queue.
+        @return obvious
+        */
+        VSizeType getQueueSize() const;
+        /**
+        Returns the number of message bytes currently in the queue.
+        @return obvious
+        */
+        Vs64 getQueueDataSize() const;
+        /**
+        Releases all messages in the queue.
+        */
+        void releaseAllMessages();
 
-		MessageQueueT	mQueuedMessages;		///< The actual queue of messages.
-		Vs64            mQueuedMessagesDataSize;///< The number of bytes in the queued messages.
-		VMutex			mMessageQueueMutex;		///< The mutex used to synchronize.
-		VSemaphore		mMessageQueueSemaphore;	///< The semaphore used to block/awaken.
-	};
+        /**
+        The following methods set and get the configuration for emitting
+        a log message if there is a lag between posting to a queue and the
+        output thread getting a message. A threshold of 0 means the output
+        thread will log on every message. You can set the log leve at which
+        the output will be emitted.
+        */
+        static void setQueueingLagLoggingThreshold(const VDuration& threshold) { gVMessageQueueLagLoggingThreshold = threshold; }
+        static VDuration getQueueingLagLoggingThreshold() { return gVMessageQueueLagLoggingThreshold; }
+        static void setQueueingLagLoggingLevel(int logLevel) { gVMessageQueueLagLoggingLevel = logLevel; }
+        static int getQueueingLagLoggingLevel() { return gVMessageQueueLagLoggingLevel; }
+    
+    private:
+
+        MessageQueueT   mQueuedMessages;            ///< The actual queue of messages.
+        Vs64            mQueuedMessagesDataSize;    ///< The number of bytes in the queued messages.
+        VMutex          mMessageQueueMutex;         ///< The mutex used to synchronize.
+        VSemaphore      mMessageQueueSemaphore;     ///< The semaphore used to block/awaken.
+        VInstant        mLastMessagePostTime;       ///< Time most recent message was posted.
+        
+        static VDuration gVMessageQueueLagLoggingThreshold; ///< If >=0, queuing lags are logged.
+        static int gVMessageQueueLagLoggingLevel;           ///< Log level at which queuing lags are logged.
+    };
 
 #endif /* vmessagequeue_h */

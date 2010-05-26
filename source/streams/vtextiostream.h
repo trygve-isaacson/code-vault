@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -52,7 +52,7 @@ class VTextIOStream : public VIOStream
             
             kNumLineEndingsWriteKinds
             };
-    
+
         /**
         Constructs the object with an underlying raw stream and the kind of
         line endings to use during write.
@@ -74,7 +74,7 @@ class VTextIOStream : public VIOStream
         @param    includeLineEnding    true if you want the line ending character(s)
                                     to be included in the string that is returned
         */
-        void    readLine(VString& s, bool includeLineEnding=false);
+        void readLine(VString& s, bool includeLineEnding=false);
         
         /**
         Reads the next character from the stream, even if that character is part
@@ -87,7 +87,28 @@ class VTextIOStream : public VIOStream
 
         @return    the next character
         */
-        VChar    readCharacter();
+        VChar readCharacter();
+        
+        /**
+        Primarily useful for reading from an underlying file stream, reads until
+        eof is encountered, and returns the entire stream as a single string, by
+        reading every line and appending it to the supplied string.
+        Note that the default value for includeLineEndings is the opposite
+        of VTextIOStream::readLine(), because here you probably want the whole
+        file with lines separated, whereas when you read one line you probably
+        don't want the end of line characters.
+        @param    s                    a VString to append to
+        @param    includeLineEndings   true if you want the line ending character(s)
+                                    to be included in the string that is returned
+        */
+        void readAll(VString& s, bool includeLineEndings=true);
+        /**
+        This convenience function is like the other readAll, but it returns the
+        stream's contents as a vector of strings rather than a single giant string.
+        The lines do not have line ending characters at the end.
+        @param  lines   a vector of strings; lines are appended to this vector
+        */
+        void readAll(VStringVector& lines);
         
         /**
         Writes a line of text to the stream, with line ending character(s).
@@ -97,13 +118,13 @@ class VTextIOStream : public VIOStream
         otherwise, it writes them.
         @param    s    the line of text to write
         */
-        void    writeLine(const VString& s);
+        void writeLine(const VString& s);
         
         /**
         Writes a string of text to the stream, WITHOUT line ending character(s).
         @param    s    the string of text to write
         */
-        void    writeString(const VString& s);
+        void writeString(const VString& s);
         
         /**
         Returns the mLineEndingsReadKind property, describing the kind of
@@ -111,32 +132,30 @@ class VTextIOStream : public VIOStream
         stream.
         @return    one of the mLineEndingsReadKind enum values 
         */
-        int        getLineEndingsReadKind() const { return mLineEndingsReadKind; }
+        int getLineEndingsReadKind() const { return mLineEndingsReadKind; }
         /**
         Returns the mLineEndingsReadKind property, converted to a value
         suitable for supplying as the mLineEndingsWriteKind value for
         an output stream.
         @return    one of the mLineEndingsReadKind enum values 
         */
-        int        getLineEndingsReadKindForWrite() const;
+        int getLineEndingsReadKindForWrite() const;
         /**
         Returns the mLineEndingsWriteKind property, describing the kind of
         line endings that this object has been set up to write to the stream.
         @return    one of the mLineEndingsReadKind enum values 
         */
-        int        getLineEndingsWriteKind() const { return mLineEndingsWriteKind; }
+        int getLineEndingsWriteKind() const { return mLineEndingsWriteKind; }
         /**
         Sets the mLineEndingsWriteKind property, which determines what the
         writeLine method behavior is with regard to writing the line ending
         character(s) at the end of each line written to the stream.
         @param    kind    one of the mLineEndingsWriteKind enum values
         */
-        void    setLineEndingsKind(int kind);
+        void setLineEndingsKind(int kind);
     
     private:
     
-        /** Asserts if any invariant is broken. */
-        void assertInvariant() const;
         /** Updates the mLineEndingsReadKind based on the kind of line ending just detected. */
         void _updateLineEndingsReadKind(int lineEndingKind);
 
@@ -145,6 +164,8 @@ class VTextIOStream : public VIOStream
         char    mPendingCharacter;      ///< During read we may have a pending character while reading DOS line endings.
         int     mReadState;             ///< During read we have to maintain parsing state.
         VString mLineBuffer;            ///< Temporarily holds each line of the file as we read it.
+        Vu8     mLineEndingChars[2];    ///< One or both bytes may be used, as indicated by mLineEndingCharsLength.
+        int     mLineEndingCharsLength; ///< Describes how much of mLineEndingChars array should be written as line ending.
 
         enum {
             kReadStateReady,    ///< We are ready to read any character.

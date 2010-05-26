@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -13,9 +13,10 @@ http://www.bombaydigital.com/
 
 // VMutexLocker ----------------------------------------------------------------
 
-VMutexLocker::VMutexLocker(VMutex* inMutex, bool lockInitially) :
-mMutex(inMutex),
-mIsLocked(false)
+VMutexLocker::VMutexLocker(VMutex* mutex, const VString& name, bool lockInitially) :
+mMutex(mutex),
+mIsLocked(false),
+mName(name)
     {
     if (lockInitially)
         this->lock();
@@ -40,7 +41,7 @@ void VMutexLocker::lock()
     {
     if (mMutex != NULL)
         {
-        mMutex->lock();
+        mMutex->lock(mName);
         mIsLocked = true;
         }
     }
@@ -69,8 +70,8 @@ void VMutexLocker::yield()
 
 // VMutexUnlocker --------------------------------------------------------------
 
-VMutexUnlocker::VMutexUnlocker(VMutex* inMutex, bool unlockInitially) :
-VMutexLocker(inMutex, false)
+VMutexUnlocker::VMutexUnlocker(VMutex* mutex, bool unlockInitially) :
+VMutexLocker(mutex, "VMutexUnlocker", false)
     {
     // We reverse the presumed state and normal construction action vs. VMutexLocker.
     mIsLocked = true; // fool unlock() into letting us unlock it next

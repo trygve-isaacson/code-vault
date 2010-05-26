@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -10,6 +10,8 @@ http://www.bombaydigital.com/
 /** @file */
 
 #include "vtypes.h"
+
+#include "vstring.h"
 
 class VMutex;
 
@@ -73,10 +75,10 @@ class VMutexLocker
         happen; this can useful if, for example, you allow a NULL VMutex
         pointer to be passed to a routine that needs to lock it if supplied.
         
-        @param    inMutex            the VMutex to lock, or NULL if no action is wanted
+        @param    mutex            the VMutex to lock, or NULL if no action is wanted
         @param    lockInitially    true if the lock should be acquired on construction
         */
-        VMutexLocker(VMutex* inMutex, bool lockInitially=true);
+        VMutexLocker(VMutex* mutex, const VString& name, bool lockInitially=true);
         /**
         Destructor, unlocks the mutex if this object has acquired it.
         */
@@ -88,35 +90,36 @@ class VMutexLocker
         several threads are competing, the order in which they acquire the
         mutex is not known).
         */
-        void    lock();
+        void lock();
         /**
         Releases the mutex lock; if one or more other threads is waiting on
         the mutex, one of them will unblock and acquire the mutex lock once
         this thread releases it.
         */
-        void    unlock();
+        void unlock();
         /**
         Returns true if this object has acquired the lock.
         @return    true if this object has acquired the lock
         */
-        bool    isLocked() const { return mIsLocked; }
+        bool isLocked() const { return mIsLocked; }
         /**
         Returns a pointer to the VMutex object.
         @return a pointer to the VMutex object (may be NULL)
         */
-        VMutex*    mutex() { return mMutex; }
+        VMutex* getMutex() { return mMutex; }
         /**
         Yields the current thread with the mutex unlocked; that is, this function
         unlocks the mutex, yields the current thread, and re-locks the mutex
         before returning. This can be used to make a thread that has a lock
         more "cooperative" with other threads that are competing for the same lock.
         */
-        void    yield();
+        void yield();
     
     protected:
     
         VMutex* mMutex;     ///< Pointer to the VMutex object, or NULL.
         bool    mIsLocked;  ///< True if this object has acquired the lock.
+        VString mName;      ///< The name of this locker, for diagnostic purposes.
     
     private:
     
@@ -145,10 +148,10 @@ class VMutexUnlocker : public VMutexLocker
         happen; this can useful if, for example, you allow a NULL VMutex
         pointer to be passed to a routine that needs to unlock it if supplied.
         
-        @param    inMutex            the VMutex to unlock, or NULL if no action is wanted
+        @param    mutex            the VMutex to unlock, or NULL if no action is wanted
         @param    unlockInitially    true if the lock should be released on construction
         */
-        VMutexUnlocker(VMutex* inMutex, bool unlockInitially=true);
+        VMutexUnlocker(VMutex* mutex, bool unlockInitially=true);
         /**
         Destructor, re-locks the mutex if this object has released it.
         */

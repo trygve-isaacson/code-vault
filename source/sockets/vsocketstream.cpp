@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -24,7 +24,7 @@ mSocket(socket)
     }
 
 VSocketStream::VSocketStream(const VSocketStream& other) :
-VStream(VString("%s copy", other.name().chars())),
+VStream(VString("%s copy", other.getName().chars())),
 mSocket(other.mSocket)
     {
     }
@@ -69,7 +69,7 @@ bool VSocketStream::skip(Vs64 numBytesToSkip)
     For now, just read individual bytes (it's probably being
     buffered anyway).
     */
-    Vu8    aByte;
+    Vu8 aByte;
     
     for (Vs64 i = 0; i < numBytesToSkip; ++i)
         this->read(&aByte, 1);
@@ -85,7 +85,7 @@ bool VSocketStream::seek(Vs64 offset, int whence)
     return this->skip(offset);
     }
 
-Vs64 VSocketStream::offset() const
+Vs64 VSocketStream::getIOOffset() const
     {
     return mSocket->numBytesRead();
     }

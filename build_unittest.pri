@@ -1,5 +1,5 @@
-# Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-# This file is part of the Code Vault version 2.5
+# Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+# This file is part of the Code Vault version 3.0
 # http://www.bombaydigital.com/
 
 #
@@ -20,10 +20,14 @@ HEADERS += $${VAULT_BASE}/source/unittest/vcharunit.h
 SOURCES += $${VAULT_BASE}/source/unittest/vcharunit.cpp
 HEADERS += $${VAULT_BASE}/source/unittest/vclassregistryunit.h
 SOURCES += $${VAULT_BASE}/source/unittest/vclassregistryunit.cpp
+HEADERS += $${VAULT_BASE}/source/unittest/vcolorunit.h
+SOURCES += $${VAULT_BASE}/source/unittest/vcolorunit.cpp
 HEADERS += $${VAULT_BASE}/source/unittest/vexceptionunit.h
 SOURCES += $${VAULT_BASE}/source/unittest/vexceptionunit.cpp
 HEADERS += $${VAULT_BASE}/source/unittest/vfsnodeunit.h
 SOURCES += $${VAULT_BASE}/source/unittest/vfsnodeunit.cpp
+HEADERS += $${VAULT_BASE}/source/unittest/vgeometryunit.h
+SOURCES += $${VAULT_BASE}/source/unittest/vgeometryunit.cpp
 HEADERS += $${VAULT_BASE}/source/unittest/vhexunit.h
 SOURCES += $${VAULT_BASE}/source/unittest/vhexunit.cpp
 HEADERS += $${VAULT_BASE}/source/unittest/vinstantunit.h

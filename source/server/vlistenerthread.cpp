@@ -1,12 +1,14 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
 /** @file */
 
 #include "vlistenerthread.h"
+#include "vtypes_internal.h"
+
 #include "vlistenersocket.h"
 #include "vsocketfactory.h"
 #include "vsocketthreadfactory.h"
@@ -25,15 +27,20 @@ mBindAddress(bindAddress),
 mShouldListen(initiallyListening),
 mSocketFactory(socketFactory),
 mThreadFactory(threadFactory),
-mSessionFactory(sessionFactory)
-// mSocketThreads constructs to empty
-// mSocketThreadsMutex constructs to unlocked
+mSessionFactory(sessionFactory),
+mSocketThreads(), // -> empty
+mSocketThreadsMutex(VString("VListenerThread(%s)::mSocketThreadsMutex", name.chars())) // -> unlocked
     {
     }
 
 VListenerThread::~VListenerThread()
     {
     VLOGGER_DEBUG(VString("VListenerThread '%s' ended.", mName.chars()));
+    
+    // Make sure any of socket threads still alive no longer reference us.
+    VMutexLocker locker(&mSocketThreadsMutex, VString("[%s]VListenerThread::socketThreadEnded()", this->getName().chars()));
+    for (VSocketThreadPtrVector::const_iterator i = mSocketThreads.begin(); i != mSocketThreads.end(); ++i)
+        (*i)->mOwnerThread = NULL;
     }
 
 void VListenerThread::stop()
@@ -57,7 +64,7 @@ void VListenerThread::run()
 
 void VListenerThread::socketThreadEnded(VSocketThread* socketThread)
     {
-    VMutexLocker                        locker(&mSocketThreadsMutex);
+    VMutexLocker                        locker(&mSocketThreadsMutex, VString("[%s]VListenerThread::socketThreadEnded()", this->getName().chars()));
     VSocketThreadPtrVector::iterator    position;
 
     position = std::find(mSocketThreads.begin(), mSocketThreads.end(), socketThread);
@@ -73,12 +80,12 @@ int VListenerThread::getPortNumber() const
 
 VSocketInfoVector VListenerThread::enumerateActiveSockets()
     {
-    VSocketInfoVector    info;
-    VMutexLocker        locker(&mSocketThreadsMutex);
+    VSocketInfoVector   info;
+    VMutexLocker        locker(&mSocketThreadsMutex, VString("[%s]VListenerThread::enumerateActiveSockets()", this->getName().chars()));
 
     for (VSizeType i = 0; i < mSocketThreads.size(); ++i)
         {
-        VSocketInfo    oneSocketInfo(*(mSocketThreads[i]->socket()));
+        VSocketInfo oneSocketInfo(*(mSocketThreads[i]->getSocket()));
 
         info.push_back(oneSocketInfo);
         }
@@ -88,13 +95,13 @@ VSocketInfoVector VListenerThread::enumerateActiveSockets()
 
 void VListenerThread::stopSocketThread(VSocketID socketID, int localPortNumber)
     {
-    bool                found = false;
-    VMutexLocker        locker(&mSocketThreadsMutex);
+    bool            found = false;
+    VMutexLocker    locker(&mSocketThreadsMutex, VString("[%s]VListenerThread::stopSocketThread()", this->getName().chars()));
 
     for (VSizeType i = 0; i < mSocketThreads.size(); ++i)
         {
-        VSocketThread*    thread = mSocketThreads[i];
-        VSocket*        socket = thread->socket();
+        VSocketThread*  thread = mSocketThreads[i];
+        VSocket*        socket = thread->getSocket();
 
         if ((socket->getSockID() == socketID) &&
             (socket->getPortNumber() == localPortNumber))
@@ -105,16 +112,16 @@ void VListenerThread::stopSocketThread(VSocketID socketID, int localPortNumber)
         }
 
     if (! found)
-        throw VException("VListenerThread::stopSocketThread did not find a socket with id %d and port %d.", socketID, localPortNumber);
+        throw VException(VString("VListenerThread::stopSocketThread did not find a socket with id %d and port %d.", socketID, localPortNumber));
     }
 
 void VListenerThread::stopAllSocketThreads()
     {
-    VMutexLocker        locker(&mSocketThreadsMutex);
+    VMutexLocker locker(&mSocketThreadsMutex, VString("[%s]VListenerThread::stopAllSocketThreads()", this->getName().chars()));
 
     for (VSizeType i = 0; i < mSocketThreads.size(); ++i)
         {
-        VSocketThread*    thread = mSocketThreads[i];
+        VSocketThread* thread = mSocketThreads[i];
 
         thread->closeAndStop();
         }
@@ -122,11 +129,12 @@ void VListenerThread::stopAllSocketThreads()
 
 void VListenerThread::_runListening()
     {
-    VListenerSocket*    listenerSocket = NULL;
+    VListenerSocket* listenerSocket = NULL;
 
     if (mManager != NULL)
         mManager->listenerStarting(this);
 
+    VString exceptionMessage; // filled in if catch block entered
     try
         {
         listenerSocket = new VListenerSocket(mPortNumber, mBindAddress, mSocketFactory);
@@ -137,31 +145,39 @@ void VListenerThread::_runListening()
 
         while (mShouldListen && this->isRunning())
             {
-            VSocket*    theSocket = listenerSocket->accept();
+            VSocket* theSocket = listenerSocket->accept();
 
             if (theSocket != NULL)
                 {
-                VMutexLocker    locker(&mSocketThreadsMutex);
-
-                if (mSessionFactory == NULL)
+                try
                     {
-                    VSocketThread*    thread = mThreadFactory->createThread(theSocket, this);
-                    thread->start();
-                    mSocketThreads.push_back(thread);
+                    VMutexLocker locker(&mSocketThreadsMutex, VString("[%s]VListenerThread::_runListening()", this->getName().chars()));
+
+                    if (mSessionFactory == NULL)
+                        {
+                        VSocketThread* thread = mThreadFactory->createThread(theSocket, this);
+                        thread->start(); // throws if can't create OS thread
+                        mSocketThreads.push_back(thread);
+                        }
+                    else
+                        {
+                        VClientSession* session = mSessionFactory->createSession(theSocket, this); // throws if can't create OS thread(s)
+                        VSocketThread* thread;
+                        thread = session->getInputThread();
+                        if (thread != NULL)
+                            mSocketThreads.push_back(thread);
+                        thread = session->getOutputThread();
+                        if (thread != NULL)
+                            mSocketThreads.push_back(thread);
+
+                        mSessionFactory->addSessionToServer(session);
+                        }
                     }
-                else
+                catch (const VException& ex)
                     {
-                    VClientSession* session = mSessionFactory->createSession(theSocket, this);
-                    // session is responsible for starting the threads it uses
-                    VSocketThread* thread;
-                    thread = session->getInputThread();
-                    if (thread != NULL)
-                        mSocketThreads.push_back(thread);
-                    thread = session->getOutputThread();
-                    if (thread != NULL)
-                        mSocketThreads.push_back(thread);
-
-                    mSessionFactory->addSessionToServer(session);
+                    // Likely cause: Failure in starting OS thread. Log, but keep listening.
+                    VLOGGER_ERROR(VString("[%s]VListenerThread::_runListening: Unable to create new session: Error %d. %s", this->getName().chars(), ex.getError(), ex.what()));
+                    delete theSocket;
                     }
                 }
             else
@@ -173,25 +189,25 @@ void VListenerThread::_runListening()
                 }
             }
         }
-    catch (VException& ex)
+    catch (const VException& ex)
         {
-        mShouldListen = false;
-
-        VString    message("VListenerThread '%s' _runListening() caught exception #%d '%s'.", mName.chars(), ex.getError(), ex.what());
-        VLOGGER_ERROR(message);
-
-        if (mManager != NULL)
-            mManager->listenerFailed(this, message);
+        exceptionMessage.format("[%s]VListenerThread::_runListening() caught exception #%d '%s'.", mName.chars(), ex.getError(), ex.what());
+        }
+    catch (const std::exception& ex)
+        {
+        exceptionMessage.format("[%s]VListenerThread::_runListening() caught exception '%s'.", mName.chars(), ex.what());
         }
     catch (...)
         {
+        exceptionMessage.format("[%s]VListenerThread::_runListening() caught unknown exception.", mName.chars());
+        }
+    
+    if (exceptionMessage.isNotEmpty())
+        {
         mShouldListen = false;
-
-        VString message("VListenerThread '%s' _runListening() caught unknown exception '%s'.", mName.chars());
-        VLOGGER_ERROR(message);
-
+        VLOGGER_ERROR(exceptionMessage);
         if (mManager != NULL)
-            mManager->listenerFailed(this, message);
+            mManager->listenerFailed(this, exceptionMessage);
         }
 
     delete listenerSocket;

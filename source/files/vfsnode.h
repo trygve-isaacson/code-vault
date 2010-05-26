@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -91,6 +91,7 @@ class VFSNodeInfo
 
 class VInstant;
 class VFSNode;
+class VBinaryIOStream;
 
 class VDirectoryIterationCallback
     {
@@ -138,6 +139,102 @@ class VFSNode
         the normalization, turning it into a platform-specific path.
         */
         static void denormalizePath(VString& path);
+        
+        /**
+        These values identify different known folders whose location you can
+        access by calling VFSNode::getKnownDirectoryNode(). These are useful
+        as default locations to store or find data in a location that is
+        appropriate to the platform.
+        */
+        typedef enum
+            {
+            USER_HOME_DIRECTORY,        ///< The user's home directory.
+            LOG_FILES_DIRECTORY,        ///< Where to write log files.
+            USER_PREFERENCES_DIRECTORY, ///< Where to store user preferences files.
+            CACHED_DATA_DIRECTORY,      ///< Where to store non-critical cached data files.
+            APPLICATION_DATA_DIRECTORY, ///< Where to find application data files other than user documents.
+            CURRENT_WORKING_DIRECTORY,  ///< The application environment's "current working directory" by path (not as simply ".").
+            EXECUTABLE_DIRECTORY        ///< The directory where the app executable lives. (See notes below.)
+            } KnownDirectoryIdentifier;
+        /**
+        Returns a node identifying an identified directory, creating it if it does not exist.(*)
+        Below are the platform-specific path examples. Note that these are merely examples, because
+        the OS may return something else as appropriate when we call the platform-specific APIs to
+        locate the suitable directories.
+        (* The user home directory is never created, because it is assumed to exist.)
+        
+        Unix: (note that "~" denotes the user's home directory, wherever that may be)
+            USER_HOME_DIRECTORY:        ~
+            LOG_FILES_DIRECTORY:        /var/log/(company)/(app)
+            USER_PREFERENCES_DIRECTORY: ~/.(company)/(app)
+            CACHED_DATA_DIRECTORY:      /var/run/(company)/(app)
+            APPLICATION_DATA_DIRECTORY: /etc/(company)/(app)
+            CURRENT_WORKING_DIRECTORY:  the full path to the current working directory
+            EXECUTABLE_DIRECTORY:       the full path to the directory containing the executable
+            
+        Mac OS X: (note that "~" denotes the user's home directory, wherever that may be)
+            USER_HOME_DIRECTORY:        ~
+            LOG_FILES_DIRECTORY:        ~/Library/Logs/(company)/(app)
+            USER_PREFERENCES_DIRECTORY: ~/Library/Preferences/(company)/(app)
+            CACHED_DATA_DIRECTORY:      ~/Library/Caches/(company)/(app)
+            APPLICATION_DATA_DIRECTORY: ~/Library/(company)/(app)
+            CURRENT_WORKING_DIRECTORY:  the full path to the current working directory
+            EXECUTABLE_DIRECTORY:       the full path to the directory containing this app bundle or executable
+            
+        Windows: (note that the OS can return a different Application Data path, including a different
+            drive letter, if so configured; these are just the typical case examples)
+            USER_HOME_DIRECTORY:        C:/Documents and Settings/(user)
+            LOG_FILES_DIRECTORY:        C:/Documents and Settings/(user)/Application Data/(company)/(app)/Logs
+            USER_PREFERENCES_DIRECTORY: C:/Documents and Settings/(user)/Application Data/(company)/(app)/Preferences
+            CACHED_DATA_DIRECTORY:      C:/Documents and Settings/(user)/Application Data/(company)/(app)/Caches
+            APPLICATION_DATA_DIRECTORY: C:/Documents and Settings/(user)/Application Data/(company)/(app)
+            CURRENT_WORKING_DIRECTORY:  the full path to the current working directory
+            EXECUTABLE_DIRECTORY:       the full path to the directory containing this app's .exe file
+        
+        When asking for the user home directory, the supplied company and app names are not used.
+
+        @param  id          the directory identifier
+        @param  companyName if not empty, a first-level subdirectory used in the hierarchy (not used for USER_HOME_DIRECTORY and CURRENT_WORKING_DIRECTORY)
+        @param  appName     if not empty, a second-level subdirectory used in the hierarchy (not used for USER_HOME_DIRECTORY and CURRENT_WORKING_DIRECTORY)
+        @return the specified directory node
+        @throws may throw VException if there is an error attempting to locate the specified directory
+        */
+        static VFSNode getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName);
+        /**
+        This convenience function returns the current working directory path node; it is equivalent
+        to calling getKnownDirectoryNode with CURRENT_WORKING_DIRECTORY.
+        @return the current working directory node, defined by a full path rather than simply "."
+        @throws may throw VException if there is an error attempting to locate the specified directory
+        */
+        static VFSNode getCurrentWorkingDirectory();
+        /**
+        This convenience function returns the directory path node of the directory containing the
+        application executable; it is equivalent to calling getKnownDirectoryNode with EXECUTABLE_DIRECTORY.
+        @return the directory node in which the executable is located
+        @throws may throw VException if there is an error attempting to locate the specified directory
+        */
+        static VFSNode getExecutableDirectory();
+        /**
+        This function returns the file node of the application executable.
+        @return the file node representing the application executable
+        @throws may throw VException if there is an error attempting to locate the file
+        */
+        static VFSNode getExecutable();
+        
+        /**
+        This function safely overwrites an existing file using a temporary file, to ensure that the original
+        file is intact if the write fails. Specifically, the sequence is:
+        1. create a temporary file next to the target file (named uniquely via current timestamp string)
+        2. write to the temporary file
+        3. delete the target file (it's OK if it doesn't exist)
+        4. rename the temporary file to the target file's name
+        If steps 1, 2, or 3 fails, the original remains and the temporary is deleted.
+        If there is a failure, a VException is thrown.
+        @param  target      the file node to be overwritten (if it exists)
+        @param  dataLength  the length of the data to be written
+        @param  dataStream  the stream to be written to the file
+        */
+        static void safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinaryIOStream& dataStream);
     
         /**
         Constructs an undefined VFSNode object (you will have to set its path
@@ -153,6 +250,12 @@ class VFSNode
         @param    path    the path of the file or directory
         */
         VFSNode(const VString& path);
+        /**
+        Constructs a VFSNode with a parent directory node and a child directory or file name within it.
+        @param    directory    the parent directory of the node 
+        @param    childName    the name of the subdirectory or file within the parent 
+        */
+        VFSNode(const VFSNode& directory, const VString& childName);
         /**
         Destructor.
         */
@@ -185,6 +288,12 @@ class VFSNode
         @param    name    the string to set to the file or node name
         */
         void getName(VString& name) const;
+        /**
+        Alternate convenience function for getName(). May require an
+        extra string copy.
+        @param    name    the string to set to the file or node name
+        */
+        VString getName() const;
         
         /**
         Gets the path of the node's parent.
@@ -267,7 +376,7 @@ class VFSNode
         Renames the node by specifying its new path; this could include
         changing its directory location. This function does NOT update
         this VFSNode's path property (it continues to describe the
-        node at the old path, even though it is not present if the
+        node at the old path, even though it is no longer present if the
         rename succeeded).
         @param    newPath    the new path to rename to
         */
@@ -297,10 +406,10 @@ class VFSNode
         */
         void renameToName(const VString& newName, VFSNode& nodeToUpdate) const;
         /**
-        Renames the node by specifying a node whose path to use. This
-        function does NOT update this VFSNode's path property (it continues
-        to describe the node at the old path, even though it is not present
-        if the rename succeeded).
+        Renames the node by specifying a node whose path to use; this could
+        include changing its directory location. This function does NOT update
+        this VFSNode's path property (it continues to describe the node at the
+        old path, even though it is no longer present if the rename succeeded).
         @param    newNode    a node whose path is the path to rename the node to
         */
         void renameToNode(const VFSNode& newNode) const;
@@ -339,6 +448,56 @@ class VFSNode
         */
         bool find(const VString& name, VFSNode& node) const;
         
+        /**
+        This convenience function does the following in a single call:
+        - Open the file read-only.
+        - Create a text input stream.
+        - Read the entire file as text into the supplied string.
+        - Close the file.
+        Note that the default value for includeLineEndings is the opposite
+        of VTextIOStream::readLine(), because here you probably want the whole
+        file with lines separated, whereas when you read one line you probably
+        don't want the end of line characters.
+        @param    s                    a VString to append to
+        @param    includeLineEndings   true if you want the line ending character(s)
+                                        to be included in the string that is returned
+        @throws VException if the file cannot be opened or read
+        */
+        void readAll(VString& s, bool includeLineEndings=true);
+        /**
+        This convenience function is like the other readAll, but it returns the
+        file's contents as a vector of strings rather than a single giant string.
+        The lines do not have line ending characters at the end.
+        @param  lines   a vector of strings; lines are appended to this vector
+        @throws VException if the file cannot be opened or read
+        */
+        void readAll(VStringVector& lines);
+        /**
+        The static version of readAll(VString&), for more concise calling code, at the expense
+        of a likely string copy to return by value.
+        @param  path                the path of the VFSNode from which to read
+        @param  includeLineEndings  true if you want the line ending character(s)
+                                        to be included in the string that is returned
+        @throws VException if the file cannot be opened or read
+        */
+        static VString readTextFile(const VString& path, bool includeLineEndings=true);
+        /**
+        The static version of readAll(VStringVector&), for more concise calling code.
+        @param  path    the path of the VFSNode from which to read
+        @param  lines   a vector of strings; lines are appended to this vector
+        @throws VException if the file cannot be opened or read
+        */
+        static void readTextFile(const VString& path, VStringVector& lines);
+
+        // The < operator is needed for to support STL sort(); others provided for completeness.
+        // The purpose here is to allow a sorting a directory listing by name,
+        // after calling VFSNode::list(). This is reasonable for many cases, but
+        // note that the comparision is ultimately performed by strcmp().
+        friend inline bool operator>(const VFSNode& n1, const VFSNode& n2);
+        friend inline bool operator>=(const VFSNode& n1, const VFSNode& n2);
+        friend inline bool operator<(const VFSNode& n1, const VFSNode& n2);
+        friend inline bool operator<=(const VFSNode& n1, const VFSNode& n2);
+        
     private:
     
         // These are the key functions that typically peculiar to each platform,
@@ -359,6 +518,21 @@ class VFSNode
         @param path the path string to be modified
         */
         static void _platform_denormalizePath(VString& path);
+        /**
+        Returns a node identifying an identified directory, creating it if it does not exist.
+        @param  id          the directory identifier
+        @param  companyName if not empty, a first-level subdirectory used in the hierarchy
+        @param  appName     if not empty, a second-level subdirectory used in the hierarchy
+        @throws may throw VException if there is an error attempting to locate the file
+        */
+        static VFSNode _platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName);
+        /**
+        This function returns the file node of the application executable.
+        @return the file node representing the application executable
+        @throws may throw VException if there is an error attempting to locate the file
+        */
+        static VFSNode _platform_getExecutable();
+
         /**
         Fills out a VFSNodeInfo structure to describe this node as it actually
         exists in the file system. If the node does not exist or if the attempt
@@ -392,10 +566,10 @@ class VFSNode
         bool _platform_removeFile() const;
         /**
         Renames the file or directory at this node location.
-        @param newName the new name of the node (just the name, does not
-                include the path or parent directory's information)
+        @param newPath the new path of the node (this can allow moving
+                    the node to a different directory, if the OS allows it)
         */
-        void _platform_renameNode(const VString& newName) const;
+        void _platform_renameNode(const VString& newPath) const;
 
         /**
         Iterates over this directory, calling the supplied callback
@@ -407,19 +581,14 @@ class VFSNode
         */
         void _platform_directoryIterate(VDirectoryIterationCallback& callback) const;
     
-        // These static functions wrap the raw POSIX functions in order to
-        // make them work correctly even if a signal is caught inside the
-        // function. These functions can be called from the platform-specific
-        // implementation if appropriate.
-        static int _wrap_mkdir(const char* path, mode_t mode);             ///< Calls POSIX mkdir in a way that is safe even if a signal is caught inside the function.
-        static int _wrap_rename(const char* oldName, const char* newName); ///< Calls POSIX rename in a way that is safe even if a signal is caught inside the function.
-        static int _wrap_stat(const char* path, struct stat* statData);    ///< Calls POSIX stat in a way that is safe even if a signal is caught inside the function.
-        static int _wrap_unlink(const char* path);                         ///< Calls POSIX unlink in a way that is safe even if a signal is caught inside the function.
-        static int _wrap_rmdir(const char* path);                          ///< Calls POSIX rmdir in a way that is safe even if a signal is caught inside the function.
-        
-        VString    mPath;    ///< The node's path.
+        VString mPath;  ///< The node's path.
 
     };
+
+inline bool operator>(const VFSNode& n1, const VFSNode& n2) { return n1.mPath > n2.mPath; }
+inline bool operator>=(const VFSNode& n1, const VFSNode& n2) { return n1.mPath >= n2.mPath; }
+inline bool operator<(const VFSNode& n1, const VFSNode& n2) { return n1.mPath < n2.mPath; }
+inline bool operator<=(const VFSNode& n1, const VFSNode& n2) { return n1.mPath <= n2.mPath; }
 
 #endif /* vfsnode_h */
 

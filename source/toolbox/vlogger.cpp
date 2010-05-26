@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -13,6 +13,7 @@ http://www.bombaydigital.com/
 #include "vmemorystream.h"
 #include "vhex.h"
 #include "vshutdownregistry.h"
+#include "vbento.h"
 
 V_STATIC_INIT_TRACE
 
@@ -25,8 +26,8 @@ mNumSuppressedOccurrences(0),
 mTimeOfLastOccurrence(VInstant::NEVER_OCCURRED()),
 mLogLevel(0),
 mFile(NULL),
-mLine(0)
-// mMessage -> empty
+mLine(0),
+mMessage() // -> empty
     {
     }
 
@@ -102,11 +103,11 @@ void VLoggerRepetitionFilter::_emitSuppressedMessages(VLogger* logger)
     if (mNumSuppressedOccurrences > 1)
         {
         VString tweakedMessage("[%dx] %s", mNumSuppressedOccurrences, mMessage.chars());
-        logger->emit(mLogLevel, mFile, mLine, tweakedMessage);
+        logger->emitMessage(mLogLevel, mFile, mLine, tweakedMessage);
         }
     else
         {
-        logger->emit(mLogLevel, mFile, mLine, mMessage);
+        logger->emitMessage(mLogLevel, mFile, mLine, mMessage);
         }
 
     mHasSavedMessage = false;
@@ -119,8 +120,14 @@ void VLoggerRepetitionFilter::_emitSuppressedMessages(VLogger* logger)
 // initialization if accessed during the static initialization phase.
 static VMutex* _mutexInstance()
     {
-    static VMutex gMutex;
+    static VMutex gMutex("VLogger _mutexInstance() gMutex", true/*suppress logging of the logger mutex*/);
     return &gMutex;
+    }
+
+static VLoggerList& _loggers()
+    {
+    static VLoggerList gLoggerList;
+    return gLoggerList;
     }
 
 const VString VLogger::kDefaultLoggerName; // empty string by definition
@@ -128,7 +135,6 @@ const VString VLogger::kDefaultLoggerName; // empty string by definition
 typedef VLoggerList::const_iterator const_VLoggerIterator;
 typedef VLoggerList::iterator VLoggerIterator;
 
-VLoggerList VLogger::gLoggers;
 VLogger* VLogger::gDefaultLogger = NULL;
 
 /*
@@ -144,8 +150,8 @@ code in main().
 // static
 void VLogger::shutdown()
     {
-    VMutexLocker locker(_mutexInstance());
-    vault::vectorDeleteAll(gLoggers);
+    VMutexLocker locker(_mutexInstance(), "VLogger::shutdown()");
+    vault::vectorDeleteAll(_loggers());
     gDefaultLogger = NULL;
     }
 
@@ -166,18 +172,12 @@ VLogger* VLogger::getLogger(const VString& name)
     // If user is asking for default logger, don't bother searching.
     if (! name.isEmpty())
         {
-        VMutexLocker    locker(_mutexInstance());
+        VMutexLocker locker(_mutexInstance(), "VLogger::getLogger()");
 
-        const_VLoggerIterator    i = gLoggers.begin();
-
-        while (i != gLoggers.end())
+        for (const_VLoggerIterator i = _loggers().begin(); i != _loggers().end(); ++i)
             {
-            VLogger*    logger = (*i);
-
-            if (logger->mName == name)
-                return logger;
-
-            ++i;
+            if ((*i)->mName == name)
+                return *i;
             }
         }
 
@@ -200,18 +200,12 @@ VLogger* VLogger::getLoggerConditional(const VString& name, int logLevel)
 // static
 VLogger* VLogger::findLogger(const VString& name)
     {
-    VMutexLocker    locker(_mutexInstance());
+    VMutexLocker locker(_mutexInstance(), "VLogger::findLogger()");
 
-    const_VLoggerIterator    i = gLoggers.begin();
-
-    while (i != gLoggers.end())
+    for (const_VLoggerIterator i = _loggers().begin(); i != _loggers().end(); ++i)
         {
-        VLogger*    logger = (*i);
-
-        if (logger->mName == name)
-            return logger;
-
-        ++i;
+        if ((*i)->mName == name)
+            return *i;
         }
 
     return NULL;
@@ -220,11 +214,11 @@ VLogger* VLogger::findLogger(const VString& name)
 // static
 void VLogger::installLogger(VLogger* logger)
     {
-    VMutexLocker    locker(_mutexInstance());
+    VMutexLocker locker(_mutexInstance(), "VLogger::installLogger()");
 
-    for (VLoggerIterator i = gLoggers.begin(); i != gLoggers.end(); ++i)
+    for (VLoggerIterator i = _loggers().begin(); i != _loggers().end(); ++i)
         {
-        VLogger*    existingLogger = (*i);
+        VLogger* existingLogger = (*i);
 
         // Protect agains caller accidentally installing the same logger object twice.
         // Otherwise, we'll end up deleting the object being installed.
@@ -243,24 +237,43 @@ void VLogger::installLogger(VLogger* logger)
         }
 
     // No match found, so just add this one.
-    gLoggers.push_back(logger);
+    _loggers().push_back(logger);
+
+    if (gDefaultLogger == NULL)
+        gDefaultLogger = logger;
     }
 
 // static
 void VLogger::deleteLogger(const VString& name)
     {
-    VMutexLocker    locker(_mutexInstance());
+	// 2008.08.12 JHR ARGO-13876  Logging messages to N4 to script output
+	VLogger* theLogger = VLogger::findLogger(name);
+	if (theLogger == NULL)
+		return;		// not found
 
-    for (VLoggerIterator i = gLoggers.begin(); i != gLoggers.end(); ++i)
+	VMutexLocker locker(_mutexInstance(), "VLogger::deleteLogger()");
+
+	// If the logger is "chained", remove the chain reference first.
+    for (VLoggerIterator i = _loggers().begin(); i != _loggers().end(); ++i)
         {
-        VLogger*    existingLogger = (*i);
+        VLogger* existingLogger = (*i);
+
+        if (existingLogger->mNextLoggerName == name)
+			existingLogger->mNextLoggerName = theLogger->mNextLoggerName;
+        }
+
+
+ 	// Finally, delete the actual logger
+	for (VLoggerIterator i = _loggers().begin(); i != _loggers().end(); ++i)
+        {
+        VLogger* existingLogger = (*i);
 
         if (existingLogger->mName == name)
             {
             if (gDefaultLogger == existingLogger)
                 gDefaultLogger = NULL;
 
-            gLoggers.erase(i);        // erase only removes the vector element (the pointer)
+            _loggers().erase(i);        // erase only removes the vector element (the pointer)
             delete existingLogger;    // so we also must delete the object
             return;
             }
@@ -271,7 +284,7 @@ void VLogger::deleteLogger(const VString& name)
 // static
 void VLogger::setDefaultLogger(VLogger* logger)
     {
-    VMutexLocker    locker(_mutexInstance());
+    VMutexLocker locker(_mutexInstance(), "VLogger::setDefaultLogger()");
 
     gDefaultLogger = logger;
     }
@@ -279,58 +292,80 @@ void VLogger::setDefaultLogger(VLogger* logger)
 // static
 void VLogger::setLogLevels(const VString& name, int logLevel)
     {
-    VMutexLocker    locker(_mutexInstance());
+    VMutexLocker locker(_mutexInstance(), "VLogger::setLogLevels()");
 
-    VLoggerIterator    i = gLoggers.begin();
-
-    while (i != gLoggers.end())
+	for (VLoggerIterator i = _loggers().begin(); i != _loggers().end(); ++i)
         {
-        VLogger*    logger = (*i);
+        VLogger* logger = (*i);
 
         if (name.isEmpty() || (logger->mName == name))
             logger->setLevel(logLevel);
-
-        ++i;
         }
     }
 
 // static
-void VLogger::getLoggerInfo(VStringVector& resultStrings)
+void VLogger::setPrintStackInfos(const VString& name, int printStackLevel, int maxNumOccurrences, const VDuration& timeLimit)
     {
-    VMutexLocker    locker(_mutexInstance());
+    VMutexLocker locker(_mutexInstance(), "VLogger::setPrintStackLevels()");
 
-    const_VLoggerIterator    i = gLoggers.begin();
-
-    while (i != gLoggers.end())
+	for (VLoggerIterator i = _loggers().begin(); i != _loggers().end(); ++i)
         {
-        VLogger*    logger = (*i);
+        VLogger* logger = (*i);
 
-        resultStrings.push_back(logger->mName);
-        resultStrings.push_back(VString("%d", logger->mLogLevel));
-
-        ++i;
+        if (name.isEmpty() || (logger->mName == name))
+            logger->setPrintStackInfo(printStackLevel, maxNumOccurrences, timeLimit);
         }
+    }
+
+// static
+VBentoNode* VLogger::getLoggerInfo()
+    {
+    VBentoNode* node = new VBentoNode("loggerInfo");
+    VMutexLocker locker(_mutexInstance(), "VLogger::getLoggerInfo()");
+
+
+    for (const_VLoggerIterator i = _loggers().begin(); i != _loggers().end(); ++i)
+        {
+        const VLogger* logger = (*i);
+        
+        VBentoNode* child = node->addNewChildNode("logger");
+        child->addString("name", logger->mName);
+        child->addInt("logLevel", logger->mLogLevel);
+        child->addString("nextLoggerName", logger->mNextLoggerName);
+        child->addInt("printStackLevel", logger->mPrintStackLevel);
+        child->addInt("printStackMaxCount", logger->mPrintStackMaxCount);
+        child->addDuration("printStackDuration", logger->mPrintStackDuration);
+        child->addInstant("printStackExpiration", logger->mPrintStackExpiration);
+        }
+    
+    return node;
     }
 
 // static
 void VLogger::installDefaultLogger()
     {
-    VMutexLocker    locker(_mutexInstance());
+    VMutexLocker locker(_mutexInstance(), "VLogger::installDefaultLogger()");
 
     if (gDefaultLogger == NULL)
         {
         VLogger* logger = new VCoutLogger(kWarn, "default", VString::EMPTY());
 
-        gLoggers.push_back(logger);
+        _loggers().push_back(logger);
         gDefaultLogger = logger;
         }
     }
 
 VLogger::VLogger(int logLevel, const VString& name, const VString& nextLoggerName) :
+mMutex(VString("VLogger(%s)::mMutex", name.chars()), true/*this mutex itself must not log*/), // -> unlocked
+mRepetitionFilter(),
 mLogLevel(logLevel),
 mName(name),
-mNextLoggerName(nextLoggerName)
-// mRepetitionFilter -> initialized
+mNextLoggerName(nextLoggerName),
+mPrintStackLevel(kOff),
+mPrintStackMaxCount(-1),
+mPrintStackDuration(VDuration::POSITIVE_INFINITY()),
+mPrintStackCountdown(-1),
+mPrintStackExpiration(VInstant::INFINITE_FUTURE())
     {
     }
 
@@ -356,20 +391,24 @@ void VLogger::log(int logLevel, const char* file, int line, const VString& messa
 
     if (mRepetitionFilter.isEnabled()) // avoid mutex if no need to check filter
         {
-        VMutexLocker timeoutLocker(&mMutex);
+        VMutexLocker timeoutLocker(&mMutex, "VLogger::log() checkTimeout");
         mRepetitionFilter.checkTimeout(this);
         }
 
-	if (this->isEnabledFor(logLevel))
+    if (this->isEnabledFor(logLevel))
         {
         VLogger::_breakpointLocationForEmit();
 
-        VMutexLocker locker(&mMutex);    // ensure multiple threads don't intertwine their log messages
+        VMutexLocker locker(&mMutex, "VLogger::log()");    // ensure multiple threads don't intertwine their log messages
         if (mRepetitionFilter.checkMessage(this, logLevel, file, line, message))
-            this->emit(logLevel, file, line, message);
+            {
+            this->emitMessage(logLevel, file, line, message);
+            this->_printStackCrawl(logLevel, file, line, message);
+            }
         }
 
-    this->_forwardLog(logLevel, file, line, message);
+    if (this->_hasNextLogger())
+        this->_forwardLog(logLevel, file, line, message);
     }
 
 void VLogger::log(int logLevel, const VString& message)
@@ -382,36 +421,59 @@ void VLogger::logHexDump(int logLevel, const VString& message, const Vu8* buffer
     // Short circuit immediately if the detail level is too high.
     if (this->isEnabledFor(logLevel))
         {
-        VMutexLocker locker(&mMutex);    // ensure multiple threads don't intertwine their log messages
+        VMutexLocker locker(&mMutex, "VLogger::logHexDump()");    // ensure multiple threads don't intertwine their log messages
 
-        this->emit(logLevel, NULL, 0, message);
+        this->emitMessage(logLevel, NULL, 0, message);
 
         // If the length is zero, we don't output any lines at all.
         if (length > 0)
             {
-            VMemoryStream    tempBuffer;
-            VTextIOStream    stream(tempBuffer);
+            VMemoryStream   tempBuffer;
+            VTextIOStream   stream(tempBuffer);
             VHex            hex(&stream);
             hex.printHex(buffer, length);
-            Vu8                nullByte = 0;
+            Vu8             nullByte = 0;
             (void) tempBuffer.write(&nullByte, 1);    // null terminate so it is a valid C string
 
             this->emitRawLine((char*) tempBuffer.getBuffer());
             }
         }
 
-    this->_forwardLogHexDump(logLevel, message, buffer, length);
+    if (this->_hasNextLogger())
+        this->_forwardLogHexDump(logLevel, message, buffer, length);
     }
 
 void VLogger::rawLog(const VString& message)
     {
-    VMutexLocker    locker(&mMutex);    // ensure multiple threads don't intertwine their log messages
+    VMutexLocker locker(&mMutex, "VLogger::rawLog()");    // ensure multiple threads don't intertwine their log messages
     this->emitRawLine(message);
     }
 
-void VLogger::emit(int logLevel, const char* file, int line, const VString& message)
+void VLogger::setPrintStackInfo(int printStackLevel, int maxNumOccurrences, const VDuration& timeLimit)
     {
-    VString    rawMessage;
+    VMutexLocker locker(&mMutex, "VLogger::setPrintStackInfo()");
+
+    mPrintStackLevel = printStackLevel;
+    mPrintStackMaxCount = (maxNumOccurrences > 0) ? maxNumOccurrences : -1; // 0 really means off (-1)
+    mPrintStackDuration = timeLimit;
+
+    mPrintStackCountdown = mPrintStackMaxCount;
+    if (timeLimit.isSpecific())
+        mPrintStackExpiration = VInstant(/*now*/) + timeLimit;
+    else
+        mPrintStackExpiration = VInstant::INFINITE_FUTURE();
+    }
+
+void VLogger::emitStackCrawlLine(const VString& line)
+    {
+    // We assume we're being called with mMutex locked, from VLogger::log()
+    // calling VStackCrawl_emitStackCrawl(this).
+    this->emitRawLine(line);
+    }
+
+void VLogger::emitMessage(int logLevel, const char* file, int line, const VString& message)
+    {
+    VString rawMessage;
     VLogger::format(rawMessage, logLevel, file, line, message);
 
     this->emitRawLine(rawMessage);
@@ -445,6 +507,95 @@ VLogger* VLogger::_getNextLogger() const
     return result;
     }
 
+void VLogger::_printStackCrawl(int logLevel, const char* file, int line, const VString& message)
+    {
+    if (logLevel <= mPrintStackLevel)
+        {
+        // mPrintStackCountdown of -1 means no count limit, just a timeout limit, then turn off
+        // mPrintStackExpiration of infinite means no time limit, just a count limit, then turn off
+        // if both are set, it means count down to zero, then suppress until timeout is reached
+        // if neither is set, we always print the stack crawl for this level
+        
+        bool resetCountdown = false;
+        bool turnOff = false;
+        bool printStack = false;
+        VInstant now;
+        
+        if (mPrintStackCountdown == -1)
+            {
+            if (mPrintStackDuration == VDuration::POSITIVE_INFINITY())
+                {
+                // no count limit, no time limit: always print
+                printStack = true;
+                }
+            else
+                {
+                // no count limit, but time limit defined: print if not expired, turn off if expired
+                printStack = (now < mPrintStackExpiration);
+                turnOff = !printStack;
+                }
+            }
+        else if (mPrintStackCountdown == 0)
+            {
+            if (mPrintStackDuration == VDuration::POSITIVE_INFINITY())
+                {
+                // count limit reached, no time limit: turn off printing completely
+                turnOff = true;
+                }
+            else
+                {
+                // count limit reached, time limit defined: check time limit and reset if expired
+                resetCountdown = (now >= mPrintStackExpiration);
+                printStack = resetCountdown;
+                }
+            }
+        else // mPrintStackCountdown > 0
+            {
+            // count limit exists but not yet reached, so print
+            printStack = true;
+            
+            if (mPrintStackDuration == VDuration::POSITIVE_INFINITY())
+                {
+                // no time limit: nothing to do
+                }
+            else
+                {
+                // time limit defined: reset if expired
+                resetCountdown = (now >= mPrintStackExpiration);
+                }
+            }
+            
+        if (resetCountdown)
+            {
+            mPrintStackExpiration = (now + mPrintStackDuration); // easier than looping increment from previous to future; good enough
+            
+            if (mPrintStackMaxCount > 0)
+                mPrintStackCountdown = mPrintStackMaxCount;
+            }
+            
+        if (printStack)
+            {
+            if (mPrintStackCountdown > 0)
+                --mPrintStackCountdown;
+                
+            VString rawMessage;
+            VLogger::format(rawMessage, logLevel, file, line, message);
+            VThread::logStackCrawl(VString("Stack for log entry: %s", rawMessage.chars()), this, false);
+            }
+        
+        if (turnOff)
+            {
+            mPrintStackLevel = kOff;
+            mPrintStackMaxCount = -1;
+            mPrintStackDuration = VDuration::POSITIVE_INFINITY();
+            mPrintStackCountdown = -1;
+            mPrintStackExpiration = VInstant::INFINITE_FUTURE();
+            this->emitMessage(kInfo, NULL, 0, "Print stack crawl for this logger is auto-disabling now.");
+            }
+        
+        }
+    }
+
 // static
 void VLogger::format(VString& stringToFormat, int logLevel, const char* file, int line, const VString& message)
     {
@@ -452,7 +603,17 @@ void VLogger::format(VString& stringToFormat, int logLevel, const char* file, in
     VString     timeStampString;
     now.getLocalString(timeStampString);
 
-    VString    levelName;
+    // ARGO-18646 log both current and simulated time.
+    if ((VInstant::getSimulatedClockOffset() != VDuration::ZERO()) || VInstant::isTimeFrozen()) 
+        {
+        now.setTrueNow();
+        VString     trueTimeStampString;
+        now.getLocalString(trueTimeStampString);
+
+        timeStampString = trueTimeStampString + " " + timeStampString;
+        }
+
+    VString levelName;
     VLogger::getLevelName(logLevel, levelName);
 
     // If there's file/line number info, then always show it.
@@ -490,6 +651,18 @@ void VLogger::getLevelName(int logLevel, VString& name)
     else
         name.format("%5d", logLevel);
     }
+
+// 2008.08.12 JHR ARGO-13876 Logging messages to N4 to script output 
+void VLogger::setNextLogger(const VString& name)
+{
+	mNextLoggerName = name;
+}
+
+// 2008.08.12 JHR ARGO-13876 Logging messages to N4 to script output 
+void VLogger::removeNextLogger()
+{
+	this->setNextLogger(VString::EMPTY());
+}
 
 // VForwardingLogger ---------------------------------------------------------------
 
@@ -545,23 +718,27 @@ void VCoutLogger::emitRawLine(const VString& line)
 // VInterceptLogger ---------------------------------------------------------------
 
 VInterceptLogger::VInterceptLogger(int logLevel, const VString& name, const VString& nextLoggerName) :
-VLogger(logLevel, name, nextLoggerName)
-// mLastLoggedMessage constructs to empty string
+VLogger(logLevel, name, nextLoggerName),
+mExpectedMessage(),
+mSawExpectedMessage(false)
     {
     }
 
-bool VInterceptLogger::sawExpectedMessage(const VString& inMessage)
+void VInterceptLogger::setExpectedMessage(const VString& message)
     {
-    return (mLastLoggedMessage == inMessage);
+    mExpectedMessage = message;
+    mSawExpectedMessage = false;
+    mRepetitionFilter.reset();
     }
-
+    
 void VInterceptLogger::reset()
     {
-    mLastLoggedMessage = VString::EMPTY();
+    mExpectedMessage = VString::EMPTY();
+    mSawExpectedMessage = false;
     mRepetitionFilter.reset();
     }
 
-void VInterceptLogger::emit(int /*logLevel*/, const char* /*file*/, int /*line*/, const VString& message)
+void VInterceptLogger::emitMessage(int /*logLevel*/, const char* /*file*/, int /*line*/, const VString& message)
     {
     // The intercept logger does not want the supplied message to be
     // time-stamped or have file/line information included, because a
@@ -571,7 +748,8 @@ void VInterceptLogger::emit(int /*logLevel*/, const char* /*file*/, int /*line*/
 
 void VInterceptLogger::emitRawLine(const VString& line)
     {
-    mLastLoggedMessage = line;
+    if (!mSawExpectedMessage)
+        mSawExpectedMessage = (mExpectedMessage == line);
     }
 
 // VRawFileLogger ---------------------------------------------------------------
@@ -581,11 +759,38 @@ VFileLogger(logLevel, name, nextLoggerName, filePath)
     {
     }
 
-void VRawFileLogger::emit(int /*logLevel*/, const char* /*file*/, int /*line*/, const VString& message)
+void VRawFileLogger::emitMessage(int /*logLevel*/, const char* /*file*/, int /*line*/, const VString& message)
     {
     // The raw file logger does not want the supplied message to be
     // time-stamped or have file/line information included, because a
     // comparison will be done against just the logged message itself.
     this->emitRawLine(message);
+    }
+
+// VStringLogger ---------------------------------------------------------------
+
+VStringLogger::VStringLogger(int logLevel, const VString& name, const VString& nextLoggerName) :
+VLogger(logLevel, name, nextLoggerName),
+mLines()
+    {
+    }
+
+void VStringLogger::emitRawLine(const VString& line)
+    {
+    mLines += line;
+    mLines += VString::NATIVE_LINE_ENDING();
+    }
+
+// VStringVectorLogger ---------------------------------------------------------------
+
+VStringVectorLogger::VStringVectorLogger(int logLevel, const VString& name, const VString& nextLoggerName) :
+VLogger(logLevel, name, nextLoggerName),
+mLines()
+    {
+    }
+
+void VStringVectorLogger::emitRawLine(const VString& line)
+    {
+    mLines.push_back(line);
     }
 

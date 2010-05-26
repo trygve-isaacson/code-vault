@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -18,104 +18,86 @@ static const Vu8 NINE_BYTE_LENGTH_INDICATOR_BYTE = 0xFD;
 
 #undef sscanf
 
-VBinaryIOStream::VBinaryIOStream(VStream& inRawStream) :
-VIOStream(inRawStream)
+VBinaryIOStream::VBinaryIOStream(VStream& rawStream) :
+VIOStream(rawStream)
     {
     }
 
 Vs8 VBinaryIOStream::readS8()
     {
-    Vs8    value;
+    Vs8 value;
     this->readGuaranteed(reinterpret_cast<Vu8*> (&value), CONST_S64(1));
     return value;
     }
 
 Vu8 VBinaryIOStream::readU8()
     {
-    Vu8    value;
+    Vu8 value;
     this->readGuaranteed(&value, CONST_S64(1));
     return value;
     }
 
 Vs16 VBinaryIOStream::readS16()
     {
-    Vs16    value;
+    Vs16 value;
     this->readGuaranteed(reinterpret_cast<Vu8*> (&value), CONST_S64(2));
-#ifdef VBYTESWAP_NEEDED    // Wrapping the NTOHS family macros in this avoids gcc "no-op"
-                        // warning. Sigh. Kind of defeats the elegance of using a macro
-                        // to keep the code clean and crisp.
-    V_BYTESWAP_NTOHS_IN_PLACE(value);
-#endif
+    V_BYTESWAP_NTOH_S16_IN_PLACE(value);
     return value;
     }
 
 Vu16 VBinaryIOStream::readU16()
     {
-    Vu16    value;
+    Vu16 value;
     this->readGuaranteed(reinterpret_cast<Vu8*> (&value), CONST_S64(2));
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_NTOHS_IN_PLACE(value);
-#endif
+    V_BYTESWAP_NTOH_U16_IN_PLACE(value);
     return value;
     }
 
 Vs32 VBinaryIOStream::readS32()
     {
-    Vs32    value;
+    Vs32 value;
     this->readGuaranteed(reinterpret_cast<Vu8*> (&value), CONST_S64(4));
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_NTOHL_IN_PLACE(value);
-#endif
+    V_BYTESWAP_NTOH_S32_IN_PLACE(value);
     return value;
     }
 
 Vu32 VBinaryIOStream::readU32()
     {
-    Vu32    value;
+    Vu32 value;
     this->readGuaranteed(reinterpret_cast<Vu8*> (&value), CONST_S64(4));
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_NTOHL_IN_PLACE(value);
-#endif
+    V_BYTESWAP_NTOH_U32_IN_PLACE(value);
     return value;
     }
 
 Vs64 VBinaryIOStream::readS64()
     {
-    Vs64    value;
+    Vs64 value;
     this->readGuaranteed(reinterpret_cast<Vu8*> (&value), CONST_S64(8));
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_NTOH64_IN_PLACE(value);
-#endif
+    V_BYTESWAP_NTOH_S64_IN_PLACE(value);
     return value;
     }
 
 Vu64 VBinaryIOStream::readU64()
     {
-    Vu64    value;
+    Vu64 value;
     this->readGuaranteed(reinterpret_cast<Vu8*> (&value), CONST_S64(8));
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_NTOH64_IN_PLACE(value);
-#endif
+    V_BYTESWAP_NTOH_U64_IN_PLACE(value);
     return value;
     }
 
 VFloat VBinaryIOStream::readFloat()
     {
-    VFloat    value;
+    VFloat value;
     this->readGuaranteed(reinterpret_cast<Vu8*> (&value), CONST_S64(4));
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_NTOHF_IN_PLACE(value);
-#endif
+    V_BYTESWAP_NTOH_F_IN_PLACE(value);
     return value;
     }
 
 VDouble VBinaryIOStream::readDouble()
     {
-    VDouble    value;
+    VDouble value;
     this->readGuaranteed(reinterpret_cast<Vu8*> (&value), CONST_S64(8));
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_NTOHD_IN_PLACE(value);
-#endif
+    V_BYTESWAP_NTOH_D_IN_PLACE(value);
     return value;
     }
 
@@ -126,7 +108,7 @@ bool VBinaryIOStream::readBool()
 
 void VBinaryIOStream::readString(VString& s)
     {
-    Vs64    length = this->readDynamicCount();
+    Vs64 length = this->readDynamicCount();
 
     if (length > V_MAX_S32)
         throw VException("String with unsupported length > 2GB encountered in stream.");
@@ -138,7 +120,7 @@ void VBinaryIOStream::readString(VString& s)
     else
         {
         s.preflight((int) length);
-        this->readGuaranteed(reinterpret_cast<Vu8*> (s.buffer()), length);
+        this->readGuaranteed(s.getDataBuffer(), length);
         s.postflight((int) length);
         }
     }
@@ -152,18 +134,25 @@ VString VBinaryIOStream::readString()
     that temporary VString is copied to the caller's lvalue.
     */
 
-    VString    s;
+    VString s;
     this->readString(s);
     return s;
     }
 
 void VBinaryIOStream::readString32(VString& s)
     {
-    Vs32    length = this->readS32();
+    Vs32 length = this->readS32();
 
-    s.preflight((int) length);
-    this->readGuaranteed(reinterpret_cast<Vu8*> (s.buffer()), length);
-    s.postflight((int) length);
+    if (length == 0) // Avoid forced allocation of a buffer if none is needed.
+        {
+        s = VString::EMPTY();
+        }
+    else
+        {
+        s.preflight((int) length);
+        this->readGuaranteed(s.getDataBuffer(), length);
+        s.postflight((int) length);
+        }
     }
 
 VString VBinaryIOStream::readString32()
@@ -175,7 +164,7 @@ VString VBinaryIOStream::readString32()
     that temporary VString is copied to the caller's lvalue.
     */
 
-    VString    s;
+    VString s;
     this->readString32(s);
     return s;
     }
@@ -199,11 +188,30 @@ VInstant VBinaryIOStream::readInstant()
     return VInstant::instantFromRawValue(value);
     }
 
+void VBinaryIOStream::readDuration(VDuration& d)
+    {
+    Vs64 value = this->readS64();
+    d.setDurationMilliseconds(value);
+    }
+
+VDuration VBinaryIOStream::readDuration()
+    {
+    /*
+    Note that this API is less efficient than the one above, because
+    it incurs TWO copies instead of none -- one when a temporary VInstant
+    is created by the compiler to hold the return value, and one when
+    that temporary VInstant is copied to the caller's lvalue. (Unless the
+    compiler can optimize part of that away.)
+    */
+    Vs64 value = this->readS64();
+    return VDuration::MILLISECOND() * value;
+    }
+
 Vs64 VBinaryIOStream::readDynamicCount()
     {
     // See comments below in writeDynamicCount for the format.
 
-    Vu8    lengthKind = this->readU8();
+    Vu8 lengthKind = this->readU8();
 
     if (lengthKind == THREE_BYTE_LENGTH_INDICATOR_BYTE)
         return (Vs64) this->readU16();
@@ -217,85 +225,69 @@ Vs64 VBinaryIOStream::readDynamicCount()
 
 void VBinaryIOStream::writeS8(Vs8 i)
     {
-    Vs8    value = i;
+    Vs8 value = i;
     (void) this->write(reinterpret_cast<Vu8*> (&value), CONST_S64(1));
     }
 
 void VBinaryIOStream::writeU8(Vu8 i)
     {
-    Vu8    value = i;
+    Vu8 value = i;
     (void) this->write(&value, CONST_S64(1));
     }
 
 void VBinaryIOStream::writeS16(Vs16 i)
     {
-    Vs16    value = i;
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_HTONS_IN_PLACE(value);
-#endif
+    Vs16 value = i;
+    V_BYTESWAP_HTON_S16_IN_PLACE(value);
     (void) this->write(reinterpret_cast<Vu8*> (&value), CONST_S64(2));
     }
 
 void VBinaryIOStream::writeU16(Vu16 i)
     {
-    Vu16    value = i;
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_HTONS_IN_PLACE(value);
-#endif
+    Vu16 value = i;
+    V_BYTESWAP_HTON_U16_IN_PLACE(value);
     (void) this->write(reinterpret_cast<Vu8*> (&value), CONST_S64(2));
     }
 
 void VBinaryIOStream::writeS32(Vs32 i)
     {
-    Vs32    value = i;
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_HTONL_IN_PLACE(value);
-#endif
+    Vs32 value = i;
+    V_BYTESWAP_HTON_S32_IN_PLACE(value);
     (void) this->write(reinterpret_cast<Vu8*> (&value), CONST_S64(4));
     }
 
 void VBinaryIOStream::writeU32(Vu32 i)
     {
-    Vu32    value = i;
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_HTONL_IN_PLACE(value);
-#endif
+    Vu32 value = i;
+    V_BYTESWAP_HTON_U32_IN_PLACE(value);
     (void) this->write(reinterpret_cast<Vu8*> (&value), CONST_S64(4));
     }
 
 void VBinaryIOStream::writeS64(Vs64 i)
     {
-    Vs64    value = i;
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_HTON64_IN_PLACE(value);
-#endif
+    Vs64 value = i;
+    V_BYTESWAP_HTON_S64_IN_PLACE(value);
     (void) this->write(reinterpret_cast<Vu8*> (&value), CONST_S64(8));
     }
 
 void VBinaryIOStream::writeU64(Vu64 i)
     {
-    Vu64    value = i;
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_HTON64_IN_PLACE(value);
-#endif
+    Vu64 value = i;
+    V_BYTESWAP_HTON_U64_IN_PLACE(value);
     (void) this->write(reinterpret_cast<Vu8*> (&value), CONST_S64(8));
     }
 
 void VBinaryIOStream::writeFloat(VFloat f)
     {
-    VFloat    value = f;
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_HTONF_IN_PLACE(value);
-#endif
+    VFloat value = f;
+    V_BYTESWAP_HTON_F_IN_PLACE(value);
     (void) this->write(reinterpret_cast<Vu8*> (&value), CONST_S64(4));
     }
 
 void VBinaryIOStream::writeDouble(VDouble d)
     {
-    VDouble    value = d;
-#ifdef VBYTESWAP_NEEDED
-    V_BYTESWAP_HTOND_IN_PLACE(value);
-#endif
+    VDouble value = d;
+    V_BYTESWAP_HTON_D_IN_PLACE(value);
     (void) this->write(reinterpret_cast<Vu8*> (&value), CONST_S64(8));
     }
 
@@ -307,18 +299,23 @@ void VBinaryIOStream::writeBool(bool i)
 void VBinaryIOStream::writeString(const VString& s)
     {
     this->writeDynamicCount((Vs64) s.length());
-    (void) this->write(reinterpret_cast<Vu8*> (s.chars()), static_cast<Vs64> (s.length()));
+    (void) this->write(s.getDataBufferConst(), static_cast<Vs64> (s.length()));
     }
 
 void VBinaryIOStream::writeString32(const VString& s)
     {
     this->writeS32((Vs32) s.length());
-    (void) this->write(reinterpret_cast<Vu8*> (s.chars()), static_cast<Vs64> (s.length()));
+    (void) this->write(s.getDataBufferConst(), static_cast<Vs64> (s.length()));
     }
 
 void VBinaryIOStream::writeInstant(const VInstant& i)
     {
     this->writeS64(i.getValue());
+    }
+
+void VBinaryIOStream::writeDuration(const VDuration& d)
+    {
+    this->writeS64(d.getDurationMilliseconds());
     }
 
 void VBinaryIOStream::writeDynamicCount(Vs64 count)

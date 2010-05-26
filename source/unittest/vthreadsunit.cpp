@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -11,28 +11,40 @@ http://www.bombaydigital.com/
 #include "vmutex.h"
 #include "vmutexlocker.h"
 #include "vsemaphore.h"
+#include "vexception.h"
 
 class TestThreadClass : public VThread
     {
     public:
     
-        TestThreadClass(int numSecondsToSleep, int numIterations, bool* boolToSetOnCompletion, TestThreadClass** thisPtrToNull);
+        TestThreadClass(VThreadsUnit* ownerUnit, const VString& namePrefix, int numSecondsToSleep, int numIterations, bool* boolToSetOnCompletion, TestThreadClass** thisPtrToNull, volatile VThreadID_Type* threadIDMember, volatile VThreadID_Type* threadIDSelf);
         ~TestThreadClass();
         
         virtual void run();
         
+        VThreadsUnit* mOwnerUnit;
         int     mNumSecondsToSleep;
         int     mNumIterations;
         bool*    mBoolToSetOnCompletion;
         TestThreadClass**    mThisPtrToNull;
+        volatile VThreadID_Type* mThreadIDMemberToSet; // stash mThreadID here; unit test will verify it matches threadSelf()
+        volatile VThreadID_Type* mThreadIDSelfToSet;   // stash threadSelf() value here in run(); unit test will verify it matches mThreadID
+
+    private:
+
+        TestThreadClass(const TestThreadClass&); // not copyable
+        TestThreadClass& operator=(const TestThreadClass&); // not assignable
     };
 
-TestThreadClass::TestThreadClass(int numSecondsToSleep, int numIterations, bool* boolToSetOnCompletion, TestThreadClass** thisPtrToNull) :
-VThread("TestThreadClass", thisPtrToNull != NULL, kCreateThreadJoinable, NULL),
+TestThreadClass::TestThreadClass(VThreadsUnit* ownerUnit, const VString& namePrefix, int numSecondsToSleep, int numIterations, bool* boolToSetOnCompletion, TestThreadClass** thisPtrToNull, volatile VThreadID_Type* threadIDMember, volatile VThreadID_Type* threadIDSelf) :
+VThread(VString("TestThreadClass.%s", namePrefix.chars()), thisPtrToNull != NULL, kCreateThreadJoinable, NULL),
+mOwnerUnit(ownerUnit),
 mNumSecondsToSleep(numSecondsToSleep),
 mNumIterations(numIterations),
 mBoolToSetOnCompletion(boolToSetOnCompletion),
-mThisPtrToNull(thisPtrToNull)
+mThisPtrToNull(thisPtrToNull),
+mThreadIDMemberToSet(threadIDMember),
+mThreadIDSelfToSet(threadIDSelf)
     {
     *mBoolToSetOnCompletion = false;
     }
@@ -55,12 +67,17 @@ void TestThreadClass::run()
 
     // Now our thread will finish, terminate, and delete this.
 
-    // We set the creator's boolean so it can verify that we got here.
+    // We set the values the unit test can examine so it can verify behavior.
+    *mThreadIDMemberToSet = mThreadID;
+    *mThreadIDSelfToSet = VThread::threadSelf();
     *mBoolToSetOnCompletion = true;
+
+    VString info("Thread::run completed '%s' : id=%lld self=%lld.", mName.chars(), (Vs64) *mThreadIDMemberToSet, (Vs64) *mThreadIDSelfToSet);
+    mOwnerUnit->logStatus(info);
     }
 
-VThreadsUnit::VThreadsUnit(bool logOnSuccess, bool throwOnError)
-: VUnit("VThreadsUnit", logOnSuccess, throwOnError)
+VThreadsUnit::VThreadsUnit(bool logOnSuccess, bool throwOnError) :
+VUnit("VThreadsUnit", logOnSuccess, throwOnError)
     {
     }
 
@@ -68,15 +85,15 @@ void VThreadsUnit::run()
     {
     // Test the basic behavior of mutex locking and unlocking.
 
-    VMutex mutex1;
+    VMutex mutex1("mutex1");
 
         {    
-        VMutexLocker locker(&mutex1);
+        VMutexLocker locker(&mutex1, "VThreadsUnit locker 1");
         this->test(locker.isLocked(), "mutex locker initial lock");
         }
 
         {    
-        VMutexLocker locker(&mutex1, false);
+        VMutexLocker locker(&mutex1, "VThreadsUnit locker 2", false);
         this->test(! locker.isLocked(), "mutex locker initial unlock");
 
         locker.lock();
@@ -94,20 +111,20 @@ void VThreadsUnit::run()
     // we check for null before each join, because the thread may be gone by that point.
     // In fact, in our case, thread2 runs for 2 seconds, so by the time thread1 join
     // completes, thread2 is presumably gone.
-    bool thread1Flag = false;
-    TestThreadClass* thread1 = new TestThreadClass(4, 1, &thread1Flag, &thread1);
-    bool thread2Flag = false;
-    TestThreadClass* thread2 = new TestThreadClass(2, 3, &thread2Flag, &thread2);
-    bool thread3Flag = false;
-    TestThreadClass* thread3 = new TestThreadClass(3, 2, &thread3Flag, NULL);
+    bool thread1Flag = false; volatile VThreadID_Type thread1ID = 0; volatile VThreadID_Type thread1Self = 0;
+    TestThreadClass* thread1 = new TestThreadClass(this, "1", 4, 1, &thread1Flag, &thread1, &thread1ID, &thread1Self);
+    bool thread2Flag = false; volatile VThreadID_Type thread2ID = 0; volatile VThreadID_Type thread2Self = 0;
+    TestThreadClass* thread2 = new TestThreadClass(this, "2", 2, 3, &thread2Flag, &thread2, &thread2ID, &thread2Self);
+    bool thread3Flag = false; volatile VThreadID_Type thread3ID = 0; volatile VThreadID_Type thread3Self = 0;
+    TestThreadClass* thread3 = new TestThreadClass(this, "3", 3, 2, &thread3Flag, NULL, &thread3ID, &thread3Self);
     
     this->test(thread1->getDeleteAtEnd() == true &&
                 thread2->getDeleteAtEnd() == true &&
                 thread3->getDeleteAtEnd() == false, "thread delete-at-end flags");
     
     this->test(thread1->isRunning() == false &&
-                thread2->isRunning() == false &&
-                thread3->isRunning() == false, "thread initial running state");
+        thread2->isRunning() == false &&
+        thread3->isRunning() == false, "thread initial running state");
 
     (void) thread1->threadID();    // call API to cover it -- result is not of particular use
     
@@ -118,7 +135,7 @@ void VThreadsUnit::run()
     thread2->stop();    // short-circuit its iterations
     
     thread3->setName("thread number 3");
-    this->test(thread3->name() == "thread number 3", "thread naming");
+    this->test(thread3->getName() == "thread number 3", "thread naming");
     
     if (thread1 != NULL)
         thread1->join();
@@ -128,6 +145,18 @@ void VThreadsUnit::run()
     delete thread3;
     
     this->test(thread1Flag && thread2Flag && thread3Flag, "threads completed");
+    
+    this->logStatus(VString("thread ids/selfs: %lld/%lld %lld/%lld %lld/%lld",
+        (Vs64) thread1ID, (Vs64) thread1Self,
+        (Vs64) thread2ID, (Vs64) thread2Self,
+        (Vs64) thread3ID, (Vs64) thread3Self));
+
+    VUNIT_ASSERT_EQUAL_LABELED((Vs64) thread1ID, (Vs64) thread1Self, "thread 1 self/id match");
+    VUNIT_ASSERT_NOT_EQUAL_LABELED((Vs64) thread1ID, CONST_S64(0), "thread 1 self/id non-zero");
+    VUNIT_ASSERT_EQUAL_LABELED((Vs64) thread2ID, (Vs64) thread2Self, "thread 2 self/id match");
+    VUNIT_ASSERT_NOT_EQUAL_LABELED((Vs64) thread2ID, CONST_S64(0), "thread 2 self/id non-zero");
+    VUNIT_ASSERT_EQUAL_LABELED((Vs64) thread3ID, (Vs64) thread3Self, "thread 3 self/id match");
+    VUNIT_ASSERT_NOT_EQUAL_LABELED((Vs64) thread3ID, CONST_S64(0), "thread 3 self/id non-zero");
 
     }
 

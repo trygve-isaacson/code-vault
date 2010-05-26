@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -16,9 +16,8 @@ http://www.bombaydigital.com/
 #include "vtextiostream.h"
 #include "vinstant.h"
 
-#include <vector>
-
 class VString;
+class VBentoNode;
 
 /**
     @ingroup toolbox
@@ -27,7 +26,12 @@ class VString;
 // These macros make it easier to emit log messages without as much verbose typing.
 // Each macro has two versions: one using the default logger, one using a named logger.
 
-/** Emits a message at kFatal level to the default logger. */
+/** Emits a message at kFatal level to the default logger, then throws that message in a VException.
+Note that this is not inherently "fatal" unless your call stack decides to make it so. This is just a
+convenience function to do both steps in one call. */
+#define VLOGGER_FATAL_AND_THROW(message) do { VLogger::getDefaultLogger()->log(VLogger::kFatal, __FILE__, __LINE__, message); throw VException(message); } while (false)
+/** Emits a message at kFatal level to the default logger.
+Note that emitting this log message is not a fatal action and does not terminate the application. */
 #define VLOGGER_FATAL(message) VLogger::getDefaultLogger()->log(VLogger::kFatal, __FILE__, __LINE__, message)
 /** Emits a message at kError level to the default logger. */
 #define VLOGGER_ERROR(message) VLogger::getDefaultLogger()->log(VLogger::kError, __FILE__, __LINE__, message)
@@ -130,6 +134,9 @@ class VLoggerRepetitionFilter
 
     private:
 
+        VLoggerRepetitionFilter(const VLoggerRepetitionFilter&); // not copyable
+        VLoggerRepetitionFilter& operator=(const VLoggerRepetitionFilter&); // not assignable
+
         void _emitSuppressedMessages(VLogger* logger);
 
         bool        mEnabled; // Certain logger subclasses may want to turn off filtering entirely.
@@ -231,14 +238,34 @@ class VLogger
         */
         static void setLogLevels(const VString& name, int logLevel);
         /**
-        Returns display info about the installed loggers. The result is
-        two strings pushed onto the supplied vector for each logger.
-        The first string is the logger name. The second string is its
-        log level as a string. So if there are 4 loggers, there will
-        be 8 strings pushed.
-        @param    resultStrings    the string vector that will be modified
+        Sets one or all loggers' print stack info. If you specify a logger name and
+        it's not found, then nothing happens. See setPrintStackInfo for details on
+        parameter use.
+        @param    name        empty for all loggers; or the name of a logger
+        @param  printStackLevel    the level of detail <= which will cause a stack
+                                    crawl to be emitted
+        @param  maxNumOccurrences   if non-zero, a limit on the number of stack
+                                    crawls that will be printed before turning the
+                                    level back to zero (off)
+        @param  timeLimit           if specified, a time limit from now at which point
+                                    the level will be turned back to zero (off)
         */
-        static void getLoggerInfo(VStringVector& resultStrings);
+        static void setPrintStackInfos(const VString& name, int printStackLevel, int maxNumOccurrences, const VDuration& timeLimit);
+        /**
+        Returns display info about the installed loggers. The result is
+        a Bento structure with one child node per logger. The caller owns the
+        Bento data and should delete it when it's no longer needed. Each child
+        node has the logger's attributes:
+        - string name
+        - int logLevel
+        - string nextLoggerName
+        - int printStackLevel
+        - int printStackMaxCount
+        - duration printStackDuration
+        - instant printStackExpiration
+        @return a Bento data hierarchy as described above
+        */
+        static VBentoNode* getLoggerInfo();
 
         /**
         Constructs a new logger object.
@@ -289,7 +316,7 @@ class VLogger
         void rawLog(const VString& message);
 
         /**
-        Returns the current level of detail, below which messages are suppressed.
+        Returns the current level of detail, above which messages are suppressed.
         @return the current level of detail
         */
         int getLevel() const { return mLogLevel; }
@@ -299,6 +326,45 @@ class VLogger
         @param    logLevel    the level of detail for messages to emit
         */
         void setLevel(int logLevel) { mLogLevel = logLevel; }
+        /**
+        Enables or disables the repetition filter.
+        */
+        void setRepetitionFilterEnabled(bool enabled) { mRepetitionFilter.setEnabled(enabled); }
+        /**
+        Returns the current print stack level of detail, above which
+        messages do not emit a stack crawl (defaults to kOff, so there are no
+        stack crawls emitted)
+        @return the current print stack level of detail
+        */
+        int getPrintStackLevel() const { return mPrintStackLevel; }
+        /**
+        Sets the logger's print stack configuration. By setting a print stack level
+        to non-zero (zero is kOff), it means that any log output that passes this
+        logger's mLogLevel, and which is less than or equal to the mPrintStackLevel,
+        will cause a stack crawl to be printed to the log output. The typical use
+        is to set it to kError so that you can find out what piece of code is calling
+        into some other lower-level code that emits the error. The limit parameters
+        let you avoid having an endless spew of stack crawls, and just get a few of
+        them for a short period of time around an error condition.
+        @param  printStackLevel    the level of detail <= which will cause a stack
+                                    crawl to be emitted
+        @param  maxNumOccurrences   if non-zero, a limit on the number of stack
+                                    crawls that will be printed before turning the
+                                    level back to zero (off)
+        @param  timeLimit           if specified, a time limit from now at which point
+                                    the level will be turned back to zero (off)
+        */
+        void setPrintStackInfo(int printStackLevel, int maxNumOccurrences, const VDuration& timeLimit);
+        /**
+        This callback is to be used only by VStackCrawl_emitStackCrawl() when it is called
+        by VLogger. It will emit the supplied string without any locking, nor any formatting,
+        under the presumption that the VLogger has already locked its mutex and is prepared
+        to emit multiple raw lines via this callback. This is like rawLog() but without
+        locking.
+        @param  line    the line of text to be logged
+        */
+        void emitStackCrawlLine(const VString& line);
+        
         /**
         Returns the logger's name.
         @return the logger name
@@ -332,6 +398,23 @@ class VLogger
         */
         static void getLevelName(int logLevel, VString& name);
 
+		// 2008.08.12 JHR ARGO-13876 Logging messages to N4 to script output 
+        /**
+        Add a log to chain to (replaces the old "next").
+        @param    name    name of the "next" log to chain to
+        */
+		void setNextLogger(const VString& name);
+		// 2008.08.13 JHR ARGO-13876 Logging messages to N4 to script output 
+        /**
+        Return the next log in the chain (if any)
+        */
+		const VString& getNextLogger() const { return mNextLoggerName; }
+       /**
+        Removes a log to chain to
+        @param    logLevel    the level of detail for messages to emit
+        */
+		void removeNextLogger();
+
     protected:
 
         /**
@@ -352,13 +435,13 @@ class VLogger
         @param    line        the line number that is emitting the log message
         @param    message     the text to emit
         */
-        virtual void emit(int logLevel, const char* file, int line, const VString& message);
+        virtual void emitMessage(int logLevel, const char* file, int line, const VString& message);
 
         /**
         Emits a raw line to the logger's output. Normally this is the function that
         concrete logger classes override, because the base class formats the message
         and then calls this function to emit the message. However, as mentioned in
-        the comments for emit(), a database logger might just override emit() and
+        the comments for emitMessage(), a database logger might just override emitMessage() and
         do the work there. The override implementation should just do its thing without
         calling inherited.
         @param    line    the string to be emitted
@@ -380,10 +463,10 @@ class VLogger
         */
         static void format(VString& stringToFormat, int logLevel, const char* file, int line, const VString& message);
 
-        VMutex  mMutex;     ///< A mutex to protect against multiple threads' messages from being intertwined;
-                                // subclasses may access this carefully; note that it is locked prior to any
-                                // call to emit() or emitRawLine(), so implementors of those functions must
-                                // not re-lock because to do so would cause a deadlock.
+        VMutex mMutex;  ///< A mutex to protect against multiple threads' messages from being intertwined;
+                        // subclasses may access this carefully; note that it is locked prior to any
+                        // call to emitMessage() or emitRawLine(), so implementors of those functions must
+                        // not re-lock because to do so would cause a deadlock.
 
         VLoggerRepetitionFilter mRepetitionFilter;  ///< Used to prevent repetitive info from clogging output.
 
@@ -407,19 +490,40 @@ class VLogger
         */
         void _forwardLogHexDump(int logLevel, const VString& message, const Vu8* buffer, Vs64 length);
         /**
+        Returns true if this logger is configured to forward to a next logger in chain.
+        This value should normally be checked before calling _getNextLogger(), as an
+        optimization to avoid extra function call overhead.
+        */
+        bool _hasNextLogger() const { return mNextLoggerName.isNotEmpty(); }
+        /**
         Returns the next logger in the chain, or NULL if mNextLoggerName is empty or resolves
         to this logger itself.
         */
         VLogger* _getNextLogger() const;
+        /**
+        Emits a stack crawl if the log level is appropriate and stack crawl printing is
+        enabled and has not timed out or reached the count limit; maintains the limit tracking
+        in doing so.
+        @param    logLevel    the level of detail of the message
+        @param    file        the file name that is emitting the log message;
+                            NULL will suppress file and line in output
+        @param    line        the line number that is emitting the log message
+        @param    message     the text to emit
+        */
+        void _printStackCrawl(int logLevel, const char* file, int line, const VString& message);
 
-        int     mLogLevel;          ///< Only messages with a detail level <= this will be emitted.
-        VString mName;              ///< This logger's unique name so it can be looked up.
-        VString mNextLoggerName;    ///< Name of the next logger in the chain, or empty if none.
+        int      mLogLevel;             ///< Only messages with a detail level <= this will be emitted.
+        VString  mName;                 ///< This logger's unique name so it can be looked up.
+        VString  mNextLoggerName;       ///< Name of the next logger in the chain, or empty if none.
+        int      mPrintStackLevel;      ///< Messages with a detail level <= this will call the stack crawl printing function. kOff defeats it.
+        int      mPrintStackMaxCount;   ///< Positive value indicates max stacks printed per mPrintStackDuration interval.
+        VDuration mPrintStackDuration;  ///< Non-infinite value indicates interval for resetting countdown of max stacks.
+        int      mPrintStackCountdown;  ///< Positive value is num remaining print stacks until mPrintStackResetTime.
+        VInstant mPrintStackExpiration; ///< Next instant when stack printing countdown will reset (INFINITE_FUTURE means never).
 
-        static VLoggerList  gLoggers;       ///< The list of installed loggers.
-        static VLogger*     gDefaultLogger; ///< The default logger returned if get by name fails.
+        static VLogger* gDefaultLogger; ///< The default logger returned if get by name fails.
 
-        friend class VLoggerRepetitionFilter; // It will call our emit() function to emit saved messages.
+        friend class VLoggerRepetitionFilter; // It will call our emitMessage() function to emit saved messages.
     };
 
 /**
@@ -500,8 +604,8 @@ class VFileLogger : public VLogger
 
     private:
 
-        VBufferedFileStream    mFileStream;    ///< The underlying files stream we open and write to.
-        VTextIOStream        mOutputStream;    ///< The high-level text stream we write to.
+        VBufferedFileStream mFileStream;    ///< The underlying files stream we open and write to.
+        VTextIOStream        mOutputStream; ///< The high-level text stream we write to.
     };
 
 class VCoutLogger : public VLogger
@@ -530,9 +634,12 @@ class VCoutLogger : public VLogger
     };
 
 /**
-VInterceptLogger is a logger that remembers the last message logged and allows
-examination for use in classes that communicate failure via logger output instead
-of via a throw.
+VInterceptLogger is a logger that looks for an expected message to be logged, and
+sets a flag if it ever sees that message once. You can re-use it for multiple
+messages by setting a new expected message, which resets the flag. This can be
+useful when unit testing code that communicates failure via logger output instead
+of via a throw. But in general, the need to use this indicates a weak error
+handling design.
 */
 class VInterceptLogger : public VLogger
     {
@@ -550,19 +657,40 @@ class VInterceptLogger : public VLogger
         */
         virtual ~VInterceptLogger() {}
 
-        bool sawExpectedMessage(const VString& inMessage);
-        const VString& getLastMessage() const { return mLastLoggedMessage; }
+        /**
+        Sets the expected message to look for, and resets the "seen" flag.
+        @param  message the message we will look for
+        */
+        void setExpectedMessage(const VString& message);
+        /**
+        Returns true if the specified message was the last message seen.
+        @param message the message to test for
+        @return true if the last message was the one specified
+        */
+        bool sawExpectedMessage() const { return mSawExpectedMessage; }
+        /**
+        Returns the expected message, useful if the expected message was not seen and
+        you want to report the missed message text.
+        @return obvious
+        */
+        const VString& getExpectedMessage() const { return mExpectedMessage; }
 
+        /**
+        Override of base class reset; resets to initial state.
+        */
         virtual void reset();
 
     protected:
 
-        virtual void emit(int logLevel, const char* file, int line, const VString& message);
+        // Overrides of VLogger subclass interface; we save the line
+        // instead of sending it to some output.
+        virtual void emitMessage(int logLevel, const char* file, int line, const VString& message);
         virtual void emitRawLine(const VString& line);
 
     private:
 
-        VString mLastLoggedMessage;
+        VString mExpectedMessage;
+        bool mSawExpectedMessage;
     };
 
 /**
@@ -588,9 +716,97 @@ class VRawFileLogger : public VFileLogger
 
     protected:
 
-        virtual void emit(int logLevel, const char* file, int line, const VString& message);
+        // Overrides of VLogger subclass interface; we write to the file without
+        // any time stamp or log level notation prefix.
+        virtual void emitMessage(int logLevel, const char* file, int line, const VString& message);
 
     };
+
+class VStringLogger : public VLogger
+    {
+    public:
+
+        /**
+        Constructs a logger that accumulates all output into one large VString,
+        with '\n' embedded at the end of each emitted "line".
+        @param  logLevel        the level of detail for messages to emit
+        @param  name            the name of the logger, used for finding by name
+        @param  nextLoggerName  the name of the next logger in chain, or empty if none
+        */
+        VStringLogger(int logLevel, const VString& name, const VString& nextLoggerName);
+        /**
+        Destructor.
+        */
+        virtual ~VStringLogger() {}
+        
+        /*
+        Depending on how you use this logger, you may need to be careful about
+        locking the mutex while accessing the lines. The rule is that during a period
+        in which this logger may be logged to, you must not depend on the immutability
+        of the mLines, except while you have locked the mutex; and while you have
+        locked the mutex, another thread that attempts to log will block. The typical
+        use case of this logger will be to cause output to be logged, and then use the
+        lines before continuing; such a use case doesn't require you to lock the mutex.
+        */
+        VMutex& getMutex() { return mMutex; }
+        const VString& getLines() const { return mLines; }
+        char* orphanLines() { return mLines.orphanDataBuffer(); }
+
+    protected:
+
+        /**
+        Override of base class function, emits the line to cout.
+        @param    line    the string to be emitted
+        */
+        virtual void emitRawLine(const VString& line);
+
+    private:
+    
+        VString mLines;
+    };
+
+class VStringVectorLogger : public VLogger
+    {
+    public:
+
+        /**
+        Constructs a logger that accumulates all output into a VStringVector.
+        @param  logLevel        the level of detail for messages to emit
+        @param  name            the name of the logger, used for finding by name
+        @param  nextLoggerName  the name of the next logger in chain, or empty if none
+        */
+        VStringVectorLogger(int logLevel, const VString& name, const VString& nextLoggerName);
+        /**
+        Destructor.
+        */
+        virtual ~VStringVectorLogger() {}
+
+        /*
+        Depending on how you use this logger, you may need to be careful about
+        locking the mutex while accessing the lines. The rule is that during a period
+        in which this logger may be logged to, you must not depend on the immutability
+        of the mLines, except while you have locked the mutex; and while you have
+        locked the mutex, another thread that attempts to log will block. The typical
+        use case of this logger will be to cause output to be logged, and then use the
+        lines before continuing; such a use case doesn't require you to lock the mutex.
+        */
+        VMutex& getMutex() { return mMutex; }
+        const VStringVector& getLines() const { return mLines; }
+
+    protected:
+
+        /**
+        Override of base class function, emits the line to cout.
+        @param    line    the string to be emitted
+        */
+        virtual void emitRawLine(const VString& line);
+
+    private:
+    
+        VStringVector mLines;
+    };
+
+void _logFile(const VString& fileName, const VString& line);
 
 #endif /* vlogplus_h */
 

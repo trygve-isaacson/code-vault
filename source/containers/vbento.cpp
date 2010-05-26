@@ -1,12 +1,13 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
 /** @file */
 
 #include "vbento.h"
+#include "vtypes_internal.h"
 
 #include "vexception.h"
 #include "vbufferedfilestream.h"
@@ -38,6 +39,7 @@ class VBentoTextNodeParser
             IN_ATTRIBUTE_NAME,
             IN_ATTRIBUTE_TYPE,
             IN_ATTRIBUTE_PRE_VALUE,
+            IN_ATTRIBUTE_PRE_VALUE_QUALIFIER,
             IN_ATTRIBUTE_VALUE_DOUBLE_QUOTED,
             IN_ATTRIBUTE_VALUE_SINGLE_QUOTED,
             IN_ATTRIBUTE_VALUE_UNQUOTED
@@ -54,20 +56,25 @@ class VBentoTextNodeParser
         VBentoNodePtrVector mParseNodeStack;
         VString mPendingAttributeName;
         VString mPendingAttributeType;
+        VString mPendingAttributeQualifier;
         VString mPendingAttributeValue;
 
+    private:
+
+        VBentoTextNodeParser(const VBentoTextNodeParser&); // not copyable
+        VBentoTextNodeParser& operator=(const VBentoTextNodeParser&); // not assignable
     };
 
 VBentoTextNodeParser::VBentoTextNodeParser() :
 mTokenState(START),
-// mPendingToken -> empty
+mPendingToken(), // -> empty
 mTokenEscapePending(false),
 mRootNode(NULL),
-mPendingNode(NULL)
-// mParseNodeStack -> empty
-// mPendingAttributeName -> empty
-// mPendingAttributeType -> empty
-// mPendingAttributeValue -> empty
+mPendingNode(NULL),
+mParseNodeStack(), // -> empty
+mPendingAttributeName(), // -> empty
+mPendingAttributeType(), // -> empty
+mPendingAttributeValue() // -> empty
     {
     }
 
@@ -86,7 +93,7 @@ void VBentoTextNodeParser::parse(VTextIOStream& stream, VBentoNode& node)
     catch (const VEOFException& /*ex*/) {} // normal EOF on input stream
     catch (const VException& ex)
         {
-        throw VException("The Bento text stream was incorrectly formatted: %s", ex.what());
+        throw VException(VString("The Bento text stream was incorrectly formatted: %s", ex.what()));
         }
     }
 
@@ -106,11 +113,11 @@ void VBentoTextNodeParser::parse(const VString& s, VBentoNode& node)
     catch (const VEOFException& /*ex*/) {} // normal EOF on input stream
     catch (const VException& ex)
         {
-        throw VException("The Bento text stream was incorrectly formatted: %s", ex.what());
+        throw VException(VString("The Bento text stream was incorrectly formatted: %s", ex.what()));
         }
     }
 
-bool _isSkippable(const VChar& c)
+static bool _isSkippable(const VChar& c)
     {
     return (c.charValue() <= 0x20) || (c.charValue() == 0x7F);
     }
@@ -129,7 +136,7 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
                 mParseNodeStack.push_back(mPendingNode);
                 }
             else
-                throw VException("Parser expected whitespace or { but got '%c'.", c.charValue());
+                throw VException(VString("Parser expected whitespace or { but got '%c'.", c.charValue()));
             break;
         case IN_NODE:
             if (_isSkippable(c))
@@ -143,6 +150,7 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
                 mTokenState = IN_ATTRIBUTE;
                 mPendingAttributeName = VString::EMPTY();
                 mPendingAttributeType = VString::EMPTY();
+                mPendingAttributeQualifier = VString::EMPTY();
                 mPendingAttributeValue = VString::EMPTY();
                 }
             else if (c == '{')
@@ -163,7 +171,7 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
                     mPendingNode = mParseNodeStack.back(); // the new last node is now pending
                 }
             else
-                throw VException("Parser expected whitespace, node name, [, {, or } but got '%c'.", c.charValue());
+                throw VException(VString("Parser expected whitespace, node name, [, {, or } but got '%c'.", c.charValue()));
             break;
         case IN_NODE_NAME:
             if (c == '\\') // backslash (escape) char
@@ -215,14 +223,15 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
                 {
                 mTokenState = IN_NODE;
 
-                mPendingNode->_addAttribute(VBentoAttribute::newObjectFromBentoTextValues(mPendingAttributeName, mPendingAttributeType, mPendingAttributeValue));
+                mPendingNode->_addAttribute(VBentoAttribute::newObjectFromBentoTextValues(mPendingAttributeName, mPendingAttributeType, mPendingAttributeValue, mPendingAttributeQualifier));
 
                 mPendingAttributeName = VString::EMPTY();
                 mPendingAttributeType = VString::EMPTY();
+                mPendingAttributeQualifier = VString::EMPTY();
                 mPendingAttributeValue = VString::EMPTY();
                 }
             else
-                throw VException("Parser expected whitespace, attr name/type/value, or ] but got '%c'.", c.charValue());
+                throw VException(VString("Parser expected whitespace, attr name/type/value, or ] but got '%c'.", c.charValue()));
             break;
         case IN_ATTRIBUTE_NAME:
             if (c == '\\') // backslash (escape) char
@@ -268,7 +277,11 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
                 }
             break;
         case IN_ATTRIBUTE_PRE_VALUE:
-            if (c == '\\') // backslash (escape) char
+            if (c == '(')
+                {
+                mTokenState = IN_ATTRIBUTE_PRE_VALUE_QUALIFIER;
+                }
+            else if (c == '\\') // backslash (escape) char
                 {
                 mTokenEscapePending = true;
                 mTokenState = IN_ATTRIBUTE_VALUE_UNQUOTED;
@@ -304,6 +317,18 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
                 mPendingToken += c;
                 mTokenState = IN_ATTRIBUTE_VALUE_UNQUOTED;
                 mTokenEscapePending = false;
+                }
+            break;
+        case IN_ATTRIBUTE_PRE_VALUE_QUALIFIER:
+            if (c == ')')
+                {
+                mPendingAttributeQualifier = mPendingToken;
+                mPendingToken = VString::EMPTY();
+                mTokenState = IN_ATTRIBUTE_PRE_VALUE;
+                }
+            else
+                {
+                mPendingToken += c;
                 }
             break;
         case IN_ATTRIBUTE_VALUE_DOUBLE_QUOTED:
@@ -365,6 +390,27 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
                     mTokenState = IN_ATTRIBUTE;
                     }
                 }
+            else if (c == ']') // end of attribute (unless an escape is pending)
+                {
+                if (mTokenEscapePending)
+                    {
+                    mPendingToken += c;
+                    mTokenEscapePending = false;
+                    }
+                else
+                    {
+                    mPendingAttributeValue = mPendingToken;
+                    mPendingToken = VString::EMPTY();
+                    mTokenState = IN_NODE;
+
+                    mPendingNode->_addAttribute(VBentoAttribute::newObjectFromBentoTextValues(mPendingAttributeName, mPendingAttributeType, mPendingAttributeValue, mPendingAttributeQualifier));
+
+                    mPendingAttributeName = VString::EMPTY();
+                    mPendingAttributeType = VString::EMPTY();
+                    mPendingAttributeQualifier = VString::EMPTY();
+                    mPendingAttributeValue = VString::EMPTY();
+                    }
+                }
             else
                 {
                 mPendingToken += c;
@@ -378,19 +424,19 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c)
 
 // VBentoAttribute -----------------------------------------------------------
 
-VBentoAttribute::VBentoAttribute()
-: mName("uninitialized"), mDataType(VString::EMPTY())
+VBentoAttribute::VBentoAttribute() :
+mName("uninitialized"), mDataType(VString::EMPTY())
     {
     }
 
-VBentoAttribute::VBentoAttribute(VBinaryIOStream& stream, const VString& dataType)
-: mName(VString::EMPTY()), mDataType(dataType)
+VBentoAttribute::VBentoAttribute(VBinaryIOStream& stream, const VString& dataType) :
+mName(VString::EMPTY()), mDataType(dataType)
     {
     stream.readString(mName);
     }
 
-VBentoAttribute::VBentoAttribute(const VString& name, const VString& dataType)
-: mName(name), mDataType(dataType)
+VBentoAttribute::VBentoAttribute(const VString& name, const VString& dataType) :
+mName(name), mDataType(dataType)
     {
     }
 
@@ -462,8 +508,7 @@ void VBentoAttribute::writeToBentoTextStream(VTextIOStream& stream) const
     _escapeString(name);
     VString valueString;
     this->getValueAsBentoTextString(valueString);
-    _escapeString(valueString);
-
+    
     // The less-used types must self-describe their type in text form.
     // But String, bool, and vs32 are most common and we can infer them
     // from how we format them, so we can have a cleaner format for them.
@@ -472,32 +517,54 @@ void VBentoAttribute::writeToBentoTextStream(VTextIOStream& stream) const
     // - vs32 (int) are unquoted and are numeric (a leading minus sign is OK)
     // - bool are unquoted true or false
     // - every other type has a (type) before the equal sign and is quoted.
-    // - unknown types are encoded in hex with a leading 0x
     // Examples:
     // - A string:           "address"="123 Main St."
-    // - A char:             "initial"(char)="X"
+    // - An encoded string:  "address"=(US-ASCII)"123 Main St."
+    // - A char:             "initial"='X'
     // - An integer:         "speed"=70
     // - A boolean:          "active"=true
-    // - An 16-bit unsigned: "message_id"(vu_8)="7"
-    // - An 64-bit signed:   "file_size(vs16)"="2723674238"
-    // - An unknown type:    "thing(abcd)"="0x165231FCE64546DE45AD"
+    // - A 16-bit unsigned:  "message_id"(vu16)="7"
+    // - A 64-bit signed:    "file_size(vs64)"="2723674238"
+    // - A VISize:           "dim(sizi)"="25,30"
+    // - A VPoint:           "location(pt_d)"="25.387,30.702"
+    // - A VPoint3D:         "location(pt3d)"="25.387,30.702,37.252"
+    // - A VLine:            "track(line)"="32.775,26.539:42.383,29.373"
+    // - A VRect:            "bounds(recd)"="32.775,26.539:100.0*100.0"
+    // - A VIPolygon:        "outline(poli)"="(24,30)(40,42)(56,30)"
+    // - A VColor:           "shading(rgba)"="127,64,200,255"
+    // - Binary data:        "thing(bina)"="0x165231FCE64546DE45AD" (0x is optional)
     if (mDataType == VBentoString::DATA_TYPE_ID())
         {
-        stream.writeString(VString("[ \"%s\"=\"%s\" ]", name.chars(), valueString.chars()));
+        _escapeString(valueString);
+        const VBentoString* thisString = static_cast<const VBentoString*>(this); // already type-checked above, no need to dynamic cast
+        const VString& encoding = thisString->getEncoding();
+        if (encoding.isEmpty())
+            stream.writeString(VString("[\"%s\"=\"%s\"]", name.chars(), valueString.chars()));
+        else
+            stream.writeString(VString("[\"%s\"=(%s)\"%s\"]", name.chars(), encoding.chars(), valueString.chars()));
         }
     else if (mDataType == VBentoChar::DATA_TYPE_ID())
         {
-        stream.writeString(VString("[ \"%s\"='%s' ]", name.chars(), valueString.chars()));
+        _escapeString(valueString);
+        stream.writeString(VString("[\"%s\"='%s']", name.chars(), valueString.chars()));
         }
     else if ((mDataType == VBentoS32::DATA_TYPE_ID()) || (mDataType == VBentoBool::DATA_TYPE_ID()))
         {
-        stream.writeString(VString("[ \"%s\"=%s ]", name.chars(), valueString.chars()));
+        stream.writeString(VString("[\"%s\"=%s]", name.chars(), valueString.chars()));
+        }
+    else if (mDataType == VBentoStringArray::DATA_TYPE_ID())
+        {
+        VString dataType(mDataType);
+        _escapeString(dataType);
+        // Single-quote but do not escape the value string. It contains double-quoted, escaped elements.
+        stream.writeString(VString("[\"%s\"(%s)='%s']", name.chars(), dataType.chars(), valueString.chars()));
         }
     else
         {
         VString dataType(mDataType);
         _escapeString(dataType);
-        stream.writeString(VString("[ \"%s\"(%s)=\"%s\" ]", name.chars(), dataType.chars(), valueString.chars()));
+        _escapeString(valueString);
+        stream.writeString(VString("[\"%s\"(%s)=\"%s\"]", name.chars(), dataType.chars(), valueString.chars()));
         }
     }
 
@@ -525,7 +592,7 @@ void VBentoAttribute::printHexDump(VHex& hexDump) const
 
     this->writeToStream(stream);
 
-    hexDump.printHex(buffer.getBuffer(), buffer.eofOffset());
+    hexDump.printHex(buffer.getBuffer(), buffer.getEOFOffset());
     }
 
 VBentoAttribute* VBentoAttribute::newObjectFromStream(VBinaryIOStream& stream)
@@ -534,8 +601,26 @@ VBentoAttribute* VBentoAttribute::newObjectFromStream(VBinaryIOStream& stream)
     VString    theDataType;
 
     VBentoNode::_readFourCharCodeFromStream(stream, theDataType);
-
-    if (theDataType == VBentoS8::DATA_TYPE_ID())
+    
+    // Put the most used and preferred types first for efficiency.
+    if (theDataType == VBentoS32::DATA_TYPE_ID())
+        return new VBentoS32(stream);
+    else if (theDataType == VBentoString::DATA_TYPE_ID())
+        return new VBentoString(stream);
+    else if (theDataType == VBentoBool::DATA_TYPE_ID())
+        return new VBentoBool(stream);
+    else if (theDataType == VBentoChar::DATA_TYPE_ID())
+        return new VBentoChar(stream);
+    else if (theDataType == VBentoS64::DATA_TYPE_ID())
+        return new VBentoS64(stream);
+    else if (theDataType == VBentoDouble::DATA_TYPE_ID())
+        return new VBentoDouble(stream);
+    else if (theDataType == VBentoDuration::DATA_TYPE_ID())
+        return new VBentoDuration(stream);
+    else if (theDataType == VBentoInstant::DATA_TYPE_ID())
+        return new VBentoInstant(stream);
+    // Now the less used or less preferred types in order of definition.
+    else if (theDataType == VBentoS8::DATA_TYPE_ID())
         return new VBentoS8(stream);
     else if (theDataType == VBentoU8::DATA_TYPE_ID())
         return new VBentoU8(stream);
@@ -543,28 +628,58 @@ VBentoAttribute* VBentoAttribute::newObjectFromStream(VBinaryIOStream& stream)
         return new VBentoS16(stream);
     else if (theDataType == VBentoU16::DATA_TYPE_ID())
         return new VBentoU16(stream);
-    else if (theDataType == VBentoS32::DATA_TYPE_ID())
-        return new VBentoS32(stream);
     else if (theDataType == VBentoU32::DATA_TYPE_ID())
         return new VBentoU32(stream);
-    else if (theDataType == VBentoS64::DATA_TYPE_ID())
-        return new VBentoS64(stream);
     else if (theDataType == VBentoU64::DATA_TYPE_ID())
         return new VBentoU64(stream);
-    else if (theDataType == VBentoBool::DATA_TYPE_ID())
-        return new VBentoBool(stream);
-    else if (theDataType == VBentoString::DATA_TYPE_ID())
-        return new VBentoString(stream);
-    else if (theDataType == VBentoChar::DATA_TYPE_ID())
-        return new VBentoChar(stream);
     else if (theDataType == VBentoFloat::DATA_TYPE_ID())
         return new VBentoFloat(stream);
-    else if (theDataType == VBentoDouble::DATA_TYPE_ID())
-        return new VBentoDouble(stream);
-    else if (theDataType == VBentoDuration::DATA_TYPE_ID())
-        return new VBentoDuration(stream);
-    else if (theDataType == VBentoInstant::DATA_TYPE_ID())
-        return new VBentoInstant(stream);
+    else if (theDataType == VBentoSize::DATA_TYPE_ID())
+        return new VBentoSize(stream);
+    else if (theDataType == VBentoISize::DATA_TYPE_ID())
+        return new VBentoISize(stream);
+    else if (theDataType == VBentoPoint::DATA_TYPE_ID())
+        return new VBentoPoint(stream);
+    else if (theDataType == VBentoIPoint::DATA_TYPE_ID())
+        return new VBentoIPoint(stream);
+    else if (theDataType == VBentoPoint3D::DATA_TYPE_ID())
+        return new VBentoPoint3D(stream);
+    else if (theDataType == VBentoIPoint3D::DATA_TYPE_ID())
+        return new VBentoIPoint3D(stream);
+    else if (theDataType == VBentoLine::DATA_TYPE_ID())
+        return new VBentoLine(stream);
+    else if (theDataType == VBentoILine::DATA_TYPE_ID())
+        return new VBentoILine(stream);
+    else if (theDataType == VBentoRect::DATA_TYPE_ID())
+        return new VBentoRect(stream);
+    else if (theDataType == VBentoIRect::DATA_TYPE_ID())
+        return new VBentoIRect(stream);
+    else if (theDataType == VBentoPolygon::DATA_TYPE_ID())
+        return new VBentoPolygon(stream);
+    else if (theDataType == VBentoIPolygon::DATA_TYPE_ID())
+        return new VBentoIPolygon(stream);
+    else if (theDataType == VBentoColor::DATA_TYPE_ID())
+        return new VBentoColor(stream);
+    else if (theDataType == VBentoBinary::DATA_TYPE_ID())
+        return new VBentoBinary(stream);
+    else if (theDataType == VBentoS8Array::DATA_TYPE_ID())
+        return new VBentoS8Array(stream);
+    else if (theDataType == VBentoS16Array::DATA_TYPE_ID())
+        return new VBentoS16Array(stream);
+    else if (theDataType == VBentoS32Array::DATA_TYPE_ID())
+        return new VBentoS32Array(stream);
+    else if (theDataType == VBentoS64Array::DATA_TYPE_ID())
+        return new VBentoS64Array(stream);
+    else if (theDataType == VBentoStringArray::DATA_TYPE_ID())
+        return new VBentoStringArray(stream);
+    else if (theDataType == VBentoBoolArray::DATA_TYPE_ID())
+        return new VBentoBoolArray(stream);
+    else if (theDataType == VBentoDoubleArray::DATA_TYPE_ID())
+        return new VBentoDoubleArray(stream);
+    else if (theDataType == VBentoDurationArray::DATA_TYPE_ID())
+        return new VBentoDurationArray(stream);
+    else if (theDataType == VBentoInstantArray::DATA_TYPE_ID())
+        return new VBentoInstantArray(stream);
     else
         return new VBentoUnknownValue(stream, theDataLength, theDataType);
     }
@@ -575,7 +690,7 @@ VBentoAttribute* VBentoAttribute::newObjectFromStream(VTextIOStream& /*stream*/)
     return new VBentoUnknownValue();
     }
 
-VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& attributeName, const VString& attributeType, const VString& attributeValue)
+VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& attributeName, const VString& attributeType, const VString& attributeValue, const VString& attributeQualifier)
     {
     // First we have to determine the data type. If it is supplied,
     // it is wrapped in parentheses, so we just strip them. If it
@@ -583,6 +698,7 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
     // the value. We support:
     //   numeric value strings imply int (leading minus sign is allowed)
     //   "quoted" value strings imply string
+    //     - optional encoding name in parens before quoted string, for example: (US-ASCII)"foo"
     //   'quoted' value strings imply char
     //   true or false value strings imply bool
     //   NOW, PAST, FUTURE, NEVER value strings imply instant
@@ -591,10 +707,12 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
 
     if (! attributeType.isEmpty())
         {
-        if (attributeValue.startsWith('\"') || attributeValue.startsWith('\''))
+        if (actualValue.startsWith('\"') || actualValue.startsWith('\''))
             {
-            attributeValue.getSubstring(actualValue, 1, attributeValue.length() - 1);
-            _unescapeString(actualValue);
+            actualValue.substringInPlace(1, actualValue.length() - 1);
+            
+            if (attributeType != VBentoStringArray::DATA_TYPE_ID()) // A string array's elements are themselves escaped, and will be parsed individually.
+                _unescapeString(actualValue);
             }
 
         if (attributeType == VBentoS8::DATA_TYPE_ID())
@@ -616,7 +734,7 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
         else if (attributeType == VBentoBool::DATA_TYPE_ID())
             result = new VBentoBool(attributeName, actualValue == "true");
         else if (attributeType == VBentoString::DATA_TYPE_ID())
-            result = new VBentoString(attributeName, actualValue);
+            result = new VBentoString(attributeName, actualValue, attributeQualifier/*the encoding*/);
         else if (attributeType == VBentoChar::DATA_TYPE_ID())
             result = new VBentoChar(attributeName, actualValue.length() == 0 ? VChar(0) : VChar(actualValue[0]));
         else if (attributeType == VBentoFloat::DATA_TYPE_ID())
@@ -633,9 +751,11 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
             }
         else if (attributeType == VBentoDuration::DATA_TYPE_ID())
             {
-            Vs64 milliseconds;
-            ::sscanf(actualValue, "%lldms", &milliseconds);
-            result = new VBentoDuration(attributeName, VDuration::MILLISECOND() * milliseconds);
+            // Although we always generate with a "ms" suffix, allow any valid
+            // VDuration magnitude suffix, by letting VDuration parse it.
+            VDuration d;
+            d.setDurationString(actualValue);
+            result = new VBentoDuration(attributeName, d);
             }
         else if (attributeType == VBentoInstant::DATA_TYPE_ID())
             {
@@ -643,8 +763,149 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
             i.setUTCString(actualValue);
             result = new VBentoInstant(attributeName, i);
             }
+        else if (attributeType == VBentoSize::DATA_TYPE_ID())
+            {
+            VDouble width;
+            VDouble height;
+            ::sscanf(actualValue, "%lf,%lf", &width, &height);
+            result = new VBentoSize(attributeName, VSize(width, height));
+            }
+        else if (attributeType == VBentoISize::DATA_TYPE_ID())
+            {
+            int width;
+            int height;
+            ::sscanf(actualValue, "%d,%d", &width, &height);
+            result = new VBentoISize(attributeName, VISize(width, height));
+            }
+        else if (attributeType == VBentoPoint::DATA_TYPE_ID())
+            {
+            VDouble x;
+            VDouble y;
+            ::sscanf(actualValue, "%lf,%lf", &x, &y);
+            result = new VBentoPoint(attributeName, VPoint(x, y));
+            }
+        else if (attributeType == VBentoIPoint::DATA_TYPE_ID())
+            {
+            int x;
+            int y;
+            ::sscanf(actualValue, "%d,%d", &x, &y);
+            result = new VBentoIPoint(attributeName, VIPoint(x, y));
+            }
+        else if (attributeType == VBentoPoint3D::DATA_TYPE_ID())
+            {
+            VDouble x;
+            VDouble y;
+            VDouble z;
+            ::sscanf(actualValue, "%lf,%lf,%lf", &x, &y, &z);
+            result = new VBentoPoint3D(attributeName, VPoint3D(x, y, z));
+            }
+        else if (attributeType == VBentoIPoint3D::DATA_TYPE_ID())
+            {
+            int x;
+            int y;
+            int z;
+            ::sscanf(actualValue, "%d,%d,%d", &x, &y, &z);
+            result = new VBentoIPoint3D(attributeName, VIPoint3D(x, y, z));
+            }
+        else if (attributeType == VBentoLine::DATA_TYPE_ID())
+            {
+            VDouble x1;
+            VDouble y1;
+            VDouble x2;
+            VDouble y2;
+            ::sscanf(actualValue, "%lf,%lf:%lf,%lf", &x1, &y1, &x2, &y2);
+            result = new VBentoLine(attributeName, VLine(VPoint(x1, y1), VPoint(x2, y2)));
+            }
+        else if (attributeType == VBentoILine::DATA_TYPE_ID())
+            {
+            int x1;
+            int y1;
+            int x2;
+            int y2;
+            ::sscanf(actualValue, "%d,%d:%d,%d", &x1, &y1, &x2, &y2);
+            result = new VBentoILine(attributeName, VILine(VIPoint(x1, y1), VIPoint(x2, y2)));
+            }
+        else if (attributeType == VBentoRect::DATA_TYPE_ID())
+            {
+            VDouble x;
+            VDouble y;
+            VDouble width;
+            VDouble height;
+            ::sscanf(actualValue, "%lf,%lf:%lf*%lf", &x, &y, &width, &height);
+            result = new VBentoRect(attributeName, VRect(VPoint(x, y), VSize(width, height)));
+            }
+        else if (attributeType == VBentoIRect::DATA_TYPE_ID())
+            {
+            int x;
+            int y;
+            int width;
+            int height;
+            ::sscanf(actualValue, "%d,%d:%d*%d", &x, &y, &width, &height);
+            result = new VBentoIRect(attributeName, VIRect(VIPoint(x, y), VISize(width, height)));
+            }
+        else if (attributeType == VBentoPolygon::DATA_TYPE_ID())
+            {
+            VPolygon p;
+            VBentoPolygon::readPolygonFromBentoTextString(actualValue, p);
+            result = new VBentoPolygon(attributeName, p);
+            }
+        else if (attributeType == VBentoIPolygon::DATA_TYPE_ID())
+            {
+            VIPolygon p;
+            VBentoIPolygon::readPolygonFromBentoTextString(actualValue, p);
+            result = new VBentoIPolygon(attributeName, p);
+            }
+        else if (attributeType == VBentoColor::DATA_TYPE_ID())
+            {
+            int r;
+            int g;
+            int b;
+            int alpha;
+            ::sscanf(actualValue, "%d,%d,%d,%d", &r, &g, &b, &alpha);
+            result = new VBentoColor(attributeName, VColor(r, g, b, alpha));
+            }
+        else if (attributeType == VBentoBinary::DATA_TYPE_ID())
+            {
+            result = VBentoBinary::newFromBentoTextString(attributeName, actualValue);
+            }
+        else if (attributeType == VBentoS8Array::DATA_TYPE_ID())
+            {
+            result = VBentoS8Array::newFromBentoTextString(attributeName, actualValue);
+            }
+        else if (attributeType == VBentoS16Array::DATA_TYPE_ID())
+            {
+            result = VBentoS16Array::newFromBentoTextString(attributeName, actualValue);
+            }
+        else if (attributeType == VBentoS32Array::DATA_TYPE_ID())
+            {
+            result = VBentoS32Array::newFromBentoTextString(attributeName, actualValue);
+            }
+        else if (attributeType == VBentoS64Array::DATA_TYPE_ID())
+            {
+            result = VBentoS64Array::newFromBentoTextString(attributeName, actualValue);
+            }
+        else if (attributeType == VBentoStringArray::DATA_TYPE_ID())
+            {
+            result = VBentoStringArray::newFromBentoTextString(attributeName, actualValue);
+            }
+        else if (attributeType == VBentoBoolArray::DATA_TYPE_ID())
+            {
+            result = VBentoBoolArray::newFromBentoTextString(attributeName, actualValue);
+            }
+        else if (attributeType == VBentoDoubleArray::DATA_TYPE_ID())
+            {
+            result = VBentoDoubleArray::newFromBentoTextString(attributeName, actualValue);
+            }
+        else if (attributeType == VBentoDurationArray::DATA_TYPE_ID())
+            {
+            result = VBentoDurationArray::newFromBentoTextString(attributeName, actualValue);
+            }
+        else if (attributeType == VBentoInstantArray::DATA_TYPE_ID())
+            {
+            result = VBentoInstantArray::newFromBentoTextString(attributeName, actualValue);
+            }
         else
-            throw VException("Parser encountered unknown data type '%s'", attributeType.chars());
+            throw VException(VString("Parser encountered unknown data type '%s'", attributeType.chars()));
         }
     else
         {
@@ -659,11 +920,11 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
             when.setLocalString(attributeValue);
             result = new VBentoInstant(attributeName, when);
             }
-        else if (attributeValue.startsWith('\"'))
+        else if (attributeValue.startsWith('\"') || attributeValue.startsWith('('))
             {
-            attributeValue.getSubstring(actualValue, 1, attributeValue.length() - 1);
+            actualValue.substringInPlace(1, actualValue.length() - 1);
             _unescapeString(actualValue);
-            result = new VBentoString(attributeName, actualValue);
+            result = new VBentoString(attributeName, actualValue, attributeQualifier/*the encoding*/);
             }
         else if (attributeValue.startsWith('\''))
             {
@@ -683,24 +944,426 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
     return result;
     }
 
+// VBentoPolygon -------------------------------------------------------------
+
+// static
+void VBentoPolygon::_formatPolygonAsBentoTextString(const VPolygon& p, VString& s)
+    {
+    // example: "(1.0,2.0)(3.0,4.0)(5.0,6.0)"
+    int numPoints = p.getNumPoints();
+    for (int i = 0; i < numPoints; ++i)
+        {
+        VPoint point = p.getPoint(i);
+        s += VString("(%lf,%lf)", point.getX(), point.getY());
+        }
+    }
+
+// static
+void VBentoPolygon::readPolygonFromBentoTextString(const VString& s, VPolygon& p)
+    {
+    // example: "(1.0,2.0)(3.0,4.0)(5.0,6.0)"
+    p.eraseAll();
+    VString nextPointText;
+    int openParenIndex = s.indexOf('(');
+    int closeParenIndex = s.indexOf(')', openParenIndex);
+    while (openParenIndex != -1 && closeParenIndex != -1)
+        {
+        s.getSubstring(nextPointText, openParenIndex+1, closeParenIndex);
+        VDouble x;
+        VDouble y;
+        ::sscanf(nextPointText, "%lf,%lf", &x, &y);
+        p.add(VPoint(x, y));
+        
+        openParenIndex = s.indexOf('(', closeParenIndex);
+        closeParenIndex = s.indexOf(')', openParenIndex);
+        }
+    }
+
+// VBentoIPolygon -------------------------------------------------------------
+
+// static
+void VBentoIPolygon::_formatPolygonAsBentoTextString(const VIPolygon& p, VString& s)
+    {
+    // example: "(1,2)(3,4)(5,6)"
+    int numPoints = p.getNumPoints();
+    for (int i = 0; i < numPoints; ++i)
+        {
+        VIPoint point = p.getPoint(i);
+        s += VString("(%d,%d)", point.getX(), point.getY());
+        }
+    }
+
+// static
+void VBentoIPolygon::readPolygonFromBentoTextString(const VString& s, VIPolygon& p)
+    {
+    // example: "(1,2)(3,4)(5,6)"
+    p.eraseAll();
+    VString nextPointText;
+    int openParenIndex = s.indexOf('(');
+    int closeParenIndex = s.indexOf(')', openParenIndex);
+    while (openParenIndex != -1 && closeParenIndex != -1)
+        {
+        s.getSubstring(nextPointText, openParenIndex+1, closeParenIndex);
+        int x;
+        int y;
+        ::sscanf(nextPointText, "%d,%d", &x, &y);
+        p.add(VIPoint(x, y));
+        
+        openParenIndex = s.indexOf('(', closeParenIndex);
+        closeParenIndex = s.indexOf(')', openParenIndex);
+        }
+    }
+
+// VBentoBinary --------------------------------------------------------------
+
+// static
+VBentoBinary* VBentoBinary::newFromBentoTextString(const VString& name, const VString& bentoText)
+    {
+    int bufferLength = (bentoText.length() + 1) / 2;
+
+    bool hasLeading0x = bentoText.startsWith("0x") || bentoText.startsWith("0X");
+    if (hasLeading0x)
+        --bufferLength;
+
+    Vu8* buffer = new Vu8[bufferLength];
+    VHex::hexStringToBuffer(bentoText, buffer, hasLeading0x);
+    
+    VBentoBinary* result = new VBentoBinary(name, buffer, VMemoryStream::kAllocatedByOperatorNew, true /*adoptBuffer*/, bufferLength, bufferLength);
+    return result;
+    }
+
+void VBentoBinary::writeDataToStream(VBinaryIOStream& stream) const
+    {
+    Vs64 length = mValue.getEOFOffset();
+    VReadOnlyMemoryStream reader(mValue.getBuffer(), length);
+
+    VBentoNode::_writeLengthToStream(stream, length);
+    (void) VStream::streamCopy(reader, stream, length);
+    }
+
+void VBentoBinary::_getValueAsHexString(VString& s) const
+    {
+    VHex::bufferToHexString(mValue.getBuffer(), mValue.getEOFOffset(), s, true/*want leading 0x*/);
+    }
+
+// VBentoS8Array --------------------------------------------------------------
+
+// static
+VBentoS8Array* VBentoS8Array::newFromBentoTextString(const VString& name, const VString& s)
+    {
+    VBentoS8Array* result = new VBentoS8Array(name);
+
+    // example: "0,1,2"
+    VString nextElementText;
+    int previousSeparatorIndex = -1;
+    int nextSeparatorIndex = s.indexOf(',');
+    do
+        {
+        s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
+        int value;
+        ::sscanf(nextElementText, "%d", &value); // Note: %hhd for Vs8 not universally supported; using plain old int conversion instead.
+        result->appendValue(static_cast<Vs8>(value));
+        
+        previousSeparatorIndex = nextSeparatorIndex;
+        nextSeparatorIndex = s.indexOf(',', previousSeparatorIndex+1);
+        } while (previousSeparatorIndex != -1);
+
+    return result;
+    }
+
+// VBentoS16Array --------------------------------------------------------------
+
+// static
+VBentoS16Array* VBentoS16Array::newFromBentoTextString(const VString& name, const VString& s)
+    {
+    VBentoS16Array* result = new VBentoS16Array(name);
+
+    // example: "0,1,2"
+    VString nextElementText;
+    int previousSeparatorIndex = -1;
+    int nextSeparatorIndex = s.indexOf(',');
+    do
+        {
+        s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
+        Vs16 value;
+        ::sscanf(nextElementText, "%hd", &value);
+        result->appendValue(value);
+        
+        previousSeparatorIndex = nextSeparatorIndex;
+        nextSeparatorIndex = s.indexOf(',', previousSeparatorIndex+1);
+        } while (previousSeparatorIndex != -1);
+
+    return result;
+    }
+
+// VBentoS32Array --------------------------------------------------------------
+
+// static
+VBentoS32Array* VBentoS32Array::newFromBentoTextString(const VString& name, const VString& s)
+    {
+    VBentoS32Array* result = new VBentoS32Array(name);
+
+    // example: "0,1,2"
+    VString nextElementText;
+    int previousSeparatorIndex = -1;
+    int nextSeparatorIndex = s.indexOf(',');
+    do
+        {
+        s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
+        Vs32 value;
+        ::sscanf(nextElementText, "%ld", &value);
+        result->appendValue(value);
+        
+        previousSeparatorIndex = nextSeparatorIndex;
+        nextSeparatorIndex = s.indexOf(',', previousSeparatorIndex+1);
+        } while (previousSeparatorIndex != -1);
+
+    return result;
+    }
+
+// VBentoS64Array --------------------------------------------------------------
+
+// static
+VBentoS64Array* VBentoS64Array::newFromBentoTextString(const VString& name, const VString& s)
+    {
+    VBentoS64Array* result = new VBentoS64Array(name);
+
+    // example: "0,1,2"
+    VString nextElementText;
+    int previousSeparatorIndex = -1;
+    int nextSeparatorIndex = s.indexOf(',');
+    do
+        {
+        s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
+        Vs64 value;
+        ::sscanf(nextElementText, "%lld", &value);
+        result->appendValue(value);
+        
+        previousSeparatorIndex = nextSeparatorIndex;
+        nextSeparatorIndex = s.indexOf(',', previousSeparatorIndex+1);
+        } while (previousSeparatorIndex != -1);
+
+    return result;
+    }
+
+// VBentoBoolArray --------------------------------------------------------------
+
+// static
+VBentoBoolArray* VBentoBoolArray::newFromBentoTextString(const VString& name, const VString& s)
+    {
+    VBentoBoolArray* result = new VBentoBoolArray(name);
+
+    // example: "true,false,true"
+    VString nextElementText;
+    int previousSeparatorIndex = -1;
+    int nextSeparatorIndex = s.indexOf(',');
+    do
+        {
+        s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
+        result->appendValue(nextElementText.equalsIgnoreCase("true"));
+        
+        previousSeparatorIndex = nextSeparatorIndex;
+        nextSeparatorIndex = s.indexOf(',', previousSeparatorIndex+1);
+        } while (previousSeparatorIndex != -1);
+
+    return result;
+    }
+
+// VBentoStringArray --------------------------------------------------------------
+
+typedef enum
+    {
+    kStringArrayParseState_Init,            // " -> InArray; else error
+    kStringArrayParseState_InArray,         // " -> InElement; else error
+    kStringArrayParseState_InElement,       // " add pending string then -> ElementEnded; \ -> EscapePending; else append character
+    kStringArrayParseState_ElementEnded,    // , -> InArray; " -> Done; whitespace -> ignore; else error
+    kStringArrayParseState_EscapePending,   // append character then -> InElement
+    kStringArrayParseState_Done             // whitespace -> ignore; else error
+    } StringArrayParseState;
+
+// static
+VBentoStringArray* VBentoStringArray::newFromBentoTextString(const VString& name, const VString& s)
+    {
+    VBentoStringArray* result = new VBentoStringArray(name);
+
+    // example: "one","two\"quote\"two","three,comma,three"
+    // The complete string we receive contains zero or more elements.
+    // Each individual element string is double-quoted.
+    // Any double-quote inside an element string is escaped with a backslash.
+    
+    VString pendingString;
+    StringArrayParseState state = kStringArrayParseState_InArray;
+    int length = s.length();
+    for (int i = 0; i < length; ++i)
+        {
+        switch (state)
+            {
+            case kStringArrayParseState_Init:
+                if (s[i] == '"')
+                    state = kStringArrayParseState_InArray;
+                else
+                    throw VException(VString("VBentoStringArray::newFromBentoTextString: At character %d in Init state, required \" but got %c.", i, s[i].charValue()));
+                break;
+
+            case kStringArrayParseState_InArray:
+                if (s[i] == '"')
+                    state = kStringArrayParseState_InElement;
+                else
+                    throw VException(VString("VBentoStringArray::newFromBentoTextString: At character %d in InArray state, required \" but got %c.", i, s[i].charValue()));
+                break;
+
+            case kStringArrayParseState_InElement:
+                if (s[i] == '"')
+                    {
+                    result->appendValue(pendingString);
+                    pendingString = VString::EMPTY();
+                    state = kStringArrayParseState_ElementEnded;
+                    }
+                else if (s[i] == '\\')
+                    state = kStringArrayParseState_EscapePending;
+                else
+                    pendingString += s[i];
+                break;
+
+            case kStringArrayParseState_ElementEnded:
+                if (s[i] == ',')
+                    state = kStringArrayParseState_InArray;
+                else if (s[i] == '"')
+                    state = kStringArrayParseState_Done;
+                else if (s[i].isWhitespace())
+                    ; // skip any whitespace between elements
+                else
+                    throw VException(VString("VBentoStringArray::newFromBentoTextString: At character %d in ElementEnded state, required comma, \" or whitespace but got %c.", i, s[i].charValue()));
+                break;
+
+            case kStringArrayParseState_EscapePending:
+                pendingString += s[i];
+                state = kStringArrayParseState_InElement;
+                break;
+
+            case kStringArrayParseState_Done:
+                if (! s[i].isWhitespace())
+                    throw VException(VString("VBentoStringArray::newFromBentoTextString: At character %d in Done state, required whitespace but got %c.", i, s[i].charValue()));
+                break;
+
+            }
+        }
+
+    return result;
+    }
+
+// VBentoDoubleArray --------------------------------------------------------------
+
+// static
+VBentoDoubleArray* VBentoDoubleArray::newFromBentoTextString(const VString& name, const VString& s)
+    {
+    VBentoDoubleArray* result = new VBentoDoubleArray(name);
+
+    // example: "0.0,1.11,2.222"
+    VString nextElementText;
+    int previousSeparatorIndex = -1;
+    int nextSeparatorIndex = s.indexOf(',');
+    do
+        {
+        s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
+        VDouble value;
+        ::sscanf(nextElementText, "%lf", &value);
+        result->appendValue(value);
+        
+        previousSeparatorIndex = nextSeparatorIndex;
+        nextSeparatorIndex = s.indexOf(',', previousSeparatorIndex+1);
+        } while (previousSeparatorIndex != -1);
+
+    return result;
+    }
+
+// VBentoDurationArray --------------------------------------------------------------
+
+// static
+VBentoDurationArray* VBentoDurationArray::newFromBentoTextString(const VString& name, const VString& s)
+    {
+    VBentoDurationArray* result = new VBentoDurationArray(name);
+
+    // example: "0ms,1111ms,2723847ms"
+    VString nextElementText;
+    int previousSeparatorIndex = -1;
+    int nextSeparatorIndex = s.indexOf(',');
+    do
+        {
+        s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
+        Vs64 value;
+        ::sscanf(nextElementText, "%lldms", &value);
+        result->appendValue(VDuration::MILLISECOND() * value);
+        
+        previousSeparatorIndex = nextSeparatorIndex;
+        nextSeparatorIndex = s.indexOf(',', previousSeparatorIndex+1);
+        } while (previousSeparatorIndex != -1);
+
+    return result;
+    }
+
+// VBentoInstantArray --------------------------------------------------------------
+
+// static
+VBentoInstantArray* VBentoInstantArray::newFromBentoTextString(const VString& name, const VString& s)
+    {
+    VBentoInstantArray* result = new VBentoInstantArray(name);
+
+    // example: ""2007-11-23 09:08:07.234 UTC","2007-12-17 13:14:15.678 UTC","2008-01-06 05:06:07.890""
+    VString nextElementText;
+    int previousSeparatorIndex = -1;
+    int nextSeparatorIndex = s.indexOf(',');
+    do
+        {
+        s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
+        if (nextElementText.startsWith('"'))
+            nextElementText.substringInPlace(1);
+        if (nextElementText.endsWith('"'))
+            nextElementText.substringInPlace(0, nextElementText.length() - 1);
+
+        VInstant value = VInstant::NEVER_OCCURRED(); // avoid unnecessary clock read
+        value.setUTCString(nextElementText);
+        result->appendValue(value);
+        
+        previousSeparatorIndex = nextSeparatorIndex;
+        nextSeparatorIndex = s.indexOf(',', previousSeparatorIndex+1);
+        } while (previousSeparatorIndex != -1);
+
+    return result;
+    }
+
 // VBentoNode ----------------------------------------------------------------
 
-VBentoNode::VBentoNode()
-: mName("uninitialized")
+VBentoNode::VBentoNode() :
+mName("uninitialized"),
+mAttributes(),
+mParentNode(NULL),
+mChildNodes()
     {
     }
 
-VBentoNode::VBentoNode(const VString& name)
-: mName(name)
+VBentoNode::VBentoNode(const VString& name) :
+mName(name),
+mAttributes(),
+mParentNode(NULL),
+mChildNodes()
     {
     }
 
-VBentoNode::VBentoNode(VBinaryIOStream& stream)
+VBentoNode::VBentoNode(VBinaryIOStream& stream) :
+mName(),
+mAttributes(),
+mParentNode(NULL),
+mChildNodes()
     {
     this->readFromStream(stream);
     }
 
-VBentoNode::VBentoNode(VTextIOStream& bentoTextStream)
+VBentoNode::VBentoNode(VTextIOStream& bentoTextStream) :
+mName(),
+mAttributes(),
+mParentNode(NULL),
+mChildNodes()
     {
     this->readFromBentoTextStream(bentoTextStream);
     }
@@ -714,10 +1377,15 @@ VBentoNode::~VBentoNode()
     VSizeType    numChildNodes = mChildNodes.size();
     for (VSizeType i = 0; i < numChildNodes; ++i)
         delete mChildNodes[i];
+        
+    mParentNode = NULL; //we do not own parent, it owns us
     }
 
 VBentoNode::VBentoNode(const VBentoNode& original) :
-mName(original.getName())
+mName(original.getName()),
+mAttributes(),
+mParentNode(NULL),
+mChildNodes()
     {
     const VBentoAttributePtrVector& originalAttributes = original.getAttributes();
     for (VBentoAttributePtrVector::const_iterator i = originalAttributes.begin(); i != originalAttributes.end(); ++i)
@@ -725,7 +1393,11 @@ mName(original.getName())
 
     const VBentoNodePtrVector& originalNodes = original.getNodes();
     for (VBentoNodePtrVector::const_iterator i = originalNodes.begin(); i != originalNodes.end(); ++i)
-        mChildNodes.push_back(new VBentoNode(**i));
+        {
+        VBentoNode* child = new VBentoNode(**i);
+        mChildNodes.push_back(child);
+        child->mParentNode = this;
+        }
     }
 
 void VBentoNode::clear()
@@ -749,14 +1421,20 @@ void VBentoNode::orphanAttributes()
 
 void VBentoNode::orphanNodes()
     {
+    size_t numChildNodes = mChildNodes.size();
+    for (VSizeType i = 0; i < numChildNodes; ++i)
+        mChildNodes[i]->mParentNode = NULL;
     mChildNodes.clear(); // does not actually delete the objects
     }
 
 void VBentoNode::orphanNode(const VBentoNode* node)
     {
-	VBentoNodePtrVector::iterator position = std::find(mChildNodes.begin(), mChildNodes.end(), node);
-	if (position != mChildNodes.end())
-		mChildNodes.erase(position);
+    VBentoNodePtrVector::iterator position = std::find(mChildNodes.begin(), mChildNodes.end(), node);
+    if (position != mChildNodes.end())
+        {
+        (**position).mParentNode = NULL;
+        mChildNodes.erase(position);
+        }
     }
 
 void VBentoNode::adoptFrom(VBentoNode* node)
@@ -767,11 +1445,15 @@ void VBentoNode::adoptFrom(VBentoNode* node)
     // Copy that node's name, then adopt its attributes and child nodes using shallow vector copy.
     mName = node->getName();
     mAttributes = node->mAttributes;
-    mChildNodes = node->mChildNodes;
+    mChildNodes = node->mChildNodes;   
     
     // We now own that node's attribute and child objects. Tell it to let go of them.
     node->orphanAttributes();
     node->orphanNodes();
+    
+    size_t numChildNodes = mChildNodes.size();
+    for (VSizeType i = 0; i < numChildNodes; ++i)
+        mChildNodes[i]->mParentNode = this; 
     }
 
 void VBentoNode::updateFrom(const VBentoNode& source)
@@ -794,9 +1476,9 @@ void VBentoNode::updateFrom(const VBentoNode& source)
         else
             {
             // Copy source attribute to target using VBentoAttribute assignment operator.
-            VBentoAttribute* source = *i;
-            VBentoAttribute* target = const_cast<VBentoAttribute*>(targetAttribute);
-            *target = *source;
+            VBentoAttribute* sourceAttribute = *i;
+            VBentoAttribute* writeableTargetAttribute = const_cast<VBentoAttribute*>(targetAttribute);
+            *writeableTargetAttribute = *sourceAttribute;
             }
         }
 
@@ -820,24 +1502,39 @@ void VBentoNode::updateFrom(const VBentoNode& source)
 
 void VBentoNode::addChildNode(VBentoNode* node)
     {
+    node->mParentNode = this;
     mChildNodes.push_back(node);
     }
 
 VBentoNode* VBentoNode::addNewChildNode(const VString& name)
     {
     VBentoNode* child = new VBentoNode(name);
+    child->mParentNode = this;
     mChildNodes.push_back(child);
     return child;
     }
 
 void VBentoNode::addInt(const VString& name, int value) { this->addS32(name, static_cast<Vs32>(value)); }
 void VBentoNode::addBool(const VString& name, bool value) { this->_addAttribute(new VBentoBool(name, value)); }
-void VBentoNode::addString(const VString& name, const VString& value) { this->_addAttribute(new VBentoString(name, value)); }
-void VBentoNode::addStringIfNotEmpty(const VString& name, const VString& value) { if (!value.isEmpty()) this->_addAttribute(new VBentoString(name, value)); }
+void VBentoNode::addString(const VString& name, const VString& value, const VString& encoding) { this->_addAttribute(new VBentoString(name, value, encoding)); }
+void VBentoNode::addStringIfNotEmpty(const VString& name, const VString& value, const VString& encoding) { if (!value.isEmpty()) this->_addAttribute(new VBentoString(name, value, encoding)); }
 void VBentoNode::addChar(const VString& name, const VChar& value) { this->_addAttribute(new VBentoChar(name, value)); }
 void VBentoNode::addDouble(const VString& name, VDouble value) { this->_addAttribute(new VBentoDouble(name, value)); }
 void VBentoNode::addDuration(const VString& name, const VDuration& value) { this->_addAttribute(new VBentoDuration(name, value)); }
 void VBentoNode::addInstant(const VString& name, const VInstant& value) { this->_addAttribute(new VBentoInstant(name, value)); }
+void VBentoNode::addSize(const VString& name, const VSize& value) { this->_addAttribute(new VBentoSize(name, value)); }
+void VBentoNode::addISize(const VString& name, const VISize& value) { this->_addAttribute(new VBentoISize(name, value)); }
+void VBentoNode::addPoint(const VString& name, const VPoint& value) { this->_addAttribute(new VBentoPoint(name, value)); }
+void VBentoNode::addIPoint(const VString& name, const VIPoint& value) { this->_addAttribute(new VBentoIPoint(name, value)); }
+void VBentoNode::addPoint3D(const VString& name, const VPoint3D& value) { this->_addAttribute(new VBentoPoint3D(name, value)); }
+void VBentoNode::addIPoint3D(const VString& name, const VIPoint3D& value) { this->_addAttribute(new VBentoIPoint3D(name, value)); }
+void VBentoNode::addLine(const VString& name, const VLine& value) { this->_addAttribute(new VBentoLine(name, value)); }
+void VBentoNode::addILine(const VString& name, const VILine& value) { this->_addAttribute(new VBentoILine(name, value)); }
+void VBentoNode::addRect(const VString& name, const VRect& value) { this->_addAttribute(new VBentoRect(name, value)); }
+void VBentoNode::addIRect(const VString& name, const VIRect& value) { this->_addAttribute(new VBentoIRect(name, value)); }
+void VBentoNode::addPolygon(const VString& name, const VPolygon& value) { this->_addAttribute(new VBentoPolygon(name, value)); }
+void VBentoNode::addIPolygon(const VString& name, const VIPolygon& value) { this->_addAttribute(new VBentoIPolygon(name, value)); }
+void VBentoNode::addColor(const VString& name, const VColor& value) { this->_addAttribute(new VBentoColor(name, value)); }
 void VBentoNode::addS8(const VString& name, Vs8 value) { this->_addAttribute(new VBentoS8(name, value)); }
 void VBentoNode::addU8(const VString& name, Vu8 value) { this->_addAttribute(new VBentoU8(name, value)); }
 void VBentoNode::addS16(const VString& name, Vs16 value) { this->_addAttribute(new VBentoS16(name, value)); }
@@ -847,6 +1544,26 @@ void VBentoNode::addU32(const VString& name, Vu32 value) { this->_addAttribute(n
 void VBentoNode::addS64(const VString& name, Vs64 value) { this->_addAttribute(new VBentoS64(name, value)); }
 void VBentoNode::addU64(const VString& name, Vu64 value) { this->_addAttribute(new VBentoU64(name, value)); }
 void VBentoNode::addFloat(const VString& name, VFloat value) { this->_addAttribute(new VBentoFloat(name, value)); }
+void VBentoNode::addBinary(const VString& name, const Vu8* data, Vs64 length) { this->_addAttribute(new VBentoBinary(name, data, length)); }
+void VBentoNode::addBinary(const VString& name, Vu8* data, VMemoryStream::BufferAllocationType allocationType, bool adoptBuffer, Vs64 suppliedBufferSize, Vs64 suppliedEOFOffset) { this->_addAttribute(new VBentoBinary(name, data, allocationType, adoptBuffer, suppliedBufferSize, suppliedEOFOffset)); }
+VBentoS8Array* VBentoNode::addS8Array(const VString& name) { VBentoS8Array* attr = new VBentoS8Array(name); this->_addAttribute(attr); return attr;}
+VBentoS8Array* VBentoNode::addS8Array(const VString& name, const Vs8Array& value) { VBentoS8Array* attr = new VBentoS8Array(name, value); this->_addAttribute(attr); return attr;}
+VBentoS16Array* VBentoNode::addS16Array(const VString& name) { VBentoS16Array* attr = new VBentoS16Array(name); this->_addAttribute(attr); return attr;}
+VBentoS16Array* VBentoNode::addS16Array(const VString& name, const Vs16Array& value) { VBentoS16Array* attr = new VBentoS16Array(name, value); this->_addAttribute(attr); return attr;}
+VBentoS32Array* VBentoNode::addS32Array(const VString& name) { VBentoS32Array* attr = new VBentoS32Array(name); this->_addAttribute(attr); return attr;}
+VBentoS32Array* VBentoNode::addS32Array(const VString& name, const Vs32Array& value) { VBentoS32Array* attr = new VBentoS32Array(name, value); this->_addAttribute(attr); return attr;}
+VBentoS64Array* VBentoNode::addS64Array(const VString& name) { VBentoS64Array* attr = new VBentoS64Array(name); this->_addAttribute(attr); return attr;}
+VBentoS64Array* VBentoNode::addS64Array(const VString& name, const Vs64Array& value) { VBentoS64Array* attr = new VBentoS64Array(name, value); this->_addAttribute(attr); return attr;}
+VBentoStringArray* VBentoNode::addStringArray(const VString& name) { VBentoStringArray* attr = new VBentoStringArray(name); this->_addAttribute(attr); return attr;}
+VBentoStringArray* VBentoNode::addStringArray(const VString& name, const VStringVector& value) { VBentoStringArray* attr = new VBentoStringArray(name, value); this->_addAttribute(attr); return attr;}
+VBentoBoolArray* VBentoNode::addBoolArray(const VString& name) { VBentoBoolArray* attr = new VBentoBoolArray(name); this->_addAttribute(attr); return attr;}
+VBentoBoolArray* VBentoNode::addBoolArray(const VString& name, const VBoolArray& value) { VBentoBoolArray* attr = new VBentoBoolArray(name, value); this->_addAttribute(attr); return attr;}
+VBentoDoubleArray* VBentoNode::addDoubleArray(const VString& name) { VBentoDoubleArray* attr = new VBentoDoubleArray(name); this->_addAttribute(attr); return attr;}
+VBentoDoubleArray* VBentoNode::addDoubleArray(const VString& name, const VDoubleArray& value) { VBentoDoubleArray* attr = new VBentoDoubleArray(name, value); this->_addAttribute(attr); return attr;}
+VBentoDurationArray* VBentoNode::addDurationArray(const VString& name) { VBentoDurationArray* attr = new VBentoDurationArray(name); this->_addAttribute(attr); return attr;}
+VBentoDurationArray* VBentoNode::addDurationArray(const VString& name, const VDurationVector& value) { VBentoDurationArray* attr = new VBentoDurationArray(name, value); this->_addAttribute(attr); return attr;}
+VBentoInstantArray* VBentoNode::addInstantArray(const VString& name) { VBentoInstantArray* attr = new VBentoInstantArray(name); this->_addAttribute(attr); return attr;}
+VBentoInstantArray* VBentoNode::addInstantArray(const VString& name, const VInstantVector& value) { VBentoInstantArray* attr = new VBentoInstantArray(name, value); this->_addAttribute(attr); return attr;}
 
 void VBentoNode::writeToStream(VBinaryIOStream& stream) const
     {
@@ -868,8 +1585,15 @@ void VBentoNode::writeToStream(VBinaryIOStream& stream) const
         mChildNodes[i]->writeToStream(stream);
     }
 
-void VBentoNode::writeToBentoTextStream(VTextIOStream& stream) const
+void VBentoNode::writeToBentoTextStream(VTextIOStream& stream, bool lineWrap, int depth) const
     {
+    if (lineWrap && (depth > 0))
+        {
+        stream.writeLine(VString::EMPTY());
+        for (int indentLevel = 0; indentLevel < depth; ++indentLevel)
+            stream.writeString(" ");
+        }
+
     VString name(mName);
     _escapeString(name);
     stream.writeString(VString("{ \"%s\" ", name.chars()));
@@ -884,7 +1608,7 @@ void VBentoNode::writeToBentoTextStream(VTextIOStream& stream) const
     VSizeType    numChildNodes = mChildNodes.size();
     for (VSizeType i = 0; i < numChildNodes; ++i)
         {
-        mChildNodes[i]->writeToBentoTextStream(stream);
+        mChildNodes[i]->writeToBentoTextStream(stream, lineWrap, depth+1);
         stream.writeString(" ");
         }
 
@@ -896,7 +1620,7 @@ void VBentoNode::writeToBentoTextString(VString& s) const
     VMemoryStream buffer;
     VTextIOStream stream(buffer);
     this->writeToBentoTextStream(stream);
-    stream.writeLine("");
+    stream.writeLine(VString::EMPTY());
     stream.seek(0, SEEK_SET);
     stream.readLine(s);
     }
@@ -926,6 +1650,11 @@ void VBentoNode::readFromBentoTextString(const VString& bentoTextString)
     {
     VBentoTextNodeParser parser;
     parser.parse(bentoTextString, *this);
+    }
+    
+VBentoNode* VBentoNode::getParentNode() const
+    {
+    return mParentNode;
     }
 
 const VBentoNodePtrVector& VBentoNode::getNodes() const
@@ -983,9 +1712,9 @@ bool VBentoNode::getBool(const VString& name) const
     const VBentoBool*    attribute = dynamic_cast<const VBentoBool*> (this->_findAttribute(name, VBentoBool::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoBool::DATA_TYPE_ID().chars(), name.chars());
-    else
-        return attribute->getValue();
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoBool::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 const VString& VBentoNode::getString(const VString& name, const VString& defaultValue) const
@@ -1003,9 +1732,9 @@ const VString& VBentoNode::getString(const VString& name) const
     const VBentoString*    attribute = dynamic_cast<const VBentoString*> (this->_findAttribute(name, VBentoString::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoString::DATA_TYPE_ID().chars(), name.chars());
-    else
-        return attribute->getValue();
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoString::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 const VChar& VBentoNode::getChar(const VString& name, const VChar& defaultValue) const
@@ -1023,9 +1752,9 @@ const VChar& VBentoNode::getChar(const VString& name) const
     const VBentoChar*    attribute = dynamic_cast<const VBentoChar*> (this->_findAttribute(name, VBentoChar::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoChar::DATA_TYPE_ID().chars(), name.chars());
-    else
-        return attribute->getValue();
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoChar::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 VDouble VBentoNode::getDouble(const VString& name, VDouble defaultValue) const
@@ -1043,9 +1772,9 @@ VDouble VBentoNode::getDouble(const VString& name) const
     const VBentoDouble*    attribute = dynamic_cast<const VBentoDouble*> (this->_findAttribute(name, VBentoDouble::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoDouble::DATA_TYPE_ID().chars(), name.chars());
-    else
-        return attribute->getValue();
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoDouble::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 const VDuration& VBentoNode::getDuration(const VString& name, const VDuration& defaultValue) const
@@ -1063,9 +1792,9 @@ const VDuration& VBentoNode::getDuration(const VString& name) const
     const VBentoDuration*    attribute = dynamic_cast<const VBentoDuration*> (this->_findAttribute(name, VBentoDuration::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoDuration::DATA_TYPE_ID().chars(), name.chars());
-    else
-        return attribute->getValue();
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoDuration::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 const VInstant& VBentoNode::getInstant(const VString& name, const VInstant& defaultValue) const
@@ -1083,9 +1812,269 @@ const VInstant& VBentoNode::getInstant(const VString& name) const
     const VBentoInstant*    attribute = dynamic_cast<const VBentoInstant*> (this->_findAttribute(name, VBentoInstant::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoInstant::DATA_TYPE_ID().chars(), name.chars());
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoInstant::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VSize& VBentoNode::getSize(const VString& name, const VSize& defaultValue) const
+    {
+    const VBentoSize*    attribute = dynamic_cast<const VBentoSize*> (this->_findAttribute(name, VBentoSize::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
     else
         return attribute->getValue();
+    }
+
+const VSize& VBentoNode::getSize(const VString& name) const
+    {
+    const VBentoSize*    attribute = dynamic_cast<const VBentoSize*> (this->_findAttribute(name, VBentoSize::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoSize::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VISize& VBentoNode::getISize(const VString& name, const VISize& defaultValue) const
+    {
+    const VBentoISize*    attribute = dynamic_cast<const VBentoISize*> (this->_findAttribute(name, VBentoISize::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VISize& VBentoNode::getISize(const VString& name) const
+    {
+    const VBentoISize*    attribute = dynamic_cast<const VBentoISize*> (this->_findAttribute(name, VBentoISize::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoISize::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VPoint& VBentoNode::getPoint(const VString& name, const VPoint& defaultValue) const
+    {
+    const VBentoPoint*    attribute = dynamic_cast<const VBentoPoint*> (this->_findAttribute(name, VBentoPoint::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VPoint& VBentoNode::getPoint(const VString& name) const
+    {
+    const VBentoPoint*    attribute = dynamic_cast<const VBentoPoint*> (this->_findAttribute(name, VBentoPoint::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoPoint::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VIPoint& VBentoNode::getIPoint(const VString& name, const VIPoint& defaultValue) const
+    {
+    const VBentoIPoint*    attribute = dynamic_cast<const VBentoIPoint*> (this->_findAttribute(name, VBentoIPoint::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VIPoint& VBentoNode::getIPoint(const VString& name) const
+    {
+    const VBentoIPoint*    attribute = dynamic_cast<const VBentoIPoint*> (this->_findAttribute(name, VBentoIPoint::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoIPoint::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VPoint3D& VBentoNode::getPoint3D(const VString& name, const VPoint3D& defaultValue) const
+    {
+    const VBentoPoint3D*    attribute = dynamic_cast<const VBentoPoint3D*> (this->_findAttribute(name, VBentoPoint3D::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VPoint3D& VBentoNode::getPoint3D(const VString& name) const
+    {
+    const VBentoPoint3D*    attribute = dynamic_cast<const VBentoPoint3D*> (this->_findAttribute(name, VBentoPoint3D::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoPoint3D::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VIPoint3D& VBentoNode::getIPoint3D(const VString& name, const VIPoint3D& defaultValue) const
+    {
+    const VBentoIPoint3D*    attribute = dynamic_cast<const VBentoIPoint3D*> (this->_findAttribute(name, VBentoIPoint3D::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VIPoint3D& VBentoNode::getIPoint3D(const VString& name) const
+    {
+    const VBentoIPoint3D*    attribute = dynamic_cast<const VBentoIPoint3D*> (this->_findAttribute(name, VBentoIPoint3D::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoIPoint3D::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VLine& VBentoNode::getLine(const VString& name, const VLine& defaultValue) const
+    {
+    const VBentoLine*    attribute = dynamic_cast<const VBentoLine*> (this->_findAttribute(name, VBentoLine::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VLine& VBentoNode::getLine(const VString& name) const
+    {
+    const VBentoLine*    attribute = dynamic_cast<const VBentoLine*> (this->_findAttribute(name, VBentoLine::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoLine::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VILine& VBentoNode::getILine(const VString& name, const VILine& defaultValue) const
+    {
+    const VBentoILine*    attribute = dynamic_cast<const VBentoILine*> (this->_findAttribute(name, VBentoILine::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VILine& VBentoNode::getILine(const VString& name) const
+    {
+    const VBentoILine*    attribute = dynamic_cast<const VBentoILine*> (this->_findAttribute(name, VBentoILine::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoILine::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VRect& VBentoNode::getRect(const VString& name, const VRect& defaultValue) const
+    {
+    const VBentoRect*    attribute = dynamic_cast<const VBentoRect*> (this->_findAttribute(name, VBentoRect::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VRect& VBentoNode::getRect(const VString& name) const
+    {
+    const VBentoRect*    attribute = dynamic_cast<const VBentoRect*> (this->_findAttribute(name, VBentoRect::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoRect::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VIRect& VBentoNode::getIRect(const VString& name, const VIRect& defaultValue) const
+    {
+    const VBentoIRect*    attribute = dynamic_cast<const VBentoIRect*> (this->_findAttribute(name, VBentoIRect::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VIRect& VBentoNode::getIRect(const VString& name) const
+    {
+    const VBentoIRect*    attribute = dynamic_cast<const VBentoIRect*> (this->_findAttribute(name, VBentoIRect::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoIRect::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VPolygon& VBentoNode::getPolygon(const VString& name, const VPolygon& defaultValue) const
+    {
+    const VBentoPolygon*    attribute = dynamic_cast<const VBentoPolygon*> (this->_findAttribute(name, VBentoPolygon::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VPolygon& VBentoNode::getPolygon(const VString& name) const
+    {
+    const VBentoPolygon*    attribute = dynamic_cast<const VBentoPolygon*> (this->_findAttribute(name, VBentoPolygon::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoPolygon::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VIPolygon& VBentoNode::getIPolygon(const VString& name, const VIPolygon& defaultValue) const
+    {
+    const VBentoIPolygon*    attribute = dynamic_cast<const VBentoIPolygon*> (this->_findAttribute(name, VBentoIPolygon::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VIPolygon& VBentoNode::getIPolygon(const VString& name) const
+    {
+    const VBentoIPolygon*    attribute = dynamic_cast<const VBentoIPolygon*> (this->_findAttribute(name, VBentoIPolygon::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoIPolygon::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VColor& VBentoNode::getColor(const VString& name, const VColor& defaultValue) const
+    {
+    const VBentoColor*    attribute = dynamic_cast<const VBentoColor*> (this->_findAttribute(name, VBentoColor::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VColor& VBentoNode::getColor(const VString& name) const
+    {
+    const VBentoColor*    attribute = dynamic_cast<const VBentoColor*> (this->_findAttribute(name, VBentoColor::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoColor::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 Vs8 VBentoNode::getS8(const VString& name, Vs8 defaultValue) const
@@ -1103,9 +2092,9 @@ Vs8 VBentoNode::getS8(const VString& name) const
     const VBentoS8*    attribute = dynamic_cast<const VBentoS8*> (this->_findAttribute(name, VBentoS8::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoS8::DATA_TYPE_ID().chars(), name.chars());
-    else
-        return attribute->getValue();
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoS8::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 Vu8 VBentoNode::getU8(const VString& name, Vu8 defaultValue) const
@@ -1114,8 +2103,8 @@ Vu8 VBentoNode::getU8(const VString& name, Vu8 defaultValue) const
 
     if (attribute == NULL)
         return defaultValue;
-    else
-        return attribute->getValue();
+
+    return attribute->getValue();
     }
 
 Vu8 VBentoNode::getU8(const VString& name) const
@@ -1123,9 +2112,9 @@ Vu8 VBentoNode::getU8(const VString& name) const
     const VBentoU8*    attribute = dynamic_cast<const VBentoU8*> (this->_findAttribute(name, VBentoU8::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoU8::DATA_TYPE_ID().chars(), name.chars());
-    else
-        return attribute->getValue();
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoU8::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 Vs16 VBentoNode::getS16(const VString& name, Vs16 defaultValue) const
@@ -1134,8 +2123,8 @@ Vs16 VBentoNode::getS16(const VString& name, Vs16 defaultValue) const
 
     if (attribute == NULL)
         return defaultValue;
-    else
-        return attribute->getValue();
+
+    return attribute->getValue();
     }
 
 Vs16 VBentoNode::getS16(const VString& name) const
@@ -1143,9 +2132,9 @@ Vs16 VBentoNode::getS16(const VString& name) const
     const VBentoS16*    attribute = dynamic_cast<const VBentoS16*> (this->_findAttribute(name, VBentoS16::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoS16::DATA_TYPE_ID().chars(), name.chars());
-    else
-        return attribute->getValue();
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoS16::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 Vu16 VBentoNode::getU16(const VString& name, Vu16 defaultValue) const
@@ -1163,9 +2152,9 @@ Vu16 VBentoNode::getU16(const VString& name) const
     const VBentoU16*    attribute = dynamic_cast<const VBentoU16*> (this->_findAttribute(name, VBentoU16::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoU16::DATA_TYPE_ID().chars(), name.chars());
-    else
-        return attribute->getValue();
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoU16::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 Vs32 VBentoNode::getS32(const VString& name, Vs32 defaultValue) const
@@ -1183,9 +2172,9 @@ Vs32 VBentoNode::getS32(const VString& name) const
     const VBentoS32*    attribute = dynamic_cast<const VBentoS32*> (this->_findAttribute(name, VBentoS32::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoS32::DATA_TYPE_ID().chars(), name.chars());
-    else
-        return attribute->getValue();
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoS32::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 Vu32 VBentoNode::getU32(const VString& name, Vu32 defaultValue) const
@@ -1203,9 +2192,9 @@ Vu32 VBentoNode::getU32(const VString& name) const
     const VBentoU32*    attribute = dynamic_cast<const VBentoU32*> (this->_findAttribute(name, VBentoU32::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoU32::DATA_TYPE_ID().chars(), name.chars());
-    else
-        return attribute->getValue();
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoU32::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 Vs64 VBentoNode::getS64(const VString& name, Vs64 defaultValue) const
@@ -1223,9 +2212,9 @@ Vs64 VBentoNode::getS64(const VString& name) const
     const VBentoS64*    attribute = dynamic_cast<const VBentoS64*> (this->_findAttribute(name, VBentoS64::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoS64::DATA_TYPE_ID().chars(), name.chars());
-    else
-        return attribute->getValue();
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoS64::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 Vu64 VBentoNode::getU64(const VString& name, Vu64 defaultValue) const
@@ -1243,9 +2232,9 @@ Vu64 VBentoNode::getU64(const VString& name) const
     const VBentoU64*    attribute = dynamic_cast<const VBentoU64*> (this->_findAttribute(name, VBentoU64::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoU64::DATA_TYPE_ID().chars(), name.chars());
-    else
-        return attribute->getValue();
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoU64::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
     }
 
 VFloat VBentoNode::getFloat(const VString& name, VFloat defaultValue) const
@@ -1263,9 +2252,403 @@ VFloat VBentoNode::getFloat(const VString& name) const
     const VBentoFloat*    attribute = dynamic_cast<const VBentoFloat*> (this->_findAttribute(name, VBentoFloat::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VException("Attribute type '%s' name '%s' not found.", VBentoFloat::DATA_TYPE_ID().chars(), name.chars());
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoFloat::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+bool VBentoNode::getBinary(const VString& name, VReadOnlyMemoryStream& returnedReader) const
+    {
+    const VBentoBinary*    attribute = dynamic_cast<const VBentoBinary*> (this->_findAttribute(name, VBentoBinary::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return false;
+
+    returnedReader = attribute->getReader();
+    return true;
+    }
+    
+VReadOnlyMemoryStream VBentoNode::getBinary(const VString& name) const
+    {
+    const VBentoBinary*    attribute = dynamic_cast<const VBentoBinary*> (this->_findAttribute(name, VBentoBinary::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoBinary::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getReader();
+    }
+
+const Vs8Array& VBentoNode::getS8Array(const VString& name, const Vs8Array& defaultValue) const
+    {
+    const VBentoS8Array* attribute = dynamic_cast<const VBentoS8Array*> (this->_findAttribute(name, VBentoS8Array::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
     else
         return attribute->getValue();
+    }
+
+const Vs8Array& VBentoNode::getS8Array(const VString& name) const
+    {
+    const VBentoS8Array* attribute = dynamic_cast<const VBentoS8Array*> (this->_findAttribute(name, VBentoS8Array::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoS8Array::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const Vs16Array& VBentoNode::getS16Array(const VString& name, const Vs16Array& defaultValue) const
+    {
+    const VBentoS16Array* attribute = dynamic_cast<const VBentoS16Array*> (this->_findAttribute(name, VBentoS16Array::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const Vs16Array& VBentoNode::getS16Array(const VString& name) const
+    {
+    const VBentoS16Array* attribute = dynamic_cast<const VBentoS16Array*> (this->_findAttribute(name, VBentoS16Array::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoS16Array::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const Vs32Array& VBentoNode::getS32Array(const VString& name, const Vs32Array& defaultValue) const
+    {
+    const VBentoS32Array* attribute = dynamic_cast<const VBentoS32Array*> (this->_findAttribute(name, VBentoS32Array::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const Vs32Array& VBentoNode::getS32Array(const VString& name) const
+    {
+    const VBentoS32Array* attribute = dynamic_cast<const VBentoS32Array*> (this->_findAttribute(name, VBentoS32Array::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoS32Array::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const Vs64Array& VBentoNode::getS64Array(const VString& name, const Vs64Array& defaultValue) const
+    {
+    const VBentoS64Array* attribute = dynamic_cast<const VBentoS64Array*> (this->_findAttribute(name, VBentoS64Array::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const Vs64Array& VBentoNode::getS64Array(const VString& name) const
+    {
+    const VBentoS64Array* attribute = dynamic_cast<const VBentoS64Array*> (this->_findAttribute(name, VBentoS64Array::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoS64Array::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VStringVector& VBentoNode::getStringArray(const VString& name, const VStringVector& defaultValue) const
+    {
+    const VBentoStringArray* attribute = dynamic_cast<const VBentoStringArray*> (this->_findAttribute(name, VBentoStringArray::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+
+    return attribute->getValue();
+    }
+
+const VStringVector& VBentoNode::getStringArray(const VString& name) const
+    {
+    const VBentoStringArray* attribute = dynamic_cast<const VBentoStringArray*> (this->_findAttribute(name, VBentoStringArray::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoStringArray::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VBoolArray& VBentoNode::getBoolArray(const VString& name, const VBoolArray& defaultValue) const
+    {
+    const VBentoBoolArray* attribute = dynamic_cast<const VBentoBoolArray*> (this->_findAttribute(name, VBentoBoolArray::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VBoolArray& VBentoNode::getBoolArray(const VString& name) const
+    {
+    const VBentoBoolArray* attribute = dynamic_cast<const VBentoBoolArray*> (this->_findAttribute(name, VBentoBoolArray::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoBoolArray::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VDoubleArray& VBentoNode::getDoubleArray(const VString& name, const VDoubleArray& defaultValue) const
+    {
+    const VBentoDoubleArray* attribute = dynamic_cast<const VBentoDoubleArray*> (this->_findAttribute(name, VBentoDoubleArray::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VDoubleArray& VBentoNode::getDoubleArray(const VString& name) const
+    {
+    const VBentoDoubleArray* attribute = dynamic_cast<const VBentoDoubleArray*> (this->_findAttribute(name, VBentoDoubleArray::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoDoubleArray::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VDurationVector& VBentoNode::getDurationArray(const VString& name, const VDurationVector& defaultValue) const
+    {
+    const VBentoDurationArray* attribute = dynamic_cast<const VBentoDurationArray*> (this->_findAttribute(name, VBentoDurationArray::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VDurationVector& VBentoNode::getDurationArray(const VString& name) const
+    {
+    const VBentoDurationArray* attribute = dynamic_cast<const VBentoDurationArray*> (this->_findAttribute(name, VBentoDurationArray::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoDurationArray::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+const VInstantVector& VBentoNode::getInstantArray(const VString& name, const VInstantVector& defaultValue) const
+    {
+    const VBentoInstantArray* attribute = dynamic_cast<const VBentoInstantArray*> (this->_findAttribute(name, VBentoInstantArray::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        return defaultValue;
+    else
+        return attribute->getValue();
+    }
+
+const VInstantVector& VBentoNode::getInstantArray(const VString& name) const
+    {
+    const VBentoInstantArray* attribute = dynamic_cast<const VBentoInstantArray*> (this->_findAttribute(name, VBentoInstantArray::DATA_TYPE_ID()));
+
+    if (attribute == NULL)
+        throw VException(VString("Attribute type '%s' name '%s' not found.", VBentoInstantArray::DATA_TYPE_ID().chars(), name.chars()));
+
+    return attribute->getValue();
+    }
+
+void VBentoNode::setInt(const VString& name, int value)
+    {
+    const VBentoS32* attribute = dynamic_cast<const VBentoS32*> (this->_findAttribute(name, VBentoS32::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addInt(name, value);
+    else
+        const_cast<VBentoS32*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setBool(const VString& name, bool value)
+    {
+    const VBentoBool* attribute = dynamic_cast<const VBentoBool*> (this->_findAttribute(name, VBentoBool::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addBool(name, value);
+    else
+        const_cast<VBentoBool*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setString(const VString& name, const VString& value, const VString& encoding)
+    {
+    const VBentoString* attribute = dynamic_cast<const VBentoString*> (this->_findAttribute(name, VBentoString::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addString(name, value, encoding);
+    else
+        {
+        VBentoString* mutableAttribute = const_cast<VBentoString*>(attribute);
+        mutableAttribute->setValue(value);
+        mutableAttribute->setEncoding(encoding);
+        }
+    }
+
+void VBentoNode::setChar(const VString& name, const VChar& value)
+    {
+    const VBentoChar* attribute = dynamic_cast<const VBentoChar*> (this->_findAttribute(name, VBentoChar::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addChar(name, value);
+    else
+        const_cast<VBentoChar*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setDouble(const VString& name, VDouble value)
+    {
+    const VBentoDouble* attribute = dynamic_cast<const VBentoDouble*> (this->_findAttribute(name, VBentoDouble::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addDouble(name, value);
+    else
+        const_cast<VBentoDouble*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setDuration(const VString& name, const VDuration& value)
+    {
+    const VBentoDuration* attribute = dynamic_cast<const VBentoDuration*> (this->_findAttribute(name, VBentoDuration::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addDuration(name, value);
+    else
+        const_cast<VBentoDuration*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setInstant(const VString& name, const VInstant& value)
+    {
+    const VBentoInstant* attribute = dynamic_cast<const VBentoInstant*> (this->_findAttribute(name, VBentoInstant::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addInstant(name, value);
+    else
+        const_cast<VBentoInstant*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setSize(const VString& name, const VSize& value)
+    {
+    const VBentoSize* attribute = dynamic_cast<const VBentoSize*> (this->_findAttribute(name, VBentoSize::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addSize(name, value);
+    else
+        const_cast<VBentoSize*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setISize(const VString& name, const VISize& value)
+    {
+    const VBentoISize* attribute = dynamic_cast<const VBentoISize*> (this->_findAttribute(name, VBentoISize::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addISize(name, value);
+    else
+        const_cast<VBentoISize*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setPoint(const VString& name, const VPoint& value)
+    {
+    const VBentoPoint* attribute = dynamic_cast<const VBentoPoint*> (this->_findAttribute(name, VBentoPoint::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addPoint(name, value);
+    else
+        const_cast<VBentoPoint*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setIPoint(const VString& name, const VIPoint& value)
+    {
+    const VBentoIPoint* attribute = dynamic_cast<const VBentoIPoint*> (this->_findAttribute(name, VBentoIPoint::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addIPoint(name, value);
+    else
+        const_cast<VBentoIPoint*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setPoint3D(const VString& name, const VPoint3D& value)
+    {
+    const VBentoPoint3D* attribute = dynamic_cast<const VBentoPoint3D*> (this->_findAttribute(name, VBentoPoint3D::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addPoint3D(name, value);
+    else
+        const_cast<VBentoPoint3D*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setIPoint3D(const VString& name, const VIPoint3D& value)
+    {
+    const VBentoIPoint3D* attribute = dynamic_cast<const VBentoIPoint3D*> (this->_findAttribute(name, VBentoIPoint3D::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addIPoint3D(name, value);
+    else
+        const_cast<VBentoIPoint3D*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setLine(const VString& name, const VLine& value)
+    {
+    const VBentoLine* attribute = dynamic_cast<const VBentoLine*> (this->_findAttribute(name, VBentoLine::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addLine(name, value);
+    else
+        const_cast<VBentoLine*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setILine(const VString& name, const VILine& value)
+    {
+    const VBentoILine* attribute = dynamic_cast<const VBentoILine*> (this->_findAttribute(name, VBentoILine::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addILine(name, value);
+    else
+        const_cast<VBentoILine*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setRect(const VString& name, const VRect& value)
+    {
+    const VBentoRect* attribute = dynamic_cast<const VBentoRect*> (this->_findAttribute(name, VBentoRect::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addRect(name, value);
+    else
+        const_cast<VBentoRect*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setIRect(const VString& name, const VIRect& value)
+    {
+    const VBentoIRect* attribute = dynamic_cast<const VBentoIRect*> (this->_findAttribute(name, VBentoIRect::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addIRect(name, value);
+    else
+        const_cast<VBentoIRect*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setPolygon(const VString& name, const VPolygon& value)
+    {
+    const VBentoPolygon* attribute = dynamic_cast<const VBentoPolygon*> (this->_findAttribute(name, VBentoPolygon::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addPolygon(name, value);
+    else
+        const_cast<VBentoPolygon*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setIPolygon(const VString& name, const VIPolygon& value)
+    {
+    const VBentoIPolygon* attribute = dynamic_cast<const VBentoIPolygon*> (this->_findAttribute(name, VBentoIPolygon::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addIPolygon(name, value);
+    else
+        const_cast<VBentoIPolygon*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setColor(const VString& name, const VColor& value)
+    {
+    const VBentoColor* attribute = dynamic_cast<const VBentoColor*> (this->_findAttribute(name, VBentoColor::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addColor(name, value);
+    else
+        const_cast<VBentoColor*>(attribute)->setValue(value);
+    }
+
+void VBentoNode::setS64(const VString& name, Vs64 value)
+    {
+    const VBentoS64* attribute = dynamic_cast<const VBentoS64*> (this->_findAttribute(name, VBentoS64::DATA_TYPE_ID()));
+    if (attribute == NULL)
+        this->addS64(name, value);
+    else
+        const_cast<VBentoS64*>(attribute)->setValue(value);
     }
 
 const VBentoAttributePtrVector& VBentoNode::getAttributes() const
@@ -1362,7 +2745,7 @@ void VBentoNode::printHexDump(VHex& hexDump) const
     stream.writeS32(static_cast<Vs32> (numChildNodes));
     stream.writeString(mName);
 
-    hexDump.printHex(buffer.getBuffer(), buffer.eofOffset());
+    hexDump.printHex(buffer.getBuffer(), buffer.getEOFOffset());
 
     for (VSizeType i = 0; i < numAttributes; ++i)
         mAttributes[i]->printHexDump(hexDump);
@@ -1436,7 +2819,7 @@ Vs64 VBentoNode::_getLengthOfLength(Vs64 length)
 void VBentoNode::_readFourCharCodeFromStream(VBinaryIOStream& stream, VString& code)
     {
     code.preflight(4);
-    (void) stream.read(reinterpret_cast<Vu8*> (code.buffer()), CONST_S64(4));
+    (void) stream.read(code.getDataBuffer(), CONST_S64(4));
     code.postflight(4);
     }
 
@@ -1445,7 +2828,7 @@ void VBentoNode::_writeFourCharCodeToStream(VBinaryIOStream& stream, const VStri
     {
     int    codeLength = code.length();
 
-    (void) stream.write(reinterpret_cast<Vu8*> (code.chars()), V_MIN(4, codeLength));
+    (void) stream.write(code.getDataBufferConst(), V_MIN(4, codeLength));
 
     // In case code is less than 4 chars, pad with spaces. Please don't use such codes,
     // it's not efficient!
@@ -1470,7 +2853,7 @@ mValue(dataLength)
     {
     VBinaryIOStream    memoryIOStream(mValue);
 
-    streamCopy(stream, memoryIOStream, dataLength);
+    (void) VStream::streamCopy(stream, memoryIOStream, dataLength);
     }
 
 void VBentoUnknownValue::writeDataToStream(VBinaryIOStream& stream) const
@@ -1478,11 +2861,11 @@ void VBentoUnknownValue::writeDataToStream(VBinaryIOStream& stream) const
     // To ensure that there are no side-effects and we are indeed const in behavior,
     // we save and restore mValue stream's offset, while doing a const-cast so
     // that we are allowed to use manipulate the stream.
-    Vs64 savedOffset = mValue.offset();
+    Vs64 savedOffset = mValue.getIOOffset();
     VBinaryIOStream    memoryIOStream(const_cast<VBentoUnknownValue*>(this)->mValue);
 
     memoryIOStream.seek(0, SEEK_SET);
-    streamCopy(memoryIOStream, stream, mValue.eofOffset());
+    (void) VStream::streamCopy(memoryIOStream, stream, mValue.getEOFOffset());
     memoryIOStream.seek(savedOffset, SEEK_SET);
     }
 
@@ -1558,5 +2941,21 @@ void VBentoCallbackParser::attributeComplete(int /*depth*/, Vs64 /*length*/, con
 void VBentoCallbackParser::readAttributeData(int /*depth*/, VBinaryIOStream& stream, Vu64 dataLength)
     {
     stream.skip(static_cast<Vu64> (dataLength));
+    }
+
+// VBentoArray ----------------------------------------------------------------------
+
+void VBentoArray::_getValueAsBentoTextString(VString& s) const
+    {
+    int numElements = this->_getNumElements();
+    if (numElements > 0)
+        {
+        this->_appendElementBentoText(0, s);
+        for (int i = 1; i < numElements; ++i)
+            {
+            s += ',';
+            this->_appendElementBentoText(i, s);
+            }
+        }
     }
 

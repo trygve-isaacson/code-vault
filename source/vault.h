@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -23,6 +23,8 @@ This set of includes is enough to pull in all vault header files.
 #include "vmutexlocker.h"
 #include "vsocketstream.h"
 #include "vsocketfactory.h"
+#include "vsocketthread.h"
+#include "vsocketthreadfactory.h"
 #include "vbufferedfilestream.h"
 #include "vdirectiofilestream.h"
 #include "vmemorystream.h"

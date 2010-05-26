@@ -1,0 +1,125 @@
+CODE VAULT RELEASE NOTES
+
+VERSION 3.0
+
+3.0d1: reorg of public vs. internal platform headers
+
+The platform-specific header files included by users of the Vault have been
+simplified to include and define fewer things. The low-level internal details
+needed by the Vault are no longer indirectly referenced by code that includes
+Vault headers.
+
+Previously, when you included the Vault headers, at some level this meant that
+at the time of the include from your code, the compiler saw all of the low-level
+platform-specific stuff that the Vault needs internally to work on that platform.
+
+With this update, the public Vault header files don't reference those low-level
+platform-dependent headers and definitions; they are contained in internal
+platform-specific header files that only the Vault implementation files include
+as needed.
+
+This simplifies your compiler's environment when you include the Vault headers
+(fewer files are included and fewer symbols are defined by the Vault), makes it
+easier for the Vault to support each platform (there is even better isolation of
+the platform-specific quirks), and makes it possible to support compilation
+environments where there are conflicts in different header files that previously
+made it impossible to compile (the client code can still compile
+in a strange environment with the simplified Vault includes less likely to
+conflict with anything, while the Vault implementation can compile in its own
+cleaner environment and include everything it needs for the platform).
+
+3.0d2: new vgeometry module
+
+This new module (source/containers/vgeometry.*) contains a set of data types
+to describe simple coordinate geometries: sizes, points, rectangles, and
+polygons. Each class is a template so that it can use either VDouble or
+int as the dimensional type. Because use of double is preferred, the
+simpler class names use the VDouble templates (VSize, VPoint, VRect, VPolygon)
+while the longer names use the integer templates that have an "I" in their
+name (VISize, VIPoint, VIRect, VIPolygon). The templates themselves end in
+"T" (VSizeT<T>, VPointT<T>, VRectT<T>, VPolygonT<T>).
+
+These classes were originally defined to allow interoperability with the
+Qt4 graphics item view system. Their purpose is not to implement the
+utility of having a coordinate system, but rather to allow the coordinate-based
+data types to be accessed in non-Qt source code that uses the Code Vault
+machinery such as Bento, streams, etc. to persist data. So the APIs provided
+by these classes are very simple and data-oriented and do not provide much at
+all in the way of coordinate space operations and calculations. (Note that the
+Qt classes use the simpler name for integer-based coordinates, e.g. QRect, and
+the longer name for double-based coordinates, e.g., QRectF. The "F" stands for
+"float" even though the dimensional type being used is double rather than float.)
+
+If you compile with VAULT_QT_SUPPORT defined (in vconfigure.h), then these
+classes also have methods for converting to/from the related Qt classes. You
+would only do this if you are compiling the Vault in a Qt application. (This
+is similar to the Qt support in VString, which allows conversion to and from
+a QString.)
+
+Because these classes were designed to interoperate with Qt, the coordinate
+system has the Y axis pointing down. This is common in computer graphics
+UI systems (e.g., QuickDraw, GDI, Qt; and Quartz supports it), but is the
+opposite of traditional 2D mathematical coordinate systems.
+
+3.0d3: vbento enhancements
+
+The Bento module has three primary enhancements.
+
+First is support for the new geometry types, which it can serialize/deserialize
+and transport.
+
+Second is support for binary data. This means that if you have binary data you wish
+to include in a Bento data stream, you have the option of doing it without breaking
+the data down into its constituent typed fields. Of course, this is not the
+preferred use because it misses Bento's whole purpose, but it can be useful in
+certain cases where you have a blob or some other largely opaque object. When
+reading the binary data, a new VMemoryStream subclass called VReadOnlyMemoryStream
+is used; this class allows multiple readers on the same physical memory buffer.
+
+Third is support for arrays. Previously, arrays were always accomplished by using
+a child node to contain the array elements as its child nodes. This was natural
+when the array elements were multi-field structures (i.e., it was an array of
+non-trivial objects), but was more complex than necessary when the array elements
+were merely primitive types. It was also possible to model the array by using
+iteratively named attributes, but this felt more like a work-around than a natural
+way to model it. Now, arrays of primitive data types are first-class elements.
+Fundamentally, an array is an attribute of a node. An array is like a child node
+in that it can hold a collection of sub-elements, but it is different (and simpler)
+because it is not recursively hierarchical like a child node is, and the individual
+elements are not named like individual attributes are. You can create Bento array
+attributes directly from the appropriate std::vector type, or you can create it
+empty and append individual array elements or a whole std::vector at a time.
+
+3.0d4: miscellaneous cleanup
+
+The Vault class APIs were given a vigorous scrubbing. Some of the changes:
+
+- Non-virtual protected methods that were not meant for subclasses to call have
+  been made private.
+- All protected and private method names now start with an underscore.
+- Some protected instance variables were made private.
+- Some method and argument names were changed to avoid some overaggressive lint warnings.
+- Got rid of all vararg APIs except for VString constructor and format().
+- Improved multi-test assertInvariant methods for better performance.
+- Made assertion use more easily enabled/disabled and with more granularity.
+- The VUnit type-dependent overloaded VUNIT_ASSERT_XXX() macros and the assertEqual()
+  and assertNotEqual() methods they invoke are now preferred to the older test() method.
+  These new calls automatically provide the failed test output data in the text output
+  text, as well as test ID by file and line number. This simplifies what you need to
+  supply as labeling on each test. VBentoUnit has been revised to demonstrate use of this.
+- All classes now use complete initializer lists.
+- "sm" globals renamed to "g".
+- Corrected Vs8/Vu8 printf/scanf formatting directives.
+- Removed stray tab characters.
+- Added copy/assign prevention ctor/operator= for non-copyable/assignable classes.
+- Revised the definitions of the byte-swapping macros to avoid lint complaints that the
+  no-op versions of the macros were no-ops. Also made signed/unsigned swaps distinct.
+- Cleaned up spacing and formatting.
+- Fixed all feasible warnings emitted when using pedantic and EffC++ warnings on.
+
+Upcoming plans for 3.1:
+- Enable copy/assign in any remaining appropriate classes.
+- Support VGeometry classes in new VUnit equality assertions.
+- Wrap everything a "vault" namespace.
+- Be more consistent with use of error/strerror/WSAGetLastError.
+

@@ -1,15 +1,16 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
 /** @file */
 
 #include "vplatformunit.h"
+#include "vtypes_internal.h"
 
-VPlatformUnit::VPlatformUnit(bool logOnSuccess, bool throwOnError)
-: VUnit("VPlatformUnit", logOnSuccess, throwOnError)
+VPlatformUnit::VPlatformUnit(bool logOnSuccess, bool throwOnError) :
+VUnit("VPlatformUnit", logOnSuccess, throwOnError)
     {
     }
 
@@ -23,14 +24,14 @@ void VPlatformUnit::run()
 
 static int _wrap_vsnprintf(char* dest, size_t count, const char* formatText, ...)
     {
- 	va_list	args;
-	va_start(args, formatText);
+     va_list    args;
+    va_start(args, formatText);
 
-	int result = vault::vsnprintf(dest, count, formatText, args);
+    int result = vault::vsnprintf(dest, count, formatText, args);
 
-	va_end(args);
-	
-	return result;
+    va_end(args);
+    
+    return result;
     }
 
 // If you find that the call to _wrap_vsnprintf() below crashes on some

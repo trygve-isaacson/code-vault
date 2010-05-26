@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -149,7 +149,7 @@ class VClassRegistry
         */
         const VClassFactory* findClassFactory(const VString& classID) const;
         
-    protected:
+    private:
     
         VClassFactoryPtrVector mFactories; ///< The factories that have been registered.
         
@@ -197,9 +197,9 @@ class VClassFactory
         */
         void getClassID(VString& classID) const;
 
-    protected:
+    private:
     
-        VString    mClassID;    ///< The class ID this factory is for.
+        VString mClassID;    ///< The class ID this factory is for.
     };
 
 /**

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2007 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -51,25 +51,13 @@ class VClientSession
         @param  clientType  a string to distinguish the type of session
         @param  socket      the socket the session is using
         */
-        VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket);
+        VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket, const VDuration& standbyTimeLimit);
 
         const VString& getName() const { return mName; }
 
         const VString& getClientType() const { return mClientType; }
         VMessageInputThread* getInputThread() const { return mInputThread; }
         VMessageOutputThread* getOutputThread() const { return mOutputThread; }
-
-        /**
-        Adds a task to the session's task list; when the session is
-        shut down, it will delay destruction until the task list is
-        empty. (The tasks presumably point to the session.)
-        */
-        void attachTask(const VMessageHandlerTask* task);
-        /**
-        Removes a task from the session's task list, so that the task
-        does not cause session shutdown to wait for the task.
-        */
-        void detachTask(const VMessageHandlerTask* task);
 
         /**
         Returns true if the session is "on-line", meaning that messages posted
@@ -109,7 +97,7 @@ class VClientSession
                     the message should be ignored (for this client session)
         @return true if the message was posted
         */
-		virtual bool postOutputMessage(VMessage* message, bool releaseIfNotPosted=true, bool queueStandbyIfStartingUp=false);
+        virtual bool postOutputMessage(VMessage* message, bool releaseIfNotPosted=true, bool queueStandbyIfStartingUp=false);
         /**
         Sends a message immediately to the supplied output stream, if the session
         is in a valid state (not in the middle of shutting down). The VMessageOutputThread
@@ -119,8 +107,8 @@ class VClientSession
         and the session shutdown procedure from each other. This means that this method
         must not be called from inside one of our own methods that has the mutex locked.
         @param  message         the message to send; the caller still owns it afterward
-		@param	sessionLabel	a label to use in log output, to identify the session
-		@param	out				the stream to write to
+        @param    sessionLabel    a label to use in log output, to identify the session
+        @param    out                the stream to write to
         */
         void sendMessageToClient(VMessage* message, const VString& sessionLabel, VBinaryIOStream& out);
         /**
@@ -128,7 +116,7 @@ class VClientSession
         @return obvious
         */
         virtual const VString& getClientAddress() const { return mClientAddress; }
-        
+
         /**
         Returns a new bento node with attributes describing the session. Subclasses
         may override this, call inherited, and then add their own attributes to the
@@ -139,25 +127,25 @@ class VClientSession
 
     protected:
 
+        virtual ~VClientSession(); // protected because only friend class VServer may delete us (when garbage collecting)
+
         void _moveStandbyMessagesToAsyncOutputQueue();  ///< Moves messages from mStartupStandbyQueue to the output queue.
         int _getOutputQueueSize() const; ///< Returns the number of messages currently queued on the output thread.
-
+        
         /**
-        This method is called in response to shutdown if both the input and
-        output threads have ended; it waits until all attached tasks complete, and then
-        calls "delete this". The caller must not refer to the session upon
-        return from _selfDestruct(), because the session will be gone.
+        This function can be overridden if the session needs to filter messages
+        being moved from standby queue to output queue. The supplied message must either
+        be posted (call inherited) or released. You can also fabricate a replacement
+        message and post it instead of the supplied message.
         */
-        void _selfDestruct();
-
-        virtual ~VClientSession(); // protected because only our _selfDestruct knows what how to delete us correctly
+        virtual void _postStandbyMessageToAsyncOutputQueue(VMessage* message);
 
         VString                 mName;          ///< A name for the session to use in logging; built from supplied base name + IP address + port.
         VMutex                  mMutex;         ///< A mutex we use to enforce sequential processing of outbound messages, and to protect our task list.
         VServer*                mServer;        ///< The server that keeps track of this session.
         VString                 mClientType;    ///< A string distinguishing this type of session.
-		VString                 mClientIP;      ///< The client's IP address (could be name or number).
-		int                     mClientPort;	///< The IP port number of the client session.
+        VString                 mClientIP;      ///< The client's IP address (could be name or number).
+        int                     mClientPort;    ///< The IP port number of the client session.
         VString                 mClientAddress; ///< The user-visible string we use for logging, contains IP address + port of session.
         VMessageInputThread*    mInputThread;   ///< The thread that is reading inbound messages from the client.
         VMessageOutputThread*   mOutputThread;  ///< If using a separate output thread, this is it (may be NULL for sync i/o model).
@@ -165,15 +153,27 @@ class VClientSession
 
     private:
 
-        void _releaseQueuedClientMessages();            ///< Releases all pending queued message back to the pool (called during shutdown).
+        VClientSession(const VClientSession&); // not copyable
+        VClientSession& operator=(const VClientSession&); // not assignable
 
-		VMessageQueue   mStartupStandbyQueue;	///< A queue we use to hold outbound updates while this client session is starting up.
-        SessionTaskList mTasks;                 ///< Tasks currently pointing to this session; shutdown() waits until they're gone.
+        void _releaseQueuedClientMessages();   ///< Releases all pending queued message back to the pool (called during shutdown).
+
+        VMessageQueue   mStartupStandbyQueue;   ///< A queue we use to hold outbound updates while this client session is starting up.
+        VInstant        mStandbyStartTime;      ///< The time at which we started queueing standby messages; reset by _moveStandbyMessagesToAsyncOutputQueue().
+        VDuration       mStandbyTimeLimit;      ///< Once we go to standby, a time limit applies after which posting standby causes session shutdown due to presumed failure.
 
         // We only access the socket i/o stream if postOutputMessage() is called
-        // and we are not set up to use a separate output message thread.
-		VSocketStream   mSocketStream;  ///< The underlying raw socket stream over which this thread communicates.
-		VBinaryIOStream mIOStream;      ///< The binary-format i/o stream over the raw socket stream.
+        // and we are not set up to use a separate output message thread. However, we are responsible
+        // for deleting the socket object.
+        VSocket*        mSocket;        ///< The socket this session is using.
+        VSocketStream   mSocketStream;  ///< The underlying raw socket stream over which this thread communicates.
+        VBinaryIOStream mIOStream;      ///< The binary-format i/o stream over the raw socket stream.
+
+        // Reference counting of sessions:
+        int     mReferenceCount;        ///< The number of threads, tasks, etc. still referring to this session.
+        VMutex  mReferenceCountMutex;   ///< Protects reference count state.
+        friend class VClientSessionReference; // This class manages our reference count.
+        friend class VServer;                 // This class checks our reference count to do garbage collection, and deletes us when safe.
     };
 
 typedef std::vector<VClientSession*> VClientSessionList;
@@ -221,8 +221,37 @@ class VClientSessionFactory
 
     protected:
 
+        VClientSessionFactory(const VClientSessionFactory&); // not copyable
+        VClientSessionFactory& operator=(const VClientSessionFactory&); // not assignable
+
         VManagementInterface*   mManager;   ///< The object that will be notified of session events.
         VServer*                mServer;    ///< The server that will be notified of session creation.
+    };
+
+/**
+This class provides for reference-counted pointers to the VClientSession, in order to
+guarantee a safe tear-down of the session in the complex multi-threaded session environment.
+All classes other than the server itself must hold their pointers to sessions with one
+of these. Such classes include VMessageHandler, VMessageInputThread, and VMessageOutputThread.
+For convenience, you can use a VClientSessionReference if there is no session (session is NULL).
+This allows for VMessageHandler subclasses that work independent of any session context.
+*/
+class VClientSessionReference
+    {
+    public:
+
+        VClientSessionReference(VClientSession* session);
+        ~VClientSessionReference(); // non-virtual, not intended to be subclassed
+
+        VClientSession* getSession() const { return mSession; }
+        void setSession(VClientSession* session);
+
+    private:
+
+        VClientSessionReference(const VClientSessionReference&); // not copyable
+        void operator=(const VClientSessionReference&); // not assignable
+
+        VClientSession* mSession;
     };
 
 #endif /* vclientsession_h */

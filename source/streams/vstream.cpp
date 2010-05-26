@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -9,9 +9,10 @@ http://www.bombaydigital.com/
 #include "vstream.h"
 
 #include "vexception.h"
+#include "viostream.h"
 
-VStream::VStream()
-// mName constructs to empty string
+VStream::VStream() :
+mName() // -> empty
     {
     }
 
@@ -22,24 +23,25 @@ mName(name)
 
 void VStream::readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead)
     {
-    Vs64    numBytesRead = this->read(targetBuffer, numBytesToRead);
-    
+    Vs64 numBytesRead = this->read(targetBuffer, numBytesToRead);
+
     if (numBytesRead != numBytesToRead)
-        throw VEOFException("VStream::readGuaranteed encountered end of stream.");
+        throw VEOFException(VString(
+        "VStream::readGuaranteed encountered end of stream. Read %lld of %lld", numBytesRead, numBytesToRead));
     }
 
 // static
-Vs64 /*VStream::*/streamCopy(VStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize)
+Vs64 VStream::streamCopy(VStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize)
     {
-    Vs64    numBytesCopied = 0;
-    
+    Vs64 numBytesCopied = 0;
+
     /*
     First we figure out which (if either) of the streams can give us a buffer
     pointer. Either or both of these may be NULL.
     */
-    Vu8*    fromBuffer = fromStream._getReadIOPtr();
-    Vu8*    toBuffer = toStream._getWriteIOPtr();
-    
+    Vu8* fromBuffer = fromStream._getReadIOPtr();
+    Vu8* toBuffer = toStream._getWriteIOPtr();
+
     /*
     If the source stream gave us a buffer to read from, we have to ask it
     how much data it really has, so we know how much we're really going to be
@@ -47,7 +49,7 @@ Vs64 /*VStream::*/streamCopy(VStream& fromStream, VStream& toStream, Vs64 numByt
     */
     if (fromBuffer != NULL)
         numBytesToCopy = fromStream._prepareToRead(numBytesToCopy);
-    
+
     /*
     If the target stream gave us a buffer to write to, we have to ask it
     again after first giving it a chance to expand the buffer to fit the
@@ -92,21 +94,21 @@ Vs64 /*VStream::*/streamCopy(VStream& fromStream, VStream& toStream, Vs64 numByt
         buffers, so we have to create a buffer to do the transfer.
         */
 
-        Vu8*    tempBuffer;
-        Vs64    numBytesRemaining;
-        Vs64    numTempBytesToCopy;
-        Vs64    numTempBytesRead;
-        Vs64    numTempBytesWritten;
-        
+        Vu8* tempBuffer;
+        Vs64 numBytesRemaining;
+        Vs64 numTempBytesToCopy;
+        Vs64 numTempBytesRead;
+        Vs64 numTempBytesWritten;
+
         numBytesRemaining = numBytesToCopy;
         tempBufferSize = V_MIN(numBytesToCopy, tempBufferSize);
 
-        tempBuffer = VStream::newBuffer(tempBufferSize);
+        tempBuffer = VStream::newNewBuffer(tempBufferSize);
 
         while (numBytesRemaining > 0)
             {
             numTempBytesToCopy = V_MIN(numBytesRemaining, tempBufferSize);
-            
+
             numTempBytesRead = fromStream.read(tempBuffer, numTempBytesToCopy);
 
             // If we detect EOF, we're done.
@@ -117,21 +119,34 @@ Vs64 /*VStream::*/streamCopy(VStream& fromStream, VStream& toStream, Vs64 numByt
 
             numBytesRemaining -= numTempBytesWritten;
             numBytesCopied += numTempBytesWritten;
-            
+
             // If we couldn't write any bytes, we have a problem and should stop here.
             if (numTempBytesWritten == 0)
                 break;
             }
-        
+
         delete [] tempBuffer;
         }
 
     return numBytesCopied;
     }
 
-const VString& VStream::name() const
+// static
+Vs64 VStream::streamCopy(VIOStream& fromStream, VIOStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize)
     {
-    return mName;
+    return VStream::streamCopy(fromStream.getRawStream(), toStream.getRawStream(), numBytesToCopy, tempBufferSize);
+    }
+
+// static
+Vs64 VStream::streamCopy(VIOStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize)
+    {
+    return VStream::streamCopy(fromStream.getRawStream(), toStream, numBytesToCopy, tempBufferSize);
+    }
+
+// static
+Vs64 VStream::streamCopy(VStream& fromStream, VIOStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize)
+    {
+    return VStream::streamCopy(fromStream, toStream.getRawStream(), numBytesToCopy, tempBufferSize);
     }
 
 // static
@@ -158,9 +173,7 @@ void VStream::copyMemory(Vu8* toBuffer, const Vu8* fromBuffer, Vs64 numBytesToCo
     If Vs64 and size_t are identical, or we're copying less than 2GB of data,
     then memcpy is fine!
     */
-    
-//    bool    needSizeConversion = ((sizeof(Vs64) != sizeof(size_t)) && (numBytesToCopy > (Vs64) V_MAX_S32));
-    
+
     if (! VStream::needSizeConversion(numBytesToCopy))
         {
         // Entire copy can occur in a single call to memcpy.
@@ -170,30 +183,46 @@ void VStream::copyMemory(Vu8* toBuffer, const Vu8* fromBuffer, Vs64 numBytesToCo
         {
         // Need to call memcpy multiple times because numBytesToCopy is too big.
         Vs64    numBytesRemaining = numBytesToCopy;
-        size_t    copyChunkSize;
+        size_t  copyChunkSize;
         Vu8*    toPtr = toBuffer;
-        Vu8*    fromPtr = const_cast<Vu8*>(fromBuffer);    // we need to move the pointer, w/o altering anything it points to
-        
+        const Vu8* fromPtr = fromBuffer;
+
         do
             {
             copyChunkSize = static_cast<size_t> (V_MIN(V_MAX_S32, numBytesRemaining));
-            
+
             ::memcpy(toPtr, fromPtr, copyChunkSize);
 
             numBytesRemaining -= copyChunkSize;
+            fromPtr += copyChunkSize;
+            toPtr += copyChunkSize;
 
             } while (numBytesRemaining > 0);
         }
     }
 
-Vu8* VStream::newBuffer(Vs64 bufferSize)
+Vu8* VStream::newNewBuffer(Vs64 bufferSize)
     {
-    bool    fits = ((sizeof(Vs64) == sizeof(size_t)) || (bufferSize <= V_MAX_S32));
-    
-    if (fits)
-        return new Vu8[static_cast<size_t> (bufferSize)];
-    else
+    bool fits = ((sizeof(Vs64) == sizeof(size_t)) || (bufferSize <= V_MAX_S32));
+
+    if (!fits)
         throw std::bad_alloc();
+
+    return new Vu8[static_cast<size_t>(bufferSize)]; // throws std::bad_alloc if we run out of memory
+    }
+
+Vu8* VStream::mallocNewBuffer(Vs64 bufferSize)
+    {
+    bool fits = ((sizeof(Vs64) == sizeof(size_t)) || (bufferSize <= V_MAX_S32));
+
+    if (!fits)
+        throw std::bad_alloc();
+
+    Vu8* buffer = static_cast<Vu8*>(::malloc(static_cast<size_t>(bufferSize)));
+    if (buffer == NULL)
+        throw std::bad_alloc(); // out of memory
+
+    return buffer;
     }
 
 Vu8* VStream::_getReadIOPtr() const

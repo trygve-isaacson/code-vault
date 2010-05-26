@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -9,8 +9,10 @@ http://www.bombaydigital.com/
 
 /** @file */
 
+#include "vunit.h"
+
 class VTextIOStream;
 
-extern void runAllVUnitTests(bool logToFile, bool logOnSuccess, bool throwOnError, bool& success, int& numSuccessfulTests, int& numFailedTests, VTextIOStream* xmlOutputStream);
+extern void runAllVUnitTests(bool logOnSuccess, bool throwOnError, bool& success, int& numSuccessfulTests, int& numFailedTests, VUnitOutputWriterList* output);
 
 #endif /* vunitrunall_h */

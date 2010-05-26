@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -73,7 +73,7 @@ class VSocket : public VSocketBase
         @param    numBytesToRead    the number of bytes to read from the socket
         @return    the number of bytes read
         */
-        virtual int        read(Vu8* buffer, int numBytesToRead);
+        virtual int read(Vu8* buffer, int numBytesToRead);
         /**
         Writes data to the socket.
 
@@ -84,20 +84,20 @@ class VSocket : public VSocketBase
         @param    numBytesToWrite    the number of bytes to write to the socket
         @return    the number of bytes written
         */
-        virtual int        write(const Vu8* buffer, int numBytesToWrite);
+        virtual int write(const Vu8* buffer, int numBytesToWrite);
         /**
         Sets the host name and port number properties of this socket by
         asking the lower level services to whom the socket is connected.
         */
-        virtual void    discoverHostAndPort();
+        virtual void discoverHostAndPort();
         /**
         Shuts down just the read side of the connection.
         */
-        virtual void    closeRead();
+        virtual void closeRead();
         /**
         Shuts down just the write side of the connection.
         */
-        virtual void    closeWrite();
+        virtual void closeWrite();
         /**
         Sets a specified socket option.
         @param    level        the option level
@@ -105,7 +105,7 @@ class VSocket : public VSocketBase
         @param    valuePtr    a pointer to the new option value data
         @param    valueLength    the length of the data pointed to by valuePtr
         */
-        virtual void    setSockOpt(int level, int name, void* valuePtr, int valueLength);
+        virtual void setSockOpt(int level, int name, void* valuePtr, int valueLength);
 
     protected:
 
@@ -126,7 +126,7 @@ class VSocket : public VSocketBase
         */
         virtual void _listen(const VString& bindAddress, int backlog);
 
-        static bool gStaticInited; ///< Used internally to initialize at startup.
+        static bool gStaticInited;  ///< Used internally to initialize at startup.
         static bool staticInit();   ///< Used internally to initialize at startup.
     };
 

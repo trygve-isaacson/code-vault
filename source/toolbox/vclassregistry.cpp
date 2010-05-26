@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -49,7 +49,8 @@ VClassRegistry* VClassRegistry::registry()
     return gRegistry;
     }
 
-VClassRegistry::VClassRegistry()
+VClassRegistry::VClassRegistry() :
+mFactories() // -> empty
     {
     }
 
@@ -61,7 +62,7 @@ VClassRegistry::~VClassRegistry()
 
 void* VClassRegistry::instantiateObject(const VString& classID) const
     {
-    const VClassFactory*    factory = this->findClassFactory(classID);
+    const VClassFactory* factory = this->findClassFactory(classID);
     
     return factory->instantiateObject();
     }
@@ -78,6 +79,6 @@ const VClassFactory* VClassRegistry::findClassFactory(const VString& classID) co
         if (mFactories[i]->matchesClassID(classID))
             return mFactories[i];
         
-    throw VException("Unable to find class factory for '%s' in class registry.", classID.chars());
+    throw VException(VString("Unable to find class factory for '%s' in class registry.", classID.chars()));
     }
 

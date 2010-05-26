@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -96,7 +96,7 @@ class VAbstractFileStream : public VStream
         */
         void _throwIfOpenFailed(const VString& failedMethod, const VString& path);
 
-        VFSNode    mNode;    ///< The node representing the file.
+        VFSNode mNode;  ///< The node representing the file.
 
     };
 

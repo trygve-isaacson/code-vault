@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -68,50 +68,50 @@ class VChar
         Returns true if the character is a lower case character.
         @return true if the character is a lower case character
         */
-        bool    isLowerCase() const;
+        bool isLowerCase() const;
         /**
         Returns a lower-case version of the character.
         @return    the lower-case value
         */
-        VChar    lowerCase() const;
+        VChar lowerCase() const;
         /**
         Converts the character to lower-case.
         */
-        void    toLowerCase();
+        void toLowerCase();
         /**
         Returns true if the character is an upper case character.
         @return true if the character is an upper case character
         */
-        bool    isUpperCase() const;
+        bool isUpperCase() const;
         /**
         Returns an upper-case version of the character.
         @return    the upper-case value
         */
-        VChar    upperCase() const;
+        VChar upperCase() const;
         /**
         Converts the character to upper-case.
         */
-        void    toUpperCase();
+        void toUpperCase();
         /**
         Returns the char value of the character.
         @return    the char value
         */
-        char    charValue() const;
+        char charValue() const;
         /**
         Returns the int value of the character.
         @return the int value
         */
-        int        intValue() const;
+        int intValue() const;
         /**
         Sets the character from a char, as in the char constructor.
         @param c the char
         */
-        void    set(char c);
+        void set(char c);
         /**
         Sets the character from an int, as in the int constructor.
         @param i the int
         */
-        void    set(int i);
+        void set(int i);
         /**
         Coerces the character to a char.
         @return    the char value
@@ -120,10 +120,11 @@ class VChar
         
         // These utilities only make sense for simple ASCII parsing purposes;
         // they only look at values in the base ASCII range below 128.
-        bool isAlpha() const;            ///< Returns true if the character is A-Z or a-z.
-        bool isNumeric() const;            ///< Returns true if the character is a digit.
+        bool isAlpha() const;           ///< Returns true if the character is A-Z or a-z.
+        bool isNumeric() const;         ///< Returns true if the character is a digit.
         bool isAlphaNumeric() const;    ///< Returns true if the character is alpha or numeric.
-        bool isWhitespace() const;        ///< Returns true if the character is non-printing.
+        bool isWhitespace() const;      ///< Returns true if the character is non-printing.
+        bool isHexadecimal() const;     ///< Returns true if the character is 0-9, A-F, or a-f.
         
         static bool equalsIgnoreCase(const VChar& c1, const VChar& c2);
         static bool equalsIgnoreCase(const VChar& c1, char c2);
@@ -160,7 +161,7 @@ class VChar
         
     private:
     
-        char    mValue;    ///< The character value.
+        char mValue;    ///< The character value.
     };
 
 inline bool operator==(const VChar& c1, const VChar& c2) { return c1.mValue == c2.mValue; }    ///< Compares c1 and c2. @param    c1 a VChar @param c2 a VChar @return true if c1 == c2

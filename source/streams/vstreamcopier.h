@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -132,6 +132,9 @@ class VStreamCopier
         Vs64 numBytesCopied() const;
 
     private:
+
+        VStreamCopier(const VStreamCopier&); // not copyable
+        VStreamCopier& operator=(const VStreamCopier&); // not assignable
         
         int         mChunkSize;         ///< The number of bytes to copy per chunk.
         VStream*    mFrom;              ///< The underlying stream we are copying from.

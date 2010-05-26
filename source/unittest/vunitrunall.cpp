@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -17,6 +17,8 @@ http://www.bombaydigital.com/
 #include "vclassregistryunit.h"
 #include "vexceptionunit.h"
 #include "vfsnodeunit.h"
+#include "vgeometryunit.h"
+#include "vcolorunit.h"
 #include "vhexunit.h"
 #include "vinstantunit.h"
 #include "vplatformunit.h"
@@ -32,7 +34,7 @@ http://www.bombaydigital.com/
     classname u(logOnSuccess, throwOnError); \
     try \
         { \
-        VUnit::runUnit(u, xmlOutputStream); \
+        VUnit::runUnit(u, writers); \
         success = success && u.success(); \
         numSuccessfulTests += u.getNumSuccessfulTests(); \
         numFailedTests += u.getNumFailedTests(); \
@@ -47,25 +49,13 @@ http://www.bombaydigital.com/
         } \
     }
 
-void runAllVUnitTests(bool logToFile, bool logOnSuccess, bool throwOnError, bool& success, int& numSuccessfulTests, int& numFailedTests, VTextIOStream* xmlOutputStream)
+void runAllVUnitTests(bool logOnSuccess, bool throwOnError, bool& success, int& numSuccessfulTests, int& numFailedTests, VUnitOutputWriterList* writers)
     {
     numSuccessfulTests = 0;
     numFailedTests = 0;
-    
-    if (logToFile)    // if not, it'll use default cout logger
-        {
-        VInstant now;
-        VString  nowString;
-        now.getLocalString(nowString, true);
-        
-        VString filePath("unit_%s.txt", nowString.chars());
-        VLogger::installLogger(new VFileLogger(VLogger::kDebug, "VUnit", VString::EMPTY(), filePath));
-        }
-
     success = true;
     
     // Use the macro above to declare each unit test and run it in a single line of boilerplate.
-
     UNIT_TEST(VPlatformUnit)
     UNIT_TEST(VBentoUnit)
     UNIT_TEST(VBinaryIOUnit)
@@ -73,6 +63,8 @@ void runAllVUnitTests(bool logToFile, bool logOnSuccess, bool throwOnError, bool
     UNIT_TEST(VClassRegistryUnit)
     UNIT_TEST(VExceptionUnit)
     UNIT_TEST(VFSNodeUnit)
+    UNIT_TEST(VGeometryUnit)
+    UNIT_TEST(VColorUnit)
     UNIT_TEST(VHexUnit)
     UNIT_TEST(VInstantUnit)
     UNIT_TEST(VStreamsUnit)
@@ -80,6 +72,5 @@ void runAllVUnitTests(bool logToFile, bool logOnSuccess, bool throwOnError, bool
     UNIT_TEST(VThreadsUnit)
     UNIT_TEST(VMessageUnit)
     UNIT_TEST(VLoggerUnit)
-
     }
 

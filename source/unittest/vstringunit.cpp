@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -10,8 +10,8 @@ http://www.bombaydigital.com/
 #include "vchar.h"
 #include "vexception.h"
 
-VStringUnit::VStringUnit(bool logOnSuccess, bool throwOnError)
-: VUnit("VStringUnit", logOnSuccess, throwOnError)
+VStringUnit::VStringUnit(bool logOnSuccess, bool throwOnError) :
+VUnit("VStringUnit", logOnSuccess, throwOnError)
     {
     }
 
@@ -86,14 +86,20 @@ void VStringUnit::run()
     this->test(s.compareIgnoreCase("Cherry") < 0, "compareIgnoreCase <");
 
     this->test(s.startsWith("Ban"), "startsWith literal");
+    this->test(s.startsWithIgnoreCase("bAN"), "startsWithIgnoreCase literal");
     this->test(s.startsWith('B'), "startsWith char");
     this->test(! s.startsWith("Bananas"), "! startsWith literal 1");
     this->test(! s.startsWith("Baz"), "! startsWith literal 2");
+    this->test(! s.startsWithIgnoreCase("bANx"), "! startsWithIgnoreCase literal 1");
+    this->test(! s.startsWithIgnoreCase("xbAN"), "! startsWithIgnoreCase literal 2");
     this->test(! s.startsWith('b'), "! startsWith char");
     this->test(s.endsWith("nana"), "endsWith literal");
+    this->test(s.endsWithIgnoreCase("nANa"), "endsWithIgnoreCase literal");
     this->test(s.endsWith('a'), "endsWith char");
     this->test(! s.endsWith("Yellow Banana"), "! endsWith literal 1");
     this->test(! s.endsWith("abcdefghijklmnopqrstuvwxyz"), "! endsWith literal 2");
+    this->test(! s.endsWithIgnoreCase("XnANa"), "! endsWithIgnoreCase literal 1");
+    this->test(! s.endsWithIgnoreCase("nANaX"), "! endsWithIgnoreCase literal 2");
     this->test(! s.endsWith('x'), "! endsWith char");
 
     // Test empty string constant behavior.
@@ -130,12 +136,21 @@ void VStringUnit::run()
     this->test(a, "b", "reassignment 1");
     this->test(b, "something else", "reassignment 2");
 
+#ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
     // Test formatting.
+    const char* nullPointer = NULL;
+    VString nullFormatted(nullPointer);
+    this->test(nullFormatted, VString::EMPTY(), "null ctor formatting");
+    
     VString    formatted("%s is %d years old", "Spot", 5);
     this->test(formatted, "Spot is 5 years old", "ctor formatting");
 
     formatted.format("%s is %d years old", "Rover", 3);
     this->test(formatted, "Rover is 3 years old", "sprintf");
+    
+    formatted.format(nullPointer);
+    this->test(formatted, VString::EMPTY(), "null formatting");
+#endif
 
     VString preflightFail("d'oh!");
     try
@@ -168,14 +183,14 @@ void VStringUnit::run()
     this->test(testTarget, "This", "copy from chars");
     // Test copying to and from Pascal.
     testTarget.copyToPascalString(testBuffer);
-    this->test((testBuffer[0] == 4) && (testBuffer[1] == 'T') && (testBuffer[2] = 'h') && (testBuffer[3] == 'i') && (testBuffer[4] == 's'), "copy to Pascal");
+    this->test((testBuffer[0] == 4) && (testBuffer[1] == 'T') && (testBuffer[2] == 'h') && (testBuffer[3] == 'i') && (testBuffer[4] == 's'), "copy to Pascal");
     testTarget = "           "; // clear out some of what we expect to alter
     testTarget.copyFromPascalString(testBuffer);
     this->test(testTarget, "This", "copy from Pascal");
     testTarget = "It's only important that this string is longer than 255 chars, because 255 is the limit of what you can legally fit in a Pascal string. We are trying to validate that when given a really long VString, the function for copying into a Pascal string buffer is correctly limiting the number of characters copied out to exactly 255, and setting the length byte accordingly.";
     this->test(testTarget.length() > 255, "copy to Pascal limit setup");
     testTarget.copyToPascalString(testBuffer);
-    this->test((testBuffer[0] == (char) 0xFF) && (testBuffer[255] == testTarget[254]), "copy to Pascal limit");
+    this->test(((Vu8)testBuffer[0] == 255) && (testBuffer[255] == testTarget[254]), "copy to Pascal limit");
 
     // Test substring operations.
     s = "The Big Heat";
@@ -377,7 +392,7 @@ void VStringUnit::run()
     // Test operator= conversions.
     // For each integer size/kind, we make sure to test unsigned, "big" unsigned (too big for signed), negative, and postive.
     int        ni = -1;
-    int        pi = 1;
+    int        posi = 1;
     Vu8        u8 = 2;
     Vu8        b8 = 0xFE;
     Vs8        n8 = -2;
@@ -396,7 +411,7 @@ void VStringUnit::run()
     Vs64    p64 = CONST_S64(5);
 
     s = ni; this->test(s == "-1", "=ni");
-    s = pi; this->test(s == "1", "=pi");
+    s = posi; this->test(s == "1", "=posi");
     s = u8; this->test(s == "2", "=u8");
     s = b8; this->test(s == "254", "=b8");
     s = n8; this->test(s == "-2", "=n8");
@@ -417,7 +432,7 @@ void VStringUnit::run()
     // Test operator+= conversions.
 
     s = "x"; s += ni; this->test(s == "x-1", "+=ni");
-    s = "x"; s += pi; this->test(s == "x1", "+=pi");
+    s = "x"; s += posi; this->test(s == "x1", "+=posi");
     s = "x"; s += u8; this->test(s == "x2", "+=u8");
     s = "x"; s += b8; this->test(s == "x254", "+=b8");
     s = "x"; s += n8; this->test(s == "x-2", "+=n8");
@@ -461,43 +476,83 @@ void VStringUnit::run()
     this->test(s.indexOf('i', 7) == 12, "indexOf(char, n)");
     this->test(s.indexOf('i', 13) == -1, "indexOf(char, n)");
     this->test(s.indexOf('z') == -1, "indexOf(char, n)");
+    this->test(s.indexOf('i', -1) == -1, "indexOf(char, -1)");
+    this->test(s.indexOf('i', -2) == -1, "indexOf(char, -2)");
+    this->test(s.indexOf('i', s.length()) == -1, "indexOf(char, end)");
+    this->test(s.contains('i'), "contains(char)");
+    this->test(!s.contains('x'), "!contains(char)");
+    this->test(s.contains('i', 12), "contains(char, 12)");
+    this->test(!s.contains('i', 13), "!contains(char, 13)");
+    this->test(!s.contains('i', -1), "!contains(char, -1)");
+    this->test(!s.contains('i', -2), "!contains(char, -2)");
     this->test(s.indexOf("in") == 3, "indexOf(const VString&)");
     this->test(s.indexOf("in", 4) == 6, "indexOf(const VString&, n)");
     this->test(s.indexOf("in", 7) == 12, "indexOf(const VString&, n)");
     this->test(s.indexOf("in", 13) == -1, "indexOf(const VString&, n)");
+    this->test(s.indexOf("in", -1) == -1, "indexOf(const VString&, -1)");
+    this->test(s.indexOf("in", -2) == -1, "indexOf(const VString&, -2)");
+    this->test(s.indexOf("in", s.length()) == -1, "indexOf(const VString&, end)");
     this->test(s.indexOf("inordinate") == -1, "indexOf(const VString&)");
+    this->test(s.contains("in"), "contains(const VString&)");
+    this->test(!s.contains("xxx"), "!contains(const VString&)");
+    this->test(s.contains("in", 12), "contains(const VString&, 12)");
+    this->test(!s.contains("in", 13), "!contains(const VString&, 13)");
+    this->test(!s.contains("in", -1), "!contains(const VString&, -1)");
+    this->test(!s.contains("in", -2), "!contains(const VString&, -2)");
 
     this->test(s.indexOfIgnoreCase('I') == 3, "indexOfIgnoreCase(char)");
     this->test(s.indexOfIgnoreCase('I', 4) == 6, "indexOfIgnoreCase(char, n)");
     this->test(s.indexOfIgnoreCase('I', 7) == 12, "indexOfIgnoreCase(char, n)");
     this->test(s.indexOfIgnoreCase('I', 13) == -1, "indexOfIgnoreCase(char, n)");
+    this->test(s.indexOfIgnoreCase('I', -1) == -1, "indexOfIgnoreCase(char, -1)");
+    this->test(s.indexOfIgnoreCase('I', -2) == -1, "indexOfIgnoreCase(char, -2)");
+    this->test(s.indexOfIgnoreCase('I', s.length()) == -1, "indexOfIgnoreCase(char, end)");
+    this->test(s.containsIgnoreCase('I'), "contains(char)");
+    this->test(!s.containsIgnoreCase('x'), "!containsIgnoreCase(char)");
+    this->test(s.containsIgnoreCase('I', 12), "containsIgnoreCase(char, 12)");
+    this->test(!s.containsIgnoreCase('I', 13), "!containsIgnoreCase(char, 13)");
+    this->test(!s.containsIgnoreCase('I', -1), "!containsIgnoreCase(char, -1)");
+    this->test(!s.containsIgnoreCase('I', -2), "!containsIgnoreCase(char, -2)");
     this->test(s.indexOfIgnoreCase('Z') == -1, "indexOfIgnoreCase(char, n)");
     this->test(s.indexOfIgnoreCase("In") == 3, "indexOfIgnoreCase(const VString&)");
     this->test(s.indexOfIgnoreCase("In", 4) == 6, "indexOfIgnoreCase(const VString&, n)");
     this->test(s.indexOfIgnoreCase("In", 7) == 12, "indexOfIgnoreCase(const VString&, n)");
     this->test(s.indexOfIgnoreCase("In", 13) == -1, "indexOfIgnoreCase(const VString&, n)");
+    this->test(s.indexOfIgnoreCase("In", -1) == -1, "indexOfIgnoreCase(const VString&, -1)");
+    this->test(s.indexOfIgnoreCase("In", -2) == -1, "indexOfIgnoreCase(const VString&, -2)");
+    this->test(s.indexOfIgnoreCase("In", s.length()) == -1, "indexOfIgnoreCase(const VString&, end)");
     this->test(s.indexOfIgnoreCase("Inordinate") == -1, "indexOfIgnoreCase(const VString&)");
+    this->test(s.containsIgnoreCase("In"), "containsIgnoreCase(const VString&)");
+    this->test(!s.containsIgnoreCase("xxx"), "!containsIgnoreCase(const VString&)");
+    this->test(s.containsIgnoreCase("In", 12), "containsIgnoreCase(const VString&, 12)");
+    this->test(!s.containsIgnoreCase("In", 13), "!containsIgnoreCase(const VString&, 13)");
+    this->test(!s.containsIgnoreCase("In", -1), "!containsIgnoreCase(const VString&, -1)");
+    this->test(!s.containsIgnoreCase("In", -2), "!containsIgnoreCase(const VString&, -2)");
 
     this->test(s.lastIndexOf('i') == 12, "lastIndexOf(char)");
     this->test(s.lastIndexOf('i', 11) == 6, "lastIndexOf(char, n)");
     this->test(s.lastIndexOf('i', 5) == 3, "lastIndexOf(char, n)");
     this->test(s.lastIndexOf('i', 2) == -1, "lastIndexOf(char, n)");
+    this->test(s.lastIndexOf('i', -2) == -1, "lastIndexOf(char, -2)");
     this->test(s.lastIndexOf('z') == -1, "lastIndexOf(char, n)");
     this->test(s.lastIndexOf("in") == 12, "lastIndexOf(const VString&)");
     this->test(s.lastIndexOf("in", 11) == 6, "lastIndexOf(const VString&, n)");
     this->test(s.lastIndexOf("in", 5) == 3, "lastIndexOf(const VString&, n)");
     this->test(s.lastIndexOf("in", 2) == -1, "lastIndexOf(const VString&, n)");
+    this->test(s.lastIndexOf("in", -2) == -1, "lastIndexOf(const VString&, -2)");
     this->test(s.lastIndexOf("inordinate") == -1, "lastIndexOf(const VString&)");
 
     this->test(s.lastIndexOfIgnoreCase('I') == 12, "lastIndexOfIgnoreCase(char)");
     this->test(s.lastIndexOfIgnoreCase('I', 11) == 6, "lastIndexOfIgnoreCase(char, n)");
     this->test(s.lastIndexOfIgnoreCase('I', 5) == 3, "lastIndexOfIgnoreCase(char, n)");
     this->test(s.lastIndexOfIgnoreCase('I', 2) == -1, "lastIndexOfIgnoreCase(char, n)");
+    this->test(s.lastIndexOfIgnoreCase('I', -2) == -1, "lastIndexOfIgnoreCase(char, -2)");
     this->test(s.lastIndexOfIgnoreCase('Z') == -1, "lastIndexOfIgnoreCase(char, n)");
     this->test(s.lastIndexOfIgnoreCase("In") == 12, "lastIndexOfIgnoreCase(const VString&)");
     this->test(s.lastIndexOfIgnoreCase("In", 11) == 6, "lastIndexOfIgnoreCase(const VString&, n)");
     this->test(s.lastIndexOfIgnoreCase("In", 5) == 3, "lastIndexOfIgnoreCase(const VString&, n)");
     this->test(s.lastIndexOfIgnoreCase("In", 2) == -1, "lastIndexOfIgnoreCase(const VString&, n)");
+    this->test(s.lastIndexOfIgnoreCase("In", -2) == -1, "lastIndexOfIgnoreCase(const VString&, -2)");
     this->test(s.lastIndexOfIgnoreCase("Inordinate") == -1, "lastIndexOfIgnoreCase(const VString&)");
 
     VString    region1("Thunderhill");
@@ -591,28 +646,6 @@ void VStringUnit::run()
     catch (const VRangeException& /*ex*/)
         {
         this->test(true, "preflight <0 exception");
-        }
-
-    try
-        {
-        rangeTester.preflight(INT_MAX); // should throw a VRangeException
-        this->test(false, "preflight INT_MAX exception");
-        }
-    catch (const VRangeException& /*ex*/)
-        {
-        this->test(true, "preflight INT_MAX exception");
-        }
-
-    // This test covers a desired exception for deprecated API use.
-    try
-        {
-        VString x;
-        x.copyFromBuffer("hello", 0, LONG_MAX); // Passing LONG_MAX is now bad.
-        this->test(false, "copyFromBuffer with LONG_MAX exception");
-        }
-    catch (const VRangeException& /*ex*/)
-        {
-        this->test(true, "copyFromBuffer with LONG_MAX exception");
         }
 
     // Test handling of null terminating character access.
@@ -726,5 +759,73 @@ void VStringUnit::run()
         this->test(true, "parseDouble with bad format a");
         }
 
+    // Bug fix validation: Take a substring of an empty string that has no buffer.
+    
+    VString initializedEmptyString; // initialized to empty means it has no buffer
+    VString shouldBecomeEmpty("1234567");
+    initializedEmptyString.getSubstring(shouldBecomeEmpty, 0, 2);
+    VUNIT_ASSERT_EQUAL_LABELED(shouldBecomeEmpty, VString::EMPTY(), "substring of an initialized empty string");
+    
+    VString forcedToEmptyString("abcdef");
+    forcedToEmptyString.truncateLength(0); // make it empty; old way keeps buffer, new way discards buffer
+    shouldBecomeEmpty = "123456789";
+    forcedToEmptyString.getSubstring(shouldBecomeEmpty, 0, 2);
+    VUNIT_ASSERT_EQUAL_LABELED(shouldBecomeEmpty, VString::EMPTY(), "substring of a truncated to empty string");
+    
+    initializedEmptyString.substringInPlace(0, 2);
+    VUNIT_ASSERT_EQUAL_LABELED(initializedEmptyString, VString::EMPTY(), "substring-in-place of an initialized empty string");
+    
+    forcedToEmptyString.substringInPlace(0, 2);
+    VUNIT_ASSERT_EQUAL_LABELED(forcedToEmptyString, VString::EMPTY(), "substring-in-place of a truncated to empty string");
+    
+    // New API: split()
+    
+    VStringVector splitResult;
+    VString splitInput("one,two,three,,fivee"); // extra ee used for trailing split test
+
+    // simple split
+    splitInput.split(splitResult, ','); // "one" "two" "three" "" "fivee"
+    VUNIT_ASSERT_EQUAL_LABELED((int) splitResult.size(), 5, "split test 1 size");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[0], "one",   "split test 1 [0]");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[1], "two",   "split test 1 [1]");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[2], "three", "split test 1 [2]");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[3], "",      "split test 1 [3]");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[4], "fivee", "split test 1 [4]");
+    VStringVector returnResult1 = splitInput.split(',');
+    this->test(returnResult1 == splitResult, "split return 1");
+
+    // limited split
+    splitInput.split(splitResult, ',', 3); // "one" "two", "three,,fivee"
+    VUNIT_ASSERT_EQUAL_LABELED((int) splitResult.size(), 3, "split test 2 size");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[0], "one",         "split test 2 [0]");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[1], "two",         "split test 2 [1]");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[2], "three,,fivee", "split test 2 [2]");
+    VStringVector returnResult2 = splitInput.split(',', 3);
+    this->test(returnResult2 == splitResult, "split return 2");
+
+    // strip trailing empty strings
+    splitInput.split(splitResult, 'e'); // "on" ",two,thr", "", ",four,fiv" "" <-- last one should get discarded
+    VUNIT_ASSERT_EQUAL_LABELED((int) splitResult.size(), 4, "split test 3 size");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[0], "on",        "split test 3 [0]");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[1], ",two,thr",  "split test 3 [1]");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[2], "",          "split test 3 [2]");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[3], ",,fiv",     "split test 3 [3]");
+    VStringVector returnResult3 = splitInput.split('e');
+    this->test(returnResult3 == splitResult, "split return 3");
+
+    // don't strip trailing empty strings
+    splitInput.split(splitResult, 'e', 0, false); // "on" ",two,thr", "", ",four,fiv" "" <-- last one should NOT get discarded
+    VUNIT_ASSERT_EQUAL_LABELED((int) splitResult.size(), 5, "split test 4 size");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[0], "on",        "split test 4 [0]");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[1], ",two,thr",  "split test 4 [1]");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[2], "",          "split test 4 [2]");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[3], ",,fiv",     "split test 4 [3]");
+    VUNIT_ASSERT_EQUAL_LABELED(splitResult[4], "",          "split test 4 [4]");
+    VStringVector returnResult4 = splitInput.split('e', 0, false);
+    this->test(returnResult4 == splitResult, "split return 4");
+    
+    // Change to vararg constructor to allow "%" to avoid unwanted formatting.
+    VString percentSign("%");
+    this->test(percentSign == '%', "percent sign literal constructor");
     }
 

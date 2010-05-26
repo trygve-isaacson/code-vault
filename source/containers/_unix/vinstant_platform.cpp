@@ -1,10 +1,11 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
 #include "vinstant.h"
+#include "vtypes_internal.h"
 
 #include <sys/time.h>
 
@@ -26,7 +27,7 @@ static Vs64 _getMSLLocalTimeZoneOffsetMilliseconds()
     never 7hrs even in summertime DST. So in summertime this makes us off by 1 hr.
     */
     
-    int    offsetSeconds = 0;
+    int offsetSeconds = 0;
 
     struct timezone zone;
     
@@ -74,7 +75,7 @@ Vs64 VInstant::_platform_now()
 
     // This means we can only get second resolution for VInstant values.
     //lint -e418 -e421 "Passing null pointer to function 'time(long *)'"
-    return (CONST_S64(1000) * static_cast<Vs64>(::time(NULL))) + VInstant::gSimulatedClockOffset;
+    return (CONST_S64(1000) * static_cast<Vs64>(::time(NULL)));
 
 #endif /* V_INSTANT_SNAPSHOT_IS_UTC */
     }
@@ -82,15 +83,15 @@ Vs64 VInstant::_platform_now()
 // static
 Vs64 VInstant::_platform_offsetFromLocalStruct(const VInstantStruct& when)
     {
-    struct tm    fields;
+    struct tm fields;
     
     _setTMStructFromInstantStruct(when, fields);
 
     //lint -e421 "Caution -- function 'mktime(struct tm *)' is considered dangerous [MISRA Rule 127]"
-    Vs64    result = CONST_S64(1000) * static_cast<Vs64> (::mktime(&fields));
+    Vs64 result = CONST_S64(1000) * static_cast<Vs64> (::mktime(&fields));
     
 #ifdef VLIBRARY_METROWERKS
-        result += _getMSLLocalTimeZoneOffsetMilliseconds();
+    result += _getMSLLocalTimeZoneOffsetMilliseconds();
 #endif
         
     // tm struct has no milliseconds, so restore input value milliseconds
@@ -107,12 +108,12 @@ Vs64 VInstant::_platform_offsetFromLocalStruct(const VInstantStruct& when)
 // static
 Vs64 VInstant::_platform_offsetFromUTCStruct(const VInstantStruct& when)
     {
-    struct tm    fields;
+    struct tm fields;
 
     _setTMStructFromInstantStruct(when, fields);
 
     //lint -e421 "Caution -- function 'mktime(struct tm *)' is considered dangerous [MISRA Rule 127]"
-    Vs64    result = CONST_S64(1000) * static_cast<Vs64> (::mktime(&fields));
+    Vs64 result = CONST_S64(1000) * static_cast<Vs64> (::mktime(&fields));
     
     // The problem here is that there's no timegm() available.
     // So we first use mktime as if we're getting a local time. Then we try
@@ -147,7 +148,7 @@ Vs64 VInstant::_platform_offsetFromUTCStruct(const VInstantStruct& when)
 // static
 Vs64 VInstant::_platform_offsetFromUTCStruct(const VInstantStruct& when)
     {
-    struct tm    fields;
+    struct tm fields;
 
     _setTMStructFromInstantStruct(when, fields);
 
@@ -165,7 +166,7 @@ Vs64 VInstant::_platform_offsetFromUTCStruct(const VInstantStruct& when)
 // static
 void VInstant::_platform_offsetToLocalStruct(Vs64 offset, VInstantStruct& when)
     {
-    struct tm    fields;
+    struct tm fields;
     ::memset(&fields, 0, sizeof(fields));
 
 #ifdef VLIBRARY_METROWERKS
@@ -180,7 +181,7 @@ void VInstant::_platform_offsetToLocalStruct(Vs64 offset, VInstantStruct& when)
 // static
 void VInstant::_platform_offsetToUTCStruct(Vs64 offset, VInstantStruct& when)
     {
-    struct tm    fields;
+    struct tm fields;
     ::memset(&fields, 0, sizeof(fields));
 
     VInstant::threadsafe_gmtime(static_cast<time_t> (offset / 1000), &fields);
@@ -195,6 +196,6 @@ Vs64 VInstant::_platform_snapshot()
     (void) ::gettimeofday(&tv, NULL);
     
     // We need to be careful to cast to Vs64 or we risk truncation to 32 bits.
-    return (((Vs64) (tv.tv_sec)) * CONST_S64(1000)) + (Vs64) (tv.tv_usec / 1000) + VInstant::gSimulatedClockOffset;
+    return (((Vs64) (tv.tv_sec)) * CONST_S64(1000)) + (Vs64) (tv.tv_usec / 1000);
     }
 

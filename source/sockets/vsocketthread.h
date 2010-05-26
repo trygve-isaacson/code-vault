@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -60,28 +60,30 @@ class VSocketThread : public VThread
         Returns this thread's socket object.
         @return    a pointer to the VSocket
         */
-        VSocket*    socket() const;
+        VSocket* getSocket() const;
         /**
         Returns this thread's owner listener thread.
         @return    a pointer to the VListenerThread
         */
-        VListenerThread*    getOwnerThread() const;
+        VListenerThread* getOwnerThread() const;
         
         /**
         Closes the socket and stops the thread (causing it to end) in one shot.
         */
-        void    closeAndStop();
+        void closeAndStop();
         
     protected:
 
         VSocket*            mSocket;        ///< The socket this thread is managing.
-        VListenerThread*    mOwnerThread;    ///< The thread that created this one.
+        VListenerThread*    mOwnerThread;   ///< The thread that created this one.
 
     private:
     
         // Prevent copy construction and assignment since there is no provision for sharing the underlying thread.
         VSocketThread(const VSocketThread& other);
         VSocketThread& operator=(const VSocketThread& other);
+        
+        friend class VListenerThread; // allow it to remove itself as our owner thread when it destructs
     };
 
 /**

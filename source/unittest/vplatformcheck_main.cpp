@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -19,14 +19,48 @@ class App
         int getResult() { return mResult; }
 
     private:
+
+        App(const App&); // not copyable
+        App& operator=(const App&); // not assignable
     
-        int     mArgc;
-        char**  mArgv;
-        int     mResult;
+        VStringVector mArgs;
+        int           mResult;
     };
 
-int main(int argc, char** argv)
+App::App(int argc, char** argv) :
+mArgs(),
+mResult(0)
     {
+    for (int i = 1; i < argc; ++i) // Omit argc[0] which is just the application name, not really an arg to be processed.
+        mArgs.push_back(argv[i]);
+    }
+
+App::~App()
+    {
+    }
+
+void App::run()
+    {
+    VTestSuitesWrapper wrapper(mArgs);
+
+    bool success;
+    int numSuccessfulTests;
+    int numFailedTests;
+    runAllVUnitTests(true, false, success, numSuccessfulTests, numFailedTests, &wrapper.mWriters);
+
+    if (!success)
+        mResult = -1;
+    }
+
+// static
+int VThread::userMain(int argc, char** argv)
+    {
+    VException::installWin32SEHandler(); // A no-op if not configured to be used.
+
+#ifdef VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT
+    VMemoryTracker memoryTracker;
+#endif
+    
     int    result = -1;
     App    app(argc, argv);
     
@@ -51,34 +85,19 @@ int main(int argc, char** argv)
     else
         std::cout << "ERROR: Platform check completed with result " << result << "." << std::endl;
     
-	VShutdownRegistry::shutdown();
-	
+    VShutdownRegistry::shutdown();
+    
     return result;
     }
 
-App::App(int argc, char** argv) :
-mArgc(argc),
-mArgv(argv),
-mResult(0)
+// static
+void* VThread::userThreadMain(void* arg)
     {
+    return VThread::threadMain(arg);
     }
 
-App::~App()
+int main(int argc, char** argv)
     {
-    }
-
-void App::run()
-    {
-    bool success;
-    int numSuccessfulTests;
-    int numFailedTests;
-    runAllVUnitTests(false, true, false, success, numSuccessfulTests, numFailedTests, NULL);
-
-	VLogger::getLogger("VUnit")->rawLog(VString("[results] TOTAL tests passed: %d", numSuccessfulTests));
-	VLogger::getLogger("VUnit")->rawLog(VString("[results] TOTAL tests failed: %d", numFailedTests));
-	VLogger::getLogger("VUnit")->rawLog(VString("[results] TOTAL summary: %s", (numFailedTests == 0 ? "SUCCESS" : "FAILURE")));
-    
-    if (!success)
-        mResult = -1;
+    return VThread::userMain(argc, argv);
     }
 

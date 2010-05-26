@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -82,9 +82,9 @@ class VListenerSocket : public VSocket
         VListenerSocket(const VListenerSocket& other);
         VListenerSocket& operator=(const VListenerSocket& other);
 
-        VString            mBindAddress;    ///< The address that listen() will bind() to; empty means INADDR_ANY.
-        int                mBacklog;        ///< The listen backlog value.
-        VSocketFactory*    mFactory;        ///< The factory for creating new VSocket objects.
+        VString         mBindAddress;   ///< The address that listen() will bind() to; empty means INADDR_ANY.
+        int             mBacklog;       ///< The listen backlog value.
+        VSocketFactory* mFactory;       ///< The factory for creating new VSocket objects.
 
     };
 

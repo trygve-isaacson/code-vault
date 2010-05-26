@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -39,8 +39,13 @@ class VFSNodeUnit : public VUnit
     private:
     
         void _testTextFileIO(const VString& seriesLabel, VFSNode& node, VAbstractFileStream& fileStream);
+        void _testTextFileReadAll(VFSNode& node);
         void _testBinaryFileIO(const VString& seriesLabel, VFSNode& node, VAbstractFileStream& fileStream);
         void _testDirectoryIteration(const VFSNode& dir);
+        void _writeKnownDirectoryTestFile(VFSNode::KnownDirectoryIdentifier id, const VString& fileName);
+        
+        VStringVector   mTextFileLines;
+        VString         mTextFileContents;
     };
 
 #endif /* vfsnodeunit_h */

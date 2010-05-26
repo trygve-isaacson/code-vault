@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -48,6 +48,7 @@ with this is to have our own conditionally-defined type here and use it there.
     @ingroup vsocket
 */
 
+
 /**
 This is the standard Unix sockets implementation of VSocket. It derives
 from VSocketBase and overrides the necessary methods to provide socket
@@ -62,7 +63,7 @@ the other platforms.
 class VSocket : public VSocketBase
     {
     public:
-
+    
         /**
         Constructs the object with an already-opened low-level
         socket connection identified by its ID.
@@ -124,13 +125,13 @@ class VSocket : public VSocketBase
         virtual void closeWrite();
         /**
         Sets a specified socket option.
-        @param    level        the option level
-        @param    name        the option name
-        @param    valuePtr    a pointer to the new option value data
-        @param    valueLength    the length of the data pointed to by valuePtr
+        @param    level         the option level
+        @param    name          the option name
+        @param    valuePtr      a pointer to the new option value data
+        @param    valueLength   the length of the data pointed to by valuePtr
         */
         virtual void setSockOpt(int level, int name, void* valuePtr, int valueLength);
-
+        
     protected:
 
         /**
@@ -150,17 +151,17 @@ class VSocket : public VSocketBase
         */
         virtual void _listen(const VString& bindAddress, int backlog);
 
-        void assertInvariant() const;
+    private:
 
 #ifdef V_BSD_ENHANCED_SOCKETS
 
         // These are further BSD-specific methods used in the V_BSD_ENHANCED_SOCKETS
         // versions of connect() and listen().
-        void _tcpGetAddrInfo(struct addrinfo **res);                                                ///< Calls low-level getaddrinfo()
-        int _getAddrInfo(struct addrinfo* hints, struct addrinfo** res, bool useHostName=true);    ///< Calls low-level _getAddrInfo()
-        VSocketID _tcpConnectWAddrInfo(struct addrinfo * const resInput);                                ///< Calls low-level socket() and connect()
+        void        _tcpGetAddrInfo(struct addrinfo **res);                                             ///< Calls low-level getaddrinfo()
+        int         _getAddrInfo(struct addrinfo* hints, struct addrinfo** res, bool useHostName=true); ///< Calls low-level _getAddrInfo()
+        VSocketID   _tcpConnectWAddrInfo(struct addrinfo * const resInput);                             ///< Calls low-level socket() and connect()
 
-        static VMutex gAddrInfoMutex;    ///< getaddrinfo() is not thread-safe, so we have to protect ourselves.
+        static VMutex gAddrInfoMutex;   ///< getaddrinfo() is not thread-safe, so we have to protect ourselves.
 
 #endif /* V_BSD_ENHANCED_SOCKETS */
 

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -11,11 +11,18 @@ http://www.bombaydigital.com/
 
 #include "vtypes.h"
 
-#include <stdarg.h>
-#include <vector>
-#include <iostream>
-
 class VChar;
+class VString;
+
+/**
+VStringVector is simply a vector of VString objects. Note that the vector
+elements are objects, not pointers to objects.
+*/
+typedef std::vector<VString> VStringVector;
+/**
+VStringPtrVector is a vector of pointers to VString objects.
+*/
+typedef std::vector<VString*> VStringPtrVector;
 
 #ifndef V_EFFICIENT_SPRINTF
 class VMutex;
@@ -23,22 +30,6 @@ class VMutex;
 
 #ifdef VAULT_QT_SUPPORT
 #include <qstring.h>
-#endif
-
-#ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
-// Prevent spurious VC8 warnings about "deprecated"/"unsafe" boost std c++ lib use.
-#   ifdef VCOMPILER_MSVC
-#       if _MSC_VER >= 1400
-#       pragma warning(push)
-#       pragma warning(disable : 4996)
-#       endif
-#   endif
-#include <boost/format.hpp>
-#   ifdef VCOMPILER_MSVC
-#       if _MSC_VER >= 1400
-#       pragma warning(pop)
-#       endif
-#   endif
 #endif
 
 /**
@@ -76,11 +67,15 @@ expanded but the object is unable to expand it, a VException will be thrown.
 class VString
     {
     public:
-    
+
         /**
         Returns a reference to the read-only empty VString constant.
         */
         static const VString& EMPTY();
+        /**
+        Returns a reference to the read-only VString constant holding the platform-native line ending character(s).
+        */
+        static const VString& NATIVE_LINE_ENDING();
     
         /**
         Constructs an empty string.
@@ -92,7 +87,7 @@ class VString
         */
         VString(const VChar& c);
         /**
-        Constructs a string from another string.
+        "Copy Constructor" -- constructs from another VString.
         @param    s    the string to copy
         */
         VString(const VString& s);
@@ -109,6 +104,7 @@ class VString
         we avoid ambiguous linkage with the vararg ctor below.
         @param    s    pointer to C string to copy
         */
+		//lint -e1776 Converting a string literal to char * is not const safe
         VString(char* s);
 
 #ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
@@ -149,19 +145,19 @@ class VString
         virtual ~VString();
 
         /**
-        Copy constructor.
+        Basic assignment operator.
         @param    s    the string to copy
         */
         VString& operator=(const VString& s);
         /**
-        Copy constructor.
+        Assign from a pointer to VString.
         @param    s    the string pointer to copy
         */
         VString& operator=(const VString* s);
 
 #ifdef VAULT_QT_SUPPORT
         /**
-        Copy constructor from QString.
+        Assign from a QString.
         @param    s    the QString to copy
         */
         VString& operator=(const QString& s);
@@ -447,19 +443,19 @@ class VString
         char charAt(int i) const;
         /**
         Coerces the string to a C string, for use with APIs that take
-        a char* parameter.
+        a const char* parameter.
         In fact, this coercion returns the string buffer pointer.
         @return    the char buffer pointer
         */
-        operator char*() const;
+        operator const char*() const;
         /**
         Returns the string as a C string, for use with APIs that take
-        a char* parameter.
-        In fact, this coercion returns the string buffer pointer.
-        This is the same as operator char*, but is explicit. You need
-        an explicit method like this when passing to an API that
-        does not ensure a proper cast, such as vararg calls like
-        printf and sprintf.
+        a const char* parameter. The result is a const pointer, so the
+        caller cannot modify the string. In fact, this coercion returns
+        the string buffer pointer. This is the same as operator const char*,
+        but is explicit. You need an explicit method like this when passing
+        to an API that does not have sufficient type information, such as
+        vararg calls like printf and sprintf.
         
         Example:    \c    printf("string='%s'\n", myString->chars());
         
@@ -468,7 +464,7 @@ class VString
         myString other than as a pointer value.
         @return    the char buffer pointer
         */
-        char* chars() const;
+        const char* chars() const;
 
 #ifdef VAULT_QT_SUPPORT
         /**
@@ -539,7 +535,7 @@ class VString
         /**
         Returns true if this string starts with the specified string (ignoring case).
         @param    s    the string to search for
-        @return true if this string starts with the specified string
+        @return true if this string starts with the specified string (ignoring case)
         */
         bool startsWithIgnoreCase(const VString& s) const;
         /**
@@ -554,6 +550,12 @@ class VString
         @return true if this string ends with the specified string
         */
         bool endsWith(const VString& s) const;
+        /**
+        Returns true if this string ends with the specified string (ignoring case).
+        @param    s    the string to search for
+        @return true if this string ends with the specified string (ignoring case)
+        */
+        bool endsWithIgnoreCase(const VString& s) const;
         /**
         Returns true if this string ends with the specified char.
         @param    c    the char to search for
@@ -639,6 +641,36 @@ class VString
         */
         bool regionMatches(int thisIndex, const VString& otherString, int otherIndex, int regionLength, bool caseSensitive=true) const;
         /**
+        Returns true if the specified character exists in this string.
+        @param    c            the character to search for
+        @param    fromIndex    index in this string to start the search from
+        @return   true if the character was found
+        */
+        bool contains(char c, int fromIndex=0) const;
+        /**
+        Returns true if the specified character exists in this string,
+        using a case-insensitive match.
+        @param    c            the character to search for
+        @param    fromIndex    index in this string to start the search from
+        @return   true if the character was found
+        */
+        bool containsIgnoreCase(char c, int fromIndex=0) const;
+        /**
+        Returns true if the specified string exists in this string.
+        @param    s            the string to look for
+        @param    fromIndex    index in this string to start the search from
+        @return   true if the string was found
+        */
+        bool contains(const VString& s, int fromIndex=0) const;
+        /**
+        Returns true if the specified string exists in this string,
+        using a case-insensitive match.
+        @param    s            the string to look for
+        @param    fromIndex    index in this string to start the search from
+        @return   true if the string was found
+        */
+        bool containsIgnoreCase(const VString& s, int fromIndex=0) const;
+        /**
         Replaces every occurrence of the specified search string with the supplied
         replacement string. Returns the number of replacements performed, which may
         be zero.
@@ -722,7 +754,7 @@ class VString
         */
         void getSubstring(VString& toString, int startIndex/* = 0*/, int endIndex=-1) const;
         /**
-        Makes a substring of this string in place (contrast with getSubsring(),
+        Makes a substring of this string in place (contrast with getSubstring(),
         which puts the substring into a different object). The start index
         is inclusive, that is it is the index of the first character taken;
         zero means the start of the string is unchanged. The stop index is
@@ -738,6 +770,31 @@ class VString
         */
         void substringInPlace(int startIndex/* = 0*/, int endIndex=-1);
         /**
+        Splits the string into pieces using a specified delimiter character.
+        Trailing empty strings are omitted in the output.
+        The intent is to behave similarly to Java String.split().
+        @param  result      this string vector is cleared and then fill with the result
+        @param  delimiter   the character that delimits the split points
+        @param  limit       if non-zero, the max number of result items; if the string
+                                has more elements than that, the trailing part of the
+                                string is collapsed into one element (including delimiters)
+        @param  stripTrailingEmpties if true, any empty strings at the end of the resulting
+                                list are discarded (this is the Java String.split() behavior)
+        */
+        void split(VStringVector& result, const VChar& delimiter, int limit=0, bool stripTrailingEmpties=true);
+        /**
+        Convenience version of split() that returns the vector. Will likely incur copy overhead
+        compared to the non-returning version, so use the other version in time-critical code.
+        @param  delimiter   the character that delimits the split points
+        @param  limit       if non-zero, the max number of result items; if the string
+                                has more elements than that, the trailing part of the
+                                string is collapsed into one element (including delimiters)
+        @param  stripTrailingEmpties if true, any empty strings at the end of the resulting
+                                list are discarded (this is the Java String.split() behavior)
+        @return a vector of split result strings
+        */
+        VStringVector split(const VChar& delimiter, int limit=0, bool stripTrailingEmpties=true);
+        /**
         Strips leading and trailing whitespace from the string.
         Whitespace as implemented here is defined as ASCII byte
         values <= 0x20 as well as 0x7F.
@@ -750,15 +807,13 @@ class VString
         @param    toBuffer    the char buffer to copy into
         @param  bufferSize  the length of the target buffer (so we can verify capacity)
         */
-        void copyToBuffer(char* toBuffer, int bufferSize/*=LONG_MAX*/) const;
+        void copyToBuffer(char* toBuffer, int bufferSize) const;
         /**
         Sets the string by copying a number of characters from the source buffer.
         @param    fromBuffer    the char buffer to copy from
         @param    startIndex    the offset in the buffer to start from, inclusive (0 starts at first character)
         @param    endIndex    the offset in the buffer to stop at, exclusive (end-start is the length,
                               thus strlen(fromBuffer) will copy to the last character).
-                              In Code Vault 2.3.2, LONG_MAX was a magic value for this parameter; now you
-                              should pass the desired length explicitly.
         */
         void copyFromBuffer(const char* fromBuffer, int startIndex, int endIndex);
         /**
@@ -815,12 +870,43 @@ class VString
         */
         void preflightWithSimulatedFailure();
         /**
-        Returns the string's buffer pointer. This method should only be used
+        Returns the string's char buffer pointer. This method should only be used
         in special circumstances by code that is also calling preflight() and
-        postflight() to manage the buffer.
+        postflight() to manage the buffer. The pointer is non-const, for the
+        purpose of allowing the caller to manipulate the buffer under the
+        preflight/postflight rules.
         @return    the buffer pointer
         */
         char* buffer();
+        /**
+        Returns the string's buffer pointer as a Vu8 pointer, which is a type
+        directly compatible with the various stream data reading APIs. So this
+        method lets the caller avoid a reinterpret_cast that is often otherwise
+        needed when doing stream reads into the string data buffer. This method
+        should only be used in special circumstances by code that is also calling
+        preflight() and postflight() to manage the buffer. The returned pointer
+        is non-const, for the purpose of allowing the caller to manipulate the
+        buffer under the preflight/postflight rules.
+        @return    the buffer pointer
+        */
+        Vu8* getDataBuffer();
+        /**
+        Returns the string's buffer pointer as a const Vu8 pointer, which is a type
+        directly compatible with the various stream data writing APIs. So this
+        method lets the caller avoid a reinterpret_cast that is often otherwise
+        needed when doing stream writes from the string data buffer.
+        @return    the buffer pointer
+        */
+        const Vu8* getDataBufferConst() const;
+        /**
+        Transfers ownership of the string's buffer to the caller and sets the string
+        to empty (with no buffer). This is a way of extracting a char buffer from a
+        VString such that the VString can be destructed and the caller retains the
+        buffer.
+        @return    the buffer pointer, which is now owned by the caller and no longer
+                    referenced by the VString object (which is now an "empty" string)
+        */
+        char* orphanDataBuffer();
         /**
         Syncs the internal data to the specified length, setting the length
         and writing a null terminator into the buffer. Again, this should only
@@ -863,7 +949,7 @@ class VString
         Vu64 _parseUnsignedInteger() const;
     
         /** Asserts if any invariant is broken. */
-        void assertInvariant() const;
+        void _assertInvariant() const;
 
 #ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
         /**
@@ -900,16 +986,6 @@ the only platform that needs this workaround.
 #endif
 
     };
-
-/**
-VStringVector is simply a vector of VString objects. Note that the vector
-elements are objects, not pointers to objects.
-*/
-typedef std::vector<VString> VStringVector;
-/**
-VStringPtrVector is a vector of pointers to VString objects.
-*/
-typedef std::vector<VString*> VStringPtrVector;
 
 inline bool operator==(const VString& s1, const VString& s2) { return ::strcmp(s1, s2) == 0; }    ///< Compares s1 and s2 for equality. @param    s1    a string @param    s2    a string @return true if s1 and s2 are equal according to strcmp()
 inline bool operator==(const VString& s1, const char* s2) { return ::strcmp(s1, s2) == 0; }        ///< Compares s1 and s2 for equality. @param    s1    a string @param    s2    a C string @return true if s1 and s2 are equal according to strcmp()

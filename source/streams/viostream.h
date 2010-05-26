@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -59,14 +59,14 @@ class VIOStream
         @param    targetBuffer    the buffer to read into
         @param    numBytesToRead    the number of bytes to read
         */
-        void    readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead);
+        void readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead);
         /**
         Attempts to read a specified number of bytes from the stream.
         @param    targetBuffer    the buffer to read into
         @param    numBytesToRead    the number of bytes to read
         @return    the actual number of bytes that could be read
         */
-        Vs64    read(Vu8* targetBuffer, Vs64 numBytesToRead);
+        Vs64 read(Vu8* targetBuffer, Vs64 numBytesToRead);
         
         /**
         Writes bytes to the stream.
@@ -74,13 +74,13 @@ class VIOStream
         @param    numBytesToWrite    the number of bytes to write to the stream
         @return the actual number of bytes written
         */
-        Vs64    write(const Vu8* buffer, Vs64 numBytesToWrite);
+        Vs64 write(const Vu8* buffer, Vs64 numBytesToWrite);
         /**
         Flushes any pending or buffered write data to the stream. Until you
         call flush, you cannot guarantee that your data has actually been
         written to the underlying physical stream.
         */
-        void    flush();
+        void flush();
         
         /**
         Skips forward in the stream a specified number of bytes. For memory
@@ -89,7 +89,7 @@ class VIOStream
         the specified number of bytes.
         @param    numBytesToSkip    the number of bytes to skip
         */
-        bool    skip(Vs64 numBytesToSkip);
+        bool skip(Vs64 numBytesToSkip);
         /**
         Seeks in the stream using Unix seek() semantics. VSocketStream has
         some restrictions in the kinds of seek that are allowed; if you
@@ -129,11 +129,11 @@ class VIOStream
         </tr>
         </table>
         
-        @param    inOffset    the offset, meaning depends on whence value
+        @param    offset    the offset, meaning depends on whence value
         @param    whence    SEEK_SET, SEEK_CUR, or SEEK_END
         @return true if the seek was successful
         */
-        bool     seek(Vs64 inOffset, int whence);
+        bool seek(Vs64 offset, int whence);
         /**
         Returns the "current" "offset" in the stream. Those scare quotes are
         there because those terms do not quite have consistent or uniform
@@ -151,9 +151,9 @@ class VIOStream
         Unbuffered file streams have no ability to determine the current i/o
         mark, yet allow seeking; so there is no way for the class to keep
         track of the current offset on its own; so, for unbuffered file streams,
-        offset() throws an exception because it is an illegal operation.
+        getIOOffset() throws an exception because it is an illegal operation.
         */
-        Vs64    offset() const;
+        Vs64 getIOOffset() const;
         /**
         Returns the number of bytes that are available to be read from this
         stream. For file and memory streams, this means the number of bytes
@@ -163,50 +163,7 @@ class VIOStream
         be read on the socket at this time).
         @return the number of bytes currently available for reading
         */
-        Vs64    available() const;
-        
-        /**
-        Efficiently copies bytes from one stream to another, no matter which
-        concrete stream types are being used. Some examples of using it
-        include reading a file into memory (fromStream is VAbstractFileStream-derived,
-        toStream is a VMemoryStream), writing from memory to a socket
-        (fromStream is a VMemoryStream, toStream is a VSocketStream), and
-        transferring a file to a socket (fromStream is VAbstractFileStream-derived,
-        toStream is a VSocketStream).
-        
-        If either of the streams is a VMemoryStream, the copy is made
-        directly with no extra copying. If neither stream is a VMemoryStream,
-        a temporary buffer is used to transfer the data with just a single
-        copy.
-        
-        Of course, this method does not actually know the stream classes,
-        but simply asks the to and from streams about their capabilities.
-        
-        @param    fromStream    the source stream that is read
-        @param    toStream    the target stream that is written
-        @param    numBytesToCopy    the number of bytes read from fromStream and write to toStream
-        @param    tempBufferSize    the size of temporary buffer to create, if one is needed
-        @return the actual number of bytes copied
-        */
-        friend Vs64 streamCopy(VIOStream& fromStream, VIOStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize=16384);
-        /**
-        Same as other streamCopy methods, but takes a VIOStream& and a VStream&.
-        @param    fromStream    the source stream that is read
-        @param    toStream    the target stream that is written
-        @param    numBytesToCopy    the number of bytes read from fromStream and write to toStream
-        @param    tempBufferSize    the size of temporary buffer to create, if one is needed
-        @return the actual number of bytes copied
-        */
-        friend Vs64 streamCopy(VIOStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize=16384);
-        /**
-        Same as other streamCopy methods, but takes a VStream& and a VIOStream&.
-        @param    fromStream    the source stream that is read
-        @param    toStream    the target stream that is written
-        @param    numBytesToCopy    the number of bytes read from fromStream and write to toStream
-        @param    tempBufferSize    the size of temporary buffer to create, if one is needed
-        @return the actual number of bytes copied
-        */
-        friend Vs64 streamCopy(VStream& fromStream, VIOStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize=16384);
+        Vs64 available() const;
         
         /**
         Returns a reference to the underlying raw stream; used by the friend
@@ -215,7 +172,7 @@ class VIOStream
         some debugging functions.
         @return    a reference to the underlying raw stream
         */
-        VStream& rawStream();
+        VStream& getRawStream();
 
         
         /**
@@ -227,7 +184,13 @@ class VIOStream
 
     protected:
     
-        VStream&    mRawStream;    ///< The underlying raw stream.
+        VStream& mRawStream;    ///< The underlying raw stream.
+
+    private:
+    
+        // Prevent copy construction and assignment since there is no provision for sharing a raw stream.
+        VIOStream(const VIOStream& other);
+        VIOStream& operator=(const VIOStream& other);
     };
 
 /** @} */

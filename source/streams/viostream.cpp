@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -40,14 +40,14 @@ bool VIOStream::skip(Vs64 numBytesToSkip)
     return mRawStream.skip(numBytesToSkip);
     }
 
-bool VIOStream::seek(Vs64 inOffset, int whence)
+bool VIOStream::seek(Vs64 offset, int whence)
     {
-    return mRawStream.seek(inOffset, whence);
+    return mRawStream.seek(offset, whence);
     }
 
-Vs64 VIOStream::offset() const
+Vs64 VIOStream::getIOOffset() const
     {
-    return mRawStream.offset();
+    return mRawStream.getIOOffset();
     }
 
 Vs64 VIOStream::available() const
@@ -55,82 +55,64 @@ Vs64 VIOStream::available() const
     return mRawStream.available();
     }
 
-VStream& VIOStream::rawStream()
+VStream& VIOStream::getRawStream()
     {
     return mRawStream;
     }
 
 // static
-Vs64 /*VIOStream::*/streamCopy(VIOStream& fromStream, VIOStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize)
-    {
-    return /*VStream::*/streamCopy(fromStream.rawStream(), toStream.rawStream(), numBytesToCopy, tempBufferSize);
-    }
-
-// static
-Vs64 /*VIOStream::*/streamCopy(VIOStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize)
-    {
-    return /*VStream::*/streamCopy(fromStream.rawStream(), toStream, numBytesToCopy, tempBufferSize);
-    }
-
-// static
-Vs64 /*VIOStream::*/streamCopy(VStream& fromStream, VIOStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize)
-    {
-    return /*VStream::*/streamCopy(fromStream, toStream.rawStream(), numBytesToCopy, tempBufferSize);
-    }
-
-// static
 Vs16 VIOStream::streamCompare(VIOStream& streamA, VIOStream& streamB, Vs64 numBytesToCompare)
     {
-    Vs64 offsetA = streamA.offset();
-    Vs64 offsetB = streamB.offset();
+    Vs64 offsetA = streamA.getIOOffset();
+    Vs64 offsetB = streamB.getIOOffset();
     
     Vs16 compareResult = 0;        // Assume equal until we know better
     while (numBytesToCompare-- > 0)
         {
-            Vu8 byteA, byteB;
-            bool aEnded = false, bEnded = false;
+        Vu8 byteA = 0, byteB = 0;
+        bool aEnded = false, bEnded = false;
+        
+        try
+            {
+            streamA.read(&byteA, CONST_S64(1));
+            }
+        catch (const VEOFException& /*ex*/)
+            {
+            aEnded = true;
+            }
             
-            try
-                {
-                streamA.read(&byteA, CONST_S64(1));
-                }
-            catch (const VEOFException& /*ex*/)
-                {
-                aEnded = true;
-                }
-                
-            try
-                {
-                streamB.read(&byteB, CONST_S64(1));
-                }
-            catch (const VEOFException& /*ex*/)
-                {
-                bEnded = true;
-                }
-                
-            if (aEnded && bEnded)
-                break;
-            else if (aEnded)
-                {
-                compareResult = -1;
-                break;
-                }
-            else if (bEnded)
-                {
-                compareResult = 1;
-                break;
-                }
-                
-            if (byteA < byteB)
-                {
-                compareResult = -1;
-                break;
-                }
-            else if (byteA > byteB)
-                {
-                compareResult = 1;
-                break;
-                }
+        try
+            {
+            streamB.read(&byteB, CONST_S64(1));
+            }
+        catch (const VEOFException& /*ex*/)
+            {
+            bEnded = true;
+            }
+            
+        if (aEnded && bEnded)
+            break;
+        else if (aEnded)
+            {
+            compareResult = -1;
+            break;
+            }
+        else if (bEnded)
+            {
+            compareResult = 1;
+            break;
+            }
+            
+        if (byteA < byteB)
+            {
+            compareResult = -1;
+            break;
+            }
+        else if (byteA > byteB)
+            {
+            compareResult = 1;
+            break;
+            }
         }
     
     streamA.seek(offsetA, SEEK_SET);

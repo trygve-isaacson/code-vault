@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -10,6 +10,9 @@ http://www.bombaydigital.com/
 
 #include "vexception.h"
 #include "vinstant.h"
+#include "vbufferedfilestream.h"
+#include "vtextiostream.h"
+#include "vbinaryiostream.h"
 
 // VListNodeInfoCallback -----------------------------------------------------
 
@@ -23,6 +26,10 @@ class VFSNodeListCallback : public VDirectoryIterationCallback
         virtual bool handleNextNode(const VFSNode& node);
 
     private:
+
+        // Prevent copy construction and assignment.
+        VFSNodeListCallback(const VFSNodeListCallback& other);
+        VFSNodeListCallback& operator=(const VFSNodeListCallback& other);
 
         VFSNodeVector& mNodeList;
     };
@@ -45,6 +52,10 @@ class VFSNodeNameCallback : public VDirectoryIterationCallback
         virtual bool handleNextNode(const VFSNode& node);
 
     private:
+
+        // Prevent copy construction and assignment.
+        VFSNodeNameCallback(const VFSNodeNameCallback& other);
+        VFSNodeNameCallback& operator=(const VFSNodeNameCallback& other);
 
         VStringVector& mNameList;
     };
@@ -81,7 +92,8 @@ class VFSNodeFindCallback : public VDirectoryIterationCallback
 VFSNodeFindCallback::VFSNodeFindCallback(const VString& nameToMatch) :
 VDirectoryIterationCallback(),
 mFound(false),
-mNameToMatchLowerCase(nameToMatch)
+mNameToMatchLowerCase(nameToMatch),
+mMatchedNode() // -> empty path
     {
     mNameToMatchLowerCase.toLowerCase();
     }
@@ -116,7 +128,120 @@ void VFSNode::denormalizePath(VString& path)
     VFSNode::_platform_denormalizePath(path);
     }
 
-VFSNode::VFSNode()
+// static
+VFSNode VFSNode::getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName)
+    {
+    return VFSNode::_platform_getKnownDirectoryNode(id, companyName, appName);
+    }
+
+// static
+VFSNode VFSNode::getCurrentWorkingDirectory()
+    {
+    return VFSNode::getKnownDirectoryNode(CURRENT_WORKING_DIRECTORY, VString::EMPTY(), VString::EMPTY());
+    }
+
+// static
+VFSNode VFSNode::getExecutableDirectory()
+    {
+    VFSNode executable = VFSNode::getExecutable();
+    VFSNode executableDirectory;
+    executable.getParentNode(executableDirectory);
+    return executableDirectory;
+    }
+
+// static
+VFSNode VFSNode::getExecutable()
+    {
+    return VFSNode::_platform_getExecutable();
+    }
+
+// static
+void VFSNode::safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinaryIOStream& dataStream)
+    {
+    bool success = true;
+    VString errorMessage;
+
+    VString targetFileName = target.getName();
+
+    VInstant now;
+    VString temporaryFileName = now.getLocalString(true/*file name safe*/) + "_tmp_" + targetFileName;
+    VFSNode directoryNode;
+    target.getParentNode(directoryNode);
+    VFSNode temporaryFileNode(directoryNode, temporaryFileName);
+    
+    // Create and write to the temp file within a scope block to ensure file is closed when scope is exited.
+        { // begin stream scope
+        VBufferedFileStream tempFileStream(temporaryFileNode);
+        VBinaryIOStream tempOutputStream(tempFileStream);
+        
+        try
+            {
+            tempFileStream.openWrite();
+            }
+        catch (const VException& ex)
+            {
+            success = false;
+            errorMessage = VString("Unable to open temporary file '%s': %s", target.getPath().chars(), ex.what());
+            }
+        
+        if (success)
+            {
+            try
+                {
+                VStream::streamCopy(dataStream, tempOutputStream, dataLength);
+                tempOutputStream.flush();
+                }
+            catch (const VException& ex)
+                {
+                success = false;
+                errorMessage = VString("Unable to write to temporary file '%s': %s", target.getPath().chars(), ex.what());
+                }
+            }
+        } // end stream scope
+
+    /*
+    If we succeeded, delete the original file and rename the temporary file to replace it.
+    If we failed, delete the temporary file.
+    Do this itself in separate phases, so that if the delete/rename fails, we still delete the temporary file.
+    */
+    // 1. Remove target. (It might not exist yet.)
+    if (success && target.exists())
+        {
+        if (! target.rm())
+            {
+            success = false;
+            errorMessage = VString("Unable to remove target file '%s'.", target.getPath().chars());
+            }
+        }
+
+    // 2. Rename temporary to target.
+    if (success)
+        {
+        try
+            {
+            temporaryFileNode.renameToNode(target);
+            }
+        catch (const VException& ex)
+            {
+            success = false;
+            errorMessage = VString("Failed renaming '%s' to '%s': %s", temporaryFileNode.getPath().chars(), target.getPath().chars(), ex.what());
+            }
+        }
+
+    // 3. Remove temporary if unsuccessful.
+    if (! success)
+        {
+        if (! temporaryFileNode.rm())
+            errorMessage += VString(" Removal of temporary file '%s' failed.", temporaryFileNode.getPath().chars());
+        }
+
+    // If we failed, throw an exception with the error message we built wherever we encountered errors.
+    if (! success)
+        throw VException(errorMessage);
+    }
+
+VFSNode::VFSNode() :
+mPath() // -> empty
     {
     }
 
@@ -130,6 +255,12 @@ mPath(path)
     {
     if (path.isEmpty())
         mPath = ".";
+    }
+
+VFSNode::VFSNode(const VFSNode& directory, const VString& childName) :
+mPath()
+    {
+    directory.getChildNode(childName, *this);
     }
 
 VFSNode& VFSNode::operator=(const VFSNode& other)
@@ -163,6 +294,13 @@ void VFSNode::getName(VString& name) const
     name.copyFromBuffer(mPath.chars(), mPath.lastIndexOf('/') + 1, mPath.length());
     }
 
+VString VFSNode::getName() const
+    {
+    VString name;
+    this->getName(name);
+    return name;
+    }
+
 void VFSNode::getParentPath(VString& parentPath) const
     {
     parentPath.copyFromBuffer(mPath.chars(), 0, mPath.lastIndexOf('/'));
@@ -170,7 +308,7 @@ void VFSNode::getParentPath(VString& parentPath) const
 
 void VFSNode::getParentNode(VFSNode& parent) const
     {
-    VString    parentPath;
+    VString parentPath;
 
     this->getParentPath(parentPath);
     parent.setPath(parentPath);
@@ -183,7 +321,7 @@ void VFSNode::getChildPath(const VString& childName, VString& childPath) const
 
 void VFSNode::getChildNode(const VString& childName, VFSNode& child) const
     {
-    VString    childPath;
+    VString childPath;
 
     this->getChildPath(childName, childPath);
     child.setPath(childPath);
@@ -222,8 +360,8 @@ bool VFSNode::rm() const
     if (! this->exists())
         return false;
 
-    bool    success = true;
-    bool    isDir = this->isDirectory();
+    bool success = true;
+    bool isDir = this->isDirectory();
 
     if (isDir)
         success = this->rmDirContents();
@@ -242,7 +380,7 @@ bool VFSNode::rm() const
 bool VFSNode::rmDirContents() const
     {
     bool            allSucceeded = true;
-    VFSNodeVector    children;
+    VFSNodeVector   children;
 
     this->list(children);
 
@@ -256,39 +394,34 @@ bool VFSNode::rmDirContents() const
 
 void VFSNode::renameToPath(const VString& newPath) const
     {
-    VFSNode newNode(newPath);
-    VString newName;
-
-    newNode.getName(newName);
-
-    this->_platform_renameNode(newName);
+    this->_platform_renameNode(newPath);
     }
 
 void VFSNode::renameToName(const VString& newName) const
     {
-    this->_platform_renameNode(newName);
+    VFSNode destinationNode; // not used
+    this->renameToName(newName, destinationNode);
     }
 
 void VFSNode::renameToName(const VString& newName, VFSNode& nodeToUpdate) const
     {
-    this->_platform_renameNode(newName);
-
-    VFSNode    parentNode;
+    VFSNode parentNode;
     this->getParentNode(parentNode);
 
-    VString    newPath;
+    VString newPath;
     parentNode.getChildPath(newName, newPath);
+
+    this->_platform_renameNode(newPath);
 
     nodeToUpdate.setPath(newPath);    // it IS allowed for nodeToUpdate to be this
     }
 
 void VFSNode::renameToNode(const VFSNode& newNode) const
     {
-    VString    newPath;
-
+    VString newPath;
     newNode.getPath(newPath);
 
-    this->renameToPath(newPath);
+    this->_platform_renameNode(newPath);
     }
 
 void VFSNode::list(VStringVector& children) const
@@ -320,19 +453,51 @@ bool VFSNode::find(const VString& name, VFSNode& node) const
     return found;
     }
 
+void VFSNode::readAll(VString& s, bool includeLineEndings)
+    {
+    VBufferedFileStream fs(*this);
+    fs.openReadOnly();
+    VTextIOStream in(fs);
+    in.readAll(s, includeLineEndings);
+    }
+
+void VFSNode::readAll(VStringVector& lines)
+    {
+    VBufferedFileStream fs(*this);
+    fs.openReadOnly();
+    VTextIOStream in(fs);
+    in.readAll(lines);
+    }
+
 bool VFSNode::exists() const
     {
     VFSNodeInfo info;
     return this->_platform_getNodeInfo(info); // only the function result is needed
     }
 
+// static
+VString VFSNode::readTextFile(const VString& path, bool includeLineEndings)
+    {
+    VFSNode node(path);
+    VString text;
+    node.readAll(text, includeLineEndings);
+    return text;
+    }
+
+// static
+void VFSNode::readTextFile(const VString& path, VStringVector& lines)
+    {
+    VFSNode node(path);
+    node.readAll(lines);
+    }
+
 VInstant VFSNode::creationDate() const
     {
     VFSNodeInfo info;
-    bool exists = this->_platform_getNodeInfo(info);
+    bool nodeExists = this->_platform_getNodeInfo(info);
 
-    if (!exists)
-        throw VException(info.mErrNo, "VFSNode::creationDate failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars());
+    if (!nodeExists)
+        throw VException(info.mErrNo, VString("VFSNode::creationDate failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars()));
 
     return VInstant::instantFromRawValue(info.mCreationDate);
     }
@@ -340,10 +505,10 @@ VInstant VFSNode::creationDate() const
 VInstant VFSNode::modificationDate() const
     {
     VFSNodeInfo info;
-    bool exists = this->_platform_getNodeInfo(info);
+    bool nodeExists = this->_platform_getNodeInfo(info);
 
-    if (!exists)
-        throw VException(info.mErrNo, "VFSNode::modificationDate failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars());
+    if (!nodeExists)
+        throw VException(info.mErrNo, VString("VFSNode::modificationDate failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars()));
 
     return VInstant::instantFromRawValue(info.mModificationDate);
     }
@@ -351,10 +516,10 @@ VInstant VFSNode::modificationDate() const
 VFSize VFSNode::size() const
     {
     VFSNodeInfo info;
-    bool exists = this->_platform_getNodeInfo(info);
+    bool nodeExists = this->_platform_getNodeInfo(info);
 
-    if (!exists)
-        throw VException(info.mErrNo, "VFSNode::size failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars());
+    if (!nodeExists)
+        throw VException(info.mErrNo, VString("VFSNode::size failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars()));
 
     return info.mFileSize;
     }
@@ -362,140 +527,17 @@ VFSize VFSNode::size() const
 bool VFSNode::isFile() const
     {
     VFSNodeInfo info;
-    bool exists = this->_platform_getNodeInfo(info);
+    bool nodeExists = this->_platform_getNodeInfo(info);
 
-    return exists && info.mIsFile;
+    return nodeExists && info.mIsFile;
     }
 
 bool VFSNode::isDirectory() const
     {
     VFSNodeInfo info;
-    bool exists = this->_platform_getNodeInfo(info);
+    bool nodeExists = this->_platform_getNodeInfo(info);
 
-    return exists && info.mIsDirectory;
-    }
-
-// This is a useful place to put a breakpoint when things aren't going as planned.
-static void _debugCheck(bool success)
-    {
-    if (! success)
-        {
-        int        e = errno;
-        char*    s = ::strerror(e);
-        s = NULL;    // avoid compiler warning for unused variable s
-        }
-    }
-
-// static
-int VFSNode::_wrap_mkdir(const char* path, mode_t mode)
-    {
-    int        result;
-    bool    done = false;
-
-    while (! done)
-        {
-        result = vault::mkdir(path, mode);
-
-        if ((result == 0) || (errno != EINTR))
-            done = true;
-        }
-
-    /*
-    If two threads are competing to create the same directory, even if they
-    both check for its existence, they might end up trying to create it at
-    the same time -- one of them will get result -1 with errno == EEXIST.
-    The best thing for our interface is to have mkdir succeed if the directory
-    already exists.
-    */
-
-    if ((result == -1) && (errno == EEXIST))
-        {
-        // Call stat to determine whether the existent node is a directory.
-        // If it is, then we "succeeded" in creating it.
-        VFSNode node(path);
-        if (node.isDirectory())
-            result = 0;
-        }
-
-    _debugCheck(result == 0);
-
-    return result;
-    }
-
-// static
-int VFSNode::_wrap_rename(const char* oldName, const char* newName)
-    {
-    int        result;
-    bool    done = false;
-
-    while (! done)
-        {
-        result = vault::rename(oldName, newName);
-
-        if ((result == 0) || (errno != EINTR))
-            done = true;
-        }
-
-    _debugCheck(result == 0);
-
-    return result;
-    }
-
-// static
-int VFSNode::_wrap_stat(const char* path, struct stat* buf)
-    {
-    int        result;
-    bool    done = false;
-
-    while (! done)
-        {
-        result = vault::stat(path, buf);
-
-        if ((result == 0) || (errno != EINTR))
-            done = true;
-        }
-
-    _debugCheck(result == 0);
-
-    return result;
-    }
-
-// static
-int VFSNode::_wrap_unlink(const char* path)
-    {
-    int        result;
-    bool    done = false;
-
-    while (! done)
-        {
-        result = vault::unlink(path);
-
-        if ((result == 0) || (errno != EINTR))
-            done = true;
-        }
-
-    _debugCheck(result == 0);
-
-    return result;
-    }
-
-// static
-int VFSNode::_wrap_rmdir(const char* path)
-    {
-    int        result;
-    bool    done = false;
-
-    while (! done)
-        {
-        result = vault::rmdir(path);
-
-        if ((result == 0) || (errno != EINTR))
-            done = true;
-        }
-
-    _debugCheck(result == 0);
-
-    return result;
+    return nodeExists && info.mIsDirectory;
     }
 
 // VFSNodeInfo ---------------------------------------------------------------

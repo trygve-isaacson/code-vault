@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -20,17 +20,10 @@ http://www.bombaydigital.com/
 // We define our own names here so that we are independent of the platform names,
 // and don't conflict with any similarly-named platform typedefs (such as "ThreadID").
 
-#ifdef __MWERKS__
-    typedef ULONG           VThreadID_Type;
-#else
-    typedef uintptr_t       VThreadID_Type;
-#endif
+typedef DWORD               VThreadID_Type;
 typedef HANDLE              VSemaphore_Type;
 typedef CRITICAL_SECTION    VMutex_Type;
 typedef long                VTimeout_Type;
-
-typedef void (*Win32ThreadMainFunction)(void* arg);
-typedef unsigned (__stdcall *Win32ThreadMainFunctionEx)(void* arg);
 
 #endif /* vthread_platform_h */
 

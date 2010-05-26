@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -43,8 +43,10 @@ http://www.bombaydigital.com/
 // We have to define VSocketID here because we don't include platform (it includes us).
 #ifdef VPLATFORM_WIN
     typedef SOCKET VSocketID;    ///< The platform-dependent definition of a socket identifier.
+    #define V_NO_SOCKET_ID_CONSTANT INVALID_SOCKET ///< Used internally to initialize kNoSocketID
 #else
     typedef int VSocketID;    ///< The platform-dependent definition of a socket identifier.
+    #define V_NO_SOCKET_ID_CONSTANT -1 ///< Used internally to initialize kNoSocketID
 #endif
 
 typedef Vu32 VNetAddr;    ///< A 32-bit IP address, in network byte order (think of it as an array of 4 bytes, not as a 32-bit integer).
@@ -54,6 +56,25 @@ class VSocket;
 /**
     @ingroup vsocket
 */
+
+/**
+VNetworkInterfaceInfo describes an Internet interface on this computer. You can
+get a list of the interfaces present by calling VSocket::enumerateNetworkInterfaces.
+If you are just looking for the "local ip address", you should just call
+VSocket::getLocalHostIPAddress(), which takes this information into account along
+with the concept of a "preferred" interface on a multi-home system (where multiple
+interfaces are active).
+*/
+class VNetworkInterfaceInfo
+    {
+    public:
+        VNetworkInterfaceInfo() : mFamily(0), mName(), mAddress() {}
+        ~VNetworkInterfaceInfo() {}
+        int mFamily;
+        VString mName;
+        VString mAddress;
+    };
+typedef std::vector<VNetworkInterfaceInfo> VNetworkInterfaceList;
 
 /**
 VSocketBase is the abstract base class from which each platform's VSocket
@@ -111,14 +132,58 @@ class VSocketBase
     public:
 
         /**
+        This function lets you specify the preferred network interface to be used
+        when locating the local IP address from among multiple available interfaces.
+        By default, "en0" (ethernet 0) is used. Note: This technique has no effect
+        on Windows because the interfaces do not have names; you will need to use
+        setPreferredLocalIPAddressPrefix() to achieve a similar effect.
+        @param  interfaceName   the name of a network interface to choose first as
+                                the local IP address when calling getLocalHostIPAddress()
+        */
+        static void setPreferredNetworkInterface(const VString& interfaceName);
+        /**
+        This function lets you specify the preferred address to be used when locating
+        the local IP address from among multiple available interfaces, by specifying
+        part or all of the address. By default, there is no setting. If you set a
+        value that is a complete address (for example, "10.40.5.210") then when you
+        call getLocalHostIPAddress(), if that address exists on any interface it will
+        be returned. If you set a value this is a partial/prefix of an address (for
+        example, "10.40.") then the first interface whose address starts with that
+        prefix will be returned; this may be useful in DHCP situations where the
+        address changes but is somewhat consistent and different from the range of
+        unwanted addresses (e.g., ethernet vs. wifi).
+        @param  addressPrefix   the partial (prefix) or full local IP address to
+                                return if found on any interface when calling
+                                getLocalHostIPAddress()
+        */
+        static void setPreferredLocalIPAddressPrefix(const VString& addressPrefix);
+        /**
         Returns the current processor's IP address. If an error occurs, this
         function throws an exception containing the error code and message.
-        Because there is some overhead involved in this function, it's best
-        if you try to call it only once, and stash the result in a global
-        that you can reference later if needed.
+        Normally the first call gets the address, and later calls return a
+        cached value; but you can pass refresh=true to force it to get the
+        address again. If you have set a preferred interface by calling
+        setPreferredNetworkInterface(), it will return that interface's address
+        if found. Otherwise, the first interface's address is returned.
+        The 127.0.0.1 loopback address is never returned.
         @param    ipAddress    a string in which to place the host name
+        @param    refresh      set true to force the address to be re-obtained by
+                                the call; otherwise, we obtain it once and cache
+                                that to be returned on subsequent calls
         */
-        static void getLocalHostIPAddress(VString& ipAddress);
+        static void getLocalHostIPAddress(VString& ipAddress, bool refresh=false);
+        /**
+        Returns a list of network interface info elements, by probing the
+        network APIs and getting all of the AF_INET elements. Note that this
+        may include multiple addresses if you have multiple network interfaces
+        such as ethernet, wi-fi, etc. To obtain the "local host" IP address,
+        you should call VSocket::getLocalHostIPAddress() rather than examining
+        the results of this call, because it examines this information but
+        takes into account the "preferred" interface that you can set with
+        VSocket::setPreferredNetworkInterface().
+        @return a list of zero or more network interfaces
+        */
+        static VNetworkInterfaceList enumerateNetworkInterfaces();
         /**
         Converts an IP address string in dot notation to a 4-byte value
         that can be stored in a stream as an int. Note that the return
@@ -196,6 +261,12 @@ class VSocketBase
         @return     the host's port number to which this socket is connected
         */
         int getPortNumber() const;
+        /**
+        Returns a string concatenating the host name and port number, for purposes
+        of socket connection identification when debugging and logging.
+        @return a string with this socket's address and port
+        */
+        const VString& getName() const { return mSocketName; }
         /**
         Closes the socket. This terminates the connection.
         */
@@ -306,8 +377,15 @@ class VSocketBase
         @param    valueLength    the length of the data pointed to by valuePtr
         */
         virtual void setSockOpt(int level, int name, void* valuePtr, int valueLength) = 0;
+        /**
+        For "int" socket options, this helper function simplifies use of setSockOpt.
+        @param  level   the option level
+        @param  name    the option name
+        @param  value   the option value
+        */
+        void setIntSockOpt(int level, int name, int value);
 
-        static const VSocketID kNoSocketID = -1;        ///< The sock id for a socket that is not connected.
+        static const VSocketID kNoSocketID = V_NO_SOCKET_ID_CONSTANT; ///< The sock id for a socket that is not connected.
         static const int kDefaultBufferSize = 65535;    ///< The default buffer size.
         static const int kDefaultServiceType = 0x08;    ///< The default service type.
         static const int kDefaultNoDelay = 1;           ///< The default nodelay value.
@@ -328,9 +406,6 @@ class VSocketBase
         */
         virtual void _listen(const VString& bindAddress, int backlog) = 0;
 
-        /** Asserts if any invariant is broken. */
-        void assertInvariant() const;
-
         VSocketID       mSocketID;              ///< The socket id.
         VString         mHostName;              ///< The name of the host to which the socket is connected.
         int             mPortNumber;            ///< The port number on the host to which the socket is connected.
@@ -342,6 +417,11 @@ class VSocketBase
         Vs64            mNumBytesRead;          ///< Number of bytes read from this socket.
         Vs64            mNumBytesWritten;       ///< Number of bytes written to this socket.
         VInstant        mLastEventTime;         ///< Timestamp of last read or write.
+        VString         mSocketName;            ///< Returned by getName(), useful purely for logging and debugging.
+        
+        static VString gPreferredNetworkInterfaceName;
+        static VString gPreferredLocalIPAddressPrefix;
+        static VString gCachedLocalHostIPAddress;
     };
 
 /**

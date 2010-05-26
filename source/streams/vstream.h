@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -20,7 +20,7 @@ http://www.bombaydigital.com/
     The stream facilities provided by the Vault are extremely easy to use,
     and provide a clean and simple architecture for stream i/o.
     There are two layers in the stream architecture. Usually you will
-    talk to the upper layer, even if you have to instantiate lower
+    talk to the upper layer, even if you have to instantiate lowerx
     layer objects to set up the stream.
     
     <h4>Lower Layer: Raw Streams</h4>
@@ -99,6 +99,9 @@ http://www.bombaydigital.com/
     it the lower level stream object to use as a transport.
     
 */
+
+// Allows us to declare our static streamCopy functions here.
+class VIOStream;
 
 /**
     @defgroup vstream_derived Raw Streams (lower layer)
@@ -215,14 +218,14 @@ class VStream
         @param    targetBuffer    the buffer to read into
         @param    numBytesToRead    the number of bytes to read
         */
-        void            readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead);
+        void readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead);
         /**
         Attempts to read a specified number of bytes from the stream.
         @param    targetBuffer    the buffer to read into
         @param    numBytesToRead    the number of bytes to read
         @return    the actual number of bytes that could be read
         */
-        virtual Vs64    read(Vu8* targetBuffer, Vs64 numBytesToRead) = 0;
+        virtual Vs64 read(Vu8* targetBuffer, Vs64 numBytesToRead) = 0;
         
         /**
         Writes bytes to the stream.
@@ -230,13 +233,13 @@ class VStream
         @param    numBytesToWrite    the number of bytes to write to the stream
         @return the actual number of bytes written
         */
-        virtual Vs64    write(const Vu8* buffer, Vs64 numBytesToWrite) = 0;
+        virtual Vs64 write(const Vu8* buffer, Vs64 numBytesToWrite) = 0;
         /**
         Flushes any pending or buffered write data to the stream. Until you
         call flush, you cannot guarantee that your data has actually been
         written to the underlying physical stream.
         */
-        virtual void    flush() = 0;
+        virtual void flush() = 0;
         
         /**
         Skips forward in the stream a specified number of bytes. For memory
@@ -245,7 +248,7 @@ class VStream
         the specified number of bytes.
         @param    numBytesToSkip    the number of bytes to skip
         */
-        virtual bool    skip(Vs64 numBytesToSkip) = 0;
+        virtual bool skip(Vs64 numBytesToSkip) = 0;
         /**
         Seeks in the stream using Unix seek() semantics. VSocketStream has
         some restrictions in the kinds of seek that are allowed; if you
@@ -289,7 +292,7 @@ class VStream
         @param    whence    SEEK_SET, SEEK_CUR, or SEEK_END
         @return true if the seek was successful
         */
-        virtual bool    seek(Vs64 offset, int whence) = 0;
+        virtual bool seek(Vs64 offset, int whence) = 0;
         /**
         Returns the "current" "offset" in the stream. Those scare quotes are
         there because those terms do not quite have consistent or uniform
@@ -305,7 +308,7 @@ class VStream
         each individual read operation (which you might not be able to).
         @return the current offset
         */
-        virtual Vs64    offset() const = 0;
+        virtual Vs64 getIOOffset() const = 0;
         /**
         Returns the number of bytes that are available to be read from this
         stream. For file and memory streams, this means the number of bytes
@@ -315,7 +318,7 @@ class VStream
         be read on the socket at this time).
         @return the number of bytes currently available for reading
         */
-        virtual Vs64    available() const = 0;
+        virtual Vs64 available() const = 0;
         
         /**
         Efficiently copies bytes from one stream to another, no matter which
@@ -340,7 +343,10 @@ class VStream
         @param    tempBufferSize    the size of temporary buffer to create, if one is needed
         @return the actual number of bytes copied
         */
-        friend Vs64 streamCopy(VStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize=16384);
+        static Vs64 streamCopy(VStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize=16384);
+        static Vs64 streamCopy(VIOStream& fromStream, VIOStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize=16384);
+        static Vs64 streamCopy(VIOStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize=16384);
+        static Vs64 streamCopy(VStream& fromStream, VIOStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize=16384);
 
         friend class VWriteBufferedStream;
         
@@ -350,8 +356,15 @@ class VStream
         to distinguish between different streams' logging output.
         @return the stream name
         */
-        const VString& name() const;
-        
+        const VString& getName() const { return mName; }
+        /**
+        Sets the stream name.
+        The name is just an arbitrary string that can be useful when debugging
+        to distinguish between different streams' logging output.
+        @param name the name with which to label the stream
+        */
+        void setName(const VString& name) { mName = name; }
+
         /**
         Returns true if the specified size value requires conversion given the compiler's
         definition of size_t and the actual value given. If size_t is 64 bits, or if the
@@ -383,7 +396,12 @@ class VStream
         @param    bufferSize    the requested buffer size
         @return a pointer to the newly allocated buffer, allocated with new[bufferSize]
         */
-        static Vu8* newBuffer(Vs64 bufferSize);
+        static Vu8* newNewBuffer(Vs64 bufferSize);
+        /**
+        This is provided for consistency with newNewBuffer() when a buffer needs to
+        be allocated with malloc() instead of operator new.
+        */
+        static Vu8* mallocNewBuffer(Vs64 bufferSize);
 
     protected:
         
@@ -400,34 +418,34 @@ class VStream
         from that buffer (for example, a file or socket stream).
         @return    the i/o buffer pointer, or NULL
         */
-        virtual Vu8*    _getReadIOPtr() const;
+        virtual Vu8* _getReadIOPtr() const;
         /**
         Returns a pointer to the current write i/o position in the stream's buffer,
         or NULL if the stream does not have a buffer or support direct copying
         to that buffer (for example, a file or socket stream).
         @return    the i/o buffer pointer, or NULL
         */
-        virtual Vu8*    _getWriteIOPtr() const;
+        virtual Vu8* _getWriteIOPtr() const;
         /**
         Returns the number of bytes available for reading from the stream's
         buffer, or zero by default for streams without buffers.
         @param    numBytesToRead    the number of bytes that will be read
         @return    the number of bytes available to read, or zero
         */
-        virtual Vs64    _prepareToRead(Vs64 numBytesToRead) const;
+        virtual Vs64 _prepareToRead(Vs64 numBytesToRead) const;
         /**
         Preflights the stream's buffer so that it can have the specified
         number of bytes written to it subsequently. Throws a VException
         if the buffer cannot be expanded to accomodate the data.
         @param    numBytesToWrite    the number of bytes that will be written
         */
-        virtual void    _prepareToWrite(Vs64 numBytesToWrite);
+        virtual void _prepareToWrite(Vs64 numBytesToWrite);
         /**
         Postflights a copy by advancing the i/o offset to reflect
         the specified number of bytes having just been read.
         @param    numBytesRead    the number of bytes that were previously read
         */
-        virtual void    _finishRead(Vs64 numBytesRead);
+        virtual void _finishRead(Vs64 numBytesRead);
         /**
         Postflights a copy by advancing the i/o offset to reflect
         the specified number of bytes having just been written.
@@ -435,7 +453,7 @@ class VStream
         */
         virtual void    _finishWrite(Vs64 numBytesWritten);
         
-        VString    mName;    ///< A name for use when debugging stream.
+        VString mName; ///< A name for use when debugging stream.
     };
 
 /** @} */

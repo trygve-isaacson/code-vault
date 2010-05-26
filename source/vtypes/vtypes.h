@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -84,18 +84,19 @@ http://www.bombaydigital.com/
     and network-to-host order byte swapping, such that they do nothing on "big
     endian" machines ("network byte order" means big endian in this terminology).
     However, not all such libraries provide these macros and functions, or don't
-    provide them for 64-bit values, so they are defined here when necessary,
-    along with the raw byte swapping functions VbyteSwap16(), VbyteSwap32(), and
-    VbyteSwap64() that can be called directly when the host order is not relevant.
+    provide them for all data types; so here we define a complete set of macros
+    for all fundamental data types.
+
     In general, you should use VBinaryIOStream to read and write data in a
     byte-order-neutral fashion. In rare cases you may want to make sure your data
     is in host or network byte order, in which case you would use one of the
-    macros htons, ntohs, htonl, ntohl, hton64, ntoh64, or their upper case
-    relatives, all of which do the right thing -- which is "nothing" if the host
-    order is network order. Finally, if you really need to do byte swapping
-    explicitly, you can call VbyteSwap16(), VbyteSwap32(), or VbyteSwap64(), which
+    V_BYTESWAP_* macros, all of which do the right thing -- which is "nothing" if
+    the host order is network order. Finally, if you really need to do byte swapping
+    explicitly, you can call one of the byte-swapping functions VbyteSwap16(),
+    VbyteSwap32(), VbyteSwap64(), VbyteSwapFloat(), or VbyteSwapDouble() which
     swap bytes between network and host order (the two directions happen to be
-    symmetric for big- and little-endian).
+    symmetric for big- and little-endian). These functions always swap the bytes,
+    in contrast to the macros which are no-ops when running on a big-endian system.
 
     <h3>Constants</h3>
 
@@ -148,19 +149,25 @@ http://www.bombaydigital.com/
 */
 
 /*
-First we include the user-editable header file that configures
-the desired Vault features/behavior.
-*/
-#include "vconfigure.h"
-
-/*
 Next we include the few platform-specific definitions we've defined.
 Which actual file this refers to will depend on the include path
 set up for this platform build.
 */
 #include "vtypes_platform.h"
 
+// This allows user to enable CF support in vconfigure.h, while maintaining non-Mac compatibility.
+#ifdef VAULT_CORE_FOUNDATION_SUPPORT
+    #ifndef VPLATFORM_MAC
+    #undef VAULT_CORE_FOUNDATION_SUPPORT
+    #endif
+#endif
+
 #include <vector>
+#include <stdarg.h>
+#include <vector>
+#include <iostream>
+#include <deque>
+#include <map>
 
 /*
 We choose to define just the basic specific-sized data types. Most
@@ -338,12 +345,121 @@ void vectorDeleteAll(std::vector<T*>& v)
     v.clear();
     }
 
+/**
+A helper template function that both clears a map and deletes each
+value object it holds a pointer to. This is the simplest way to delete all
+contained value objects held in a map. The map values must be "delete"-able
+pointers, and there must not be multiple keys using the same value (which is
+a perfectly legitimate way to use a map, so if you use the map that way, you
+must manage that aspect of deletion; otherwise, a crash may occur when an
+object is deleted twice). The keys are not deleted (presumed to not be pointers).
+*/
+template <class KEY_TYPE, class VALUE_TYPE>
+void mapDeleteAllValues(std::map<KEY_TYPE,VALUE_TYPE*>& m)
+    {
+    for (typename std::map<KEY_TYPE,VALUE_TYPE*>::const_iterator i = m.begin(); i != m.end(); ++i)
+        delete (*i).second;
+
+    m.clear();
+    }
+
 } // namespace vault
 
-#ifdef V_DEBUG
-    #define ASSERT_INVARIANT() this->assertInvariant() ///< Macro to call this->assertInvariant() in debug mode only.
+// The vtypes_platform.h header decided whether VBYTESWAP_NEEDED is defined.
+#ifdef VBYTESWAP_NEEDED
+
+    // Signed 16-bit actual swapping:
+    #define V_BYTESWAP_HTON_S16_GET(x)      vault::VbyteSwap16((Vu16) x)
+    #define V_BYTESWAP_NTOH_S16_GET(x)      vault::VbyteSwap16((Vu16) x)
+    #define V_BYTESWAP_HTON_S16_IN_PLACE(x) ((x) = (vault::VbyteSwap16((Vu16) x)))
+    #define V_BYTESWAP_NTOH_S16_IN_PLACE(x) ((x) = (vault::VbyteSwap16((Vu16) x)))
+    // Unsigned 16-bit actual swapping:
+    #define V_BYTESWAP_HTON_U16_GET(x)      vault::VbyteSwap16(x)
+    #define V_BYTESWAP_NTOH_U16_GET(x)      vault::VbyteSwap16(x)
+    #define V_BYTESWAP_HTON_U16_IN_PLACE(x) ((x) = (vault::VbyteSwap16(x)))
+    #define V_BYTESWAP_NTOH_U16_IN_PLACE(x) ((x) = (vault::VbyteSwap16(x)))
+
+    // Signed 32-bit actual swapping:
+    #define V_BYTESWAP_HTON_S32_GET(x)      vault::VbyteSwap32((Vu32) x)
+    #define V_BYTESWAP_NTOH_S32_GET(x)      vault::VbyteSwap32((Vu32) x)
+    #define V_BYTESWAP_HTON_S32_IN_PLACE(x) ((x) = (vault::VbyteSwap32((Vu32) x)))
+    #define V_BYTESWAP_NTOH_S32_IN_PLACE(x) ((x) = (vault::VbyteSwap32((Vu32) x)))
+    // Unsigned 32-bit actual swapping:
+    #define V_BYTESWAP_HTON_U32_GET(x)      vault::VbyteSwap32(x)
+    #define V_BYTESWAP_NTOH_U32_GET(x)      vault::VbyteSwap32(x)
+    #define V_BYTESWAP_HTON_U32_IN_PLACE(x) ((x) = (vault::VbyteSwap32(x)))
+    #define V_BYTESWAP_NTOH_U32_IN_PLACE(x) ((x) = (vault::VbyteSwap32(x)))
+
+    // Signed 64-bit actual swapping:
+    #define V_BYTESWAP_HTON_S64_GET(x)      vault::VbyteSwap64((Vu64) x)
+    #define V_BYTESWAP_NTOH_S64_GET(x)      vault::VbyteSwap64((Vu64) x)
+    #define V_BYTESWAP_HTON_S64_IN_PLACE(x) ((x) = (vault::VbyteSwap64((Vu64) x)))
+    #define V_BYTESWAP_NTOH_S64_IN_PLACE(x) ((x) = (vault::VbyteSwap64((Vu64) x)))
+    // Unsigned 64-bit actual swapping:
+    #define V_BYTESWAP_HTON_U64_GET(x)      vault::VbyteSwap64(x)
+    #define V_BYTESWAP_NTOH_U64_GET(x)      vault::VbyteSwap64(x)
+    #define V_BYTESWAP_HTON_U64_IN_PLACE(x) ((x) = (vault::VbyteSwap64(x)))
+    #define V_BYTESWAP_NTOH_U64_IN_PLACE(x) ((x) = (vault::VbyteSwap64(x)))
+
+    // VFloat (float) actual swapping:
+    #define V_BYTESWAP_HTON_F_GET(x)        vault::VbyteSwapFloat(x)
+    #define V_BYTESWAP_NTOH_F_GET(x)        vault::VbyteSwapFloat(x)
+    #define V_BYTESWAP_HTON_F_IN_PLACE(x)   ((x) = (vault::VbyteSwapFloat(x)))
+    #define V_BYTESWAP_NTOH_F_IN_PLACE(x)   ((x) = (vault::VbyteSwapFloat(x)))
+
+    // VDouble (double) actual swapping:
+    #define V_BYTESWAP_HTON_D_GET(x)        vault::VbyteSwapDouble(x)
+    #define V_BYTESWAP_NTOH_D_GET(x)        vault::VbyteSwapDouble(x)
+    #define V_BYTESWAP_HTON_D_IN_PLACE(x)   ((x) = (vault::VbyteSwapDouble(x)))
+    #define V_BYTESWAP_NTOH_D_IN_PLACE(x)   ((x) = (vault::VbyteSwapDouble(x)))
+
 #else
-    #define ASSERT_INVARIANT() ((void) 0) ///< Macro to call this->assertInvariant() in debug mode only.
+
+    // Signed 16-bit no-op non-swapping:
+    #define V_BYTESWAP_HTON_S16_GET(x)      (x)
+    #define V_BYTESWAP_NTOH_S16_GET(x)      (x)
+    #define V_BYTESWAP_HTON_S16_IN_PLACE(x) ((void)0)
+    #define V_BYTESWAP_NTOH_S16_IN_PLACE(x) ((void)0)
+    // Unsigned 16-bit no-op non-swapping:
+    #define V_BYTESWAP_HTON_U16_GET(x)      (x)
+    #define V_BYTESWAP_NTOH_U16_GET(x)      (x)
+    #define V_BYTESWAP_HTON_U16_IN_PLACE(x) ((void)0)
+    #define V_BYTESWAP_NTOH_U16_IN_PLACE(x) ((void)0)
+
+    // Signed 32-bit no-op non-swapping:
+    #define V_BYTESWAP_HTON_S32_GET(x)      (x)
+    #define V_BYTESWAP_NTOH_S32_GET(x)      (x)
+    #define V_BYTESWAP_HTON_S32_IN_PLACE(x) ((void)0)
+    #define V_BYTESWAP_NTOH_S32_IN_PLACE(x) ((void)0)
+    // Unsigned 32-bit no-op non-swapping:
+    #define V_BYTESWAP_HTON_U32_GET(x)      (x)
+    #define V_BYTESWAP_NTOH_U32_GET(x)      (x)
+    #define V_BYTESWAP_HTON_U32_IN_PLACE(x) ((void)0)
+    #define V_BYTESWAP_NTOH_U32_IN_PLACE(x) ((void)0)
+
+    // Signed 64-bit no-op non-swapping:
+    #define V_BYTESWAP_HTON_S64_GET(x)      (x)
+    #define V_BYTESWAP_NTOH_S64_GET(x)      (x)
+    #define V_BYTESWAP_HTON_S64_IN_PLACE(x) ((void)0)
+    #define V_BYTESWAP_NTOH_S64_IN_PLACE(x) ((void)0)
+    // Unsigned 64-bit no-op non-swapping:
+    #define V_BYTESWAP_HTON_U64_GET(x)      (x)
+    #define V_BYTESWAP_NTOH_U64_GET(x)      (x)
+    #define V_BYTESWAP_HTON_U64_IN_PLACE(x) ((void)0)
+    #define V_BYTESWAP_NTOH_U64_IN_PLACE(x) ((void)0)
+
+    // VFloat (float) no-op non-swapping:
+    #define V_BYTESWAP_HTON_F_GET(x)        (x)
+    #define V_BYTESWAP_NTOH_F_GET(x)        (x)
+    #define V_BYTESWAP_HTON_F_IN_PLACE(x)   ((void)0)
+    #define V_BYTESWAP_NTOH_F_IN_PLACE(x)   ((void)0)
+
+    // VDouble (double) no-op non-swapping:
+    #define V_BYTESWAP_HTON_D_GET(x)        (x)
+    #define V_BYTESWAP_NTOH_D_GET(x)        (x)
+    #define V_BYTESWAP_HTON_D_IN_PLACE(x)   ((void)0)
+    #define V_BYTESWAP_NTOH_D_IN_PLACE(x)   ((void)0)
+
 #endif
 
 /*
@@ -357,19 +473,79 @@ and doing something different in that compiler.
 
 /** @} */
 
+/*
+Here is where we use a hierarchy of preprocessor symbols to control assertion behavior.
+The hierarchy of user-definable symbols is:
+  V_ASSERT_ENABLED
+    V_ASSERT_INVARIANT_ENABLED
+      V_ASSERT_INVARIANT_classname_ENABLED (for a given classname)
+
+In vconfigure.h, you may define any or all of these symbols to 0 or 1 to force them off or on;
+by default, V_ASSERT_ENABLED is on if V_DEBUG is on, and the others inherit their state from
+the level above.
+
+Internally, we use the above symbols to define or leave undefined the following symbols:
+  V_ASSERT_ACTIVE
+    V_ASSERT_INVARIANT_ACTIVE
+      V_ASSERT_INVARIANT_classname_ACTIVE (for a given classname)
+
+This allows to the Vault code to simply #ifdef the existence of those symbols.
+
+The following values for classname are implemented:
+    VEXCEPTION
+    VSTRING
+    VDATE_AND_TIME
+    VMESSAGE
+    VMEMORYSTREAM
+    VTEXTIOSTREAM
+*/
+
+// Does V_ASSERT do anything if called?
+#ifdef V_ASSERT_ENABLED
+    #if V_ASSERT_ENABLED == 1
+        #define V_ASSERT_ACTIVE
+    #endif
+#else
+    #ifdef V_DEBUG
+        #define V_ASSERT_ACTIVE
+    #endif
+#endif
+
+// Does ASSERT_INVARIANT actually call this->_assertInvariant?
+#ifdef V_ASSERT_INVARIANT_ENABLED
+    #if V_ASSERT_INVARIANT_ENABLED == 1
+        #define V_ASSERT_INVARIANT_ACTIVE
+    #endif
+#else
+    #ifdef V_ASSERT_ACTIVE
+        #define V_ASSERT_INVARIANT_ACTIVE
+    #endif
+#endif
+
+/*
+Now we can actually decide on the definition of ASSERT_INVARIANT().
+It either calls this->_assertInvariant() or does nothing.
+*/
+#ifdef V_ASSERT_INVARIANT_ACTIVE
+    #define ASSERT_INVARIANT() this->_assertInvariant() ///< Macro to call this->_assertInvariant().
+#else
+    #define ASSERT_INVARIANT() ((void) 0) ///< No-op.
+#endif
+
 /**
 The V_ASSERT macro and Vassert function provide assertion and assertion breakpoint
 support. Normally you should use the V_ASSERT macro instead of the compiler-specific
 assert macro, and put a breakpoint in Vassert if you are in debug mode and want to
-hit a breakpoint upon assertion failure. The macro is a no-op in a release build, so
-it has no runtime cost in a release build.
+hit a breakpoint upon assertion failure. By default, the macro is a no-op in a release
+build, so it has no runtime cost in a release build. (You can override this behavior
+using preprocessor symbols as noted above.)
 @param    expression    the expression that if false will cause an assertion failure
 @param    file        the name of the source file that is asserting
 @param    line        the line number in the source file that is asserting
 */
 extern void Vassert(bool expression, const char* file, int line);
 
-#ifdef V_DEBUG
+#ifdef V_ASSERT_ACTIVE
     // This inline wrapper eliminates function call overhead for successful assertions.
     inline void VassertWrapper(bool expression, const char* file, int line) { if (!expression) Vassert(expression, file, line); }
     #define V_ASSERT(expression) VassertWrapper(expression, __FILE__, __LINE__)
@@ -377,7 +553,13 @@ extern void Vassert(bool expression, const char* file, int line);
     #define V_ASSERT(expression) ((void) 0)
 #endif
 
-// Uncomment this define to get a trace of static initialization through the macro below.
+// This is useful in some _assertInvariant() methods, to detect when there is a
+// pointer that was already deallocated. In debug mode, VC++ generally sets pointers to
+// this value upon deleting the pointer.
+extern const void* const VCPP_DEBUG_BAD_POINTER_VALUE;
+
+// Uncomment this define, or define it in your vconfigure.h to get a trace of static
+// initialization through the macro below:
 //#define V_DEBUG_STATIC_INITIALIZATION_TRACE 1
 
 extern int Vtrace(const char* fileName, int lineNumber);
@@ -386,6 +568,68 @@ extern int Vtrace(const char* fileName, int lineNumber);
 #else
     #define V_STATIC_INIT_TRACE
 #endif
+
+#define V_CONSTRAIN_MINMAX(n, minValue, maxValue) V_MAX(minValue, V_MIN(maxValue, n))
+
+/*
+Memory leak tracking facility. See implementation in vmemorytracker.cpp.
+The feature is compiled in, or not, based on this defined preprocessor symbol.
+*/
+#ifdef VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT
+
+void* operator new(size_t size, const char* file, int line);
+void operator delete(void* p, const char* file, int line);
+void operator delete(void* p);
+void* operator new[](size_t size, const char* file, int line);
+void operator delete[](void* p, const char* file, int line);
+void operator delete[](void* p);
+#define V_NEW new(__FILE__, __LINE__)
+#define new V_NEW
+
+class VTextIOStream;
+class VString;
+class VDuration;
+
+class VMemoryTracker
+    {
+    public:
+    
+        /**
+        You must disable memory tracking before main() ends; the easiest way is to
+        declare one of these as a local variable in your main. The destructor disables
+        memory tracking. You choose whether it's enabled at start as a constructor
+        parameter. Tracking must not be enabled during static initialization.
+        */
+        VMemoryTracker(bool enableAtStart=false);
+        ~VMemoryTracker();
+        
+        static void enable();                           ///< Turns on tracking. Subsequent allocations will be tracked.
+        static void disable();                          ///< Turns off tracking. Subsequent allocations will not be tracked.
+        static void reset();                            ///< Resets tracking. Tracked items are discarded. Enable state is not changed.
+        static bool isEnabled();                        ///< Returns true if tracking is turned on.
+        static void setLimit(int maxNumAllocations);    ///< Sets the max number of allocations tracked. 0 means no limit.
+        static int  getLimit();                         ///< Returns the max number of allocations that will be tracked.
+        static void setExpiration(const VDuration& d);  ///< Sets the duration from now when tracking will turn off. 0 means never.
+        static Vs64 getExpirationTime();                ///< Returns the VInstant "raw value" when tracking will turn off. May be INFINITE_FUTURE. (Can't expose VInstant directly in this API.)
+        static Vs64 getExpirationMilliseconds();        ///< Returns the number of ms tracking auto-disables after being enabled. (Can't expose VDuration directly in this API.)
+        static void omitPointer(const void* p);         ///< Tells the tracker to forget a pointer, if it's currently tracked.
+        static void enableCodeLocationCrawl(const VString& file, int line);
+        static void disableCodeLocationCrawl(const VString& file, int line);
+        /**
+        Prints a memory tracking report. Lots of options:
+        @param label an optional string to bracket the report; if empty, boilerplate is used
+        @param toLogger if true, the output will (also) be sent to VLOGGER_INFO
+        @param toConsole if true, the output will (also) be sent to std::cout
+        @param toStream if not NULL, the output will (also) be sent to this text output stream
+        @param bufferLengthLimit if non-zero, dumped data buffers will have limited length
+        @param showDetails if true, each items data is displayed in a full hex dump (bufferLength limit is ignored)
+        @param performAnalysis if true, extra analysis is performed to collect related objects and thus better show
+                                the "root" of a leaked graph of related objects
+        */
+        static void reportMemoryTracking(const VString& label, bool toLogger, bool toConsole, VTextIOStream* toStream, Vs64 bufferLengthLimit, bool showDetails, bool performAnalysis);
+    };
+
+#endif /* VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT */
 
 #endif /* vtypes_h */
 

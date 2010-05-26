@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -9,22 +9,68 @@ http://www.bombaydigital.com/
 #include "vthread.h"
 #include "vmutex.h"
 #include "vsemaphore.h"
+#include "vexception.h"
+#include "vmutexlocker.h"
 
 #include <process.h>
+
+// Windows does not provide an API to map thread IDs to thread handles, but requires
+// thread IDs for some APIs and thread handles for others. And you can't get the current
+// thread handle, only a "pseudo-handle" or the thread ID. So it makes sense to use the
+// thread ID as our "VThreadID_Type" but we need a way to map the ID to the handle when
+// calling APIs that need a handle (primarily when join() calls WaitForSingleObject()).
+// That is why we maintain this map.
+typedef std::map<VThreadID_Type, HANDLE> WindowsThreadIDToHandleMap;
+WindowsThreadIDToHandleMap gWindowsThreadIDToHandleMap;
+static VMutex gWindowsThreadMapMutex("gWindowsThreadMapMutex");
+
+static void _addThreadToMap(VThreadID_Type threadID, HANDLE threadHandle)
+    {
+    VMutexLocker locker(&gWindowsThreadMapMutex, "_addThreadToMap");
+    gWindowsThreadIDToHandleMap[threadID] = threadHandle;
+    }
+
+static void _removeThreadFromMap(VThreadID_Type threadID)
+    {
+    VMutexLocker locker(&gWindowsThreadMapMutex, "_removeThreadFromMap");
+    gWindowsThreadIDToHandleMap[threadID] = 0;
+    }
+
+static HANDLE _lookupThreadHandle(VThreadID_Type threadID)
+    {
+    VMutexLocker locker(&gWindowsThreadMapMutex, "_lookupThreadHandle");
+    return gWindowsThreadIDToHandleMap[threadID];
+    }
 
 // VThread platform-specific functions ---------------------------------------
 
 // static
-bool VThread::threadCreate(VThreadID_Type* threadID, bool /*createDetached*/, threadMainFunction threadMainProcPtr, void* threadArgument)
+void VThread::threadCreate(VThreadID_Type* threadID, bool /*createDetached*/, threadMainFunction threadMainProcPtr, void* threadArgument)
     {
-#ifdef __MWERKS__
-    unsigned int    id;
-    *threadID = (VThreadID_Type) _beginthreadex((void*) NULL, (unsigned int) 0, (Win32ThreadMainFunctionEx) threadMainProcPtr, threadArgument, (unsigned int) 0, &id);
-#else
-    *threadID = (VThreadID_Type) _beginthread((Win32ThreadMainFunction) threadMainProcPtr, (unsigned int) 0, threadArgument);
-#endif
+    HANDLE threadHandle = ::CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) threadMainProcPtr, threadArgument, 0, /*(LPDWORD)*/ threadID);
 
-    return ((*threadID != 0) && (*threadID != -1));
+    if (threadHandle == NULL)
+        {
+        int errorCode = (int) ::GetLastError();
+        throw VException(errorCode, VString("VThread::threadCreate: CreateThread returned null, error %d.", errorCode));
+        }
+    
+    _addThreadToMap(*threadID, threadHandle);
+    }
+
+// static
+void VThread::_threadStarting(const VThread* thread)
+    {
+    HANDLE threadHandle = _lookupThreadHandle(thread->threadID());
+    ResetEvent(threadHandle);    // remove any signal from this thread
+    }
+
+// static
+void VThread::_threadEnded(const VThread* thread)
+    {
+    HANDLE threadHandle = _lookupThreadHandle(thread->threadID());
+    _removeThreadFromMap(thread->threadID());
+    SetEvent(threadHandle);    // signal on this thread, so join()ers unblock
     }
 
 // static
@@ -39,8 +85,8 @@ void VThread::threadExit()
 // static
 bool VThread::threadJoin(VThreadID_Type threadID, void** /*value*/)
     {
-    // FIXME: investigate the API "GetExitCodeThread()"
-    WaitForSingleObject((HANDLE) threadID, INFINITE);
+    HANDLE threadHandle = _lookupThreadHandle(threadID);
+    ::WaitForSingleObject(threadHandle, INFINITE);
     return true;
     }
 
@@ -53,11 +99,7 @@ void VThread::threadDetach(VThreadID_Type /*threadID*/)
 // static
 VThreadID_Type VThread::threadSelf() 
     {
-    // FIXME: tbd - Investigate the APIs "GetCurrentThreadId()" and "GetCurrentThread()"
-    // It seems that GetCurrentThreadId() does not return the same value as
-    // what _beginThread gave us.
-    // Nor does GetCurrentThread() and DuplicateHandle() as suggested in the Win SDK docs.
-    return -1;
+    return ::GetCurrentThreadId();
     }
 
 // static
@@ -112,7 +154,7 @@ bool VMutex::mutexUnlock(VMutex_Type* mutex)
 
 // VSemaphore platform-specific functions ------------------------------------
 
-#define kSemaphoreMaxCount    0x7FFFFFFF
+#define kSemaphoreMaxCount 1
 
 // static
 bool VSemaphore::semaphoreInit(VSemaphore_Type* semaphore)
@@ -131,22 +173,25 @@ bool VSemaphore::semaphoreDestroy(VSemaphore_Type* semaphore)
 // static
 bool VSemaphore::semaphoreWait(VSemaphore_Type* semaphore, VMutex_Type* /*mutex*/, const VDuration& timeoutInterval)
     {
-    DWORD    timeoutMillisecondsDWORD;
+    DWORD timeoutMillisecondsDWORD;
     
     if (timeoutInterval == VDuration::ZERO())
         timeoutMillisecondsDWORD = INFINITE;
     else
         timeoutMillisecondsDWORD = static_cast<DWORD>(timeoutInterval.getDurationMilliseconds());
 
-    DWORD    result = WaitForSingleObject(*semaphore, timeoutMillisecondsDWORD);    // waits until the semaphore's count is > 0, then decrements it
+    DWORD result = WaitForSingleObject(*semaphore, timeoutMillisecondsDWORD);    // waits until the semaphore's count is > 0, then decrements it
     return (result != WAIT_FAILED);
     }
 
 // static
 bool VSemaphore::semaphoreSignal(VSemaphore_Type* semaphore)
     {
-    BOOL    result = ReleaseSemaphore(*semaphore, 1, NULL);    // increases the semaphore's "count" by 1
-    return (result != 0);
+    LONG previousCount = 1;
+    BOOL result = ReleaseSemaphore(*semaphore, 1, &previousCount);    // increases the semaphore's "count" by 1
+    
+    // The only acceptable "error" is an attempt to increment from 1 to 2.
+    return (result != 0 || (previousCount == 1));
     }
 
 // static

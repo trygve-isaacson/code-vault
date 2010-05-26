@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -95,7 +95,7 @@ class VListenerThread : public VThread
 
         Each new VSocketThread is kept track of internally.
         */
-        virtual void    run();
+        virtual void run();
 
         /**
         Handles bookkeeping upon the termination of a VSocketThread that was previously
@@ -108,7 +108,7 @@ class VListenerThread : public VThread
         Returns the port number we're listening on.
         @return    the port number
         */
-        int    getPortNumber() const;
+        int getPortNumber() const;
 
         /**
         Returns a list of information about all of this listener's

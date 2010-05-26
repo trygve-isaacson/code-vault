@@ -1,0 +1,171 @@
+The Microsoft Visual C++ debugger allows you to add custom data type display
+formatters. These can be used to improve how your data types are displayed
+in the debugger. This file contains display formatters for many of the Code
+Vault classes and types.
+
+There are two sections below. To install these, you must paste each one into
+into corresponding section of the "autoexp.dat" file of your VC++ installation.
+Normally this file is located here:
+
+c:\Program Files\Microsoft Visual Studio 8\Common7\Packages\Debugger\autoexp.dat
+
+Section 1 should be pasted into the "[AutoExpand]" section of autoexp.dat. It's
+probably easiest to just paste it immediately after the "[AutoExpand]" tag, which
+should be located just after the large comment block at the top of the file.
+
+Section 2 should be pasted into the "[Visualizer]" section of autoexp.dat. It's
+probably easiest to just paste before the "[hresult]" section that is located
+near the very end of the file.
+
+Do not include the "BEGIN" and "END" lines below. Just include what is between them.
+
+------------------------------------------ BEGIN SECTION 1 ( for [AutoExpand] )
+
+; Classes and types from The Code Vault:
+VColor				=r=<mRed,i> g=<mGreen,i> b=<mBlue,i> a=<mAlpha,i>
+VPointT<double>		=x=<mX,g> y=<mY,g>
+VPointT<int>		=x=<mX,i> y=<mY,i>
+VRectT<double>		=x=<mLeftTop.mX,g> y=<mLeftTop.mY,g> w=<mSize.mWidth,g> h=<mSize.mHeight,g>
+VRectT<int>			=x=<mLeftTop.mX,i> y=<mLeftTop.mY,i> w=<mSize.mWidth,i> h=<mSize.mHeight,i>
+VFSNode				=path=<mPath>
+VBufferedFileStream	=name=<mName>
+VDirectIOFileStream	=name=<mName>
+VStream				=name=<mName>
+VIOStream			=name=<mRawStream.mName>
+VBinaryIOStream		=name=<mRawStream.mName>
+VTextIOStream		=name=<mRawStream.mName>
+VLogger             =name=<mName> level=<mLogLevel,i>
+VThread             =name=<mName>
+VMutex              =name=<mName>
+VMutexLocker        =name=<mName> mutex=<mMutex->mName>
+VClientSession      =name=<mName>
+VSocket             =host=<mHostName> port=<mPortNumber,i>
+VMessage            =id=<mMessageID,i>
+VMessageHandler     =name=<mName>
+VDate               =y=<mYear,i> m=<mMonth,i> d=<mDay,i>
+VTimeOfDay          =h=<mHour,i> m=<mMinute,i> s=<mSecond,i> ms=<mMillisecond,i>
+VDateAndTime        =y=<mDate.mYear,i> m=<mDate.mMonth,i> d=<mDate.mDay,i> h=<mTimeOfDay.mHour,i> m=<mTimeOfDay.mMinute,i> s=<mTimeOfDay.mSecond,i> ms=<mTimeOfDay.mMillisecond,i>
+VInstantStruct      =y=<mYear,i> m=<mMonth,i> d=<mDay,i> h=<mHour,i> m=<mMinute,i> s=<mSecond,i> ms=<mMillisecond,i> dow=<mDayOfWeek,i>
+VUnit               =name=<mName>
+VBentoNode			=name=<mName>
+VBentoAttribute		=name=<mName> type=<mDataType>
+VBentoS8			=name=<mName> value=<mValue>
+VBentoU8			=name=<mName> value=<mValue>
+VBentoS16			=name=<mName> value=<mValue>
+VBentoU16			=name=<mName> value=<mValue>
+VBentoS32			=name=<mName> value=<mValue>
+VBentoU32			=name=<mName> value=<mValue>
+VBentoS64			=name=<mName> value=<mValue>
+VBentoU64			=name=<mName> value=<mValue>
+VBentoBool			=name=<mName> value=<mValue>
+VBentoString		=name=<mName> value=<mValue>
+VBentoChar			=name=<mName> value=<mValue>
+VBentoFloat			=name=<mName> value=<mValue>
+VBentoDouble		=name=<mName> value=<mValue>
+VBentoDuration		=name=<mName> value=<mValue>
+VBentoInstant		=name=<mName> value=<mValue>
+VBentoStringArray	=name=<mName> value=<mValue>
+;The following types are now defined more fully in the Visualizer section. The simpler AutoExpand definitions would be:
+;VString			=s=<mBuffer,s>
+;VChar				=c=<mValue,c>
+;VDuration          =ms=<mDurationMilliseconds>
+;VInstant           =utc=<mValue>
+
+------------------------------------------ END SECTION 1 ( for [AutoExpand] )
+
+
+------------------------------------------ BEGIN SECTION 2 ( for [Visualizer] )
+
+; Classes and types from The Code Vault:
+
+VString{
+	preview ( 
+        #if ($e.mBuffer == 0) (
+            #("<empty string>")
+        )
+        #else (
+			[$e.mBuffer,s]
+        )
+	)
+}
+
+VChar{
+	preview ( 
+
+        ; note that char is signed so we need to treat >127 as negative values
+        #if (($e.mValue <= 0x20 && $e.mValue >= 0x00) || $e.mValue == 0x7F) (
+
+            #switch ($e.mValue)
+                #case 0x00 ( #("<ascii NUL>") )
+                #case 0x01 ( #("<ascii SOH>") )
+                #case 0x02 ( #("<ascii STX>") )
+                #case 0x03 ( #("<ascii ETX>") )
+                #case 0x04 ( #("<ascii EOT>") )
+                #case 0x05 ( #("<ascii ENQ>") )
+                #case 0x06 ( #("<ascii ACK>") )
+                #case 0x07 ( #("<ascii BEL>") )
+                #case 0x08 ( #("<ascii BS>") )
+                #case 0x09 ( #("<ascii HT>") )
+                #case 0x0A ( #("<ascii LF>") )
+                #case 0x0B ( #("<ascii VT>") )
+                #case 0x0C ( #("<ascii FF>") )
+                #case 0x0D ( #("<ascii CR>") )
+                #case 0x0E ( #("<ascii SO>") )
+                #case 0x0F ( #("<ascii SI>") )
+                #case 0x10 ( #("<ascii DLE>") )
+                #case 0x11 ( #("<ascii DC1>") )
+                #case 0x12 ( #("<ascii DC2>") )
+                #case 0x13 ( #("<ascii DC3>") )
+                #case 0x14 ( #("<ascii DC4>") )
+                #case 0x15 ( #("<ascii NAK>") )
+                #case 0x16 ( #("<ascii SYN>") )
+                #case 0x17 ( #("<ascii ETB>") )
+                #case 0x18 ( #("<ascii CAN>") )
+                #case 0x19 ( #("<ascii EM>") )
+                #case 0x1A ( #("<ascii SUB>") )
+                #case 0x1B ( #("<ascii ESC>") )
+                #case 0x1C ( #("<ascii FS>") )
+                #case 0x1D ( #("<ascii GS>") )
+                #case 0x1E ( #("<ascii RS>") )
+                #case 0x1F ( #("<ascii US>") )
+                #case 0x20 ( #("<ascii space>") )
+                #case 0x7F ( #("<ascii DEL>") )
+                #default ( #("<ascii control value>", $e.mValue) ) ;in case we missed one above
+
+        )
+        #else (
+        
+            #if ($e.mValue < 0) (
+                #("<non-ascii>", $e.mValue)
+            )
+            #else (
+			    [$e.mValue,c]
+            )
+        
+        )
+        
+	)
+}
+
+VDuration{
+	preview ( 
+        #switch ($e.mDurationMilliseconds)
+            #case -9223372036854775808 ( #("<negative infinity>") ) ;0x8000000000000000 signed
+            #case 0x7FFFFFFFFFFFFFFE ( #("<infinity>") )
+            #case 0x7FFFFFFFFFFFFFFF ( #("<unspecified>") )
+            #default ( #($e.mDurationMilliseconds, "ms") )
+	)
+}
+
+VInstant{
+	preview ( 
+        #switch ($e.mValue)
+            #case 0x0000000000000000 ( #("<1970 UTC>") )
+            #case -9223372036854775808 ( #("<infinite past>") ) ;0x8000000000000000 signed
+            #case 0x7FFFFFFFFFFFFFFE ( #("<infinite future>") )
+            #case 0x7FFFFFFFFFFFFFFF ( #("<never occurred>") )
+            #default ( #($e.mValue, " (ms utc)") )
+	)
+}
+
+------------------------------------------ END SECTION 2 ( for [Visualizer] )

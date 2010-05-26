@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -85,7 +85,7 @@ char VChar::charValue() const
 int VChar::intValue() const
     {
     // Need to make sure return value is positive even for mValue > 0x7F.
-    Vu8    unsignedValue = static_cast<Vu8>(mValue);
+    Vu8 unsignedValue = static_cast<Vu8>(mValue);
     return unsignedValue;
     }
 
@@ -125,6 +125,13 @@ bool VChar::isWhitespace() const
     // Need to be careful about signage for values > 0x7F.
     int    value = this->intValue();
     return (value <= 0x20) || (value == 0x7F);
+    }
+
+bool VChar::isHexadecimal() const
+    {
+    return ((mValue >= '0') && (mValue <= '9')) ||
+        ((mValue >= 'a') && (mValue <= 'f')) ||
+        ((mValue >= 'A') && (mValue <= 'F'));
     }
 
 // static

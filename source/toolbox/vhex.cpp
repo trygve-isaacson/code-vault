@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -9,20 +9,22 @@ http://www.bombaydigital.com/
 #include "vhex.h"
 
 #include "vtextiostream.h"
+#include "vbinaryiostream.h"
+#include "vchar.h"
 
 // static
 void VHex::bufferToHexString(const Vu8* buffer, Vs64 bufferLength, VString& s, bool wantLeading0x)
     {
-    int    hexStringLength = (int) (bufferLength * 2); // note we don't support string lengths > 32 bits
+    int hexStringLength = (int) (bufferLength * 2); // note we don't support string lengths > 32 bits
     
     if (wantLeading0x)
         hexStringLength += 2;
     
     s.preflight(hexStringLength);
     
-    char*    hexStringBuffer = s.buffer();
-    int        hexStringIndex = 0;
-    int        bufferIndex = 0;
+    char*   hexStringBuffer = s.buffer();
+    int     hexStringIndex = 0;
+    int     bufferIndex = 0;
     char    highNibbleChar;
     char    lowNibbleChar;
 
@@ -46,26 +48,25 @@ void VHex::bufferToHexString(const Vu8* buffer, Vs64 bufferLength, VString& s, b
 // static
 void VHex::hexStringToBuffer(const VString& hexDigits, Vu8* buffer, bool hasLeading0x)
     {
-    int        digitsIndex = 0;
-    int        bufferIndex = 0;
-    int        numDigits = hexDigits.length();
+    int     digitsIndex = 0;
+    int     bufferIndex = 0;
+    int     numDigits = hexDigits.length();
     bool    oddNumHexDigits = (numDigits % 2) != 0;
-//    int        bufferLength = (numDigits + 1) / 2;
     char    highNibbleChar = '0';
     char    lowNibbleChar;
     
     if (hasLeading0x)
         {
         digitsIndex += 2;
-//        --bufferLength;
         }
     
     while (digitsIndex < numDigits)
         {
         if (oddNumHexDigits)
             {
+            // First time through, use high nibble of 0, treat next digit as low nibble.
             lowNibbleChar = hexDigits.charAt(digitsIndex++);
-            oddNumHexDigits = false;    // done compensating for odd length, don't do next time thru
+            oddNumHexDigits = false; // done compensating for odd length, don't do again
             }
         else
             {
@@ -80,26 +81,26 @@ void VHex::hexStringToBuffer(const VString& hexDigits, Vu8* buffer, bool hasLead
 // static
 void VHex::stringToHex(const VString& text, VString& hexDigits, bool wantLeading0x)
     {
-    VHex::bufferToHexString(reinterpret_cast<Vu8*> (text.chars()), static_cast<Vs64> (text.length()), hexDigits, wantLeading0x);
+    VHex::bufferToHexString(text.getDataBufferConst(), static_cast<Vs64> (text.length()), hexDigits, wantLeading0x);
     }
 
 // static
 void VHex::hexToString(const VString& hexDigits, VString& text, bool hasLeading0x)
     {
-    int    outputLength = hexDigits.length() / 2;
+    int outputLength = hexDigits.length() / 2;
 
     if (hasLeading0x)
         --outputLength;
 
     text.preflight(outputLength);
-    VHex::hexStringToBuffer(hexDigits, reinterpret_cast<Vu8*> (text.buffer()), hasLeading0x);
+    VHex::hexStringToBuffer(hexDigits, text.getDataBuffer(), hasLeading0x);
     text.postflight(outputLength);
     }
 
 // static
 void VHex::byteToHexString(Vu8 byteValue, VString& s)
     {
-    char    hexChars[3];
+    char hexChars[3];
     
     hexChars[2] = 0;
     VHex::byteToHexChars(byteValue, &hexChars[0], &hexChars[1]);
@@ -117,8 +118,8 @@ void VHex::byteToHexChars(Vu8 byteValue, char* highNibbleChar, char* lowNibbleCh
 // static
 Vu8 VHex::hexStringToByte(const char* twoHexDigits)
     {
-    Vu8    highNibble = VHex::hexCharToNibble(twoHexDigits[0]);
-    Vu8    lowNibble = VHex::hexCharToNibble(twoHexDigits[1]);
+    Vu8 highNibble = VHex::hexCharToNibble(twoHexDigits[0]);
+    Vu8 lowNibble = VHex::hexCharToNibble(twoHexDigits[1]);
     
     return static_cast<Vu8> ((highNibble << 4) | lowNibble);
     }
@@ -126,8 +127,8 @@ Vu8 VHex::hexStringToByte(const char* twoHexDigits)
 // static
 Vu8 VHex::hexCharsToByte(char highNibbleChar, char lowNibbleChar)
     {
-    Vu8    highNibble = VHex::hexCharToNibble(highNibbleChar);
-    Vu8    lowNibble = VHex::hexCharToNibble(lowNibbleChar);
+    Vu8 highNibble = VHex::hexCharToNibble(highNibbleChar);
+    Vu8 lowNibble = VHex::hexCharToNibble(lowNibbleChar);
     
     return static_cast<Vu8> ((highNibble << 4) | lowNibble);
     }
@@ -156,6 +157,67 @@ Vu8 VHex::hexCharToNibble(char hexChar)
         return 0;
     }
 
+// static
+void VHex::bufferToPrintableASCIIString(const Vu8* buffer, Vs64 bufferLength, VString& s)
+    {
+    for (int i = 0; i < (int) bufferLength; ++i)
+        {
+        char asciiValue = static_cast<char>(buffer[i]);
+        if ((asciiValue <= 0x20) || (asciiValue > 0x7E))
+            asciiValue = '.';
+        s += asciiValue;
+        }
+    }
+
+// static
+void VHex::readHexDump(VTextIOStream& inputStream, VBinaryIOStream& outputStream)
+    {
+    VString line;
+    
+    do
+        {
+        inputStream.readLine(line);
+        
+        if (line.isEmpty())
+            break;
+        
+        // Remove typical leading indent spaces.
+        line.trim();
+        
+        // Lines we want must start with either of these offset formats:
+        //   NNNNNNNN: (where N is a decimal digit)
+        //   0xNNNNNNNN: (where N is a hexadecimal digit)
+        // Anything else is a line to be skipped.
+        
+        int nextHexByteOffset = -1;
+        if (line.startsWith("0x") && (line.length() > 10) && (line[10] == ':'))
+            nextHexByteOffset = 11;
+        else if (line.startsWith("0") && (line.length() > 8) && (line[8] == ':'))
+            nextHexByteOffset = 9;
+        else
+            continue; // skip this line
+            
+        // Read each ' xx' triplet from the line. Space, hex digit, hex digit.
+        // Anything else indicates end of this line's hex data.
+        while (nextHexByteOffset > 0)
+            {
+            if (line.length() < nextHexByteOffset+3)
+                break;
+            else if (line[nextHexByteOffset] != ' ')
+                break;
+            else if (!(VChar(line[nextHexByteOffset+1]).isHexadecimal()) || !(VChar(line[nextHexByteOffset+2]).isHexadecimal()))
+                break;
+            
+            // Now we know we have a space and two hex digits we can decode.
+            Vu8 byteValue = VHex::hexCharsToByte(line[nextHexByteOffset+1], line[nextHexByteOffset+2]);
+            outputStream.writeU8(byteValue);
+            
+            nextHexByteOffset += 3;
+            }
+        
+        } while (line.isNotEmpty());
+    }
+
 VHex::VHex(VTextIOStream* outputStream, int numBytesPerRow, int indentCount, bool labelsInHex, bool showASCIIValues) :
 mOutputStream(outputStream),
 mNumBytesPerRow(numBytesPerRow),
@@ -165,8 +227,8 @@ mShowASCIIValues(showASCIIValues),
 mStartColumn(0),
 mOffset(0),
 mPendingBufferUsed(0),
-mPendingBuffer(NULL)
-// mLineBuffer constructs to an empty string
+mPendingBuffer(NULL),
+mLineBuffer() // -> empty
     {
     mPendingBuffer = new Vu8[mNumBytesPerRow];
     }
@@ -209,8 +271,8 @@ void VHex::_printPending()
     {
     if (mPendingBufferUsed > 0)
         {
-        char    highNibbleChar;
-        char    lowNibbleChar;
+        char highNibbleChar;
+        char lowNibbleChar;
 
         mLineBuffer = VString::EMPTY();
         
@@ -221,12 +283,12 @@ void VHex::_printPending()
         // Add the label.
         if (mLabelsInHex)
             {
-            VString    label("0x%08X: ", (int) mOffset);
+            VString label("0x%08X: ", (int) mOffset);
             mLineBuffer += label;
             }
         else
             {
-            VString    label("%08lld: ", mOffset);
+            VString label("%08lld: ", mOffset);
             mLineBuffer += label;
             }
         

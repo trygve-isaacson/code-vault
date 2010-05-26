@@ -1,50 +1,66 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
 /** @file */
 
 #include "vsocket.h"
+#include "vtypes_internal.h"
 
 #include "vexception.h"
 
+VString VSocketBase::gPreferredNetworkInterfaceName("en0");
+VString VSocketBase::gPreferredLocalIPAddressPrefix;
+VString VSocketBase::gCachedLocalHostIPAddress;
+
 // static
-void VSocketBase::getLocalHostIPAddress(VString& ipAddress)
+void VSocketBase::setPreferredNetworkInterface(const VString& interfaceName)
     {
-    char    name[256];
-    int        result = ::gethostname(name, 255);
+    gPreferredNetworkInterfaceName = interfaceName;
+    }
 
-    if (result != 0)
-        throw VException("VSocketBase::getLocalHostIPAddress: gethostname returned %d (errno %d = %s)", result, (int) errno, ::strerror(errno));
+// static
+void VSocketBase::setPreferredLocalIPAddressPrefix(const VString& addressPrefix)
+    {
+    gPreferredLocalIPAddressPrefix = addressPrefix;
+    }
 
-    struct hostent* ent = ::gethostbyname(name);
+// static
+void VSocketBase::getLocalHostIPAddress(VString& ipAddress, bool refresh)
+    {
+    if (refresh || gCachedLocalHostIPAddress.isEmpty())
+        {
+        VNetworkInterfaceList interfaces = VSocketBase::enumerateNetworkInterfaces();
+        for (VNetworkInterfaceList::const_iterator i = interfaces.begin(); i != interfaces.end(); ++i)
+            {
+            // We want the first interface, but we keep going and use the preferred one if found.
+            if ((i == interfaces.begin()) || ((*i).mName == gPreferredNetworkInterfaceName) || ((*i).mAddress.startsWith(gPreferredLocalIPAddressPrefix)))
+                {
+                gCachedLocalHostIPAddress = (*i).mAddress;
+                
+                // Break out of search if reason is that we found a preferred address.
+                if (((*i).mName == gPreferredNetworkInterfaceName) || ((*i).mAddress.startsWith(gPreferredLocalIPAddressPrefix)))
+                    break;
+                }
+            }
+        }
 
-    if (ent == NULL)
-        throw VException("VSocketBase::getLocalHostIPAddress: gethostbyname returned null (h_errno %d)", (int) h_errno);
-
-    in_addr        addr;
-
-    if (ent->h_addr_list[0] == NULL)
-        throw VException("VSocketBase::getLocalHostIPAddress: no address entries.");
-
-    addr.s_addr = *((in_addr_t*) (ent->h_addr_list[0]));
-
-    ipAddress = ::inet_ntoa(addr);
+    ipAddress = gCachedLocalHostIPAddress;
     }
 
 // static
 VNetAddr VSocketBase::ipAddressStringToNetAddr(const VString& ipAddress)
     {
-    in_addr_t    addr = ::inet_addr(ipAddress);
+    in_addr_t addr = ::inet_addr(ipAddress);
     return (VNetAddr) addr;
     }
 
 // static
 void VSocketBase::netAddrToIPAddressString(VNetAddr netAddr, VString& ipAddress)
     {
-    in_addr    addr;
+    in_addr addr;
 
     addr.s_addr = (in_addr_t) netAddr;
 
@@ -53,16 +69,17 @@ void VSocketBase::netAddrToIPAddressString(VNetAddr netAddr, VString& ipAddress)
 
 VSocketBase::VSocketBase(VSocketID id) :
 mSocketID(id),
-// mHostName constructs to empty
+mHostName(), // -> empty
 mPortNumber(0),
 mReadTimeOutActive(false),
-// mReadTimeOut is not active
+mReadTimeOut(),
 mWriteTimeOutActive(false),
-// mWriteTimeOut is not active
+mWriteTimeOut(),
 mRequireReadAll(true),
 mNumBytesRead(0),
-mNumBytesWritten(0)
-// mLastEventTime constructs to now
+mNumBytesWritten(0),
+mLastEventTime(), // -> now
+mSocketName()
     {
     }
 
@@ -71,13 +88,14 @@ mSocketID(kNoSocketID),
 mHostName(hostName),
 mPortNumber(portNumber),
 mReadTimeOutActive(false),
-// mReadTimeOut is not active
+mReadTimeOut(),
 mWriteTimeOutActive(false),
-// mWriteTimeOut is not active
+mWriteTimeOut(),
 mRequireReadAll(true),
 mNumBytesRead(0),
-mNumBytesWritten(0)
-// mLastEventTime constructs to now
+mNumBytesWritten(0),
+mLastEventTime(), // -> now
+mSocketName("%s:%d", hostName.chars(), portNumber)
     {
     }
 
@@ -90,6 +108,7 @@ void VSocketBase::setHostAndPort(const VString& hostName, int portNumber)
     {
     mHostName = hostName;
     mPortNumber = portNumber;
+    mSocketName.format("%s:%d", hostName.chars(), portNumber);
     }
 
 void VSocketBase::connect()
@@ -110,7 +129,7 @@ int VSocketBase::getPortNumber() const
 
 void VSocketBase::close()
     {
-    if (mSocketID >= 0)
+    if (mSocketID != kNoSocketID)
         {
 #ifdef VPLATFORM_WIN
         ::closesocket(mSocketID);
@@ -126,12 +145,23 @@ void VSocketBase::flush()
     // If subclass needs to flush, it will override this method.
     }
 
+void VSocketBase::setIntSockOpt(int level, int name, int value)
+    {
+    int intValue = value;
+    this->setSockOpt(level, name, static_cast<void*>(&intValue), sizeof(intValue));
+    }
+
 void VSocketBase::setLinger(int val)
     {
-    struct linger    lingerParam;
+    struct linger lingerParam;
 
     lingerParam.l_onoff = 1;
+
+#ifdef VPLATFORM_WIN
+    lingerParam.l_linger = static_cast<u_short>(val); // max linger time while closing
+#else
     lingerParam.l_linger = val; // max linger time while closing
+#endif
 
     // turn linger on
     this->setSockOpt(SOL_SOCKET, SO_LINGER, static_cast<void*> (&lingerParam), sizeof(lingerParam));
@@ -161,22 +191,26 @@ void VSocketBase::setWriteTimeOut(const struct timeval& timeout)
 
 void VSocketBase::setDefaultSockOpt()
     {
-    int    value;
-
     // set buffer sizes
-    value = kDefaultBufferSize;
-    this->setSockOpt(SOL_SOCKET, SO_RCVBUF, static_cast<void*> (&value), sizeof(int));
-    this->setSockOpt(SOL_SOCKET, SO_SNDBUF, static_cast<void*> (&value), sizeof(int));
+    this->setIntSockOpt(SOL_SOCKET, SO_RCVBUF, kDefaultBufferSize);
+    this->setIntSockOpt(SOL_SOCKET, SO_SNDBUF, kDefaultBufferSize);
 
 #ifndef VPLATFORM_WIN
     // set type of service
-    value = kDefaultServiceType;
-    this->setSockOpt(IPPROTO_IP, IP_TOS, static_cast<void*> (&value), sizeof(int));
+    this->setIntSockOpt(IPPROTO_IP, IP_TOS, kDefaultServiceType);
+#endif
+
+#ifdef VPLATFORM_MAC
+    // Normally, Unix systems will signal SIGPIPE if recv() or send() fails because the
+    // other side has closed the socket. Not desirable; we'd rather get back an error code
+    // like all other error types, so we can throw an exception. On Mac OS X we make this
+    // happen by disabling SIG_PIPE here. On other Unix platforms we pass MSG_NOSIGNAL as
+    // flags value for send() and recv() (see /_unix/vsocket.cpp).
+    this->setIntSockOpt(SOL_SOCKET, SO_NOSIGPIPE, 1);
 #endif
 
     // set no delay
-    value = kDefaultNoDelay;
-    this->setSockOpt(IPPROTO_TCP, TCP_NODELAY, static_cast<void*> (&value), sizeof(int));
+    this->setIntSockOpt(IPPROTO_TCP, TCP_NODELAY, kDefaultNoDelay);
     }
 
 Vs64 VSocketBase::numBytesRead() const
@@ -205,17 +239,14 @@ void VSocketBase::setSockID(VSocketID id)
     mSocketID = id;
     }
 
-void VSocketBase::assertInvariant() const
-    {
-    }
-
-VSocketInfo::VSocketInfo(const VSocket& socket)
+VSocketInfo::VSocketInfo(const VSocket& socket) :
+mSocketID(socket.getSockID()),
+mHostName(), // -> empty
+mPortNumber(socket.getPortNumber()),
+mNumBytesRead(socket.numBytesRead()),
+mNumBytesWritten(socket.numBytesWritten()),
+mIdleTime(socket.getIdleTime())
     {
     socket.getHostName(mHostName);
-    mSocketID = socket.getSockID();
-    mPortNumber = socket.getPortNumber();
-    mNumBytesRead = socket.numBytesRead();
-    mNumBytesWritten = socket.numBytesWritten();
-    mIdleTime = socket.getIdleTime();
     }
 

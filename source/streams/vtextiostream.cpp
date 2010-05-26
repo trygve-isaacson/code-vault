@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -16,23 +16,21 @@ VIOStream(rawStream),
 mLineEndingsReadKind(kLineEndingsUnknown),
 mLineEndingsWriteKind(lineEndingsWriteKind),
 mPendingCharacter(0),
-mReadState(kReadStateReady)
+mReadState(kReadStateReady),
+mLineBuffer(),
+#ifndef VCOMPILER_MSVC /* GCC EffC++ warnings want this initializer, but then VC++ warns about default initialization. */
+mLineEndingChars(),
+#endif
+mLineEndingCharsLength(0)
     {
     mLineBuffer.preflight(80); // allocate a reasonable buffer size up front to avoid repeated re-allocation
-    
-    ASSERT_INVARIANT();
+    this->setLineEndingsKind(lineEndingsWriteKind); // install the line ending data to be written
     }
 
 void VTextIOStream::readLine(VString& s, bool includeLineEnding)
     {
-    ASSERT_INVARIANT();
-
-    // FIXME: optimize (perhaps using a temporary stack-based VMemoryStream
-    // instead of the return VString) to allocate memory for the read
-    // as gracefully and minimally as possible. This implementation simply
-    // appends each char to the VString. This means its buffer is reallocated for
-    // each character beyond the initial buffer size we specified in the
-    // constructor (80).
+    // Note: We append char-by-char, but VString should already be optimized to
+    // avoid actually re-allocating its buffer for each single-char expansion.
     
     mLineBuffer = VString::EMPTY();
 
@@ -56,8 +54,13 @@ void VTextIOStream::readLine(VString& s, bool includeLineEnding)
             
             // Throw EOF if we fail reading very first byte of line.
             // Otherwise, we'll return whatever we read, and throw next time.
-            if ((numBytesRead == 0) && ! readFirstByteOfLine)
-                throw VEOFException("EOF");
+            if (numBytesRead == 0)
+                {
+                if (readFirstByteOfLine)
+                    break; // this line is done
+                else
+                    throw VEOFException("EOF");
+                }
             
             readFirstByteOfLine = true;
             }
@@ -120,8 +123,6 @@ void VTextIOStream::readLine(VString& s, bool includeLineEnding)
         } while ((numBytesRead == numBytesToRead) && !done);
 
     s = mLineBuffer;
-
-    ASSERT_INVARIANT();
     }
 
 VChar VTextIOStream::readCharacter()
@@ -133,65 +134,45 @@ VChar VTextIOStream::readCharacter()
     return c;
     }
 
+void VTextIOStream::readAll(VString& s, bool includeLineEndings)
+    {
+    try
+        {
+        VString line;
+        while (true)
+            {
+            this->readLine(line, includeLineEndings);
+            s += line;
+            }
+        }
+    catch (const VEOFException&) {}
+    }
+
+void VTextIOStream::readAll(VStringVector& lines)
+    {
+    try
+        {
+        VString line;
+        while (true)
+            {
+            this->readLine(line);
+            lines.push_back(line);
+            }
+        }
+    catch (const VEOFException&) {}
+    }
+
 void VTextIOStream::writeLine(const VString& s)
     {
-    ASSERT_INVARIANT();
+    (void) this->write(s.getDataBufferConst(), static_cast<Vs64> (s.length()));
 
-    (void) this->write(reinterpret_cast<Vu8*> (s.chars()), static_cast<Vs64> (s.length()));
-    
-    Vu8 lineEnding[2]; // used if specific value is set below
-    int lineEndingLength = 0;
-    const Vu8* lineEndingChars = lineEnding;
-    
-    switch (mLineEndingsWriteKind)
-        {
-        case kUseUnixLineEndings:
-            lineEnding[0] = 0x0A;
-            lineEndingLength = 1;
-            break;
-        case kUseDOSLineEndings:
-            lineEnding[0] = 0x0D;
-            lineEnding[1] = 0x0A;
-            lineEndingLength = 2;
-            break;
-        case kUseMacLineEndings:
-            lineEnding[0] = 0x0D;
-            lineEndingLength = 1;
-            break;
-        case kUseNativeLineEndings:
-            lineEndingChars = vault::VgetNativeLineEnding(lineEndingLength);
-            break;
-        case kUseSuppliedLineEndings:
-            // line ending was supplied by caller and already written
-            break;
-        default:
-            throw VException("VTextIOStream::writeLine using invalid line ending mode.");
-            break;
-        }
-    
-    if (lineEndingLength != 0)
-        (void) this->write(lineEndingChars, static_cast<Vs64>(lineEndingLength));
-
-    ASSERT_INVARIANT();
+    if (mLineEndingCharsLength != 0)
+        (void) this->write(mLineEndingChars, static_cast<Vs64>(mLineEndingCharsLength));
     }
 
 void VTextIOStream::writeString(const VString& s)
     {
-    ASSERT_INVARIANT();
-
-    (void) this->write(reinterpret_cast<Vu8*> (s.chars()), static_cast<Vs64> (s.length()));
-
-    ASSERT_INVARIANT();
-    }
-
-void VTextIOStream::assertInvariant() const
-    {
-    V_ASSERT(mLineEndingsReadKind >= 0);
-    V_ASSERT(mLineEndingsReadKind < kNumLineEndingsReadKinds);
-    V_ASSERT(mLineEndingsWriteKind >= 0);
-    V_ASSERT(mLineEndingsWriteKind < kNumLineEndingsWriteKinds);
-    V_ASSERT(mReadState >= 0);
-    V_ASSERT(mReadState < kNumReadStates);
+    (void) this->write(s.getDataBufferConst(), static_cast<Vs64> (s.length()));
     }
 
 void VTextIOStream::_updateLineEndingsReadKind(int lineEndingKind)
@@ -279,12 +260,11 @@ void VTextIOStream::_updateLineEndingsReadKind(int lineEndingKind)
             break;
         }
 
-
     }
 
 int VTextIOStream::getLineEndingsReadKindForWrite() const
     {
-    int    writeKind = kUseNativeLineEndings;
+    int writeKind = kUseNativeLineEndings;
 
     switch (mLineEndingsReadKind)
         {
@@ -307,6 +287,41 @@ int VTextIOStream::getLineEndingsReadKindForWrite() const
 
 void VTextIOStream::setLineEndingsKind(int kind)
     {
+    switch (kind)
+        {
+        case kUseUnixLineEndings:
+            mLineEndingChars[0] = 0x0A;
+            mLineEndingChars[1] = 0x00; // will not be referenced nor used
+            mLineEndingCharsLength = 1;
+            break;
+        case kUseDOSLineEndings:
+            mLineEndingChars[0] = 0x0D;
+            mLineEndingChars[1] = 0x0A;
+            mLineEndingCharsLength = 2;
+            break;
+        case kUseMacLineEndings:
+            mLineEndingChars[0] = 0x0D;
+            mLineEndingChars[1] = 0x00; // will not be referenced nor used
+            mLineEndingCharsLength = 1;
+            break;
+        case kUseNativeLineEndings:
+            {
+            const Vu8* lineEndingChars = vault::VgetNativeLineEnding(mLineEndingCharsLength);
+            for (int i = 0; i < mLineEndingCharsLength; ++i)
+                mLineEndingChars[i] = lineEndingChars[i];
+            }
+            break;
+        case kUseSuppliedLineEndings:
+            // Line endings will be supplied by caller and already written into the line data.
+            mLineEndingChars[0] = 0x00; // will not be referenced nor used
+            mLineEndingChars[1] = 0x00; // will not be referenced nor used
+            mLineEndingCharsLength = 0;
+            break;
+        default:
+            throw VException(VString("VTextIOStream::writeLine using invalid line ending mode %d.", kind));
+            break;
+        }
+
     mLineEndingsWriteKind = kind;
     }
 

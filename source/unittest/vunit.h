@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -19,6 +19,9 @@ in the Vault.
 #include "vtypes.h"
 #include "vstring.h"    // not needed by this header, but needed by all subclasses
 #include "vinstant.h"
+#include "vchar.h"
+#include "vcolor.h"
+#include "vlogger.h"
 
 class VLogger;
 class VTextIOStream;
@@ -34,12 +37,96 @@ class VTestInfo
         VTestInfo(bool success, const VString& description, const VDuration& duration);
         ~VTestInfo() {}
 
-        bool        mSuccess;        ///< True if the test succeeded.
-        VString        mDescription;    ///< The text description or name of the test.
-        VDuration    mDuration;      ///< The number of milliseconds it took to run the test.
+        bool        mSuccess;       ///< True if the test succeeded.
+        VString     mDescription;   ///< The text description or name of the test.
+        VDuration   mDuration;      ///< The number of milliseconds it took to run the test.
     };
 
 typedef std::vector<VTestInfo> TestInfoVector;
+
+class VUnitOutputWriter;
+typedef std::vector<VUnitOutputWriter*> VUnitOutputWriterList;
+
+/**
+VUnitOutputWriter provides an abstract API for providing test results
+in various formats. Provided concrete implementations are at the bottom of
+this file.
+Because most implementations will need to keep track of the current suite
+name, current test name, and the current suite's accumulated test case
+info, we store that here in the base class.
+Output should be written by calling mLogger.rawLog(); using a
+VLogger and rawLog() allows good flexibility because the logger may write
+to standard out, or to a file, or whatever it wants to.
+*/
+class VUnitOutputWriter
+    {
+    public:
+    
+        /**
+        This utility will set up writers and loggers according to a set of
+        command line arguments:
+          -vunit-out <type> <file>
+          The <type> argument determines the type of VUnitOutputWriter instantiated.
+            text | junit | tc | tcstatus
+          The <file> argument is the file path it creates and writes to.
+            "stdout" writes to std::cout instead of a file.
+          Multiple sets of "-vunit-out <type> <file>" will cause multiple writers to
+          be created and written to during unit tests.
+        @param  args the command line arguments
+        @param  writers a vector of VUnitOutputWriter* to which this function adds
+            the caller is responsible for deleting these objects when done with unit tests
+        @param  loggers a vector of VLogger* to which this function adds
+            the caller is responsible for deleting these objects when done with unit tests
+        */
+        static void createOutputWriters(const VStringVector& args, VUnitOutputWriterList& writers, VLoggerList& loggers);
+    
+        VUnitOutputWriter(VLogger& outputLogger);
+        virtual ~VUnitOutputWriter() {}
+        
+        virtual void testSuitesBegin() = 0;
+        virtual void testSuiteBegin(const VString& testSuiteName) = 0;
+        virtual void testSuiteStatusMessage(const VString& message) = 0;
+        virtual void testCaseBegin(const VString& testCaseName) = 0;
+        virtual void testCaseEnd(const VTestInfo& testInfo) = 0;
+        virtual void testSuiteEnd() = 0;
+        virtual void testSuitesEnd() = 0;
+
+    protected:
+    
+        // The concrete classes must call these helper functions
+        // from their corresponding interface implementations, to manage the data.
+        void _testSuitesBegin();
+        void _testSuiteBegin(const VString& testSuiteName);
+        void _testCaseBegin(const VString& testCaseName);
+        void _testCaseEnd(const VTestInfo& testInfo);
+        void _testSuiteEnd();
+    
+        VLogger& mLogger;
+        VInstant mTestSuitesStartTime;
+        int mTotalNumSuccesses;
+        int mTotalNumErrors;
+        VString mCurrentTestSuiteName;
+        TestInfoVector mCurrentTestSuiteResults;
+        int mCurrentTestSuiteNumSuccesses;
+        int mCurrentTestSuiteNumErrors;
+        VInstant mCurrentTestSuiteStartTime;
+        VInstant mCurrentTestSuiteEndTime;
+        VString mCurrentTestCaseName;
+        VInstant mCurrentTestCaseStartTime;
+        VInstant mCurrentTestCaseEndTime;
+        VStringVector mFailedTestSuiteNames;
+
+    private:
+
+        // Prevent copy construction and assignment since there is no provision for cloning this class.
+        VUnitOutputWriter(const VUnitOutputWriter& other);
+        VUnitOutputWriter& operator=(const VUnitOutputWriter& other);
+
+        // These are the functions used by createOutputWriters().
+        static VLogger* _newLoggerByType(const VString& outputType, const VString& filePath);
+        static VUnitOutputWriter* _newOutputWriterByType(const VString& outputType, VLogger* logger);
+        static void _addNewOutputWriter(VUnitOutputWriterList& outputters, VLoggerList& outputLoggers, const VString& outputType, const VString& filePath);
+    };
 
 /**
 VUnit is a simple abstract base class used to build unit tests
@@ -61,10 +148,10 @@ class VUnit
     
         /**
         Runs a single unit's tests. The 
-        @param    unit            the unit to run
-        @param    xmlOutputStream    if not NULL, the results are appended to this stream
+        @param  unit    the unit to run
+        @param  writers writers to which test output will be collected and written
         */
-        static void runUnit(VUnit& unit, VTextIOStream* xmlOutputStream);
+        static void runUnit(VUnit& unit, VUnitOutputWriterList* writers);
     
         /**
         Constructs a unit test object.
@@ -76,6 +163,14 @@ class VUnit
         Destructor. May log test result totals.
         */
         virtual ~VUnit();
+        
+        /**
+        Before a unit test suite is run, its output writers are set to that
+        its results are recorded via those writers. Had to do this with a setter
+        rather than the constructor to avoid having to change existing code.
+        @param  writers the output writers that will record all results
+        */
+        void setWriters(VUnitOutputWriterList* writers) { mWriters = writers; }
         
         /**
         Executes the unit test. Must be overridden by concrete class.
@@ -106,16 +201,69 @@ class VUnit
         // These functions are used by the runUnit() static function.
         
         void logStart();
-        void logNormalEnd(VTextIOStream* xmlOutputStream);
-        void logExceptionalEnd(VTextIOStream* xmlOutputStream, const VString& exceptionMessage);
-        void logResults(VTextIOStream* xmlOutputStream);
+        void logNormalEnd();
+        void logExceptionalEnd(const VString& exceptionMessage);
 
     protected:
     
-        VString    mName;            ///< Name for display in log file.
-        bool    mLogOnSuccess;    ///< True if we log successful tests.
-        bool    mThrowOnError;    ///< True if we throw a VException on failed tests.
+        VString                 mName;          ///< Name for display in log file.
+        bool                    mLogOnSuccess;  ///< True if we log successful tests.
+        bool                    mThrowOnError;  ///< True if we throw a VException on failed tests.
+        VUnitOutputWriterList*  mWriters;       ///< The output writers to which test results are recorded.
+        
+        // These are the methods that test equality of two values of the same type.
+        #define VUNIT_ASSERT_EQUAL(a, b) this->assertEqual(a, b, VString::EMPTY(), __FILE__, __LINE__)
+        #define VUNIT_ASSERT_EQUAL_LABELED(a, b, suffix) this->assertEqual(a, b, suffix, __FILE__, __LINE__)
+        void assertEqual(int a, int b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %d == %d", a, b)); }
+        void assertEqual(bool a, bool b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %s == %s", (a?"true":"false"), (b?"true":"false"))); }
+        void assertEqual(const VString& a, const VString& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: '%s' == '%s'", a.chars(), b.chars())); }
+        void assertEqual(const VString& a, const char* b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: '%s' == '%s'", a.chars(), b)); }
+        void assertEqual(const char* a, const VString& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: '%s' == '%s'", a, b.chars())); }
+        void assertEqual(const VChar& a, const VChar& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: '%c' == '%c'", a.charValue(), b.charValue())); }
+        void assertEqual(const VChar& a, char b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: '%c' == '%c'", a.charValue(), b)); }
+        void assertEqual(VDouble a, VDouble b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %lf == %lf", a, b)); }
+        void assertEqual(const VDuration& a, const VDuration& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %lldms == %lldms", a.getDurationMilliseconds(), b.getDurationMilliseconds())); }
+        void assertEqual(const VInstant& a, const VInstant& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %lld == %lld", a.getValue(), b.getValue())); }
+        void assertEqual(Vs8 a, Vs8 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %hhd == %hhd", a, b)); }
+        void assertEqual(Vu8 a, Vu8 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %hhu == %hhu", a, b)); }
+        void assertEqual(Vs16 a, Vs16 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %hd == %hd", a, b)); }
+        void assertEqual(Vu16 a, Vu16 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %hu == %hu", a, b)); }
+        void assertEqual(Vs32 a, Vs32 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %ld == %ld", a, b)); }
+        void assertEqual(Vu32 a, Vu32 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %lu == %lu", a, b)); }
+        void assertEqual(Vs64 a, Vs64 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %lld == %lld", a, b)); }
+        void assertEqual(Vu64 a, Vu64 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %llu == %llu", a, b)); }
+        void assertEqual(const VColor& a, const VColor& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %s == %s", a.getCSSColor().chars(), b.getCSSColor().chars())); }
+        void assertEqual(const VColorPair& a, const VColorPair& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VString("failed equality: %s == %s", a.getCSSColor().chars(), b.getCSSColor().chars())); }
+        #define VUNIT_ASSERT_NOT_EQUAL(a, b) this->assertNotEqual(a, b, VString::EMPTY(), __FILE__, __LINE__)
+        #define VUNIT_ASSERT_NOT_EQUAL_LABELED(a, b, suffix) this->assertNotEqual(a, b, suffix, __FILE__, __LINE__)
+        void assertNotEqual(int a, int b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: %d != %d", a, b)); }
+        void assertNotEqual(bool a, bool b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: %s != %s", (a?"true":"false"), (b?"true":"false"))); }
+        void assertNotEqual(const VString& a, const VString& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: '%s' != '%s'", a.chars(), b.chars())); }
+        void assertNotEqual(const VString& a, const char* b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: '%s' != '%s'", a.chars(), b)); }
+        void assertNotEqual(const char* a, const VString& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: '%s' != '%s'", a, b.chars())); }
+        void assertNotEqual(const VChar& a, const VChar& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: '%c' != '%c'", a.charValue(), b.charValue())); }
+        void assertNotEqual(const VChar& a, char b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: '%c' != '%c'", a.charValue(), b)); }
+        void assertNotEqual(VDouble a, VDouble b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: %lf != %lf", a, b)); }
+        void assertNotEqual(const VDuration& a, const VDuration& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: %lldms != %lldms", a.getDurationMilliseconds(), b.getDurationMilliseconds())); }
+        void assertNotEqual(const VInstant& a, const VInstant& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: %lld != %lld", a.getValue(), b.getValue())); }
+        void assertNotEqual(Vs8 a, Vs8 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: %hhd != %hhd", a, b)); }
+        void assertNotEqual(Vu8 a, Vu8 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: %hhu != %hhu", a, b)); }
+        void assertNotEqual(Vs16 a, Vs16 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: %hd != %hd", a, b)); }
+        void assertNotEqual(Vu16 a, Vu16 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: %hu != %hu", a, b)); }
+        void assertNotEqual(Vs32 a, Vs32 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: %ld != %ld", a, b)); }
+        void assertNotEqual(Vu32 a, Vu32 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: %lu != %lu", a, b)); }
+        void assertNotEqual(Vs64 a, Vs64 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: %lld != %lld", a, b)); }
+        void assertNotEqual(Vu64 a, Vu64 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed inequality: %llu != %llu", a, b)); }
+        void assertNotEqual(const VColor& a, const VColor& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed equality: %s != %s", a.getCSSColor().chars(), b.getCSSColor().chars())); }
+        void assertNotEqual(const VColorPair& a, const VColorPair& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VString("failed equality: %s != %s", a.getCSSColor().chars(), b.getCSSColor().chars())); }
 
+        /**
+        Evaluates a boolean parameter that indicates test success,
+        and logs and/or throws based on success/failure.
+        @param    success        true if the test succeeded; false if not
+        @param    description    the text to log that describes the test
+        */
+        virtual void testAssertion(bool success, const VString& filePath, int lineNumber, const VString& labelSuffix, const VString& expectedDescription);
         /**
         Evaluates a boolean parameter that indicates test success,
         and logs and/or throws based on success/failure.
@@ -147,16 +295,19 @@ class VUnit
     
     private:
     
+        // It does not make sense to copy/assign VUnit objects; the mWriters would have to be cloned or safely copied.
+        VUnit(const VUnit&);
+        void operator=(const VUnit&);
+    
         void recordSuccess(const VString& description);
         void recordFailure(const VString& description);
-        void logXMLResults(VTextIOStream* xmlOutputStream);
     
-        int    mNumSuccessfulTests;    ///< Running total of number of successful tests.
-        int    mNumFailedTests;        ///< Running total of number of failed tests.
-        TestInfoVector mResults;    ///< Detailed information about each test run.
-        Vs64 mUnitStartTimeSnapshot;        ///< Identifies when the unit started.
-        Vs64 mPreviousTestEndedSnapshot;    ///< Identifies when the previous test ended, so we can determine approximate duration of each test.
-        VString    mLastTestDescription;    ///< Description of last test invoked.
+        int             mNumSuccessfulTests;        ///< Running total of number of successful tests.
+        int             mNumFailedTests;            ///< Running total of number of failed tests.
+        TestInfoVector  mResults;                   ///< Detailed information about each test run.
+        Vs64            mUnitStartTimeSnapshot;     ///< Identifies when the unit started.
+        Vs64            mPreviousTestEndedSnapshot; ///< Identifies when the previous test ended, so we can determine approximate duration of each test.
+        VString         mLastTestDescription;       ///< Description of last test invoked.
     };
 
 /**
@@ -172,7 +323,129 @@ class VTestRunner
         VTestRunner() {}
         virtual ~VTestRunner() {}
         
-        virtual void runUnit(VUnit& unit) = 0;
+        virtual void runUnit(VUnit& unit, VUnitOutputWriterList* output) = 0;
+    };
+
+/**
+VTestSuitesRunner is a helper/wrapper class that handles proper setup and teardown
+of an entire set of test suites. It will set up the output writers for you.
+*/
+class VTestSuitesWrapper
+    {
+    public:
+    
+        VTestSuitesWrapper(const VStringVector& args);
+        virtual ~VTestSuitesWrapper();
+        
+        VUnitOutputWriterList   mWriters;
+        VLoggerList             mLoggers;
+    };
+
+/**
+There are some types of unit tests where you have to do some setup before actually
+invoking the VUnit subclass, where the setup can fail. An example is setting up
+loopback socket, so that a unit test can send and receive data on the socket.
+If the setup fails, you want to emit a unit test failure to record the failure.
+This class lets you emit the failure information easily. Just declare this and
+give it a test name describing the failed setup operation, along with the error
+message you want shown, and "run" this unit test.
+*/
+class VFailureEmitter : public VUnit
+    {
+    public:
+    
+        VFailureEmitter(const VString& testName, bool logOnSuccess, bool throwOnError, const VString& errorMessage);
+        virtual ~VFailureEmitter() {}
+        
+        virtual void run();
+
+    protected:
+    
+        VString fErrorMessage;
+    };
+
+/**
+This outputter writes test results in a JUnit-compatible XML format.
+This consists of a tag wrapping all suites, within which is a tag
+for each suite (with summary information), within which is a tag for
+each test (with its result).
+*/
+class VUnitJUnitXMLOutput : public VUnitOutputWriter
+    {
+    public:
+    
+        VUnitJUnitXMLOutput(VLogger& outputLogger);
+        virtual ~VUnitJUnitXMLOutput() {}
+        
+        virtual void testSuitesBegin();
+        virtual void testSuiteBegin(const VString& testSuiteName);
+        virtual void testSuiteStatusMessage(const VString& message);
+        virtual void testCaseBegin(const VString& testCaseName);
+        virtual void testCaseEnd(const VTestInfo& testInfo);
+        virtual void testSuiteEnd();
+        virtual void testSuitesEnd();
+    };
+
+/**
+This outputter writes test results in a simple human-readable text format.
+This consists of the result of each test, summarized for each suite, and
+a summary at the end for everything.
+*/
+class VUnitSimpleTextOutput : public VUnitOutputWriter
+    {
+    public:
+    
+        VUnitSimpleTextOutput(VLogger& outputLogger);
+        virtual ~VUnitSimpleTextOutput() {}
+        
+        virtual void testSuitesBegin();
+        virtual void testSuiteBegin(const VString& testSuiteName);
+        virtual void testSuiteStatusMessage(const VString& message);
+        virtual void testCaseBegin(const VString& testCaseName);
+        virtual void testCaseEnd(const VTestInfo& testInfo);
+        virtual void testSuiteEnd();
+        virtual void testSuitesEnd();
+    };
+
+/**
+This outputter writes test results in a TeamCity stdout reporting format.
+This consists of Team City "##teamcity" reports for the begin and end of
+each suite and each test.
+*/
+class VUnitTeamCityOutput : public VUnitOutputWriter
+    {
+    public:
+    
+        VUnitTeamCityOutput(VLogger& outputLogger);
+        virtual ~VUnitTeamCityOutput() {}
+        
+        virtual void testSuitesBegin();
+        virtual void testSuiteBegin(const VString& testSuiteName);
+        virtual void testSuiteStatusMessage(const VString& message);
+        virtual void testCaseBegin(const VString& testCaseName);
+        virtual void testCaseEnd(const VTestInfo& testInfo);
+        virtual void testSuiteEnd();
+        virtual void testSuitesEnd();
+    };
+
+/**
+This outputter writes test results in a TeamCity build status XML file format.
+This consists of a few lines of XML summarizing the whole test run.
+*/
+class VUnitTeamCityBuildStatusOutput : public VUnitOutputWriter
+    {
+    public:
+    
+        VUnitTeamCityBuildStatusOutput(VLogger& outputLogger);
+        virtual ~VUnitTeamCityBuildStatusOutput() {}
+        
+        virtual void testSuitesBegin();
+        virtual void testSuiteBegin(const VString& testSuiteName);
+        virtual void testSuiteStatusMessage(const VString& message);
+        virtual void testCaseBegin(const VString& testCaseName);
+        virtual void testCaseEnd(const VTestInfo& testInfo);
+        virtual void testSuiteEnd();
+        virtual void testSuitesEnd();
     };
 
 #endif /* vunit_h */

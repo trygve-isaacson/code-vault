@@ -1,12 +1,13 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
 /** @file */
 
 #include "vbufferedfilestream.h"
+#include "vtypes_internal_platform.h"
 
 #include "vexception.h"
 
@@ -100,8 +101,8 @@ Vs64 VBufferedFileStream::read(Vu8* targetBuffer, Vs64 numBytesToRead)
     bool    needsSizeConversion = (sizeof(Vs64) != sizeof(size_t));
     Vs64    numBytesRemaining = numBytesToRead;
     Vs64    numBytesRead = 0;
-    size_t    requestCount;
-    size_t    actualCount;
+    size_t  requestCount;
+    size_t  actualCount;
     
     do
         {
@@ -137,8 +138,8 @@ Vs64 VBufferedFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite)
     bool    needsSizeConversion = VStream::needSizeConversion(numBytesToWrite);
     Vs64    numBytesRemaining = numBytesToWrite;
     Vs64    numBytesWritten = 0;
-    size_t    requestCount;
-    size_t    actualCount;
+    size_t  requestCount;
+    size_t  actualCount;
     
     do
         {
@@ -160,10 +161,10 @@ Vs64 VBufferedFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite)
 
     if (numBytesWritten != numBytesToWrite)
         {
-        VString    path;
+        VString path;
         mNode.getPath(path);
 
-        throw VException(errno, "VBufferedFileStream::write to '%s' only wrote %lld of %lld requested bytes.", path.chars(), numBytesWritten, numBytesToWrite);
+        throw VException(errno, VString("VBufferedFileStream::write to '%s' only wrote %lld of %lld requested bytes.", path.chars(), numBytesWritten, numBytesToWrite));
         }
 
     return numBytesWritten;
@@ -171,14 +172,13 @@ Vs64 VBufferedFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite)
 
 void VBufferedFileStream::flush()
     {
-    int    result = VBufferedFileStream::_wrap_fflush(mFile);
+    int result = VBufferedFileStream::_wrap_fflush(mFile);
     
     if (result != 0)
         {
-        VString    path;
+        VString path;
         mNode.getPath(path);
-        //2007.11.13 ECheung ARGO-8596 Include system error message with error number. 
-        throw VException(result, "VBufferedFileStream::flush to '%s' failed (errno=%d : %s)", path.chars(), errno, ::strerror(errno));
+        throw VException(result, VString("VBufferedFileStream::flush to '%s' failed (errno=%d : %s)", path.chars(), errno, ::strerror(errno)));
         }
     }
 
@@ -217,24 +217,24 @@ bool VBufferedFileStream::skip(Vs64 numBytesToSkip)
     return success;
     }
 
-bool VBufferedFileStream::seek(Vs64 inOffset, int whence)
+bool VBufferedFileStream::seek(Vs64 offset, int whence)
     {
     // FIXME: need to deal with Vs64-to-long conversion
-    return (VBufferedFileStream::_wrap_fseek(mFile, static_cast<long> (inOffset), whence) == 0);
+    return (VBufferedFileStream::_wrap_fseek(mFile, static_cast<long>(offset), whence) == 0);
     }
 
-Vs64 VBufferedFileStream::offset() const
+Vs64 VBufferedFileStream::getIOOffset() const
     {
     return VBufferedFileStream::_wrap_ftell(mFile);
     }
 
 Vs64 VBufferedFileStream::available() const
     {
-    Vs64    currentOffset = this->offset();
+    Vs64    currentOffset = this->getIOOffset();
     Vs64    eofOffset;
     
     const_cast<VBufferedFileStream*>(this)->seek(0, SEEK_END);
-    eofOffset = this->offset();
+    eofOffset = this->getIOOffset();
     const_cast<VBufferedFileStream*>(this)->seek(currentOffset, SEEK_SET);    // restore original position
     
     return eofOffset - currentOffset;
@@ -257,7 +257,7 @@ FILE* VBufferedFileStream::_wrap_fopen(const char* nativePath, const char* mode)
     if ((nativePath == NULL) || (nativePath[0] == 0))
         return NULL;
 
-    FILE*    f = NULL;
+    FILE*   f = NULL;
     bool    done = false;
 
     while (! done)
@@ -279,9 +279,8 @@ int VBufferedFileStream::_wrap_fclose(FILE* f)
     if (f == NULL)
         return EOF;
 
-    int        result;
+    int     result = 0;
     bool    done = false;
-
         
     while (! done)
         {
@@ -297,58 +296,57 @@ int VBufferedFileStream::_wrap_fclose(FILE* f)
     }
 
 // static
-size_t VBufferedFileStream::_wrap_fread(void* buffer, size_t size, size_t nItems, FILE* f)
+size_t VBufferedFileStream::_wrap_fread(void* buffer, size_t size, size_t numItems, FILE* f)
     {
     if ((buffer == NULL) || (f == NULL))
         return 0;
 
-    size_t    result;
+    size_t  result = 0;
     bool    done = false;
 
     while (! done)
         {
-        result = ::fread(buffer, size, nItems, f);
+        result = ::fread(buffer, size, numItems, f);
         
-        if ((result != nItems) && (ferror(f) != 0) && (errno == EINTR))
+        if ((result != numItems) && (ferror(f) != 0) && (errno == EINTR))
             done = false;
         else
             done = true;
         }
 
-    _debugCheck(result == nItems);
+    _debugCheck(result == numItems);
     
     return result;
     }
 
 // static
-size_t VBufferedFileStream::_wrap_fwrite(const void* buffer, size_t size, size_t nItems, FILE* f)
+size_t VBufferedFileStream::_wrap_fwrite(const void* buffer, size_t size, size_t numItems, FILE* f)
     {
-    size_t    result;
+    size_t  result = 0L;
     bool    done = false;
 
-    // 04.11.15 JHR #23892 Added f == NULL check
     if ((buffer == NULL) || (f == NULL))
         return 0L;
         
     while (! done)
         {
-        result = ::fwrite(buffer, size, nItems, f);
+        result = ::fwrite(buffer, size, numItems, f);
         
-        if ((result != nItems) && (ferror(f) != 0) && (errno == EINTR))
+        if ((result != numItems) && (ferror(f) != 0) && (errno == EINTR))
             done = false;
         else
             done = true;
         }
 
-    _debugCheck(result == nItems);
+    _debugCheck(result == numItems);
     
     return result;
     }
 
 // static
-int VBufferedFileStream::_wrap_fseek(FILE* f, long int inOffset, int whence)
+int VBufferedFileStream::_wrap_fseek(FILE* f, long int offset, int whence)
     {
-    int        result;
+    int     result = 0;
     bool    done = false;
 
     if (f == NULL)
@@ -356,7 +354,7 @@ int VBufferedFileStream::_wrap_fseek(FILE* f, long int inOffset, int whence)
 
     while (! done)
         {
-        result = ::fseek(f, inOffset, whence);
+        result = ::fseek(f, offset, whence);
         
         if ((result != -1) || (errno != EINTR))
             done = true;
@@ -370,7 +368,7 @@ int VBufferedFileStream::_wrap_fseek(FILE* f, long int inOffset, int whence)
 // static
 int VBufferedFileStream::_wrap_fflush(FILE* f)
     {
-    int        result;
+    int     result = 0;
     bool    done = false;
 
     if (f == NULL)
@@ -391,7 +389,7 @@ int VBufferedFileStream::_wrap_fflush(FILE* f)
 // static
 long int VBufferedFileStream::_wrap_ftell(FILE* f)
     {
-    long int    result;
+    long int    result = 0;
     bool        done = false;
 
     if (f == NULL)

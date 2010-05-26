@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -34,6 +34,7 @@ class VThreadsUnit : public VUnit
         */
         virtual void run();
 
+        friend class TestThreadClass; // Our test uses this thread class and it needs to log status to unit test output.
     };
 
 #endif /* vthreadsunit_h */

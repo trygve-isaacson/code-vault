@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -13,6 +13,7 @@ http://www.bombaydigital.com/
 
 class VString;
 class VInstant;
+class VDuration;
 
 /**
     @ingroup viostream_derived
@@ -153,9 +154,9 @@ class VBinaryIOStream : public VIOStream
 
         /**
         Constructs the object with an underlying raw stream.
-        @param    inRawStream    the raw stream on which I/O will be performed
+        @param    rawStream    the raw stream on which I/O will be performed
         */
-        VBinaryIOStream(VStream& inRawStream);
+        VBinaryIOStream(VStream& rawStream);
         /**
         Destructor.
         */
@@ -165,65 +166,65 @@ class VBinaryIOStream : public VIOStream
         Reads a signed 8-bit value from the stream.
         @return    the Vs8
         */
-        Vs8        readS8();
+        Vs8 readS8();
         /**
         Reads an unsigned 8-bit value from the stream.
         @return    the Vu8
         */
-        Vu8        readU8();
+        Vu8 readU8();
         /**
         Reads a signed 16-bit value from the stream.
         @return    the Vs16
         */
-        Vs16    readS16();
+        Vs16 readS16();
         /**
         Reads an unsigned 16-bit value from the stream.
         @return    the Vu16
         */
-        Vu16    readU16();
+        Vu16 readU16();
         /**
         Reads a signed 32-bit value from the stream.
         @return    the Vs32
         */
-        Vs32    readS32();
+        Vs32 readS32();
         /**
         Reads an unsigned 32-bit value from the stream.
         @return    the Vu32
         */
-        Vu32    readU32();
+        Vu32 readU32();
         /**
         Reads a signed 64-bit value from the stream.
         @return    the Vs64
         */
-        Vs64    readS64();
+        Vs64 readS64();
         /**
         Reads an unsigned 64-bit value from the stream.
         @return    the Vu64
         */
-        Vu64    readU64();
+        Vu64 readU64();
         /**
         Reads a single-precision floating-point value from the stream.
         @see VBinaryIOStream::writeFloat
         @return    the VFloat
         */
-        VFloat    readFloat();
+        VFloat readFloat();
         /**
         Reads a double-precision floating-point value from the stream.
         @see VBinaryIOStream::writeFloat
         @return    the VFloat
         */
-        VDouble    readDouble();
+        VDouble readDouble();
         /**
         Reads a bool value from the stream.
         @return    the bool
         */
-        bool    readBool();
+        bool readBool();
         /**
         Reads a VString value from the stream, assuming it is prefaced by
         dynamically-sized length indicator as done in writeString.
         @param    s    a VString to format
         */
-        void    readString(VString& s);
+        void readString(VString& s);
         /**
         Reads a VString value from the stream, assuming it is prefaced by
         dynamically-sized length indicator as done in writeString, using a
@@ -237,12 +238,13 @@ class VBinaryIOStream : public VIOStream
         a 32-bit length indicator as done in writeString32.
         @param    s    a VString to format
         */
-        void    readString32(VString& s);
+        void readString32(VString& s);
         /**
         Reads a VString value from the stream, assuming it is prefaced by
         a 32-bit length indicator as done in writeString32, using a
         more natural syntax than readString(s), but incurring the overhead
-        of creating two temporary copies instead of zero.
+        (depending on the compiler) of creating a temporary copy or two
+        instead of zero.
         @return    the VString value
         */
         VString readString32();
@@ -250,93 +252,112 @@ class VBinaryIOStream : public VIOStream
         Reads a VInstant value from the stream.
         @param    i    a VInstant to set
         */
-        void    readInstant(VInstant& i);
+        void readInstant(VInstant& i);
         /**
         Reads a VInstant value from the stream, using a more natural syntax
-        than readInstant(i), but incurring the overhead of creating two
-        temporary copies instead of zero.
+        than readInstant(i), but incurring the overhead
+        (depending on the compiler) of creating a temporary copy or two
+        instead of zero.
         @return    the VInstant value
         */
         VInstant readInstant();
+        /**
+        Reads a VDuration value from the stream.
+        @param    d    a VDuration to set
+        */
+        void readDuration(VDuration& d);
+        /**
+        Reads a VDuration value from the stream, using a more natural syntax
+        than readDuration(d), but incurring the overhead
+        (depending on the compiler) of creating a temporary copy or two
+        instead of zero.
+        @return    the VDuration value
+        */
+        VDuration readDuration();
         /**
         Reads a length/count/size indicator that has been dynamically sized
         via writeDynamicCount.
         @return the count value
         */
-        Vs64    readDynamicCount();
+        Vs64 readDynamicCount();
 
         /**
         Writes a signed 8-bit value to the stream.
         @param    i    the Vs8
         */
-        void    writeS8(Vs8 i);
+        void writeS8(Vs8 i);
         /**
         Writes an unsigned 8-bit value to the stream.
         @param    i    the Vu8
         */
-        void    writeU8(Vu8 i);
+        void writeU8(Vu8 i);
         /**
         Writes a signed 16-bit value to the stream.
         @param    i    the Vs16
         */
-        void    writeS16(Vs16 i);
+        void writeS16(Vs16 i);
         /**
         Writes an unsigned 16-bit value to the stream.
         @param    i    the Vu16
         */
-        void    writeU16(Vu16 i);
+        void writeU16(Vu16 i);
         /**
         Writes a signed 32-bit value to the stream.
         @param    i    the Vs32
         */
-        void    writeS32(Vs32 i);
+        void writeS32(Vs32 i);
         /**
         Writes an unsigned 32-bit value to the stream.
         @param    i    the Vu32
         */
-        void    writeU32(Vu32 i);
+        void writeU32(Vu32 i);
         /**
         Writes a signed 64-bit value to the stream.
         @param    i    the Vs64
         */
-        void    writeS64(Vs64 i);
+        void writeS64(Vs64 i);
         /**
         Writes an unsigned 64-bit value to the stream.
         @param    i    the Vu64
         */
-        void    writeU64(Vu64 i);
+        void writeU64(Vu64 i);
         /**
         Writes a single-precision floating-point value to the stream.
         @param    f            the VFloat
         */
-        void    writeFloat(VFloat f);
+        void writeFloat(VFloat f);
         /**
         Writes a double-precision floating-point value to the stream.
         @param    d            the VDouble
         */
-        void    writeDouble(VDouble d);
+        void writeDouble(VDouble d);
         /**
         Writes a bool value to the stream.
         @param    i    the bool
         */
-        void    writeBool(bool i);
+        void writeBool(bool i);
         /**
         Writes a VString value to the stream prefaced by dynamically-sized length indicator.
         The length indicator is 1 byte for strings of length 252 or less, and is larger if
         the string length needs more bytes to be represented.
         @param    s    the VString
         */
-        void    writeString(const VString& s);
+        void writeString(const VString& s);
         /**
         Writes a VString value to the stream prefaced by a 32-bit length indicator.
         @param    s    the VString
         */
-        void    writeString32(const VString& s);
+        void writeString32(const VString& s);
         /**
         Writes a VInstant value to the stream.
         @param    i    the VInstant
         */
-        void    writeInstant(const VInstant& i);
+        void writeInstant(const VInstant& i);
+        /**
+        Writes a VDuration value to the stream.
+        @param    d    the VDuration
+        */
+        void writeDuration(const VDuration& d);
         /**
         Writes a length/count/size indicator that is dynamically sized to fit
         the actual value, with an encoding so that it can be read. The purpose is to be
@@ -344,7 +365,7 @@ class VBinaryIOStream : public VIOStream
         for arbitrarily large values that might be encountered less frequently.
         @param    count    the count value
         */
-        void    writeDynamicCount(Vs64 count);
+        void writeDynamicCount(Vs64 count);
 
         /**
         Returns the number of bytes that the specified count value would take in
@@ -353,6 +374,13 @@ class VBinaryIOStream : public VIOStream
         @return the number of bytes that count would occupy in a stream
         */
         static int getDynamicCountLength(Vs64 count);
+
+    private:
+
+        // Prevent copy construction and assignment since there is no provision for sharing a raw stream.
+        VBinaryIOStream(const VBinaryIOStream& other);
+        VBinaryIOStream& operator=(const VBinaryIOStream& other);
+
     };
 
 #endif /* vbinaryiostream_h */

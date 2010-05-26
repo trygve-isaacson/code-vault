@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5.1
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -14,26 +14,26 @@ VShutdownRegistry* VShutdownRegistry::gInstance = NULL;
 // initialization if accessed during the static initialization phase.
 static VMutex* _mutexInstance()
     {
-    static VMutex gMutex;
+    static VMutex gMutex("VShutdownRegistry _mutexInstance() gMutex");
     return &gMutex;
     }
 
 // static
 VShutdownRegistry* VShutdownRegistry::instance()
     {
-    VMutexLocker    locker(_mutexInstance());
-    
+    VMutexLocker locker(_mutexInstance(), "VShutdownRegistry::instance()");
+
     if (gInstance == NULL)
         gInstance = new VShutdownRegistry();
-    
+
     return gInstance;
     }
 
 // static
 void VShutdownRegistry::shutdown()
     {
-    VMutexLocker    locker(_mutexInstance());
-    
+    VMutexLocker locker(_mutexInstance(), "VShutdownRegistry::shutdown()");
+
     if (gInstance != NULL)
         {
         delete gInstance;
@@ -43,15 +43,15 @@ void VShutdownRegistry::shutdown()
 
 void VShutdownRegistry::registerHandler(MShutdownHandler* handler)
     {
-    VMutexLocker    locker(_mutexInstance());
-    
+    VMutexLocker locker(_mutexInstance(), "VShutdownRegistry::registerHandler()");
+
     mHandlers.push_back(handler);
     }
 
 void VShutdownRegistry::registerFunction(shutdownFunction func)
     {
-    VMutexLocker    locker(_mutexInstance());
-    
+    VMutexLocker locker(_mutexInstance(), "VShutdownRegistry::registerFunction()");
+
     mFunctions.push_back(func);
     }
 
@@ -72,9 +72,10 @@ VShutdownRegistry::~VShutdownRegistry()
         {
         MShutdownHandler*    handler = (*i);
 
+        bool deleteHandler = handler->mDeleteAfterShutdown; // save first; _shutdown() could delete handler
         handler->_shutdown();
 
-        if (handler->mDeleteAfterShutdown)
+        if (deleteHandler)
             delete handler;
 
         (*i) = NULL;

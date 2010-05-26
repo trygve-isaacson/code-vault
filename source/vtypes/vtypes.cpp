@@ -1,21 +1,37 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
 /** @file */
 
 #include "vtypes.h"
+#include "vtypes_internal.h"
 
 #include <iostream> // for namespace std
+#include <assert.h>
+
+// Still to be determined is what constant value/type should be used here when
+// performing 64-bit VC++ compilation. Until then, the optional "/Wp64" option
+// in the 32-bit VC++ compiler ("Detect 64-bit Portability Issues") will emit
+// a warning #4312 so we want to disable that for this line of code. The warning
+// is because we are using a 32-bit constant 0xFEEEFEEE. Simply making it a
+// 64-bit constant is not portable either because that overflows in 32 bits.
+#ifdef VCOMPILER_MSVC
+#pragma warning(disable: 4312)
+#endif
+const void* const VCPP_DEBUG_BAD_POINTER_VALUE = reinterpret_cast<const void*>(0xFEEEFEEE);
+#ifdef VCOMPILER_MSVC
+#pragma warning(default: 4312)
+#endif
 
 Vu16 vault::VbyteSwap16(Vu16 a16BitValue)
     {
     Vu16    original = a16BitValue;
     Vu16    swapped;
-    Vu8*    originalBytes = reinterpret_cast<Vu8*> (&original);
-    Vu8*    swappedBytes = reinterpret_cast<Vu8*> (&swapped);
+    Vu8*    originalBytes = reinterpret_cast<Vu8*>(&original);
+    Vu8*    swappedBytes = reinterpret_cast<Vu8*>(&swapped);
 
     swappedBytes[0] = originalBytes[1];
     swappedBytes[1] = originalBytes[0];
@@ -27,8 +43,8 @@ Vu32 vault::VbyteSwap32(Vu32 a32BitValue)
     {
     Vu32    original = a32BitValue;
     Vu32    swapped;
-    Vu8*    originalBytes = reinterpret_cast<Vu8*> (&original);
-    Vu8*    swappedBytes = reinterpret_cast<Vu8*> (&swapped);
+    Vu8*    originalBytes = reinterpret_cast<Vu8*>(&original);
+    Vu8*    swappedBytes = reinterpret_cast<Vu8*>(&swapped);
 
     swappedBytes[0] = originalBytes[3];
     swappedBytes[1] = originalBytes[2];
@@ -42,8 +58,8 @@ Vu64 vault::VbyteSwap64(Vu64 a64BitValue)
     {
     Vu64    original = a64BitValue;
     Vu64    swapped;
-    Vu8*    originalBytes = reinterpret_cast<Vu8*> (&original);
-    Vu8*    swappedBytes = reinterpret_cast<Vu8*> (&swapped);
+    Vu8*    originalBytes = reinterpret_cast<Vu8*>(&original);
+    Vu8*    swappedBytes = reinterpret_cast<Vu8*>(&swapped);
 
     swappedBytes[0] = originalBytes[7];
     swappedBytes[1] = originalBytes[6];
@@ -65,10 +81,10 @@ VFloat vault::VbyteSwapFloat(VFloat a32BitValue)
     of the fractional value. That's what happens if you use
     VbyteSwap32 because the float gets converted to an int.
     */
-    VFloat    original = a32BitValue;
-    VFloat    swapped;
-    Vu8*    originalBytes = reinterpret_cast<Vu8*> (&original);
-    Vu8*    swappedBytes = reinterpret_cast<Vu8*> (&swapped);
+    VFloat  original = a32BitValue;
+    VFloat  swapped;
+    Vu8*    originalBytes = reinterpret_cast<Vu8*>(&original);
+    Vu8*    swappedBytes = reinterpret_cast<Vu8*>(&swapped);
 
     swappedBytes[0] = originalBytes[3];
     swappedBytes[1] = originalBytes[2];
@@ -86,10 +102,10 @@ VDouble vault::VbyteSwapDouble(VDouble a64BitValue)
     of the fractional value. That's what happens if you use
     VbyteSwap64 because the double gets converted to a Vs64.
     */
-    VDouble    original = a64BitValue;
-    VDouble    swapped;
-    Vu8*    originalBytes = reinterpret_cast<Vu8*> (&original);
-    Vu8*    swappedBytes = reinterpret_cast<Vu8*> (&swapped);
+    VDouble original = a64BitValue;
+    VDouble swapped;
+    Vu8*    originalBytes = reinterpret_cast<Vu8*>(&original);
+    Vu8*    swappedBytes = reinterpret_cast<Vu8*>(&swapped);
 
     swappedBytes[0] = originalBytes[7];
     swappedBytes[1] = originalBytes[6];
@@ -121,7 +137,7 @@ void Vassert(bool expression, const char* file, int line)
 
 #ifndef VCOMPILER_MSVC
         //lint -e421 "Caution -- function 'abort(void)' is considered dangerous [MISRA Rule 126]"
-        __assert(false, file, line);
+        __assert("fail", file, line); // todo: have VASSERT and Vassert take a descriptive string param.
 #else
         assert(expression);
 #endif

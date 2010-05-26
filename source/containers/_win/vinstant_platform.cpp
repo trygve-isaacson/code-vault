@@ -1,10 +1,11 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
 #include "vinstant.h"
+#include "vtypes_internal.h"
 
 /*
 These are the platform-specific implementations of these required
@@ -48,7 +49,7 @@ Vs64 VInstant::_platform_now()
 
     // This means we can only get second resolution for VInstant values.
     //lint -e418 -e421 "Passing null pointer to function 'time(long *)'"
-    return (CONST_S64(1000) * static_cast<Vs64>(::time(NULL))) + VInstant::gSimulatedClockOffset;
+    return (CONST_S64(1000) * static_cast<Vs64>(::time(NULL)));
 
 #endif /* V_INSTANT_SNAPSHOT_IS_UTC */
     }
@@ -56,7 +57,7 @@ Vs64 VInstant::_platform_now()
 // static
 Vs64 VInstant::_platform_offsetFromLocalStruct(const VInstantStruct& when)
     {
-    struct tm    fields;
+    struct tm fields;
 
     _setTMStructFromInstantStruct(when, fields);
 
@@ -127,7 +128,7 @@ Vs64 VInstant::_platform_offsetFromUTCStruct(const VInstantStruct& when)
 // static
 void VInstant::_platform_offsetToLocalStruct(Vs64 offset, VInstantStruct& when)
     {
-    struct tm    fields;
+    struct tm fields;
     ::memset(&fields, 0, sizeof(fields));
 
     VInstant::threadsafe_localtime(static_cast<time_t> (offset / 1000), &fields);
@@ -138,7 +139,7 @@ void VInstant::_platform_offsetToLocalStruct(Vs64 offset, VInstantStruct& when)
 // static
 void VInstant::_platform_offsetToUTCStruct(Vs64 offset, VInstantStruct& when)
     {
-    struct tm    fields;
+    struct tm fields;
     ::memset(&fields, 0, sizeof(fields));
 
     VInstant::threadsafe_gmtime(static_cast<time_t> (offset / 1000), &fields);
@@ -155,30 +156,30 @@ Vs64 VInstant::_platform_snapshot()
     struct __timeb64 tb;
     ::_ftime64(&tb);
     
-    return (tb.time * 1000) + tb.millitm + VInstant::gSimulatedClockOffset;
+    return (tb.time * 1000) + tb.millitm;
     }
 
 #else
 
 // static
 Vs64 VInstant::_platform_snapshot()
-	{
-	// The Windows _FILETIME structure holds a time value
-	// with 100-ns resolution, so we can use that a snapshot
-	// value that has the required millisecond resolution.
-	// (Divide ns by 10,000 to get ms.)
-	SYSTEMTIME st;
-	GetSystemTime(&st);
+    {
+    // The Windows _FILETIME structure holds a time value
+    // with 100-ns resolution, so we can use that a snapshot
+    // value that has the required millisecond resolution.
+    // (Divide ns by 10,000 to get ms.)
+    SYSTEMTIME st;
+    GetSystemTime(&st);
 
-	_FILETIME ft;
-	(void) SystemTimeToFileTime(&st, &ft);
-	
-	Vs64 high32 = ft.dwHighDateTime;
-	Vs64 low32 = ft.dwLowDateTime;
-	Vs64 milliseconds = ((high32 << 32) | low32) / CONST_S64(10000); // 10000: ns to ms
-	
-	return milliseconds;
-	}
+    _FILETIME ft;
+    (void) SystemTimeToFileTime(&st, &ft);
+    
+    Vs64 high32 = ft.dwHighDateTime;
+    Vs64 low32 = ft.dwLowDateTime;
+    Vs64 milliseconds = ((high32 << 32) | low32) / CONST_S64(10000); // 10000: ns to ms
+    
+    return milliseconds;
+    }
 
 #endif
 

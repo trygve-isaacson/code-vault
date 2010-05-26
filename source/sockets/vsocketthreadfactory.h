@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -56,7 +56,12 @@ class VSocketThreadFactory
 
     protected:
     
-        VManagementInterface*    mManager;    ///< The management interface supplied to each thread.
+        VManagementInterface* mManager; ///< The management interface supplied to each thread.
+
+    private:
+
+        VSocketThreadFactory(const VSocketThreadFactory&); // not copyable
+        VSocketThreadFactory& operator=(const VSocketThreadFactory&); // not assignable
     };
 
 #endif /* vsocketthreadfactory_h */

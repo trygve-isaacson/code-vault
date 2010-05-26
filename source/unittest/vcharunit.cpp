@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -9,8 +9,8 @@ http://www.bombaydigital.com/
 #include "vcharunit.h"
 #include "vchar.h"
 
-VCharUnit::VCharUnit(bool logOnSuccess, bool throwOnError)
-: VUnit("VCharUnit", logOnSuccess, throwOnError)
+VCharUnit::VCharUnit(bool logOnSuccess, bool throwOnError) :
+VUnit("VCharUnit", logOnSuccess, throwOnError)
     {
     }
 

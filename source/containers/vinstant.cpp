@@ -1,12 +1,14 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
 /** @file */
 
 #include "vinstant.h"
+#include "vtypes_internal.h"
+
 #include "vchar.h"
 #include "vstring.h"
 #include "vexception.h"
@@ -80,6 +82,14 @@ const VDuration& VDuration::POSITIVE_INFINITY()
     {
     static const VDuration kPOSITIVE_INFINITY(V_MAX_S64 - CONST_S64(1));
     return kPOSITIVE_INFINITY;
+    }
+
+// static
+VDuration VDuration::createFromDurationString(const VString& s)
+    {
+    VDuration duration;
+    duration.setDurationString(s);
+    return duration;
     }
 
 VDuration& VDuration::operator+=(const VDuration& forwardOffset)
@@ -233,6 +243,89 @@ VDuration operator%(const VDuration& d, const VDuration& divisor)
     return result;
     }
 
+VString VDuration::getDurationString() const
+    {
+    // most common case first!
+    if ((mDurationMilliseconds >= 0) && (mDurationMilliseconds < kMillisecondsPerSecond))
+        return VString("%lldms", mDurationMilliseconds);
+    else if (*this == VDuration::UNSPECIFIED())
+        return "UNSPECIFIED";
+    else if (*this == VDuration::POSITIVE_INFINITY())
+        return "INFINITY";
+    else if (*this == VDuration::NEGATIVE_INFINITY())
+        return "-INFINITY";
+    else if (mDurationMilliseconds % kMillisecondsPerDay == 0)
+        return VString("%dd", this->getDurationDays());
+    else if (mDurationMilliseconds % kMillisecondsPerHour == 0)
+        return VString("%dh", this->getDurationHours());
+    else if (mDurationMilliseconds % kMillisecondsPerMinute == 0)
+        return VString("%dm", this->getDurationMinutes());
+    else if (mDurationMilliseconds % kMillisecondsPerSecond == 0)
+        return VString("%ds", this->getDurationSeconds());
+    else
+        return VString("%lldms", mDurationMilliseconds);
+    }
+
+VString VDuration::getDurationStringFractionalSeconds() const
+    {
+    int wholeSeconds = this->getDurationSeconds();
+    int thousandths = static_cast<int>(this->getDurationMilliseconds() % kMillisecondsPerSecond);
+    
+    return VString("%d.%03d", wholeSeconds, thousandths);
+    }
+    
+void VDuration::setDurationString(const VString& s)
+    {
+    // Our API doc declares that we throw VRangeException on a malformed
+    // input string. The VString parse functions are doing this for us.
+    // Get the test order right: note that "ends with d" (days) is true
+    // for "unspecified".
+    VString value(s);
+    if (s.endsWith("ms"))
+        {
+        value.truncateLength(value.length() - 2);
+        mDurationMilliseconds = value.parseS64();
+        }
+    else if (s.endsWith('s'))
+        {
+        value.truncateLength(value.length() - 1);
+        mDurationMilliseconds = kMillisecondsPerSecond * value.parseS64();
+        }
+    else if (s.endsWith('m'))
+        {
+        value.truncateLength(value.length() - 1);
+        mDurationMilliseconds = kMillisecondsPerMinute * value.parseS64();
+        }
+    else if (s.endsWith('h'))
+        {
+        value.truncateLength(value.length() - 1);
+        mDurationMilliseconds = kMillisecondsPerHour * value.parseS64();
+        }
+    else if (s.equalsIgnoreCase("UNSPECIFIED"))
+        {
+        *this = VDuration::UNSPECIFIED();
+        }
+    else if (s.equalsIgnoreCase("INFINITY"))
+        {
+        *this = VDuration::POSITIVE_INFINITY();
+        }
+    else if (s.equalsIgnoreCase("-INFINITY"))
+        {
+        *this = VDuration::NEGATIVE_INFINITY();
+        }
+    else if (s.endsWith('d'))
+        {
+        value.truncateLength(value.length() - 1);
+        mDurationMilliseconds = kMillisecondsPerDay * value.parseS64();
+        }
+    else
+        {
+        VDouble seconds = value.parseDouble();
+        VDouble milliseconds = seconds * 1000.0;
+        mDurationMilliseconds = (Vs64) milliseconds;
+        }
+    }
+
 // static
 bool VDuration::_complexGT(const VDuration& d1, const VDuration& d2)
     {
@@ -366,7 +459,7 @@ VDuration VDuration::_complexMax(const VDuration& d1, const VDuration& d2)
 VDuration VDuration::_complexAbs(const VDuration& d)
     {
     if (d.isSpecific())
-        return (d.mDurationMilliseconds < CONST_S64(0)) ? d : VDuration(-d.mDurationMilliseconds);
+        return (d.mDurationMilliseconds < CONST_S64(0)) ? -d : d;
 
     if ((d == VDuration::NEGATIVE_INFINITY()) || (d == VDuration::POSITIVE_INFINITY()))
         return VDuration::POSITIVE_INFINITY();
@@ -430,6 +523,7 @@ const VString& VInstant::LOCAL_TIME_ZONE_ID()
     }
 
 Vs64 VInstant::gSimulatedClockOffset(0);
+Vs64 VInstant::gFrozenClockValue(0);
 
 MRemoteTimeZoneConverter* VInstant::gRemoteTimeZoneConverter = NULL;
 
@@ -487,6 +581,19 @@ VInstant& VInstant::operator-=(const VDuration& backwardOffsetDuration)
 
 void VInstant::setNow()
     {
+    if (gFrozenClockValue == 0)
+        {
+        mValue = VInstant::_platform_now();
+        mValue += gSimulatedClockOffset;
+        }
+    else
+        {
+        mValue = gFrozenClockValue;
+        }
+    }
+
+void VInstant::setTrueNow()
+    {
     mValue = VInstant::_platform_now();
     }
 
@@ -538,6 +645,13 @@ void VInstant::getUTCString(VString& s, bool fileNameSafe, bool wantMilliseconds
         s = "NEVER";
     }
 
+VString VInstant::getUTCString(bool fileNameSafe, bool wantMilliseconds) const
+    {
+    VString s;
+    this->getUTCString(s, fileNameSafe, wantMilliseconds);
+    return s;
+    }
+    
 void VInstant::setUTCString(const VString& s)
     {
     if (s == "NOW")
@@ -575,6 +689,13 @@ void VInstant::getLocalString(VString& s, bool fileNameSafe, bool wantMillisecon
         s = "NEVER";
     }
 
+VString VInstant::getLocalString(bool fileNameSafe, bool wantMilliseconds) const
+    {
+    VString s;
+    this->getLocalString(s, fileNameSafe, wantMilliseconds);
+    return s;
+    }
+    
 void VInstant::setLocalString(const VString& s)
     {
     if (s == "NOW")
@@ -598,14 +719,14 @@ void VInstant::setLocalString(const VString& s)
 
 void VInstant::getValues(VDate& date, VTimeOfDay& timeOfDay, const VString& timeZoneID) const
     {
-    VInstantStruct    when;
+    VInstantStruct when;
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
         VInstant::_platform_offsetToLocalStruct(mValue, when);
     else if (timeZoneID == VInstant::UTC_TIME_ZONE_ID())
         VInstant::_platform_offsetToUTCStruct(mValue, when);
     else if (gRemoteTimeZoneConverter == NULL)
-        throw VException("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars());
+        throw VException(VString("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
         gRemoteTimeZoneConverter->offsetToRTZStruct(mValue, timeZoneID, when);
 
@@ -620,14 +741,14 @@ VDate VInstant::getLocalDate() const
 
 VDate VInstant::getDate(const VString& timeZoneID) const
     {
-    VInstantStruct    when;
+    VInstantStruct when;
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
         VInstant::_platform_offsetToLocalStruct(mValue, when);
     else if (timeZoneID == VInstant::UTC_TIME_ZONE_ID())
         VInstant::_platform_offsetToUTCStruct(mValue, when);
     else if (gRemoteTimeZoneConverter == NULL)
-        throw VException("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars());
+        throw VException(VString("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
         gRemoteTimeZoneConverter->offsetToRTZStruct(mValue, timeZoneID, when);
 
@@ -641,14 +762,14 @@ VTimeOfDay VInstant::getLocalTimeOfDay() const
 
 VTimeOfDay VInstant::getTimeOfDay(const VString& timeZoneID) const
     {
-    VInstantStruct    when;
+    VInstantStruct when;
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
         VInstant::_platform_offsetToLocalStruct(mValue, when);
     else if (timeZoneID == VInstant::UTC_TIME_ZONE_ID())
         VInstant::_platform_offsetToUTCStruct(mValue, when);
     else if (gRemoteTimeZoneConverter == NULL)
-        throw VException("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars());
+        throw VException(VString("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
         gRemoteTimeZoneConverter->offsetToRTZStruct(mValue, timeZoneID, when);
 
@@ -662,14 +783,14 @@ VDateAndTime VInstant::getLocalDateAndTime() const
 
 VDateAndTime VInstant::getDateAndTime(const VString& timeZoneID) const
     {
-    VInstantStruct    when;
+    VInstantStruct when;
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
         VInstant::_platform_offsetToLocalStruct(mValue, when);
     else if (timeZoneID == VInstant::UTC_TIME_ZONE_ID())
         VInstant::_platform_offsetToUTCStruct(mValue, when);
     else if (gRemoteTimeZoneConverter == NULL)
-        throw VException("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars());
+        throw VException(VString("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
         gRemoteTimeZoneConverter->offsetToRTZStruct(mValue, timeZoneID, when);
 
@@ -683,28 +804,28 @@ void VInstant::setLocalDateAndTime(const VDateAndTime& dt)
 
 void VInstant::setDateAndTime(const VDateAndTime& dt, const VString& timeZoneID)
     {
-    VInstantStruct    when(dt.getDate(), dt.getTimeOfDay());
+    VInstantStruct when(dt.getDate(), dt.getTimeOfDay());
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
         mValue = VInstant::_platform_offsetFromLocalStruct(when);
     else if (timeZoneID == VInstant::UTC_TIME_ZONE_ID())
         mValue = VInstant::_platform_offsetFromUTCStruct(when);
     else if (gRemoteTimeZoneConverter == NULL)
-        throw VException("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars());
+        throw VException(VString("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
         mValue = gRemoteTimeZoneConverter->offsetFromRTZStruct(timeZoneID, when);
     }
 
 void VInstant::setValues(const VDate& date, const VTimeOfDay& timeOfDay, const VString& timeZoneID)
     {
-    VInstantStruct    when(date, timeOfDay);
+    VInstantStruct when(date, timeOfDay);
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
         mValue = VInstant::_platform_offsetFromLocalStruct(when);
     else if (timeZoneID == VInstant::UTC_TIME_ZONE_ID())
         mValue = VInstant::_platform_offsetFromUTCStruct(when);
     else if (gRemoteTimeZoneConverter == NULL)
-        throw VException("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars());
+        throw VException(VString("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
         mValue = gRemoteTimeZoneConverter->offsetFromRTZStruct(timeZoneID, when);
     }
@@ -718,10 +839,10 @@ Vs64 VInstant::getLocalOffsetMilliseconds() const
     indicated instant.
     */
 
-    VInstantStruct    localStruct;
+    VInstantStruct localStruct;
     VInstant::_platform_offsetToLocalStruct(mValue, localStruct);
 
-    VInstantStruct    utcStruct;
+    VInstantStruct utcStruct;
     VInstant::_platform_offsetToUTCStruct(mValue, utcStruct);
 
     // Now we have two structs for the instant.
@@ -768,8 +889,8 @@ Vs64 VInstant::getLocalOffsetMilliseconds() const
 // static
 void VInstant::threadsafe_localtime(const time_t epochOffset, struct tm* resultStorage)
     {
-    time_t        offset = epochOffset;
-    struct tm*    result;
+    time_t      offset = epochOffset;
+    struct tm*  result;
 
 #ifdef V_HAVE_REENTRANT_TIME
     result = ::localtime_r(&offset, resultStorage);
@@ -778,7 +899,7 @@ void VInstant::threadsafe_localtime(const time_t epochOffset, struct tm* resultS
 #endif
 
     if (result == NULL)
-        throw VException("VInstant::threadsafe_localtime: input time value %d is out of range.", (int) offset);
+        throw VException(VString("VInstant::threadsafe_localtime: input time value %d is out of range.", (int) offset));
 
 // Only copy result if we're NOT using reentrant version that already wrote result.
 #ifndef V_HAVE_REENTRANT_TIME
@@ -798,7 +919,7 @@ void VInstant::threadsafe_gmtime(const time_t epochOffset, struct tm* resultStor
 #endif
 
     if (result == NULL)
-        throw VException("VInstant::threadsafe_gmtime: input time value %d is out of range.", (int) epochOffset);
+        throw VException(VString("VInstant::threadsafe_gmtime: input time value %d is out of range.", (int) epochOffset));
 
 // Only copy result if we're NOT using reentrant version that already wrote result.
 #ifndef V_HAVE_REENTRANT_TIME
@@ -901,13 +1022,16 @@ bool VInstant::_complexLTE(const VInstant& i1, const VInstant& i2)
 // static
 Vs64 VInstant::snapshot()
     {
-    return VInstant::_platform_snapshot();
+    if (gFrozenClockValue == 0)
+        return VInstant::_platform_snapshot() + gSimulatedClockOffset;
+    else
+        return gFrozenClockValue;
     }
 
 // static
 VDuration VInstant::snapshotDelta(Vs64 snapshotValue)
     {
-    return VDuration::MILLISECOND() * (VInstant::_platform_snapshot() - snapshotValue);
+    return VDuration::MILLISECOND() * (VInstant::snapshot() - snapshotValue);
     }
 
 // static
@@ -925,6 +1049,7 @@ void VInstant::setSimulatedClockOffset(const VDuration& offset)
 // static
 void VInstant::setSimulatedClockValue(const VInstant& simulatedCurrentTime)
     {
+    gSimulatedClockOffset = 0; // so that "now" will be true current time, not existing simulated time
     VInstant now;
     VInstant::setSimulatedClockOffset(simulatedCurrentTime - now);
     }
@@ -935,7 +1060,41 @@ VDuration VInstant::getSimulatedClockOffset()
     return VDuration::MILLISECOND() * gSimulatedClockOffset;
     }
 
+// static
+void VInstant::freezeTime(const VInstant& frozenTimeValue)
+    {
+    gFrozenClockValue = frozenTimeValue.getValue();
+    }
+
+// static
+void VInstant::shiftFrozenTime(const VDuration& delta)
+    {
+    gFrozenClockValue += delta.getDurationMilliseconds();
+    }
+
+// static
+void VInstant::unfreezeTime()
+    {
+    gFrozenClockValue = 0;
+    }
+
+// static
+bool VInstant::isTimeFrozen()
+    {
+    return gFrozenClockValue != 0;
+    }
+
 // VDate ---------------------------------------------------------------------
+
+// Is ASSERT_INVARIANT enabled/disabled specifically for VDate and VTimeOfDay?
+#ifdef V_ASSERT_INVARIANT_VDATE_AND_TIME_ENABLED
+    #undef ASSERT_INVARIANT
+    #if V_ASSERT_INVARIANT_VDATE_AND_TIME_ENABLED == 1
+        #define ASSERT_INVARIANT() this->_assertInvariant() ///< Macro to call this->_assertInvariant().
+    #else
+        #define ASSERT_INVARIANT() ((void) 0) ///< No-op.
+    #endif
+#endif
 
 const VChar VDate::kLocalDateSeparator('/');
 
@@ -947,7 +1106,10 @@ mDay(1)
     ASSERT_INVARIANT();
     }
 
-VDate::VDate(const VString& timeZoneID)
+VDate::VDate(const VString& timeZoneID) :
+mYear(0),
+mMonth(1),
+mDay(1)
     {
     VInstant    now;
     VDate       nowDate = now.getDate(timeZoneID);
@@ -958,15 +1120,14 @@ VDate::VDate(const VString& timeZoneID)
     ASSERT_INVARIANT();
     }
 
-VDate::VDate(int inYear, int inMonth, int inDay)
+VDate::VDate(int year, int month, int day) :
+mYear(year),
+mMonth(month),
+mDay(day)
     {
-    if ((inMonth < 1) || (inMonth > 12) ||
-        (inDay   < 1) || (inDay   > 32)) // 32 allowed when incrementing the date
-        throw VRangeException(VString("VDate: %d-%02d-%02d is an invalid value.", inYear, inMonth, inDay));
-
-    mYear = inYear;
-    mMonth = inMonth;
-    mDay = inDay;
+    if ((month < 1) || (month > 12) ||
+        (day   < 1) || (day   > 32)) // 32 allowed when incrementing the date
+        throw VRangeException(VString("VDate: %d-%02d-%02d is an invalid value.", year, month, day));
 
     ASSERT_INVARIANT();
     }
@@ -996,7 +1157,7 @@ int VDate::getDayOfWeek() const
     {
     ASSERT_INVARIANT();
 
-    VInstantStruct    when;
+    VInstantStruct when;
 
     when.mYear = mYear;
     when.mMonth = mMonth;
@@ -1015,17 +1176,17 @@ int VDate::getDayOfWeek() const
     return when.mDayOfWeek;
     }
 
-void VDate::set(int inYear, int inMonth, int inDay)
+void VDate::set(int year, int month, int day)
     {
     ASSERT_INVARIANT();
 
-    if ((inMonth < 1) || (inMonth > 12) ||
-        (inDay   < 1) || (inDay   > 32)) // 32 allowed when incrementing the date
-        throw VRangeException(VString("VDate::set: %d-%02d-%02d is an invalid value.", inYear, inMonth, inDay));
+    if ((month < 1) || (month > 12) ||
+        (day   < 1) || (day   > 32)) // 32 allowed when incrementing the date
+        throw VRangeException(VString("VDate::set: %d-%02d-%02d is an invalid value.", year, month, day));
 
-    mYear = inYear;
-    mMonth = inMonth;
-    mDay = inDay;
+    mYear = year;
+    mMonth = month;
+    mDay = day;
 
     ASSERT_INVARIANT();
     }
@@ -1057,22 +1218,14 @@ void VDate::setDay(int day)
     ASSERT_INVARIANT();
     }
 
-//lint -e421 "Caution -- function 'abort(void)' is considered dangerous [MISRA Rule 126]"
-void VDate::assertInvariant() const
+void VDate::_assertInvariant() const
     {
-	// 2007.03.22 ranstrom v1.3D ARGO-6599 Performance: each separate V_ASSERT is somewhat slow. Roll in to one call.
-	/*
-    V_ASSERT(mMonth > 0);
-    V_ASSERT(mMonth < 13);
-    V_ASSERT(mDay > 0);
-    V_ASSERT(mDay < 33); // 32 allowed when incrementing the date
-	*/
-	bool ok = true;
-	ok = ok && (mMonth > 0);
-	ok = ok && (mMonth < 13);
-	ok = ok && (mDay > 0);
-	ok = ok && (mDay < 33); 
-	V_ASSERT(ok);
+    V_ASSERT(
+        (mMonth > 0) &&
+        (mMonth < 13) &&
+        (mDay > 0) &&
+        (mDay < 33)
+        );
     }
 
 // VTimeOfDay ----------------------------------------------------------------
@@ -1088,7 +1241,11 @@ mMillisecond(0)
     ASSERT_INVARIANT();
     }
 
-VTimeOfDay::VTimeOfDay(const VString& timeZoneID)
+VTimeOfDay::VTimeOfDay(const VString& timeZoneID) :
+mHour(0),
+mMinute(0),
+mSecond(0),
+mMillisecond(0)
     {
     VInstant    now;
     VTimeOfDay  nowTimeOfDay = now.getTimeOfDay(timeZoneID);
@@ -1100,18 +1257,17 @@ VTimeOfDay::VTimeOfDay(const VString& timeZoneID)
     ASSERT_INVARIANT();
     }
 
-VTimeOfDay::VTimeOfDay(int inHour, int inMinute, int inSecond, int inMillisecond)
+VTimeOfDay::VTimeOfDay(int hour, int minute, int second, int millisecond) :
+mHour(hour),
+mMinute(minute),
+mSecond(second),
+mMillisecond(millisecond)
     {
-    if ((inHour   < 0) || (inHour   > 23) ||
-        (inMinute < 0) || (inMinute > 59) ||
-        (inSecond < 0) || (inSecond > 59) ||
-        (inMillisecond < 0) || (inMillisecond > 999))
-        throw VRangeException(VString("VTimeOfDay: %02d:%02d:%02d.%03d is an invalid value.", inHour, inMinute, inSecond, inMillisecond));
-
-    mHour = inHour;
-    mMinute = inMinute;
-    mSecond = inSecond;
-    mMillisecond = inMillisecond;
+    if ((hour   < 0) || (hour   > 23) ||
+        (minute < 0) || (minute > 59) ||
+        (second < 0) || (second > 59) ||
+        (millisecond < 0) || (millisecond > 999))
+        throw VRangeException(VString("VTimeOfDay: %02d:%02d:%02d.%03d is an invalid value.", hour, minute, second, millisecond));
 
     ASSERT_INVARIANT();
     }
@@ -1208,35 +1364,25 @@ void VTimeOfDay::setToStartOfDay()
     this->set(0, 0, 0, 0);
     }
 
-//lint -e421 "Caution -- function 'abort(void)' is considered dangerous [MISRA Rule 126]"
-void VTimeOfDay::assertInvariant() const
+void VTimeOfDay::_assertInvariant() const
     {
-	// 2007.03.22 ranstrom v1.3D ARGO-6599 Performance: each separate V_ASSERT is somewhat slow. Roll in to one call.
-	/*
-    V_ASSERT(mHour >= 0);
-    V_ASSERT(mHour < 24);
-    V_ASSERT(mMinute >= 0);
-    V_ASSERT(mMinute < 60);
-    V_ASSERT(mSecond >= 0);
-    V_ASSERT(mSecond < 60);
-    V_ASSERT(mMillisecond >= 0);
-    V_ASSERT(mMillisecond < 1000);
-	*/
-	bool ok = true;
-	ok = ok && (mHour >= 0);
-	ok = ok && (mHour < 24);
-	ok = ok && (mMinute >= 0);
-	ok = ok && (mMinute < 60);
-	ok = ok && (mSecond >= 0);
-	ok = ok && (mSecond < 60);
-	ok = ok && (mMillisecond >= 0);
-	ok = ok && (mMillisecond < 1000);
-	V_ASSERT(ok);
+    V_ASSERT(
+        (mHour >= 0) &&
+        (mHour < 24) &&
+        (mMinute >= 0) &&
+        (mMinute < 60) &&
+        (mSecond >= 0) &&
+        (mSecond < 60) &&
+        (mMillisecond >= 0) &&
+        (mMillisecond < 1000)
+        );
     }
 
 // VDateAndTime --------------------------------------------------------------
 
-VDateAndTime::VDateAndTime(const VString& timeZoneID)
+VDateAndTime::VDateAndTime(const VString& timeZoneID) :
+mDate(),
+mTimeOfDay()
     {
     // This is more efficient than simply letting both the mDate and
     // mTimeOfDay construct themselves from the timeZoneID, because here we

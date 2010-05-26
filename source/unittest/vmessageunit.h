@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2007 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -35,9 +35,9 @@ class VMessageUnit : public VUnit
         */
         virtual void run();
 
-	private:
-	
-		void _validateStats(const VMessagePool& pool, const VMessagePool& stats, int numInPool, const VString& label);
+    private:
+    
+        void _validateStats(const VMessagePool& pool, const VMessagePool& stats, int numInPool, const VString& label);
     };
 
 #endif /* vmessageunit_h */

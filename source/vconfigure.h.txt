@@ -31,3 +31,12 @@ clear by reading which ones you are not using.
 /* This flag enables use of a user-defined stack crawl handler hook in VThread and Vassert. */
 /* It requires you to create a stack crawl header file that contains certain items (see VThread.cpp). */
 #define VAULT_USER_STACKCRAWL_SUPPORT
+
+/* This flag enables VMutex checking and logging of lock delays. */
+#define VAULT_MUTEX_LOCK_DELAY_CHECK
+
+/* This flag enables the memory allocation tracking feature, useful for finding leaks. */
+#define VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT
+
+/* This flag enables translation of Win32 structured exceptions into standard C++ exceptions. Requires /EHa compiler option. */
+#define VAULT_WIN32_STRUCTURED_EXCEPTION_TRANSLATION_SUPPORT

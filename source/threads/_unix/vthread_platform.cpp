@@ -1,16 +1,19 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
 /** @file */
 
 #include "vthread.h"
+#include "vtypes_internal_platform.h"
+
 #include "vmutex.h"
 #include "vsemaphore.h"
 #include "vlogger.h"
 #include "vinstant.h"
+#include "vexception.h"
 
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -18,33 +21,23 @@ http://www.bombaydigital.com/
 // VThread platform-specific functions ---------------------------------------
 
 // static
-bool VThread::threadCreate(VThreadID_Type* threadID, bool createDetached, threadMainFunction threadMainProcPtr, void* threadArgument)
+void VThread::threadCreate(VThreadID_Type* threadID, bool createDetached, threadMainFunction threadMainProcPtr, void* threadArgument)
     {
-    int                result;
-    pthread_attr_t    threadAttributes;
+    int             result;
+    pthread_attr_t  threadAttributes;
     
     result = ::pthread_attr_init(&threadAttributes);
     
-    // FIXME: Throwing an exception here would be preferable. Check calling code
-    // to see if it can deal with that.
     if (result != 0)
-        {
-        VLOGGER_ERROR(VString("VThread::threadCreate: pthread_attr_init returned %d (%s).", result, ::strerror(result)));
-        return false;
-        }
+        throw VException(result, VString("VThread::threadCreate: pthread_attr_init returned %d (%s).", result, ::strerror(result)));
 
     result = ::pthread_attr_setdetachstate(&threadAttributes, createDetached ? PTHREAD_CREATE_DETACHED : PTHREAD_CREATE_JOINABLE);
     
-    // FIXME: Throwing an exception here would be preferable.
     if (result != 0)
-        {
-        VLOGGER_ERROR(VString("VThread::threadCreate: pthread_attr_setdetachstate returned %d (%s).", result, ::strerror(result)));
-        return false;
-        }
+        throw VException(result, VString("VThread::threadCreate: pthread_attr_setdetachstate returned %d (%s).", result, ::strerror(result)));
 
     result = ::pthread_create(threadID, &threadAttributes, threadMainProcPtr, threadArgument);
     
-    // FIXME: Throwing an exception here would be preferable.
     if (result != 0)
         {
         // Usually this means we have hit the limit of threads allowed per process.
@@ -59,17 +52,40 @@ bool VThread::threadCreate(VThreadID_Type* threadID, bool createDetached, thread
         VThread::getThreadStatistics(numVThreads, numThreadMains, numVThreadsCreated, numThreadMainsStarted, numVThreadsDestructed, numThreadMainsCompleted);
 
         VLOGGER_ERROR(VString("VThread::threadCreate: pthread_create returned %d (%s).", result, ::strerror(result)));
-        VLOGGER_ERROR(VString(" VThread::smNumVThreads             = %d", numVThreads));
-        VLOGGER_ERROR(VString(" VThread::smNumThreadMains          = %d", numThreadMains));
-        VLOGGER_ERROR(VString(" VThread::smNumVThreadsCreated      = %d", numVThreadsCreated));
-        VLOGGER_ERROR(VString(" VThread::smNumThreadMainsStarted   = %d", numThreadMainsStarted));
-        VLOGGER_ERROR(VString(" VThread::smNumVThreadsDestructed   = %d", numVThreadsDestructed));
-        VLOGGER_ERROR(VString(" VThread::smNumThreadMainsCompleted = %d", numThreadMainsCompleted));
+        VLOGGER_ERROR(VString(" VThread::gNumVThreads             = %d", numVThreads));
+        VLOGGER_ERROR(VString(" VThread::gNumThreadMains          = %d", numThreadMains));
+        VLOGGER_ERROR(VString(" VThread::gNumVThreadsCreated      = %d", numVThreadsCreated));
+        VLOGGER_ERROR(VString(" VThread::gNumThreadMainsStarted   = %d", numThreadMainsStarted));
+        VLOGGER_ERROR(VString(" VThread::gNumVThreadsDestructed   = %d", numVThreadsDestructed));
+        VLOGGER_ERROR(VString(" VThread::gNumThreadMainsCompleted = %d", numThreadMainsCompleted));
+        
+        throw VException(result, VString("VThread::threadCreate: pthread_create returned %d (%s).", result, ::strerror(result)));
         }
 
     (void) ::pthread_attr_destroy(&threadAttributes);
+    }
 
-    return (result == 0);
+#ifdef VPLATFORM_MAC
+    #ifdef MAC_OS_X_VERSION_10_6 // SPI not available in pthread.h prior to the 10.6 headers.
+        #define VTHREAD_PTHREAD_SETNAME_SUPPORTED
+    #endif
+#endif
+
+// static
+void VThread::_threadStarting(const VThread* thread)
+    {
+#ifdef VTHREAD_PTHREAD_SETNAME_SUPPORTED
+    // This API lets us associate our thread name with the native thread resource, so that debugger/crashdump/instruments etc. can see our thread name.
+    (void)/*int result =*/ ::pthread_setname_np(thread->getName()); // "np" indicates API is non-POSIX
+#else
+    #pragma unused (thread)
+#endif
+    }
+
+// static
+void VThread::_threadEnded(const VThread* /*thread*/)
+    {
+    // Nothing to do for unix version.
     }
 
 // static
@@ -121,7 +137,7 @@ void VThread::yield()
     // Simulate by sleeping for 1ms. How to improve?
     VThread::sleep(VDuration::MILLISECOND());
 #else
-    ::sched_yield(); 
+    (void) ::sched_yield(); 
 #endif
     }
 

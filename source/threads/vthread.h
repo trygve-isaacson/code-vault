@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.5
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -17,6 +17,7 @@ http://www.bombaydigital.com/
 
 class VManagementInterface;
 class VThreadActionListener;
+class VLogger;
 
 /**
 
@@ -133,13 +134,50 @@ information.
 class VThread
     {
     public:
+    
+        /*
+        The following three static functions are to be implemented in your client application
+        code. The APIs are defined here and are called when needed, and you just have to
+        implement them to do what's needed depending on what you have available.
+        */
+        /**
+        This function is really just a convenience definition; if you want to separate your
+        actual main (for example, in your system exception handling code) from your application
+        specific main, this allows you a standard API through which to decouple them.
+        @param  argc the number of strings in the argv array
+        @param  argv an array of nul-terminated arg strings
+        @return the program result (by convention, 0 indicates success)
+        */
+        static int userMain(int argc, char** argv);
+        /**
+        This function is called as the main function for each thread; you must call through
+        to VThread::threadMain(), but if desired you can wrap this with system exception
+        handling to catch crashes and report them.
+        @param  arg the thread argument (actually the VThread pointer)
+        @return the thread result (will be NULL)
+        */
+        static void* userThreadMain(void* arg);
+        /**
+        This function is available whenever a stack crawl of the current thread location
+        should be logged; it is called the VMemoryTracker module when specified, by the
+        VLogger when configured to do so, and any time you want to, such as when handling
+        a crash in your system exception handler.
+        If the target environment does not support obtaining the stack crawl, this function
+        can just log nothing, or can log a string indicating so.
+        @param  headerMessage   if not empty, a header message to label the log output
+        @param  logger          the logger to write to all output to; if NULL then the implementation
+                                may just write to the console or some predefined file
+        @param  verbose         false will restrict output to just the function names, avoiding
+                                all annotation, registers, etc. so just the fucntion names are logged
+        */
+        static void logStackCrawl(const VString& headerMessage, VLogger* logger, bool verbose);
 
         // Constants to pass for VThread constructor deleteSelfAtEnd parameter:
-        static const bool kDeleteSelfAtEnd = true;        ///< The thread main deletes the VThread at end.
-        static const bool kDontDeleteSelfAtEnd = false;    ///< The thread main does not delete the VThread at end.
+        static const bool kDeleteSelfAtEnd = true;      ///< The thread main deletes the VThread at end.
+        static const bool kDontDeleteSelfAtEnd = false; ///< The thread main does not delete the VThread at end.
     
         // Constants to pass for VThread constructor createDetached parameter:
-        static const bool kCreateThreadDetached = true;        ///< The thread will be created in detached state.
+        static const bool kCreateThreadDetached = true;     ///< The thread will be created in detached state.
         static const bool kCreateThreadJoinable = false;    ///< The thread will be created in joinable state.
     
         /**
@@ -224,7 +262,7 @@ class VThread
         Returns the thread name (useful for debugging).
         @return the thread name
         */
-        const VString& name() const;
+        const VString& getName() const { return mName; }
         /**
         Sets the thread name (useful for debugging). Sometimes you don't have all
         the information you need to generate a good name at time of construction,
@@ -236,7 +274,7 @@ class VThread
         client IP and port (e.g., "INPUT:127.0.0.1:3922" for an input thread).
         @param    name    a name for this thread
         */
-        void setName(const VString& threadName);
+        void setName(const VString& threadName) { mName = threadName; }
         
         /**
         The main function that invokes the thread's run() and cleans up when
@@ -266,9 +304,9 @@ class VThread
         @param    createDetached        true to create the thread in detached state; false if not.
         @param    threadMainProcPtr    the thread main function that will be invoked
         @param    threadArgument        the argument to be passed to the thread main
-        @return true on success; false if there was an error creating the thread
+        @throws VException if the thread cannot be created
         */
-        static bool threadCreate(VThreadID_Type* threadID, bool createDetached, threadMainFunction threadMainProcPtr, void* threadArgument);
+        static void threadCreate(VThreadID_Type* threadID, bool createDetached, threadMainFunction threadMainProcPtr, void* threadArgument);
 
         /**
         Terminates the current thread. This could be called from anywhere, but
@@ -344,23 +382,23 @@ class VThread
 
     protected:
     
-        bool                    mIsDeleted;      ///< For debugging purposes it's useful to detect when an attempt is made to delete a thread twice.
-        VString                 mName;           ///< For debugging purposes it's very useful to give each thread a name.
-        bool                    mDeleteAtEnd;    ///< True if threadMain should delete this obj when it returns from run().
-        bool                    mCreateDetached; ///< True if the thread is created in detached state.
-        VManagementInterface*   mManager;        ///< The VManagementInterface that manages us, or NULL.
-        VThreadID_Type          mThreadID;       ///< The OS-specific thread ID value.
-        bool                    mIsRunning;      ///< The running state of the thread (@see isRunning()).
+        bool                    mIsDeleted;         ///< For debugging purposes it's useful to detect when an attempt is made to delete a thread twice.
+        VString                 mName;              ///< For debugging purposes it's very useful to give each thread a name.
+        bool                    mDeleteAtEnd;       ///< True if threadMain should delete this obj when it returns from run().
+        bool                    mCreateDetached;    ///< True if the thread is created in detached state.
+        VManagementInterface*   mManager;           ///< The VManagementInterface that manages us, or NULL.
+        VThreadID_Type          mThreadID;          ///< The OS-specific thread ID value.
+        bool                    mIsRunning;         ///< The running state of the thread (@see isRunning()).
     
         // These static members track and control the existence of threads we create.
-        static int smNumVThreads;               ///< The number of VThread objects that currently exist.
-        static int smNumThreadMains;            ///< The number of VThread::main() functions currently underway.
-        static int smNumVThreadsCreated;        ///< The total number of VThread objects ever created.
-        static int smNumThreadMainsStarted;     ///< The total number of VThread::main() functions ever entered.
-        static int smNumVThreadsDestructed;     ///< The total number of VThread objects ever destructed.
-        static int smNumThreadMainsCompleted;   ///< The total number of VThread::main() functions ever completed.
+        static int gNumVThreads;                ///< The number of VThread objects that currently exist.
+        static int gNumThreadMains;             ///< The number of VThread::main() functions currently underway.
+        static int gNumVThreadsCreated;         ///< The total number of VThread objects ever created.
+        static int gNumThreadMainsStarted;      ///< The total number of VThread::main() functions ever entered.
+        static int gNumVThreadsDestructed;      ///< The total number of VThread objects ever destructed.
+        static int gNumThreadMainsCompleted;    ///< The total number of VThread::main() functions ever completed.
 
-        static VThreadActionListener* smActionListener; ///< For now, there can only be 1; if more are needed, make this a collection.
+        static VThreadActionListener* gActionListener; ///< For now, there can only be 1; if more are needed, make this a collection.
 
         /**
         Updates the thread statistics based on the specified action happening.
@@ -373,6 +411,13 @@ class VThread
         // Prevent copy construction and assignment since there is no provision for sharing the underlying thread.
         VThread(const VThread& other);
         VThread& operator=(const VThread& other);
+
+        // These two function are implemented in the platform-specific code to perform any
+        // necessary per-thread bookkeeping. They are called from VThread::threadMain() just
+        // before and after the corresponding VManagementInterface threadStarting() and
+        // threadEnded() calls.
+        static void _threadStarting(const VThread* thread);
+        static void _threadEnded(const VThread* thread);
     };
 
 /**

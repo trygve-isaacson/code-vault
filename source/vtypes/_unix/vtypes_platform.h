@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2006 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -9,77 +9,61 @@ http://www.bombaydigital.com/
 
 /** @file */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <errno.h>
-#include <time.h>
-#include <string.h>
-#include <limits.h>
-#include <stdarg.h>
-#include <fcntl.h>
-
-#ifdef HAVE_MALLOC_H
-    #include <malloc.h>
-#endif
-
-#include <unistd.h>
-
-// Solaris-specific includes.
-#ifdef sun
-    #include <strings.h>
-    #include <netinet/in.h>
-    #include <inttypes.h>
-#endif
-
+/*
+First, define the 2 fundamental properties:
+- platform
+- compiler
+*/
+// Define the platform.
 #define VPLATFORM_UNIX
 
+// Maybe there's a cleaner way to do this; but we need to distinguish HP-UX below.
 #ifdef _HPUX_SOURCE
     #define VPLATFORM_UNIX_HPUX
 #endif
 
-#ifdef VPLATFORM_UNIX_HPUX
-    #include <math.h>
+/*
+Second, include the user-editable header file that configures
+the desired Vault features/behavior. It can decide based on
+the fundamental properties defined above.
+*/
+#include "vconfigure.h"
 
+/*
+Finally, proceed with everything else.
+*/
+
+// Boost seems to require being included first.
+#ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
+    #pragma GCC diagnostic ignored "-Wshadow" // boost format_implementation.hpp line 28 violates this
+    #include <boost/format.hpp>
+    // Unfortunately GCC does not have a save/restore diagnostic state pragma.
+#endif
+
+#include <math.h>
+#include <string.h>
+#include <sys/time.h>
+#include <stdlib.h>
+#include <algorithm>
+#include <limits.h> // LONG_MAX
+#include <memory> // auto_ptr
+#include <typeinfo> // std::bad_cast, etc.
+
+#ifdef VPLATFORM_UNIX_HPUX
     // On HPUX, std::abs(float) is not defined. For now, we can revert to macro style.
     // FIXME: do this more selectively rather than all-or-nothing below; just do V_FABS
     // rather than all 4 macros.
     #define DEFINE_V_MINMAXABS
 #endif
 
-#ifdef DEFINE_V_MINMAXABS
-
-    #define V_MIN(a, b) ((a) > (b) ? (b) : (a)) ///< Macro for getting min of compatible values when standard functions / templates are not available.
-    #define V_MAX(a, b) ((a) > (b) ? (a) : (b)) ///< Macro for getting max of compatible values when standard functions / templates are not available.
-    #define V_ABS(a) ((a) < 0 ? (-(a)) : (a))   ///< Macro for getting abs of an integer value when standard functions / templates are not available.
-    #define V_FABS(a) ((a) < 0 ? (-(a)) : (a))  ///< Macro for getting abs of a floating point value when standard functions / templates are not available.
-
-#else
-
-    #define V_MIN(a, b) std::min(a, b)  ///< Macro for getting min of compatible values using standard function template.
-    #define V_MAX(a, b) std::max(a, b)  ///< Macro for getting max of compatible values using standard function template.
-    #define V_ABS(a) std::abs(a)        ///< Macro for getting abs of an integer value using standard function template.
-    #define V_FABS(a) std::fabs(a)      ///< Macro for getting abs of a floating point value using standard function template.
-
-#endif /* DEFINE_V_MINMAXABS */
-
 #define V_HAVE_REENTRANT_TIME    // we can and should use the _r versions of time.h calls
 
-// For Linux, there is no O_BINARY mask, so define to zero so it will do nothing.
-#define O_BINARY 0x0000 ///< Macro to define O_BINARY mode, which is not in the standard headers.
+// For Linux at least, we need endian.h explicitly, and the __USE_BSD symbol gets the endian
+// symbol BYTE_ORDER defined as appropriate for the processor architecture.
+#define USE_BSD
+#include <endian.h>
 
-/*
-Some Unix platforms do not define the byte order macros and definitions
-that are defined in BSD's <machine/endian.h>, so we define them here in
-that case.
-*/
-
-/* In case BYTE_ORDER stuff from <machine/endian.h> is not defined, we'll
+/* In case BYTE_ORDER stuff from <endian.h> is not defined, we'll
    define the environment as big-endian. */
 #ifndef BYTE_ORDER
     #define LITTLE_ENDIAN   1234    /* LSB first: i386, vax */
@@ -97,103 +81,33 @@ actually call the swapping functions. If not, the macros do nothing.
 */
 
 #if BYTE_ORDER == LITTLE_ENDIAN
-    #define VBYTESWAP_NEEDED
+    #define VBYTESWAP_NEEDED // This means "host order" and "network order" differ.
+#endif
 
-    #define V_BYTESWAP_HTONS_GET(x)         vault::VbyteSwap16((Vu16) x)
-    #define V_BYTESWAP_NTOHS_GET(x)         vault::VbyteSwap16((Vu16) x)
-    #define V_BYTESWAP_HTONS_IN_PLACE(x)    ((x) = (vault::VbyteSwap16((Vu16) x)))
-    #define V_BYTESWAP_NTOHS_IN_PLACE(x)    ((x) = (vault::VbyteSwap16((Vu16) x)))
+/*
+min/max/abs/fabs are inconsistently defined and supported, so we have our
+own portable versions.
+*/
+#ifdef DEFINE_V_MINMAXABS
 
-    #define V_BYTESWAP_HTONL_GET(x)         vault::VbyteSwap32((Vu32) x)
-    #define V_BYTESWAP_NTOHL_GET(x)         vault::VbyteSwap32((Vu32) x)
-    #define V_BYTESWAP_HTONL_IN_PLACE(x)    ((x) = (vault::VbyteSwap32((Vu32) x)))
-    #define V_BYTESWAP_NTOHL_IN_PLACE(x)    ((x) = (vault::VbyteSwap32((Vu32) x)))
-
-    #define V_BYTESWAP_HTON64_GET(x)        vault::VbyteSwap64((Vu64) x)
-    #define V_BYTESWAP_NTOH64_GET(x)        vault::VbyteSwap64((Vu64) x)
-    #define V_BYTESWAP_HTON64_IN_PLACE(x)   ((x) = (vault::VbyteSwap64((Vu64) x)))
-    #define V_BYTESWAP_NTOH64_IN_PLACE(x)   ((x) = (vault::VbyteSwap64((Vu64) x)))
-
-    #define V_BYTESWAP_HTONF_GET(x)         vault::VbyteSwapFloat((VFloat) x)
-    #define V_BYTESWAP_NTOHF_GET(x)         vault::VbyteSwapFloat((VFloat) x)
-    #define V_BYTESWAP_HTONF_IN_PLACE(x)    ((x) = (vault::VbyteSwapFloat((VFloat) x)))
-    #define V_BYTESWAP_NTOHF_IN_PLACE(x)    ((x) = (vault::VbyteSwapFloat((VFloat) x)))
-
-	#define V_BYTESWAP_HTOND_GET(x)			vault::VbyteSwapDouble((VDouble) x)
-	#define V_BYTESWAP_NTOHD_GET(x)			vault::VbyteSwapDouble((VDouble) x)
-	#define V_BYTESWAP_HTOND_IN_PLACE(x)	((x) = (vault::VbyteSwapDouble((VDouble) x)))
-	#define V_BYTESWAP_NTOHD_IN_PLACE(x)	((x) = (vault::VbyteSwapDouble((VDouble) x)))
+    #define V_MIN(a, b) ((a) > (b) ? (b) : (a)) ///< Macro for getting min of compatible values when standard functions / templates are not available.
+    #define V_MAX(a, b) ((a) > (b) ? (a) : (b)) ///< Macro for getting max of compatible values when standard functions / templates are not available.
+    #define V_ABS(a) ((a) < 0 ? (-(a)) : (a))   ///< Macro for getting abs of an integer value when standard functions / templates are not available.
+    #define V_FABS(a) ((a) < 0 ? (-(a)) : (a))  ///< Macro for getting abs of a floating point value when standard functions / templates are not available.
 
 #else
 
-    #define V_BYTESWAP_HTONS_GET(x)         /*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_NTOHS_GET(x)         /*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_HTONS_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_NTOHS_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
+    #define V_MIN(a, b) std::min(a, b)  ///< Macro for getting min of compatible values using standard function template.
+    #define V_MAX(a, b) std::max(a, b)  ///< Macro for getting max of compatible values using standard function template.
+    #define V_ABS(a) std::abs(a)        ///< Macro for getting abs of an integer value using standard function template.
+    #define V_FABS(a) fabs(a)      ///< Macro for getting abs of a floating point value using standard function template.
 
-    #define V_BYTESWAP_HTONL_GET(x)         /*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_NTOHL_GET(x)         /*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_HTONL_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_NTOHL_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
-
-    #define V_BYTESWAP_HTON64_GET(x)        /*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_NTOH64_GET(x)        /*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_HTON64_IN_PLACE(x)   /*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_NTOH64_IN_PLACE(x)   /*lint -save -e522*/ (x) /*lint -restore */
-
-    #define V_BYTESWAP_HTONF_GET(x)         /*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_NTOHF_GET(x)         /*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_HTONF_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_NTOHF_IN_PLACE(x)    /*lint -save -e522*/ (x) /*lint -restore */
-
-    #define V_BYTESWAP_HTOND_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_NTOHD_GET(x)			/*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_HTOND_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
-    #define V_BYTESWAP_NTOHD_IN_PLACE(x)	/*lint -save -e522*/ (x) /*lint -restore */
-
-#endif
-
-// We use gettimeofday(), which uses UTC-based values.
-#define V_INSTANT_SNAPSHOT_IS_UTC    // platform_snapshot() gives us a UTC time suitable for platform_now()
+#endif /* DEFINE_V_MINMAXABS */
 
 // vsnprintf(NULL, 0, . . .) behavior generally conforms to IEEE 1003.1,
 // but not on HP-UX.
 #ifndef VPLATFORM_UNIX_HPUX
     #define V_EFFICIENT_SPRINTF
 #endif
-
-/*
-These are the custom uniform definitions of system-level functions that behave
-slightly differently on each compiler/library/OS platform. These are declared
-in each platform's header file in a way that works with that platform.
-*/
-namespace vault {
-
-inline int putenv(char* env) { return ::putenv(env); }
-inline char* getenv(const char* name) { return ::getenv(name); }
-inline ssize_t read(int fd, void* buffer, size_t numBytes) { return ::read(fd, buffer, numBytes); }
-inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::write(fd, buffer, numBytes); }
-inline off_t lseek(int fd, off_t offset, int whence) { return ::lseek(fd, offset, whence); }
-inline int open(const char* path, int flags, mode_t mode) { return ::open(path, flags, mode); }
-inline int close(int fd) { return ::close(fd); }
-inline int mkdir(const char* path, mode_t mode) { return ::mkdir(path, mode); }
-inline int rmdir(const char* path) { return ::rmdir(path); }
-inline int unlink(const char* path) { return ::unlink(path); }
-inline int rename(const char* oldName, const char* newName) { return ::rename(oldName, newName); }
-inline int stat(const char* path, struct stat* buf) { return ::stat(path, buf); }
-inline int strcasecmp(const char* s1, const char* s2) { return ::strcasecmp(s1, s2); }
-inline int strncasecmp(const char* s1, const char* s2, size_t length) { return ::strncasecmp(s1, s2, length); }
-inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args) { return ::vsnprintf(buffer, length, format, args); }
-
-inline int snprintf(char* buffer, size_t length, const char* format, ...)
-    {
-    va_list	args;
-    va_start(args, format);
-    int result = ::vsnprintf(buffer, length, format, args);
-    va_end(args);
-    return result;
-    }
-
-} // namespace vault
 
 #endif /* vtypes_platform_h */

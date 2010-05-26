@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2007 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 2.7
+Copyright c1997-2008 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.0
 http://www.bombaydigital.com/
 */
 
@@ -13,7 +13,7 @@ http://www.bombaydigital.com/
 #include "vmutexlocker.h"
 #include "vlogger.h"
 #include "vmessage.h"
-#include <map>
+#include "vclientsession.h"
 
 /** @file */
 
@@ -23,7 +23,6 @@ http://www.bombaydigital.com/
 
 class VMessagePool;
 class VServer;
-class VClientSession;
 class VSocketThread;
 
 class VMessageHandlerFactory;
@@ -52,162 +51,172 @@ the lock as soon as possible when it no longer needs it, or if it doesn't
 really need it in the first place.
 */
 class VMessageHandler
-	{
-	public:
+    {
+    public:
 
-		/**
-		Returns a message handler suitable for handling the specified
-		message. When a message is read from the network, this is what
-		is called to find a message handler for it. The message handler
-		should then simply be told to processMessage(), and deleted.
-		@param	m		the message to supply to the handler
-		@param	server	the server to supply to the handler
-		@param	session	the session for the client that sent this message, or NULL if n/a
-		@param	thread	the thread processing the message (used to
-						correlate the message to a client session)
-		*/
-		static VMessageHandler* get(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread);
-		/**
-		Registers a message handler factory for a particular
-		message ID. When a call is made to get(), the appropriate
-		factory function is called to create a handler for the message
-		ID.
-		*/
-		static void registerHandlerFactory(VMessageID messageID, VMessageHandlerFactory* factory);
+        /**
+        Returns a message handler suitable for handling the specified
+        message. When a message is read from the network, this is what
+        is called to find a message handler for it. The message handler
+        should then simply be told to processMessage(), and deleted.
+        @param    m        the message to supply to the handler
+        @param    server    the server to supply to the handler
+        @param    session    the session for the client that sent this message, or NULL if n/a
+        @param    thread    the thread processing the message (used to
+                        correlate the message to a client session)
+        */
+        static VMessageHandler* get(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread);
+        /**
+        Registers a message handler factory for a particular
+        message ID. When a call is made to get(), the appropriate
+        factory function is called to create a handler for the message
+        ID.
+        */
+        static void registerHandlerFactory(VMessageID messageID, VMessageHandlerFactory* factory);
 
-		/**
-		Constructs a message handler with a message to handle and the
-		server in which it is running.
-		@param	m		the message to process
-		@param	server	the server we're running in
-		@param	session	the session for the client that sent this message, or NULL if n/a
-		@param	thread	the thread processing the message (used to
-						correlate the message to a client session)
-		@param	pool	the message pool the
-		                message is released to when the handler is cleaned up
+        /**
+        Constructs a message handler with a message to handle and the
+        server in which it is running.
+        @param    name      the handler's name for logger output
+        @param    m        the message to process
+        @param    server    the server we're running in
+        @param    session    the session for the client that sent this message, or NULL if n/a
+        @param    thread    the thread processing the message (used to
+                        correlate the message to a client session)
+        @param    pool    the message pool the
+                        message is released to when the handler is cleaned up
         @param  mutex   if not null, a mutex that will be initially locked by the constructor
                         and unlocked by the destructor
-		*/
-		VMessageHandler(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread, VMessagePool* pool, VMutex* mutex);
-		/**
-		Virtual destructor. VMessageHandler normally does not delete the
-		mMessage because the message will be put back in a message pool by the
-		caller.
-		*/
-		virtual ~VMessageHandler();
-
-		/**
-		Processes the message.
-		*/
-		virtual void processMessage() = 0;
-		/**
-		Releases the message back to the pool. The subclass can prevent this
-		if needs to hang onto the message for longer, by either setting
-		fMessage to NULL before returning from processMessage() or by
-		overridding this method.
-		*/
-		virtual void releaseMessage();
-		/**
-		Returns a message, which is either recycled from the pool, or newly
-		instantiated if the pool is empty.
-		@param	messageID		value with which to init the message's message ID
-		@return a message object
-		*/
-		VMessage* getMessage(VMessageID messageID);
-		/**
-		Logs (at the appropriate log level) the supplied information about the
-		message being handled. A message handler should call this to log the
-		data contained in the inbound message, one whole message at a time. An
-		optional facility here is that the caller may supplie the logger object
-		to which the output will be written, and may obtain that object via
-		a prior call to _getMessageContentRecordLogger(), which may return NULL. This allows
-		the caller to: first call _getMessageContentRecordLogger() to obtain the logger
-		object; if it's NULL (indicating the log level would emit nothing), it
-		can avoid calling logMessageContentRecord() at all and also avoid building
-		the log message strings; and if the logger is not NULL (indicating the
-		log level would emit data) then it can supply the logger to
-		logMessageContentRecord() so that this function doesn't have to keep re-finding
-		the logger over repeated calls.
-		@param	details	the text to be logged
-		@param	logger	the logger to write to, or NULL to force the function to
-						look up the logger
-		*/
-		void logMessageContentRecord(const VString& details, VLogger* logger=NULL) const;
-		/**
-		Logs (at the appropriate log level) the supplied information about the
-		message being handled. A message handler should call this to log the
-		data contained in the inbound message, one field at a time. An
-		optional facility here is that the caller may supply the logger object
-		to which the output will be written, and may obtain that object via
-		a prior call to _getMessageContentFieldsLogger(), which may return NULL. This allows
-		the caller to: first call _getMessageContentFieldsLogger() to obtain the logger
-		object; if it's NULL (indicating the log level would emit nothing), it
-		can avoid calling logMessageContentFields() at all and also avoid building
-		the log message strings; and if the logger is not NULL (indicating the
-		log level would emit data) then it can supply the logger to
-		logMessageContentFields() so that this function doesn't have to keep re-finding
-		the logger over repeated calls.
-		@param	details	the text to be logged
-		@param	logger	the logger to write to, or NULL to force the function to
-						look up the logger
-		*/
-		void logMessageContentFields(const VString& details, VLogger* logger=NULL) const;
-
-	protected:
-
-		/**
-		Logs (at the appropriate log level) the message handler name to
-		indicate that the handler has been invoked or has ended.
-		@param	dispatchInfo	the info to be logged
-		*/
-		void _logSimpleDispatch(const VString& dispatchInfo) const;
-		/**
-		Logs (at the appropriate log level) highly detailed status info
-        about message handling dispatch.
-		@param	dispatchInfo	the info to be logged
-		*/
-		void _logDetailedDispatch(const VString& dispatchInfo) const;
-		/**
-		Logs (at the appropriate log level) simple content info for a message
-        that has been received or will be sent. You should only supply a
-        simple form of the data, not a full hex dump (see _logContentHexDump).
-		@param	contentInfo	the info to be logged
-		*/
-		void _logMessageContentRecord(const VString& contentInfo) const;
-		VLogger* _getMessageContentRecordLogger() const; ///< Returns the logger for message content, or NULL if that level is not enabled.
-		/**
-		Logs (at the appropriate log level) simple content info for a message
-        that has been received or will be sent. You should only supply a
-        simple form of the data, not a full hex dump (see _logContentHexDump).
-		@param	contentInfo	the info to be logged
-		*/
-		void _logMessageContentFields(const VString& contentInfo) const;
-		VLogger* _getMessageContentFieldsLogger() const; ///< Returns the logger for message fields, or NULL if that level is not enabled.
-		/**
-		Logs (at the appropriate log level) full hex dump content info for a message
-        that has been received or will be sent..
-		@param	info	informational text to label the output
-		@param	buffer	the buffer to dump in hex form
-		@param	length	the length of the buffer (or how much of it to dump)
-		*/
-		void _logMessageContentHexDump(const VString& info, const Vu8* buffer, Vs64 length) const;
-        /*
-        These methods
         */
+        VMessageHandler(const VString& name, VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread, VMessagePool* pool, VMutex* mutex);
+        /**
+        Virtual destructor. VMessageHandler normally does not delete the
+        mMessage because the message will be put back in a message pool by the
+        caller.
+        */
+        virtual ~VMessageHandler();
 
-		VMessage*		mMessage;	///< The message this handler is to process.
-		VServer*        mServer;	///< The server in which we are running.
-		VClientSession* mSession;	///< The session for which we are running, or NULL if n/a.
-		VSocketThread*	mThread;	///< The thread in which we are running.
-        VMessagePool*   mPool;      ///< The pool to get/release messages from/to.
-		VMutexLocker	mLocker;	///< The mutex locker for the mutex we were given.
+        /**
+        Processes the message.
+        */
+        virtual void processMessage() = 0;
+        /**
+        Releases the message back to the pool. The subclass can prevent this
+        if needs to hang onto the message for longer, by either setting
+        fMessage to NULL before returning from processMessage() or by
+        overridding this method.
+        */
+        virtual void releaseMessage();
+        /**
+        Returns a message, which is either recycled from the pool, or newly
+        instantiated if the pool is empty.
+        @param    messageID        value with which to init the message's message ID
+        @return a message object
+        */
+        VMessage* getMessage(VMessageID messageID);
+        /**
+        Logs (at the appropriate log level) the supplied information about the
+        message being handled. A message handler should call this to log the
+        data contained in the inbound message, one whole message at a time. An
+        optional facility here is that the caller may supplie the logger object
+        to which the output will be written, and may obtain that object via
+        a prior call to _getMessageContentRecordLogger(), which may return NULL. This allows
+        the caller to: first call _getMessageContentRecordLogger() to obtain the logger
+        object; if it's NULL (indicating the log level would emit nothing), it
+        can avoid calling logMessageContentRecord() at all and also avoid building
+        the log message strings; and if the logger is not NULL (indicating the
+        log level would emit data) then it can supply the logger to
+        logMessageContentRecord() so that this function doesn't have to keep re-finding
+        the logger over repeated calls.
+        @param    details    the text to be logged
+        @param    logger    the logger to write to, or NULL to force the function to
+                        look up the logger
+        */
+        void logMessageContentRecord(const VString& details, VLogger* logger=NULL) const;
+        /**
+        Logs (at the appropriate log level) the supplied information about the
+        message being handled. A message handler should call this to log the
+        data contained in the inbound message, one field at a time. An
+        optional facility here is that the caller may supply the logger object
+        to which the output will be written, and may obtain that object via
+        a prior call to _getMessageContentFieldsLogger(), which may return NULL. This allows
+        the caller to: first call _getMessageContentFieldsLogger() to obtain the logger
+        object; if it's NULL (indicating the log level would emit nothing), it
+        can avoid calling logMessageContentFields() at all and also avoid building
+        the log message strings; and if the logger is not NULL (indicating the
+        log level would emit data) then it can supply the logger to
+        logMessageContentFields() so that this function doesn't have to keep re-finding
+        the logger over repeated calls.
+        @param    details    the text to be logged
+        @param    logger    the logger to write to, or NULL to force the function to
+                        look up the logger
+        */
+        void logMessageContentFields(const VString& details, VLogger* logger=NULL) const;
 
-	private:
+        /**
+        Logs (at the appropriate log level) the message handler name to
+        indicate that the handler has been invoked or has ended.
+        */
+        virtual void logProcessMessageStart() const;
+        /**
+        Logs (at the appropriate log level) the message handler name to
+        indicate that the handler has been invoked or has ended.
+        */
+        virtual void logProcessMessageEnd() const;
 
-		static VMessageHandlerFactoryMap* mapInstance();
+    protected:
 
-		static VMessageHandlerFactoryMap* smFactoryMap;	///< The factories that create handlers for each ID.
-	};
+        /**
+        Logs (at the appropriate log level) highly detailed status info
+        about message handling dispatch.
+        @param    dispatchInfo    the info to be logged
+        */
+        void _logDetailedDispatch(const VString& dispatchInfo) const;
+        /**
+        Logs (at the appropriate log level) simple content info for a message
+        that has been received or will be sent. You should only supply a
+        simple form of the data, not a full hex dump (see _logContentHexDump).
+        @param    contentInfo    the info to be logged
+        */
+        void _logMessageContentRecord(const VString& contentInfo) const;
+        VLogger* _getMessageContentRecordLogger() const; ///< Returns the logger for message content, or NULL if that level is not enabled.
+        /**
+        Logs (at the appropriate log level) simple content info for a message
+        that has been received or will be sent. You should only supply a
+        simple form of the data, not a full hex dump (see _logContentHexDump).
+        @param    contentInfo    the info to be logged
+        */
+        void _logMessageContentFields(const VString& contentInfo) const;
+        VLogger* _getMessageContentFieldsLogger() const; ///< Returns the logger for message fields, or NULL if that level is not enabled.
+        /**
+        Logs (at the appropriate log level) full hex dump content info for a message
+        that has been received or will be sent..
+        @param    info    informational text to label the output
+        @param    buffer    the buffer to dump in hex form
+        @param    length    the length of the buffer (or how much of it to dump)
+        */
+        void _logMessageContentHexDump(const VString& info, const Vu8* buffer, Vs64 length) const;
+
+        VString                 mName;          ///< The name to identify this handler type in log output.
+        VMessage*               mMessage;       ///< The message this handler is to process.
+        VServer*                mServer;        ///< The server in which we are running.
+        VClientSessionReference mSessionReference;  ///< The session reference for which we are running, which holds NULL if n/a.
+        VSocketThread*          mThread;        ///< The thread in which we are running.
+        VMessagePool*           mPool;          ///< The pool to get/release messages from/to.
+        VInstant                mStartTime;     ///< The time at which this handler was instantiated (message receipt). MUST BE DECLARED BEFORE mLocker.
+        VMutexLocker            mLocker;        ///< The mutex locker for the mutex we were given.
+        VInstant                mUnblockTime;   ///< The time at which this handler obtained the mLocker lock. MUST BE DECLARED AFTER mLocker.
+        VString                 mSessionName;   ///< The name to identify this handler's session in log output.
+
+    private:
+
+        VMessageHandler(const VMessageHandler&); // not copyable
+        VMessageHandler& operator=(const VMessageHandler&); // not assignable
+
+        static VMessageHandlerFactoryMap* mapInstance();
+
+        static VMessageHandlerFactoryMap* gFactoryMap;    ///< The factories that create handlers for each ID.
+    };
 
 /**
 VMessageHandlerFactory defines the interface for factory objects that know
@@ -217,45 +226,46 @@ the DEFINE_MESSAGE_HANDLER_FACTORY macro in your message handler
 implementation file.
 */
 class VMessageHandlerFactory
-	{
-	public:
+    {
+    public:
 
-		VMessageHandlerFactory() {}
-		virtual ~VMessageHandlerFactory() {}
+        VMessageHandlerFactory() {}
+        virtual ~VMessageHandlerFactory() {}
 
-		/**
-		Instantiates a new message handler for the specified message's ID;
-		must be overridden by the concrete subclass.
-		@param	m		the message to be passed thru to the handler constructor
-		@param	server	the serer to be passed thru to the handler constructor
-		@param	session	the session to be passed thru to the handler constructor
-		@param	thread	the thread to be passed thru to the handler constructor
+        /**
+        Instantiates a new message handler for the specified message's ID;
+        must be overridden by the concrete subclass.
+        @param    m        the message to be passed thru to the handler constructor
+        @param    server    the serer to be passed thru to the handler constructor
+        @param    session    the session to be passed thru to the handler constructor
+        @param    thread    the thread to be passed thru to the handler constructor
         @param  mutex   the mutex to be passed thru to the handler constructor
-		*/
-		virtual VMessageHandler* createHandler(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread) = 0;
-	};
+        */
+        virtual VMessageHandler* createHandler(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread) = 0;
+    };
 
 // This macro goes in the handler's .h file to define the handler's factory.
-#define DEFINE_MESSAGE_HANDLER_FACTORY(messageid, factoryclassname, handlerclassname) \
+#define DEFINE_MESSAGE_HANDLER_FACTORY(messageid, factoryclassname, handlerclassname, descriptivename) \
 class factoryclassname : public VMessageHandlerFactory \
-	{ \
-	public: \
-	\
-		factoryclassname() : VMessageHandlerFactory() { VMessageHandler::registerHandlerFactory(messageid, this); } \
-		virtual ~factoryclassname() {} \
-		\
-		virtual VMessageHandler* createHandler(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread) \
-			{ return new handlerclassname(m, server, session, thread); } \
-	\
-	private: \
-	\
-		static factoryclassname smFactory; \
-	\
-	}
+    { \
+    public: \
+    \
+        factoryclassname() : VMessageHandlerFactory(), mName("%s (%s)",#handlerclassname,descriptivename) { VMessageHandler::registerHandlerFactory(messageid, this); } \
+        virtual ~factoryclassname() {} \
+        \
+        virtual VMessageHandler* createHandler(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread) \
+            { return new handlerclassname(mName, m, server, session, thread); } \
+    \
+    private: \
+    \
+        static factoryclassname gFactory; \
+        VString mName; \
+    \
+    }
 
 // This macro goes in the handler's .cpp file to declare the handler's factory.
 #define DECLARE_MESSAGE_HANDLER_FACTORY(factoryclassname) \
-factoryclassname factoryclassname::smFactory
+factoryclassname factoryclassname::gFactory
 
 // This macro goes in a global init function to prevent linker dead-stripping
 // of the static initialization in the previous macro.
@@ -273,8 +283,13 @@ class VMessageHandlerTask
     {
     public:
 
-        VMessageHandlerTask() {}
+        VMessageHandlerTask(VClientSession* session) : mSessionReference(session) {}
         virtual ~VMessageHandlerTask() {}
+
+    private:
+
+        VClientSessionReference mSessionReference;  ///< Reference to the session object we are associated with.
+
     };
 
 #endif /* vmessagehandler_h */
