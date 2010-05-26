@@ -1278,6 +1278,21 @@ Vu64 VString::parseU64() const
     return result;
     }
 
+VDouble VString::parseDouble() const
+    {
+    ASSERT_INVARIANT();
+    
+    if (mStringLength == 0)
+        return 0.0;
+
+    VDouble result;
+    int n = ::sscanf(mBuffer, kFormat_VDouble, &result);
+    if (n == 0)
+        throw VRangeException(VString("VString::parseDouble '%s' is invalid format.", mBuffer));
+
+    return result;
+    }
+
 void VString::set(int i, const VChar& c)
     {
     ASSERT_INVARIANT();

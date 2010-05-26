@@ -696,6 +696,13 @@ class VString
         */
         Vu64 parseU64() const;
         /**
+        Parses the string as a VDouble integer. The string must conform to the specification
+        of strtod() given by ISO C and POSIX IEEE 1003.1. In the case of an illegal string,
+        VRangeException is thrown. This function is similar in purpose to (and my rely on)
+        sscanf() using the "%lf" format. An empty string is deemed to have the value 0.0.
+        */
+        VDouble parseDouble() const;
+        /**
         Sets the character at the specified index to the specified value.
         If the index is out of range, a VException is thrown.
         @param    i    the index (0 to length-1)

@@ -639,5 +639,92 @@ void VStringUnit::run()
         {
         this->test(true, "null char& [0] threw the correct exception");
         }
+
+    VString parseTest;
+
+    // Positive tests.
+    parseTest = "12345";
+    this->test(parseTest.parseInt() == 12345, "parseInt a");
+    parseTest = "-4567";
+    this->test(parseTest.parseInt() == -4567, "parseInt b");
+    parseTest = "+2468";
+    this->test(parseTest.parseInt() == 2468, "parseInt c");
+    parseTest = "42000000000";
+    this->test(parseTest.parseS64() == CONST_S64(42000000000), "parseS64 a");
+    parseTest = "-43000000000";
+    this->test(parseTest.parseS64() == CONST_S64(-43000000000), "parseS64 b");
+    parseTest.format("%llu", CONST_U64(0x8000000000001111));
+    this->test(parseTest.parseU64() == CONST_U64(0x8000000000001111), "parseU64 a");
+    parseTest = "1.23456";
+    this->test(parseTest.parseDouble() == 1.23456, "parseDouble a");
+    parseTest = "1.23456e+3";
+    this->test(parseTest.parseDouble() == 1234.56, "parseDouble b");
+    parseTest = "123456";
+    this->test(parseTest.parseDouble() == 123456.0, "parseDouble c");
+    parseTest = "";
+    this->test(parseTest.parseDouble() == 0.0, "parseDouble d");
+    // Seems like these should throw, but sscanf accepts them. parseDouble could
+    // use some more strict additional checking.
+    parseTest = "1..3";
+    this->test(parseTest.parseDouble() == 1.0, "parseDouble e");
+    parseTest = "1.2e!4";
+    this->test(parseTest.parseDouble() == 1.2, "parseDouble f");
+
+    // Negative tests.
+    try
+        {
+        parseTest = "12.345";
+        (void) parseTest.parseInt();
+        this->test(false, "parseInt with illegal decimal");
+        }
+    catch (const VException& /*ex*/)
+        {
+        this->test(true, "parseInt with illegal decimal");
+        }
+
+    try
+        {
+        parseTest = "12-345";
+        (void) parseTest.parseInt();
+        this->test(false, "parseInt with out of order minus");
+        }
+    catch (const VException& /*ex*/)
+        {
+        this->test(true, "parseInt with out of order minus");
+        }
+
+    try
+        {
+        parseTest = "12+345";
+        (void) parseTest.parseInt();
+        this->test(false, "parseInt with out of order plus");
+        }
+    catch (const VException& /*ex*/)
+        {
+        this->test(true, "parseInt with out of order plus");
+        }
+
+    try
+        {
+        parseTest = "12q345";
+        (void) parseTest.parseInt();
+        this->test(false, "parseInt with illegal character");
+        }
+    catch (const VException& /*ex*/)
+        {
+        this->test(true, "parseInt with illegal character");
+        }
+
+    try
+        {
+        parseTest = "foo";
+        (void) parseTest.parseDouble();
+        this->test(false, "parseDouble with bad format a");
+        }
+    catch (const VException& /*ex*/)
+        {
+        this->test(true, "parseDouble with bad format a");
+        }
+
     }
 
