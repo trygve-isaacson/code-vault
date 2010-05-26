@@ -27,7 +27,7 @@ void VWriteBufferedStream::flush()
     {
     // Flush the complete contents of our buffer to the raw stream.
     this->seek(SEEK_SET, 0);    // set our i/o offset back to 0
-    ::streamCopy(*this, mRawStream, this->eofOffset());
+    (void) streamCopy(*this, mRawStream, this->eofOffset());
     
     // Reset ourself to be "empty" and at i/o offset 0.
     this->seek(SEEK_SET, 0);
