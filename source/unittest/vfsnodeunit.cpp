@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -48,22 +48,28 @@ void VFSNodeUnit::run()
     {
     // Note that we also do testing of streams and file i/o here.
 
-    VFSNode executable = VFSNode::getExecutable();
-    this->logStatus(VString("The executable path is '%s'.", executable.getPath().chars()));
+    this->logStatus(VString("getExecutable: '%s'", VFSNode::getExecutable().getPath().chars()));
+    this->logStatus(VString("getExecutableDirectory: '%s'", VFSNode::getExecutableDirectory().getPath().chars()));
+    this->logStatus(VString("USER_HOME_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::USER_HOME_DIRECTORY, "com", "app").getPath().chars()));
+    this->logStatus(VString("LOG_FILES_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::LOG_FILES_DIRECTORY, "com", "app").getPath().chars()));
+    this->logStatus(VString("USER_PREFERENCES_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::USER_PREFERENCES_DIRECTORY, "com", "app").getPath().chars()));
+    this->logStatus(VString("CACHED_DATA_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::CACHED_DATA_DIRECTORY, "com", "app").getPath().chars()));
+    this->logStatus(VString("APPLICATION_DATA_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::APPLICATION_DATA_DIRECTORY, "com", "app").getPath().chars()));
+    this->logStatus(VString("CURRENT_WORKING_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::CURRENT_WORKING_DIRECTORY, "com", "app").getPath().chars()));
+    this->logStatus(VString("EXECUTABLE_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::EXECUTABLE_DIRECTORY, "com", "app").getPath().chars()));
 
-    VFSNode executableDir = VFSNode::getExecutableDirectory();
-    this->logStatus(VString("The executable directory is '%s'.", executableDir.getPath().chars()));
+    VFSNode tempDir = VFSNode::getKnownDirectoryNode(VFSNode::CACHED_DATA_DIRECTORY, "vault", "unittest");
+    VString tempDirPath = tempDir.getPath();
 
-    VFSNode    testDirRoot("vfsnodetest_temp");
+    VFSNode testDirRoot(tempDir, "vfsnodetest_temp");
     (void) testDirRoot.rm();
 
-    VFSNode    testDirDeep("vfsnodetest_temp/one/two/three");
+    VFSNode testDirDeep(tempDir, "vfsnodetest_temp/one/two/three");
     this->test(! testDirDeep.exists(), "initial state 1");
     testDirDeep.mkdirs();
     this->test(testDirDeep.exists(), "deep mkdirs");
 
-    VFSNode    testDirDeeper;
-    testDirDeep.getChildNode("four", testDirDeeper);
+    VFSNode testDirDeeper(testDirDeep, "four");
     this->test(! testDirDeeper.exists(), "initial state 2");
     testDirDeeper.mkdirs();
     this->test(testDirDeeper.exists(), "one-deep mkdirs");
@@ -71,8 +77,7 @@ void VFSNodeUnit::run()
     // Now that we have created a deep directory structure, let's do some
     // file i/o streams stuff here.
 
-    VFSNode    testTextFileNode;
-    testDirDeeper.getChildNode("test_text_file.txt", testTextFileNode);
+    VFSNode testTextFileNode(testDirDeeper, "test_text_file.txt");
 
     VBufferedFileStream btfs(testTextFileNode);
     this->_testTextFileIO("starting Buffered Text IO tests", testTextFileNode, btfs);
@@ -85,8 +90,7 @@ void VFSNodeUnit::run()
     (void) testTextFileNode.rm();
     this->test(! testTextFileNode.exists(), "unbuffered text file removed");
 
-    VFSNode    testBinaryFileNode;
-    testDirDeeper.getChildNode("test_binary_file", testBinaryFileNode);
+    VFSNode testBinaryFileNode(testDirDeeper, "test_binary_file");
 
     VBufferedFileStream bbfs(testBinaryFileNode);
     this->_testBinaryFileIO("starting Buffered Binary IO tests", testBinaryFileNode, bbfs);
@@ -101,7 +105,7 @@ void VFSNodeUnit::run()
     this->_testDirectoryIteration(testDirDeeper);
     
     // Next, test all flavors of renaming operations.
-    VFSNode copyTest1("vfsnodetest_temp/one/two/test1.txt");
+    VFSNode copyTest1(tempDir, "vfsnodetest_temp/one/two/test1.txt");
     VBufferedFileStream sourceFileStream(copyTest1);
     sourceFileStream.openWrite();
     VTextIOStream sourceOut(sourceFileStream);
@@ -111,7 +115,7 @@ void VFSNodeUnit::run()
     sourceFileStream.close();
     this->test(copyTest1.exists(), "test1 exists");
 
-    VFSNode copyTest2("vfsnodetest_temp/one/two/test2.txt");
+    VFSNode copyTest2(tempDir, "vfsnodetest_temp/one/two/test2.txt");
     copyTest1.renameToName("test2.txt");
     this->test(! copyTest1.exists(), "test1 was renamed");
     this->test(copyTest2.exists(), "test2 exists");
@@ -119,15 +123,15 @@ void VFSNodeUnit::run()
     VFSNode copyTest3;
     copyTest2.renameToName("test3.txt", copyTest3);
     this->test(! copyTest2.exists(), "test2 was renamed");
-    this->test(copyTest3.getPath() == "vfsnodetest_temp/one/two/test3.txt" && copyTest3.exists(), "test3 exists");
+    this->test(copyTest3.getPath() == tempDirPath + "/vfsnodetest_temp/one/two/test3.txt" && copyTest3.exists(), "test3 exists");
     
-    VFSNode copyTest4("vfsnodetest_temp/one/two/three/test4.txt");
+    VFSNode copyTest4(tempDir, "vfsnodetest_temp/one/two/three/test4.txt");
     copyTest3.renameToNode(copyTest4);
     this->test(! copyTest3.exists(), "test3 was moved and renamed");
     this->test(copyTest4.exists(), "test4 exists");
     
-    copyTest4.renameToPath("vfsnodetest_temp/one/two/test5.txt");
-    VFSNode copyTest5("vfsnodetest_temp/one/two/test5.txt");
+    copyTest4.renameToPath(tempDirPath + "/vfsnodetest_temp/one/two/test5.txt");
+    VFSNode copyTest5(tempDir, "vfsnodetest_temp/one/two/test5.txt");
     this->test(! copyTest4.exists(), "test4 was moved and renamed");
     this->test(copyTest5.exists(), "test5 exists");
     
@@ -138,15 +142,15 @@ void VFSNodeUnit::run()
 
     // Done with exercising file i/o and streams and directory stuff. Clean up our litter.
 
-    VString    deepPath;
+    VString deepPath;
     testDirDeeper.getParentPath(deepPath);
-    this->test(deepPath == "vfsnodetest_temp/one/two/three", "get parent path");
+    this->test(deepPath == tempDirPath + "/vfsnodetest_temp/one/two/three", "get parent path");
 
-    VString    nodeName;
+    VString nodeName;
     testDirDeeper.getName(nodeName);
     this->test(nodeName == "four", "get deep node name");
 
-    VFSNode    shallowNode("shallow");
+    VFSNode shallowNode("shallow");
     shallowNode.getName(nodeName);
     this->test(nodeName == "shallow", "get shallow node name");
 

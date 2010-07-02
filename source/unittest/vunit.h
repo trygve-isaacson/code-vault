@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -147,11 +147,17 @@ class VUnit
     public:
     
         /**
-        Runs a single unit's tests. The 
+        Runs a single unit's tests.
         @param  unit    the unit to run
         @param  writers writers to which test output will be collected and written
         */
         static void runUnit(VUnit& unit, VUnitOutputWriterList* writers);
+        /**
+        Re-runs a single unit's tests. The unit is reset(), then we runUnit().
+        @param  unit    the unit to re-run
+        @param  writers writers to which test output will be collected and written
+        */
+        static void rerunUnit(VUnit& unit, VUnitOutputWriterList* writers);
     
         /**
         Constructs a unit test object.
@@ -176,6 +182,11 @@ class VUnit
         Executes the unit test. Must be overridden by concrete class.
         */
         virtual void run() = 0;
+        /**
+        Resets all state before a re-run. You can override if you had
+        state in the subclass, in order to reset and then call inherited.
+        */
+        virtual void reset();
         
         /**
         Returns the unit's name.

@@ -45,6 +45,11 @@ bool VIOStream::seek(Vs64 offset, int whence)
     return mRawStream.seek(offset, whence);
     }
 
+bool VIOStream::seek0()
+    {
+    return mRawStream.seek(0, SEEK_SET);
+    }
+
 Vs64 VIOStream::getIOOffset() const
     {
     return mRawStream.getIOOffset();

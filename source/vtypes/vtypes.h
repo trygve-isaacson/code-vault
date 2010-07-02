@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -154,13 +154,6 @@ Which actual file this refers to will depend on the include path
 set up for this platform build.
 */
 #include "vtypes_platform.h"
-
-// This allows user to enable CF support in vconfigure.h, while maintaining non-Mac compatibility.
-#ifdef VAULT_CORE_FOUNDATION_SUPPORT
-    #ifndef VPLATFORM_MAC
-    #undef VAULT_CORE_FOUNDATION_SUPPORT
-    #endif
-#endif
 
 #include <vector>
 #include <stdarg.h>
@@ -571,10 +564,29 @@ extern int Vtrace(const char* fileName, int lineNumber);
 
 #define V_CONSTRAIN_MINMAX(n, minValue, maxValue) V_MAX(minValue, V_MIN(maxValue, n))
 
+/**
+VAutoreleasePool currently is defined to support memory management in Cocoa applications.
+It is a no-op on other platforms. We declare an autorelease pool in VThread mains
+and in unit tests to provide a proper autorelease environment for objects allocated
+in those contexts. The constructor creates the pool and the destructor drains it.
+If appropriate, you can drain the pool each time through a loop, while keeping the
+pool itself around for a longer lifecycle.
+*/
+class VAutoreleasePool
+    {
+    public:
+        VAutoreleasePool();
+        ~VAutoreleasePool();
+        void drain();
+    private:
+        void* mPool; // "void*" so as not to add a type dependency on includers.
+    };
+
 /*
 Memory leak tracking facility. See implementation in vmemorytracker.cpp.
 The feature is compiled in, or not, based on this defined preprocessor symbol.
 */
+#ifndef __OBJC__ /* Redefining new is not compatible with NSObject use of new keyword. So OC code will not see this feature. */
 #ifdef VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT
 
 void* operator new(size_t size, const char* file, int line);
@@ -630,6 +642,7 @@ class VMemoryTracker
     };
 
 #endif /* VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT */
+#endif /* __OBJC__ */
 
 #endif /* vtypes_h */
 

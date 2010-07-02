@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -14,6 +14,7 @@ http://www.bombaydigital.com/
 #include <dirent.h>
 
 #ifdef VPLATFORM_MAC
+#ifndef VPLATFORM_MAC_IOS
     // There is a conflict between standard and OpenTransport definitions such as TCP_NODELAY. We don't use OT nor want it. This
     // only cropped up when turning on precompiled headers. Specifying MAC_OS_X_VERSION_MIN_REQUIRED to MAC_OS_X_VERSION_10_4
     // should suppress the OT includes at the end of OSServices.h, but I can't make that work. These three
@@ -23,8 +24,13 @@ http://www.bombaydigital.com/
     #define __OPENTRANSPORT__
     #define __OPENTRANSPORTPROVIDERS__
     #define __OPENTRANSPORTPROTOCOL__
+    
+    // Workaround problem on iOS SDK. Prevent inclusion of WebServicesCore, which presumes inclusion of CFXMLNode.h which does not exist.
+    #define __WEBSERVICESCORE__
+
     #include <CoreServices/CoreServices.h>
-#endif
+#endif /* not VPLATFORM_MAC_IOS */
+#endif /* VPLATFORM_MAC */
 
 // static
 void VFSNode::_platform_normalizePath(VString& /*path*/)
@@ -39,6 +45,9 @@ void VFSNode::_platform_denormalizePath(VString& /*path*/)
     }
 
 #ifdef VPLATFORM_MAC
+
+extern VString _V_NSHomeDirectory(); // Implemented in private vtypes_platform.mm Objective-C++ code.
+
 // static
 VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName)
     {
@@ -52,22 +61,39 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
 
     if (id == EXECUTABLE_DIRECTORY)
         {
-        return VFSNode::getExecutableDirectory();
+        /*
+        This depends on the structure of the application or tool.
+        If it's an iOS application, it's a bundle where we have:
+            /...../wanted-dir/AppName.app/executable
+            (2 levels up, wanted-dir is a randomized serial number at some path)
+        If it's built as a Mac OS X application bundle we have:
+            /...../wanted-dir/AppName.app/Contents/MacOS/executable
+            (4 levels up, typically wanted-dir is /Applications if installed, but doesn't have to be)
+        If it's built as a simple Unix-y tool we have:
+            /...../wanted-dir/executable
+            (1 level up, wanted-dir is wherever the tool has been placed)
+        */
+        #ifdef VPLATFORM_MAC_IOS
+            const int NUM_LEVELS_UP = 2;
+        #else
+            #ifdef VAULT_MACOSX_APP_IS_BUNDLE
+                const int NUM_LEVELS_UP = 4;
+            #else
+                const int NUM_LEVELS_UP = 1;
+            #endif
+        #endif
+        VFSNode node = VFSNode::getExecutable();
+        for (int i = 0; i < NUM_LEVELS_UP; ++i)
+            {
+            VFSNode parentNode;
+            node.getParentNode(parentNode);
+            node = parentNode;
+            }
+
+        return node;
         }
 
-    FSRef ref;
-    OSErr err = ::FSFindFolder(kOnAppropriateDisk, kCurrentUserFolderType, kDontCreateFolder, &ref);
-
-    if (err != noErr)
-        throw VException(VString("VFSNode::_platform_getKnownDirectoryNode: Unable to find current user folder. Error code %d.", (int) err));
-
-    UInt8 pathBuffer[PATH_MAX];
-    OSStatus status = ::FSRefMakePath(&ref, pathBuffer, PATH_MAX);
-
-    if (status != noErr)
-        throw VException(VString("VFSNode::_platform_getKnownDirectoryNode: Unable to build path to current user folder. Error code %d.", (int) status));
-
-    VFSNode currentUserFolder(reinterpret_cast<char*>(pathBuffer));
+    VFSNode currentUserFolder(_V_NSHomeDirectory());
 
     if (id == USER_HOME_DIRECTORY)
         return currentUserFolder;
@@ -158,9 +184,12 @@ VFSNode VFSNode::_platform_getExecutable()
     VFSNode::normalizePath(executablePath); // must supply normalized form to VFSNode below
     return VFSNode(executablePath);
     }
-    
+
 #else /* end of Mac OS X implementation of VFSNode::_platform_getKnownDirectoryNode and VFSNode::_platform_getExecutable */
+
 /* The generic Unix implementation of VFSNode::_platform_getKnownDirectoryNode and VFSNode::_platform_getExecutable follows */
+
+#include <pwd.h>
 
 // static
 VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName)
@@ -175,11 +204,16 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
 
     if (id == EXECUTABLE_DIRECTORY)
         {
-        return VFSNode::getExecutableDirectory();
+        VFSNode executable = VFSNode::getExecutable();
+        VFSNode executableDirectory;
+        executable.getParentNode(executableDirectory);
+        return executableDirectory;
         }
 
-    // todo: use getenv() or other API to get suitable path that "~" represents (the user's home dir path)
-    const VString homePath("~");
+    struct passwd* pwInfo = ::getpwuid(::getuid()); // Get info about the current user.
+    if (pwInfo == NULL)
+        throw VException(errno, VString("VFSNode::_platform_getKnownDirectoryNode failed to get current user info from getpwuid() (error %d: %s)", errno, (errno==0 ? "No such user" : ::strerror(errno))));
+    const VString homePath(pwInfo->pw_dir);
 
     if (id == USER_HOME_DIRECTORY)
         return VFSNode(homePath);
@@ -194,21 +228,21 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
             break;
 
         case LOG_FILES_DIRECTORY:
-            basePath = "/var/log";
+            basePath = homePath + "/log";
             break;
 
         case USER_PREFERENCES_DIRECTORY:
             basePath = homePath;
             if (companyName.isNotEmpty())
-                companyFolderName = '.' + companyName;
+                companyFolderName.format(".%s", companyName.chars());
             break;
 
         case CACHED_DATA_DIRECTORY:
-            basePath = "/var/run";
+            basePath = homePath + "/cache";
             break;
 
         case APPLICATION_DATA_DIRECTORY:
-            basePath = "/etc";
+            basePath = homePath + "/data";
             break;
 
         case CURRENT_WORKING_DIRECTORY:

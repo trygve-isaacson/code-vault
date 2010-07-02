@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0.1
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -113,6 +113,13 @@ VManagementInterface* VThread::getManagementInterface() const
     return mManager;
     }
 
+#ifdef VAULT_SIMPLE_USER_THREAD_MAIN
+void* VThread::userThreadMain(void* arg)
+    {
+    return VThread::threadMain(arg);
+    }
+#endif
+
 void* VThread::threadMain(void* arg)
     {
     VException::installWin32SEHandler(); // A no-op if not configured to be used.
@@ -130,6 +137,7 @@ void* VThread::threadMain(void* arg)
 
     try
         {
+        VAutoreleasePool pool;
         VThread::_threadStarting(thread);
 
         if (manager != NULL)

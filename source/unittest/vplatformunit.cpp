@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -16,10 +16,147 @@ VUnit("VPlatformUnit", logOnSuccess, throwOnError)
 
 void VPlatformUnit::run()
     {
+    this->_reportEnvironment();
     this->_runEfficientSprintfCheck();
     this->_runByteswapCheck();
     this->_runMinMaxAbsCheck();
     this->_runTimeCheck();
+    }
+
+void VPlatformUnit::_reportEnvironment()
+    {
+#ifdef VPLATFORM_MAC
+
+    this->logStatus("Platform: VPLATFORM_MAC");
+
+    #ifdef VPLATFORM_MAC_IOS
+        this->logStatus("VPLATFORM_MAC_IOS is set.");
+    #else
+        this->logStatus("VPLATFORM_MAC_IOS is not set.");
+    #endif
+
+    #ifdef VCOMPILER_CODEWARRIOR
+        this->logStatus("VCOMPILER_CODEWARRIOR is set.");
+    #else
+        this->logStatus("VCOMPILER_CODEWARRIOR is not set.");
+    #endif
+
+    #ifdef VLIBRARY_METROWERKS
+        this->logStatus("VLIBRARY_METROWERKS is set.");
+    #else
+        this->logStatus("VLIBRARY_METROWERKS is not set.");
+    #endif
+
+    #ifdef VTHREAD_PTHREAD_SETNAME_SUPPORTED
+        this->logStatus("VTHREAD_PTHREAD_SETNAME_SUPPORTED is set.");
+    #else
+        this->logStatus("VTHREAD_PTHREAD_SETNAME_SUPPORTED is not set.");
+    #endif
+
+    #ifdef VAULT_MACOSX_APP_IS_BUNDLE
+        this->logStatus("VAULT_MACOSX_APP_IS_BUNDLE is set.");
+    #else
+        this->logStatus("VAULT_MACOSX_APP_IS_BUNDLE is not set.");
+    #endif
+
+#endif /* VPLATFORM_MAC */
+
+#ifdef VPLATFORM_UNIX
+
+    this->logStatus("Platform: VPLATFORM_UNIX");
+
+    #ifdef VPLATFORM_UNIX_HPUX
+        this->logStatus("VPLATFORM_UNIX_HPUX is set.");
+    #else
+        this->logStatus("VPLATFORM_UNIX_HPUX is not set.");
+    #endif
+
+#endif /* VPLATFORM_UNIX */
+
+#ifdef VPLATFORM_WIN
+
+    this->logStatus("Platform: VPLATFORM_WIN");
+
+    #ifdef VCOMPILER_MSVC
+        this->logStatus("VCOMPILER_MSVC is set.");
+    #else
+        this->logStatus("VCOMPILER_MSVC is not set.");
+    #endif
+
+    #ifdef VCOMPILER_MSVC_6_CRIPPLED
+        this->logStatus("VCOMPILER_MSVC_6_CRIPPLED is set.");
+    #else
+        this->logStatus("VCOMPILER_MSVC_6_CRIPPLED is not set.");
+    #endif
+
+    #ifdef VCOMPILER_CODEWARRIOR
+        this->logStatus("VCOMPILER_CODEWARRIOR is set.");
+    #else
+        this->logStatus("VCOMPILER_CODEWARRIOR is not set.");
+    #endif
+
+    #ifdef VLIBRARY_METROWERKS
+        this->logStatus("VLIBRARY_METROWERKS is set.");
+    #else
+        this->logStatus("VLIBRARY_METROWERKS is not set.");
+    #endif
+
+    #ifdef _CRT_SECURE_NO_DEPRECATE
+        this->logStatus("_CRT_SECURE_NO_DEPRECATE is set.");
+    #else
+        this->logStatus("_CRT_SECURE_NO_DEPRECATE is not set.");
+    #endif
+
+    #ifdef VAULT_WIN32_STRUCTURED_EXCEPTION_TRANSLATION_SUPPORT
+        this->logStatus("VAULT_WIN32_STRUCTURED_EXCEPTION_TRANSLATION_SUPPORT is set.");
+    #else
+        this->logStatus("VAULT_WIN32_STRUCTURED_EXCEPTION_TRANSLATION_SUPPORT is not set.");
+    #endif
+
+#endif /* VPLATFORM_WIN */
+
+    #ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
+        this->logStatus("VAULT_VARARG_STRING_FORMATTING_SUPPORT is set.");
+    #else
+        this->logStatus("VAULT_VARARG_STRING_FORMATTING_SUPPORT is not set.");
+    #endif
+
+    #ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
+        this->logStatus("VAULT_BOOST_STRING_FORMATTING_SUPPORT is set.");
+    #else
+        this->logStatus("VAULT_BOOST_STRING_FORMATTING_SUPPORT is not set.");
+    #endif
+
+    #ifdef VAULT_QT_SUPPORT
+        this->logStatus("VAULT_QT_SUPPORT is set.");
+    #else
+        this->logStatus("VAULT_QT_SUPPORT is not set.");
+    #endif
+
+    #ifdef VAULT_USER_STACKCRAWL_SUPPORT
+        this->logStatus("VAULT_USER_STACKCRAWL_SUPPORT is set.");
+    #else
+        this->logStatus("VAULT_USER_STACKCRAWL_SUPPORT is not set.");
+    #endif
+
+    #ifdef VAULT_MUTEX_LOCK_DELAY_CHECK
+        this->logStatus("VAULT_MUTEX_LOCK_DELAY_CHECK is set.");
+    #else
+        this->logStatus("VAULT_MUTEX_LOCK_DELAY_CHECK is not set.");
+    #endif
+
+    #ifdef VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT
+        this->logStatus("VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT is set.");
+    #else
+        this->logStatus("VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT is not set.");
+    #endif
+
+    #ifdef VAULT_SIMPLE_USER_THREAD_MAIN
+        this->logStatus("VAULT_SIMPLE_USER_THREAD_MAIN is set.");
+    #else
+        this->logStatus("VAULT_SIMPLE_USER_THREAD_MAIN is not set.");
+    #endif
+
     }
 
 static int _wrap_vsnprintf(char* dest, size_t count, const char* formatText, ...)

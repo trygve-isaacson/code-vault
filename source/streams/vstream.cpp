@@ -30,6 +30,11 @@ void VStream::readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead)
         "VStream::readGuaranteed encountered end of stream. Read %lld of %lld", numBytesRead, numBytesToRead));
     }
 
+bool VStream::seek0()
+    {
+    return this->seek(0, SEEK_SET);
+    }
+
 // static
 Vs64 VStream::streamCopy(VStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize)
     {

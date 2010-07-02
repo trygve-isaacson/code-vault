@@ -1,5 +1,5 @@
-# Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-# This file is part of the Code Vault version 3.0
+# Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+# This file is part of the Code Vault version 3.1
 # http://www.bombaydigital.com/
 
 #
@@ -39,6 +39,7 @@ INCLUDEPATH += $${VAULT_BASE}/source/files/_unix
 HEADERS += $${VAULT_BASE}/source/vtypes/_mac/vtypes_internal_platform.h
 HEADERS += $${VAULT_BASE}/source/vtypes/_mac/vtypes_platform.h
 SOURCES += $${VAULT_BASE}/source/vtypes/_mac/vtypes_platform.cpp
+SOURCES += $${VAULT_BASE}/source/vtypes/_mac/vtypes_platform.mm
 SOURCES += $${VAULT_BASE}/source/containers/_unix/vinstant_platform.cpp
 SOURCES += $${VAULT_BASE}/source/files/_unix/vfsnode_platform.cpp
 HEADERS += $${VAULT_BASE}/source/threads/_unix/vthread_platform.h

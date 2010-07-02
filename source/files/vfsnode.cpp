@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -143,10 +143,7 @@ VFSNode VFSNode::getCurrentWorkingDirectory()
 // static
 VFSNode VFSNode::getExecutableDirectory()
     {
-    VFSNode executable = VFSNode::getExecutable();
-    VFSNode executableDirectory;
-    executable.getParentNode(executableDirectory);
-    return executableDirectory;
+    return VFSNode::getKnownDirectoryNode(EXECUTABLE_DIRECTORY, VString::EMPTY(), VString::EMPTY());
     }
 
 // static

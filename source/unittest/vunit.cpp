@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -23,6 +23,7 @@ void VUnit::runUnit(VUnit& unit, VUnitOutputWriterList* writers)
 
     try
         {
+        VAutoreleasePool pool;
         unit.run();
         }
     catch (const std::exception& ex)    // will include VException
@@ -37,6 +38,12 @@ void VUnit::runUnit(VUnit& unit, VUnitOutputWriterList* writers)
         }
 
     unit.logNormalEnd();
+    }
+
+void VUnit::rerunUnit(VUnit& unit, VUnitOutputWriterList* writers)
+    {
+    unit.reset();
+    VUnit::runUnit(unit, writers);
     }
 
 VUnit::VUnit(const VString& name, bool logOnSuccess, bool throwOnError) :
@@ -55,6 +62,16 @@ mLastTestDescription()
 
 VUnit::~VUnit()
     {
+    }
+
+void VUnit::reset()
+    {
+    mNumSuccessfulTests = 0;
+    mNumFailedTests = 0;
+    mResults.clear();
+    mUnitStartTimeSnapshot = VInstant::snapshot();
+    mPreviousTestEndedSnapshot = VInstant::snapshot();
+    mLastTestDescription = VString::EMPTY();
     }
 
 void VUnit::logStart()

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -16,6 +16,9 @@ First, define the 2 fundamental properties:
 */
 // Define the platform.
 #define VPLATFORM_MAC
+
+// We now make use of CF features in the Mac platform specific code all the time.
+#define VAULT_CORE_FOUNDATION_SUPPORT
 
 // Detect and define the compiler.
 // Note: we can also check for __GNUC__
@@ -148,5 +151,16 @@ of which headers dominate.
 // vsnprintf(NULL, 0, . . .) behavior conforms to IEEE 1003.1 on CW and
 // for GCC/10.4; I have not verified this on GCC/10.3 yet.
 #define V_EFFICIENT_SPRINTF
+
+// We treat IOS as essentially a subset of Mac OS X. This test must come after including AvailabilityMacros.h above.
+#if defined(TARGET_OS_IPHONE) && (TARGET_OS_IPHONE == 1)
+    #define VPLATFORM_MAC_IOS
+#endif
+
+#ifdef MAC_OS_X_VERSION_10_6 // SPI not available in pthread.h prior to the 10.6 headers.
+    #ifndef VPLATFORM_MAC_IOS // SPI not available in iOS dev kit as of iOS 4 SDK
+        #define VTHREAD_PTHREAD_SETNAME_SUPPORTED
+    #endif
+#endif
 
 #endif /* vtypes_platform_h */

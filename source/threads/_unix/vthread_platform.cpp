@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -65,22 +65,19 @@ void VThread::threadCreate(VThreadID_Type* threadID, bool createDetached, thread
     (void) ::pthread_attr_destroy(&threadAttributes);
     }
 
-#ifdef VPLATFORM_MAC
-    #ifdef MAC_OS_X_VERSION_10_6 // SPI not available in pthread.h prior to the 10.6 headers.
-        #define VTHREAD_PTHREAD_SETNAME_SUPPORTED
-    #endif
-#endif
-
 // static
+#ifdef VTHREAD_PTHREAD_SETNAME_SUPPORTED
 void VThread::_threadStarting(const VThread* thread)
     {
-#ifdef VTHREAD_PTHREAD_SETNAME_SUPPORTED
     // This API lets us associate our thread name with the native thread resource, so that debugger/crashdump/instruments etc. can see our thread name.
     (void)/*int result =*/ ::pthread_setname_np(thread->getName()); // "np" indicates API is non-POSIX
-#else
-    #pragma unused (thread)
-#endif
     }
+#else
+void VThread::_threadStarting(const VThread* /*thread*/)
+    {
+    // Nothing to do if pthread_setname_np() is not available.
+    }
+#endif
 
 // static
 void VThread::_threadEnded(const VThread* /*thread*/)

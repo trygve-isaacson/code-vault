@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -163,23 +163,34 @@ class VFSNode
         locate the suitable directories.
         (* The user home directory is never created, because it is assumed to exist.)
         
-        Unix: (note that "~" denotes the user's home directory, wherever that may be)
-            USER_HOME_DIRECTORY:        ~
-            LOG_FILES_DIRECTORY:        /var/log/(company)/(app)
+        Unix: (note that "~" denotes the user's home directory, wherever that may be, and does not actually appear in the path)
+            Most of these we would prefer to locate under /var, but it is often not writable.
+            USER_HOME_DIRECTORY:        ~ is typically /home/(user)
+            LOG_FILES_DIRECTORY:        ~/log/(company)/(app)
             USER_PREFERENCES_DIRECTORY: ~/.(company)/(app)
-            CACHED_DATA_DIRECTORY:      /var/run/(company)/(app)
-            APPLICATION_DATA_DIRECTORY: /etc/(company)/(app)
+            CACHED_DATA_DIRECTORY:      ~/cache/(company)/(app)
+            APPLICATION_DATA_DIRECTORY: ~/data/(company)/(app)
             CURRENT_WORKING_DIRECTORY:  the full path to the current working directory
             EXECUTABLE_DIRECTORY:       the full path to the directory containing the executable
             
-        Mac OS X: (note that "~" denotes the user's home directory, wherever that may be)
-            USER_HOME_DIRECTORY:        ~
+        Mac OS X: (note that "~" denotes the user's home directory, wherever that may be, and does not actually appear in the path)
+            USER_HOME_DIRECTORY:        ~ is typically /Users/(user)
             LOG_FILES_DIRECTORY:        ~/Library/Logs/(company)/(app)
             USER_PREFERENCES_DIRECTORY: ~/Library/Preferences/(company)/(app)
             CACHED_DATA_DIRECTORY:      ~/Library/Caches/(company)/(app)
             APPLICATION_DATA_DIRECTORY: ~/Library/(company)/(app)
             CURRENT_WORKING_DIRECTORY:  the full path to the current working directory
             EXECUTABLE_DIRECTORY:       the full path to the directory containing this app bundle or executable
+            
+        iOS: (note that "@" here denotes the app install sandbox directory, and does not actually appear in the path)
+            On iOS an app gets installed in its own sandbox at: /var/mobile/Applications/(random serial number for this install)
+            USER_HOME_DIRECTORY:        @ (the same dir as the app install sandbox; it is thus different when queried by each installed app)
+            LOG_FILES_DIRECTORY:        @/Library/Logs/(company)/(app)
+            USER_PREFERENCES_DIRECTORY: @/Library/Preferences/(company)/(app)
+            CACHED_DATA_DIRECTORY:      @/Library/Caches/(company)/(app)
+            APPLICATION_DATA_DIRECTORY: @/Library/(company)/(app)
+            CURRENT_WORKING_DIRECTORY:  / (obviously this is not a writeable directory in this environment)
+            EXECUTABLE_DIRECTORY:       @
             
         Windows: (note that the OS can return a different Application Data path, including a different
             drive letter, if so configured; these are just the typical case examples)

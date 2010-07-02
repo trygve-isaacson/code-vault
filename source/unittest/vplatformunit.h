@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -36,6 +36,7 @@ class VPlatformUnit : public VUnit
 
     private:
 
+        void _reportEnvironment();
         void _runEfficientSprintfCheck();
         void _runByteswapCheck();
         void _runMinMaxAbsCheck();

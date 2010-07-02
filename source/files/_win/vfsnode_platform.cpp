@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -75,7 +75,10 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
     
     if (id == EXECUTABLE_DIRECTORY)
         {
-        return VFSNode::getExecutableDirectory();
+        VFSNode executable = VFSNode::getExecutable();
+        VFSNode executableDirectory;
+        executable.getParentNode(executableDirectory);
+        return executableDirectory;
         }
         
     char pathBuffer[MAX_PATH];

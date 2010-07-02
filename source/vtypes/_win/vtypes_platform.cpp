@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -86,3 +86,9 @@ int vault::open(const char* path, int flags, mode_t mode)
     throw VException(VString("Error opening '%s': POSIX open() is not supported by CodeWarrior on Windows.", path));
     }
 #endif
+
+// VAutoreleasePool is a no-op on Windows.
+VAutoreleasePool::VAutoreleasePool() {}
+void VAutoreleasePool::drain() {}
+VAutoreleasePool::~VAutoreleasePool() {}
+

@@ -294,6 +294,13 @@ class VStream
         */
         virtual bool seek(Vs64 offset, int whence) = 0;
         /**
+        This is a convenience function that means seek(0, SEEK_SET).
+        In other words, seek to the start of the stream.
+        It has the same restrictions as noted in seek() above.
+        @return true if the seek was successful
+        */
+        bool seek0();
+        /**
         Returns the "current" "offset" in the stream. Those scare quotes are
         there because those terms do not quite have consistent or uniform
         meaning and behavior for all stream types, so you need to be a little

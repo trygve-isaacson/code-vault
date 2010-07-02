@@ -1,6 +1,174 @@
 CODE VAULT RELEASE NOTES
 
-VERSION 3.0
+---------- VERSION 3.1 ----------
+Trygve Isaacson, June 2010
+
+* VInstant
+Support for clock simulation (offsets and time freezing).
+Simpler string getter APIs.
+
+* VDuration
+New APIs for formatted duration strings.
+
+* VChar
+New API isHexadecimal().
+
+* VColor (new class)
+Colors. RGBA and CSS/HTML color names.
+Color pairs (foreground + background).
+Color maps (value or range => color pair).
+Color palettes (sets of color maps).
+
+* VException
+Support for access to Win32 non-C++ "Structured Exception Handling".
+Support for VC++ exception on dynamic_cast.
+
+* VGeometry
+New APIs for distances and finding nearest sides and vertexes of rectangles and polygons.
+Complete interoperability with corresponding Qt geometry types.
+New class VPoint3D.
+New class VLine.
+
+* VBento
+Support for indicating string value encoding.
+Support for all geometry types.
+Support for color type.
+Added "set" APIs to allow replacing existing values.
+New API getParentNode().
+
+* VString
+New constant accessor NATIVE_LINE_ENDING().
+APIs "char*() const" and "chars() const" now return const buffer values.
+New API endsWithIgnoreCase().
+New APIs for "contains" tests.
+New APIs split() modeled on Java String.split().
+New API getDataBufferConst() returns byte pointer, for easier use with buffer writing APIs.
+Fix to prevent problem when "%" is used to construct a string.
+QString conversion uses QString::fromUtf8().
+
+* VFSNode
+New APIs to get well-defined (but platform-specific) system and user directories, and the executable.
+New API safelyOverwriteFile() to write a file using temporary-remove-rename pattern.
+New API to construct from node and child name.
+New convenience APIs readAll() and readTextFile() to read a file in a single line of code.
+Added support for iOS4 using one Objective-C API low-level API to get executable file path.
+
+* VServer / VClientSession
+VServer now defines abstract API for posting a broadcast message.
+VServer now uses garbage collection (deferred deletion) of sessions to manage threads on teardown.
+VClientSession can now have a time limit on its standby queue.
+VClientSession is reference counted to work with server's session garbage collection.
+VClientSession no longer needs API for attached tasks, due to reference counting.
+
+* VMessageHandler
+New name and session name properties, to improve log output.
+Participates in session reference counting.
+Additional logging to report mutex blocking problems.
+
+* VMessageInputThread / VMessageOutputThread / VMessageQueue
+Participate in session reference counting.
+Output thread can now have a time and size limits on output queue.
+Message queue can now have a threshold that triggers log warnings about delayed processing.
+
+* VMessagePool
+This class will be removed in a future release.
+    Testing has shown that pooling is of no real performance benefit.
+    It does, however, make leak testing harder.
+    It also raises the possiblity of improper reuse bugs.
+
+* VSocket / VSocketBase
+Improved getLocalHostIPAddress() to avoid use of DNS, and work better with multiple network interfaces.
+New APIs enumerateNetworkInterfaces() to discover what interfaces exist.
+New APIs setPreferredNetworkInterace() and setPreferredLocalIPAddressPrefix() provide control
+    over choice of interface on a multi-interface system.
+
+* VStream classes
+New API seek0() convenience alternative to seek(0, SEEK_SET).
+Overloaded streamCopy() APIs are all now simply declared as static methods of VStream.
+API readGuaranteed() now includes offset info when throwing EOF exception.
+New APIs VTextIOStream::readAll() read the whole stream into a string or string vector.
+
+* VThread
+The userMain() and userThreadMain() static functions are now declared by this class.
+New API logStackCrawl() logs a stack crawl if support is installed.
+Cooperates with VException support for Win32 non-C++ "Structured Exception Handling".
+Thread creation failure now throws an exception. This is used by server/listener code to better
+    handle failures.
+Platform-specific hooks on thread start and end allow:
+    On Win32, VThread objects now support threadSelf(), via a mapping of thread ID to thread handle.
+    On Mac OS X 10.6, the VThread name is set on the pthread, for use in debuggers and crash dumps.
+
+* VMutex / VMutexLocker
+New VMutex name property; used for new lock delay logging.
+New VMutexLocker name property; used for new lock delay logging.
+A threshold can be set to cause lock delay logging; logs whenever there is a delay in getting
+    the lock, or when holding a lock for too long.
+Lock delay logging can be entirely disabled at compile time via VAULT_MUTEX_DELAY_CHECK in vconfigure.h.
+
+* VLogger
+New API setPrintStackInfos() allows triggering of stack crawl output at desired log level.
+New API setRepetitionFilterEnabled() allows filtering to be turned off (or back on).
+Support for labeling with both the real and simulated clock values when clock simulation is in effect.
+Support for manipulating a logger's "next" chain at runtime.
+New classes VStringLogger and VStringVectorLogger allow logging to strings in memory.
+
+* VSettings
+Changed string getter APIs to return the string. (See General)
+Full support for Vs64, VDuration, VGeometry, and VColor types.
+New constructor and other APIs for loading/saving the VSettings from/to an XML file with one line of code.
+New API findMutableNode() for use when adding to node tree.
+Allow the presence of "<?xml ... ?>" first line when parsing.
+
+* VHex
+New API bufferToPrintableASCIIString() for writing a buffer to a hex dump string.
+New API readHexDump() for loading a hex dump string into a binary stream such as a memory buffer.
+These two together provide a way of recording and later re-loading binary data, using human-readable text as the store.
+
+* VMemoryTracker
+New module that supports optional ability to track memory allocations and find leaks.
+Feature is compiled in if VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT is set in vconfigure.h.
+
+* VUnit
+New assert overloads to support more class types directly.
+New class VUnitOutputWriter abstaction allows unit tests to report results in various forms:
+New output writer classes for JUnit, plain text, and Team City result formats.
+Lots of new unit tests to cover more classes and new code.
+New APIs rerunUnit() and reset() allow the same unit test object to be run multiple times.
+Fixed bug in VFSNodeUnit that was revealed by testing on iOS4.
+
+* VTypes
+New template function mapDeleteAllValues() deletes values in a map.
+Updated Linux compatibility testing on recent Ubuntu and Red Hat releases.
+
+* General
+Numerous bug fixes.
+Fixed additional compiler warnings using ever-stricter warning levels.
+Added/replaced some alternate getter APIs in a form that returns a VString for convenience.
+    Testing proved that the copy overhead of this tends to be much less than expected.
+    In many cases the compiler doesn't even make a single extra copy of the string.
+    This pattern makes the calling code much more readable.
+
+* Thanks
+The following additional people contributed to fixes in this release:
+Jay Hamilton-Roth
+Sandeep Nevasekar
+Stuart Adamson
+Jon Ranstrom
+Aaron Barr
+Mike Pompa
+Chris Casey
+Edward Cheung
+
+Upcoming Plans:
+- Enable copy/assign in any remaining appropriate classes.
+- Support VGeometry classes in new VUnit equality assertions.
+- Wrap everything a "vault" namespace.
+- Restructure VSocket classes using _platform file pattern.
+- Be more consistent with use of error/strerror/WSAGetLastError.
+- Remove VMessagePool mechanism which turns out to be of no real benefit.
+
+---------- VERSION 3.0 ----------
+Trygve Isaacson, January 2008
 
 3.0d1: reorg of public vs. internal platform headers
 
@@ -116,10 +284,4 @@ The Vault class APIs were given a vigorous scrubbing. Some of the changes:
   no-op versions of the macros were no-ops. Also made signed/unsigned swaps distinct.
 - Cleaned up spacing and formatting.
 - Fixed all feasible warnings emitted when using pedantic and EffC++ warnings on.
-
-Upcoming plans for 3.1:
-- Enable copy/assign in any remaining appropriate classes.
-- Support VGeometry classes in new VUnit equality assertions.
-- Wrap everything a "vault" namespace.
-- Be more consistent with use of error/strerror/WSAGetLastError.
 

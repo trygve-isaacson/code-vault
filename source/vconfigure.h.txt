@@ -20,10 +20,6 @@ clear by reading which ones you are not using.
 /* It is only available if you are using Boost. */
 #define VAULT_BOOST_STRING_FORMATTING_SUPPORT
 
-/* This flag enables converting between VString and CFStringRef, and wrapping OSStatus errors in a VException. */
-/* It is only available when building a native Mac OS X Cocoa or Carbon application. */
-#define VAULT_CORE_FOUNDATION_SUPPORT
-
 /* This flag enables converting between VString and QString. */
 /* It is only available if you are using Qt. */
 #define VAULT_QT_SUPPORT
@@ -40,3 +36,10 @@ clear by reading which ones you are not using.
 
 /* This flag enables translation of Win32 structured exceptions into standard C++ exceptions. Requires /EHa compiler option. */
 #define VAULT_WIN32_STRUCTURED_EXCEPTION_TRANSLATION_SUPPORT
+
+/* This flag lets Vault define the VThread::userThreadMain() function. If you add custom stack crawl handling, you need to define it yourself. */
+#define VAULT_SIMPLE_USER_THREAD_MAIN
+
+/* This flag hints the Mac OS X specific executable location code to use bundle rather than tool path structure to determine the app directory. */
+#define VAULT_MACOSX_APP_IS_BUNDLE
+

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2010 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.1
 http://www.bombaydigital.com/
 */
 
@@ -88,12 +88,6 @@ int VThread::userMain(int argc, char** argv)
     VShutdownRegistry::shutdown();
     
     return result;
-    }
-
-// static
-void* VThread::userThreadMain(void* arg)
-    {
-    return VThread::threadMain(arg);
     }
 
 int main(int argc, char** argv)
