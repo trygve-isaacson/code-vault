@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -11,6 +11,7 @@ http://www.bombaydigital.com/
 
 #include "vstring.h"
 #include "vmutex.h"
+#include "vmutexlocker.h"
 #include "vmessagequeue.h"
 #include "vsocketstream.h"
 #include "vbinaryiostream.h"
@@ -51,7 +52,7 @@ class VClientSession
         @param  clientType  a string to distinguish the type of session
         @param  socket      the socket the session is using
         */
-        VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket, const VDuration& standbyTimeLimit);
+        VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket, const VDuration& standbyTimeLimit, Vs64 maxQueueDataSize);
 
         const VString& getName() const { return mName; }
 
@@ -86,18 +87,23 @@ class VClientSession
         it will be sent when the output thread wakes up; if the session is NOT
         using an output thread, the message is written to the output stream
         immediately.
-        @param  message             the message to be sent
-        @param  releaseIfNotPosted  true means that if the message is not posted
-                    (for example, if the session is going off-line), it should
-                    be released; a broadcast message would specify false because
-                    other clients
-        @param  queueStandbyIfStartingUp    true means that if the client is not
-                    yet online, the message should be queued to be sent upon the
-                    client going online; false means if the client is not yet online
-                    the message should be ignored (for this client session)
-        @return true if the message was posted
+        @param  message         the message to be sent
+        @param  isForBroadcast  true if the message is marked for broadcast and therefore the caller
+            is taking responsibility for releasing the message if it fails to post; false is for
+            posting to a single session, where the caller is letting go of the message and expects
+            this function to take ownership of the message (whether it successfully posts or not)
+        @return true if the message was posted; when broadcasting, failure to post is the caller's
+            responsibility to maintain ownership of the message (may get posted to other sessions)
         */
-        virtual bool postOutputMessage(VMessage* message, bool releaseIfNotPosted=true, bool queueStandbyIfStartingUp=false);
+        bool postOutputMessage(VMessage* message, bool isForBroadcast=false);
+        /**
+        Convenience function for posting a message to the session that is being broadcast to other
+        sessions. Calls postOutputMessage() with isForBroadcast=true.
+        @param  message         the message to be sent
+        @return true if the message was posted; when broadcasting, failure to post is the caller's
+            responsibility to maintain ownership of the message (may get posted to other sessions)
+        */
+        bool postBroadcastOutputMessage(VMessage* message) { return this->postOutputMessage(message, true); }
         /**
         Sends a message immediately to the supplied output stream, if the session
         is in a valid state (not in the middle of shutting down). The VMessageOutputThread
@@ -155,12 +161,13 @@ class VClientSession
 
         VClientSession(const VClientSession&); // not copyable
         VClientSession& operator=(const VClientSession&); // not assignable
-
-        void _releaseQueuedClientMessages();   ///< Releases all pending queued message back to the pool (called during shutdown).
+        
+        void _releaseQueuedClientMessages();   ///< Releases all pending queued messages (called during shutdown).
 
         VMessageQueue   mStartupStandbyQueue;   ///< A queue we use to hold outbound updates while this client session is starting up.
         VInstant        mStandbyStartTime;      ///< The time at which we started queueing standby messages; reset by _moveStandbyMessagesToAsyncOutputQueue().
         VDuration       mStandbyTimeLimit;      ///< Once we go to standby, a time limit applies after which posting standby causes session shutdown due to presumed failure.
+        Vs64            mMaxClientQueueDataSize;///< If non-zero, if a message is posted when there are already this many bytes queued, we close the socket.
 
         // We only access the socket i/o stream if postOutputMessage() is called
         // and we are not set up to use a separate output message thread. However, we are responsible

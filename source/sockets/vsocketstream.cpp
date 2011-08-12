@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -24,7 +24,7 @@ mSocket(socket)
     }
 
 VSocketStream::VSocketStream(const VSocketStream& other) :
-VStream(VString("%s copy", other.getName().chars())),
+VStream(VSTRING_FORMAT("%s copy", other.getName().chars())),
 mSocket(other.mSocket)
     {
     }
@@ -80,7 +80,7 @@ bool VSocketStream::skip(Vs64 numBytesToSkip)
 bool VSocketStream::seek(Vs64 offset, int whence)
     {
     if ((whence != SEEK_CUR) || (offset < 0))
-        throw VException("VSocketStream::seek received unsupported seek type.");
+        throw VStackTraceException("VSocketStream::seek received unsupported seek type.");
 
     return this->skip(offset);
     }

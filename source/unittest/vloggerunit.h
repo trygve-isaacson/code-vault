@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -33,6 +33,15 @@ class VLoggerUnit : public VUnit
         Executes the unit test.
         */
         virtual void run();
+
+    private:
+    
+        void _testMacros();
+        void _testLogOutput();
+        void _testStringLoggers();
+        void _testMaxActiveLogLevel();
+        void _testLoggerPathNames();
+        void _testOptimizationPerformance();
 
     };
 

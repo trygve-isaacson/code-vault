@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -331,7 +331,7 @@ void VColorUnit::_testVStringRangeColorMapper()
     int index = 0;
     for (VStringRangeVector::const_iterator i = mapper.mColorRanges.begin(); i != mapper.mColorRanges.end(); ++i)
         {
-        this->logStatus(VString("range[%d] >= %s %s", index, (*i).mRangeMin.chars(), (*i).mColors.getCSSColor().chars()));
+        this->logStatus(VSTRING_FORMAT("range[%d] >= %s %s", index, (*i).mRangeMin.chars(), (*i).mColors.getCSSColor().chars()));
         ++index;
         }
 */
@@ -421,7 +421,7 @@ void VColorUnit::_testVIntegerRangeColorMapper()
     int index = 0;
     for (VIntegerRangeVector::const_iterator i = mapper.mColorRanges.begin(); i != mapper.mColorRanges.end(); ++i)
         {
-        this->logStatus(VString("range[%d] >= %lld %s", index, (*i).mRangeMin, (*i).mColors.getCSSColor().chars()));
+        this->logStatus(VSTRING_FORMAT("range[%d] >= %lld %s", index, (*i).mRangeMin, (*i).mColors.getCSSColor().chars()));
         ++index;
         }
 */
@@ -497,7 +497,7 @@ void VColorUnit::_testVDoubleRangeColorMapper()
     int index = 0;
     for (VDoubleRangeVector::const_iterator i = mapper.mColorRanges.begin(); i != mapper.mColorRanges.end(); ++i)
         {
-        this->logStatus(VString("range[%d] >= %lf %s", index, (*i).mRangeMin, (*i).mColors.getCSSColor().chars()));
+        this->logStatus(VSTRING_FORMAT("range[%d] >= %lf %s", index, (*i).mRangeMin, (*i).mColors.getCSSColor().chars()));
         ++index;
         }
 */
@@ -629,7 +629,7 @@ void VColorUnit::_testVColorPalette()
     VMemoryStream buf;
     VTextIOStream io(buf);
     io.writeString(PALETTE_TEXT);
-    io.seek(0, SEEK_SET);
+    io.seek0();
 
     VSettings settings(io);
     const VSettingsNode* paletteNode = settings.findNode("palette");

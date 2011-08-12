@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -9,6 +9,7 @@ http://www.bombaydigital.com/
 #include "vmemorystream.h"
 
 #include "vexception.h"
+#include "vassert.h"
 
 // Is ASSERT_INVARIANT enabled/disabled specifically for VMemoryStream?
 #ifdef V_ASSERT_INVARIANT_VMEMORYSTREAM_ENABLED
@@ -465,7 +466,7 @@ Vu8* VMemoryStream::_createNewBuffer(Vs64 bufferSize, BufferAllocationType& newA
             newAllocationType = kAllocatedByOperatorNew;
             break;
         default:
-            throw VException(VString("VMemoryStream::_createNewBuffer: Invalid allocation type %d.", (int) mAllocationType));
+            throw VStackTraceException(VSTRING_FORMAT("VMemoryStream::_createNewBuffer: Invalid allocation type %d.", (int) mAllocationType));
             break;
         }
     
@@ -474,14 +475,12 @@ Vu8* VMemoryStream::_createNewBuffer(Vs64 bufferSize, BufferAllocationType& newA
 
 void VMemoryStream::_assertInvariant() const
     {
-    V_ASSERT(
-        (mBuffer != NULL) &&
-        (mBuffer != VCPP_DEBUG_BAD_POINTER_VALUE) &&
-        (mBufferSize >= 0) &&
-        (mEOFOffset <= mBufferSize) &&
-        (mIOOffset <= mEOFOffset) &&
-        (mAllocationType == kAllocatedByOperatorNew || mAllocationType == kAllocatedByMalloc || mAllocationType == kAllocatedOnStack || mAllocationType == kAllocatedUnknown)
-        );
+    VASSERT_NOT_NULL(mBuffer);
+    VASSERT_NOT_EQUAL(mBuffer, VCPP_DEBUG_BAD_POINTER_VALUE);
+    VASSERT_GREATER_THAN_OR_EQUAL(mBufferSize, 0);
+    VASSERT_LESS_THAN_OR_EQUAL(mEOFOffset, mBufferSize);
+    VASSERT_LESS_THAN_OR_EQUAL(mIOOffset, mEOFOffset);
+    VASSERT_VALUE((mAllocationType == kAllocatedByOperatorNew || mAllocationType == kAllocatedByMalloc || mAllocationType == kAllocatedOnStack || mAllocationType == kAllocatedUnknown), mAllocationType, VSTRING_INT((int)mAllocationType));
     }
 
 bool operator==(const VMemoryStream& m1, const VMemoryStream& m2)

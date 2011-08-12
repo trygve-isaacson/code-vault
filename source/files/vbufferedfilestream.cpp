@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -164,7 +164,7 @@ Vs64 VBufferedFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite)
         VString path;
         mNode.getPath(path);
 
-        throw VException(errno, VString("VBufferedFileStream::write to '%s' only wrote %lld of %lld requested bytes.", path.chars(), numBytesWritten, numBytesToWrite));
+        throw VException(errno, VSTRING_FORMAT("VBufferedFileStream::write to '%s' only wrote %lld of %lld requested bytes.", path.chars(), numBytesWritten, numBytesToWrite));
         }
 
     return numBytesWritten;
@@ -178,7 +178,7 @@ void VBufferedFileStream::flush()
         {
         VString path;
         mNode.getPath(path);
-        throw VException(result, VString("VBufferedFileStream::flush to '%s' failed (errno=%d : %s)", path.chars(), errno, ::strerror(errno)));
+        throw VException(result, VSTRING_FORMAT("VBufferedFileStream::flush to '%s' failed (errno=%d : %s)", path.chars(), errno, ::strerror(errno)));
         }
     }
 
@@ -233,6 +233,7 @@ Vs64 VBufferedFileStream::available() const
     Vs64    currentOffset = this->getIOOffset();
     Vs64    eofOffset;
     
+    // const_cast: WORKAROUND. Save/restore state.
     const_cast<VBufferedFileStream*>(this)->seek(0, SEEK_END);
     eofOffset = this->getIOOffset();
     const_cast<VBufferedFileStream*>(this)->seek(currentOffset, SEEK_SET);    // restore original position

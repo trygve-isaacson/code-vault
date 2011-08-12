@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.1
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -346,6 +346,9 @@ pointers, and there must not be multiple keys using the same value (which is
 a perfectly legitimate way to use a map, so if you use the map that way, you
 must manage that aspect of deletion; otherwise, a crash may occur when an
 object is deleted twice). The keys are not deleted (presumed to not be pointers).
+@param m a map<k,v*> where the map holds values that are pointers to deletable
+    objects; on return, the map will have no entries, and delete will have been
+    called on each entry's v pointer.
 */
 template <class KEY_TYPE, class VALUE_TYPE>
 void mapDeleteAllValues(std::map<KEY_TYPE,VALUE_TYPE*>& m)
@@ -354,6 +357,31 @@ void mapDeleteAllValues(std::map<KEY_TYPE,VALUE_TYPE*>& m)
         delete (*i).second;
 
     m.clear();
+    }
+
+/**
+A helper template function that both erases a map entry for a value, and also
+deletes the value object it holds a pointer to. This is the simplest way to remove
+one contained value object held in a map and delete the underlying heap object.
+The map values must be "delete"-able pointers, and there must not be multiple keys
+using the same value (which is a perfectly legitimate way to use a map, so if you
+use the map that way, you must manage that aspect of deletion; otherwise, a crash
+may occur when an object is deleted twice). The keys are not deleted (presumed to
+not be pointers).
+@param m a map<k,v*> where the map holds values that are pointers to deletable
+    objects
+@param key the key for the entry to be removed from the map; delete will be called
+    on the value pointer in the entry if found.
+*/
+template <class KEY_TYPE, class VALUE_TYPE>
+void mapDeleteOneValue(std::map<KEY_TYPE,VALUE_TYPE*>& m, KEY_TYPE key)
+    {
+    typename std::map<KEY_TYPE,VALUE_TYPE*>::iterator position = m.find(key);
+    if (position != m.end())
+        {
+        delete position->second; // Delete heap object pointed to by the value.
+        (void) m.erase(position); // Remove the dead entry from the map.
+        }
     }
 
 } // namespace vault
@@ -469,12 +497,12 @@ and doing something different in that compiler.
 /*
 Here is where we use a hierarchy of preprocessor symbols to control assertion behavior.
 The hierarchy of user-definable symbols is:
-  V_ASSERT_ENABLED
+  VAULT_ASSERTIONS_ENABLED
     V_ASSERT_INVARIANT_ENABLED
       V_ASSERT_INVARIANT_classname_ENABLED (for a given classname)
 
 In vconfigure.h, you may define any or all of these symbols to 0 or 1 to force them off or on;
-by default, V_ASSERT_ENABLED is on if V_DEBUG is on, and the others inherit their state from
+by default, V_ASSERT_ENABLED is on unless VAULT_ASSERTIONS_NOOP is defined; and the others inherit their state from
 the level above.
 
 Internally, we use the above symbols to define or leave undefined the following symbols:
@@ -493,14 +521,26 @@ The following values for classname are implemented:
     VTEXTIOSTREAM
 */
 
-// Does V_ASSERT do anything if called?
-#ifdef V_ASSERT_ENABLED
-    #if V_ASSERT_ENABLED == 1
+// Do the VASSERT macros do anything if called?
+#ifndef VAULT_ASSERTIONS_ENABLED
+    #define V_ASSERT_ACTIVE
+#else
+    #if VAULT_ASSERTIONS_ENABLED == 0
+        // don't define V_ASSERT_ACTIVE, thereby disabling the VASSERT macros
+    #else
         #define V_ASSERT_ACTIVE
     #endif
+#endif
+
+// Does a "failed assertion" (e.g., VASSERT(false)) throws a VStackTraceException in addition to logging an error?
+// Turned on by default here; define to 0 in vconfigure.h to turn it off.
+#ifndef VAULT_ASSERTIONS_THROW
+    #define V_ASSERT_THROWS_EXCEPTION
 #else
-    #ifdef V_DEBUG
-        #define V_ASSERT_ACTIVE
+    #if VAULT_ASSERTIONS_THROW == 0
+        // don't define V_ASSERT_THROWS_EXCEPTION, thereby disabling throwing upon assertion failure
+    #else
+        #define V_ASSERT_THROWS_EXCEPTION
     #endif
 #endif
 
@@ -523,27 +563,6 @@ It either calls this->_assertInvariant() or does nothing.
     #define ASSERT_INVARIANT() this->_assertInvariant() ///< Macro to call this->_assertInvariant().
 #else
     #define ASSERT_INVARIANT() ((void) 0) ///< No-op.
-#endif
-
-/**
-The V_ASSERT macro and Vassert function provide assertion and assertion breakpoint
-support. Normally you should use the V_ASSERT macro instead of the compiler-specific
-assert macro, and put a breakpoint in Vassert if you are in debug mode and want to
-hit a breakpoint upon assertion failure. By default, the macro is a no-op in a release
-build, so it has no runtime cost in a release build. (You can override this behavior
-using preprocessor symbols as noted above.)
-@param    expression    the expression that if false will cause an assertion failure
-@param    file        the name of the source file that is asserting
-@param    line        the line number in the source file that is asserting
-*/
-extern void Vassert(bool expression, const char* file, int line);
-
-#ifdef V_ASSERT_ACTIVE
-    // This inline wrapper eliminates function call overhead for successful assertions.
-    inline void VassertWrapper(bool expression, const char* file, int line) { if (!expression) Vassert(expression, file, line); }
-    #define V_ASSERT(expression) VassertWrapper(expression, __FILE__, __LINE__)
-#else
-    #define V_ASSERT(expression) ((void) 0)
 #endif
 
 // This is useful in some _assertInvariant() methods, to detect when there is a
@@ -619,6 +638,10 @@ class VMemoryTracker
         static void disable();                          ///< Turns off tracking. Subsequent allocations will not be tracked.
         static void reset();                            ///< Resets tracking. Tracked items are discarded. Enable state is not changed.
         static bool isEnabled();                        ///< Returns true if tracking is turned on.
+        static void setOver(size_t newOver);            ///< Sets the size, above which each allocation is logged.
+        static size_t getOver();                        ///< Returns the size, above which each allocation is logged.
+        static void setUnder(size_t newOver);           ///< Sets the size, below which each allocation is logged.
+        static size_t getUnder();                       ///< Returns the size, below which each allocation is logged.
         static void setLimit(int maxNumAllocations);    ///< Sets the max number of allocations tracked. 0 means no limit.
         static int  getLimit();                         ///< Returns the max number of allocations that will be tracked.
         static void setExpiration(const VDuration& d);  ///< Sets the duration from now when tracking will turn off. 0 means never.
@@ -627,6 +650,7 @@ class VMemoryTracker
         static void omitPointer(const void* p);         ///< Tells the tracker to forget a pointer, if it's currently tracked.
         static void enableCodeLocationCrawl(const VString& file, int line);
         static void disableCodeLocationCrawl(const VString& file, int line);
+        static Vs64 getAllocationNumber();
         /**
         Prints a memory tracking report. Lots of options:
         @param label an optional string to bracket the report; if empty, boilerplate is used

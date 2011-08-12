@@ -1,12 +1,14 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
 /** @file */
 
 #include "vexception.h"
+
+#include "vassert.h"
 
 // Is ASSERT_INVARIANT enabled/disabled specifically for VException?
 #ifdef V_ASSERT_INVARIANT_VEXCEPTION_ENABLED
@@ -27,65 +29,89 @@ void VException::_breakpointLocation()
     // Put a breakpoint here if you want to break on all VExceptions.
     }
 
-VException::VException() :
+VException::VException(bool recordStackTrace) :
 mError(kGenericError),
 mErrorString(), // -> empty
-mErrorMessage("") // if mErrorString is empty, we assert that mErrorMessage is not null, so assign it something
+mErrorMessage(""), // if mErrorString is empty, we assert that mErrorMessage is not null, so assign it something
+mStackTrace()
     {
     ASSERT_INVARIANT();
     
     VException::_breakpointLocation();
+    
+    if (recordStackTrace)
+        this->_recordStackTrace();
     }
 
-VException::VException(const VException& other) :
+VException::VException(const VException& other, bool recordStackTrace) :
 std::exception(),
 mError(other.getError()),
 mErrorString(other.mErrorString),
-mErrorMessage(other.mErrorMessage)
+mErrorMessage(other.mErrorMessage),
+mStackTrace(other.mStackTrace)
     {
     ASSERT_INVARIANT();
 
     VException::_breakpointLocation();
+    
+    if (recordStackTrace)
+        this->_recordStackTrace();
     }
 
-VException::VException(int error, const char* errorMessage) :
+VException::VException(int error, const char* errorMessage, bool recordStackTrace) :
 mError(error),
 mErrorString(), // -> empty
-mErrorMessage(errorMessage)
+mErrorMessage(errorMessage),
+mStackTrace()
     {
     ASSERT_INVARIANT();
     
     VException::_breakpointLocation();
+    
+    if (recordStackTrace)
+        this->_recordStackTrace();
     }
 
-VException::VException(int error, const VString& errorString) :
+VException::VException(int error, const VString& errorString, bool recordStackTrace) :
 mError(error),
 mErrorString(errorString),
-mErrorMessage(NULL)
+mErrorMessage(NULL),
+mStackTrace()
     {
     ASSERT_INVARIANT();
     
     VException::_breakpointLocation();
+    
+    if (recordStackTrace)
+        this->_recordStackTrace();
     }
 
-VException::VException(const char* errorMessage) :
+VException::VException(const char* errorMessage, bool recordStackTrace) :
 mError(kGenericError),
 mErrorString(), // -> empty
-mErrorMessage(errorMessage)
+mErrorMessage(errorMessage),
+mStackTrace()
     {
     ASSERT_INVARIANT();
     
     VException::_breakpointLocation();
+    
+    if (recordStackTrace)
+        this->_recordStackTrace();
     }
 
-VException::VException(const VString& errorString) :
+VException::VException(const VString& errorString, bool recordStackTrace) :
 mError(kGenericError),
 mErrorString(errorString),
-mErrorMessage(NULL)
+mErrorMessage(NULL),
+mStackTrace()
     {
     ASSERT_INVARIANT();
     
     VException::_breakpointLocation();
+    
+    if (recordStackTrace)
+        this->_recordStackTrace();
     }
 
 VException::~VException() throw()
@@ -100,6 +126,7 @@ VException& VException::operator=(const VException& other)
     mError = other.getError();
     mErrorString = other.mErrorString;
     mErrorMessage = other.mErrorMessage;
+    mStackTrace = other.mStackTrace;
 
     ASSERT_INVARIANT();
     
@@ -123,6 +150,13 @@ int VException::getError() const
     return mError;
     }
 
+const VStringVector& VException::getStackTrace() const
+    {
+    ASSERT_INVARIANT();
+
+    return mStackTrace;
+    }
+
 void VException::_assertInvariant() const
     {
     /*
@@ -131,11 +165,28 @@ void VException::_assertInvariant() const
     and mErrorMessage is non-null, then it's a good assumption that
     mErrorMessage is uninitialized.
     */
-    V_ASSERT(mErrorMessage != VCPP_DEBUG_BAD_POINTER_VALUE);
+    VASSERT_NOT_EQUAL(mErrorMessage, VCPP_DEBUG_BAD_POINTER_VALUE);
     if (mErrorString.isEmpty())
-        V_ASSERT(mErrorMessage != NULL);
+        VASSERT_NOT_NULL(mErrorMessage);
     else
-        V_ASSERT(mErrorMessage == NULL);
+        VASSERT_NULL(mErrorMessage);
+    }
+
+void VException::_recordStackTrace()
+    {
+#ifdef VAULT_USER_STACKCRAWL_SUPPORT
+    // If error supplied as literal, move it to our VString error message to combine with stack trace.
+    if (mErrorMessage != NULL)
+        {
+        mErrorString += mErrorMessage;
+        mErrorMessage = NULL;
+        }
+
+    VStringLogger logger(VLogger::kTrace, VString::EMPTY(), VString::EMPTY());
+    VThread::logStackCrawl("Stack:", &logger, false);
+    mErrorString += VString::NATIVE_LINE_ENDING();
+    mErrorString += logger.getLines();
+#endif
     }
 
 #ifndef V_TRANSLATE_WIN32_STRUCTURED_EXCEPTIONS

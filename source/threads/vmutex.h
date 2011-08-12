@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -80,6 +80,20 @@ class VMutex
         @return    a pointer to the raw OS mutex handle
         */
         VMutex_Type* getMutex();
+        
+        /**
+        Returns true if the following conditions hold:
+        - the mutex has been lock()'ed but not yet unlock()'ed
+        - the lock() occurred on the current thread
+        This is intended to be used for one purpose: asserting that a mutex
+        is held by the current thread. If another thread is concurrently
+        locking or unlocking the mutex, the lock state may change during
+        this call, but in a way that still allows this test to work.
+        Note that you can't test whether a mutex is locked or unlocked in
+        general because the answer is obsolete on return.
+        @return true if the mutex was locked on the current thread
+        */
+        bool isLockedByCurrentThread() const;
 
         /* PLATFORM-SPECIFIC STATIC FUNCTIONS --------------------------------
         The remaining functions defined here are the low-level interfaces to
@@ -137,9 +151,10 @@ class VMutex
         VMutex_Type mMutex;             ///< The OS mutex handle.
         VString mName;                  ///< The name of this mutex for diagnostic purposes.
         bool mSuppressLogging;          ///< True if this VMutex must not call logger functions.
-        VThreadID_Type mLastLockThread; ///< If locked, the thread that acquired the lock.
+        volatile VThreadID_Type mLastLockThread; ///< If locked, the thread that acquired the lock.
         VString mLastLockerName;        ///< The name of the last (or current) caller of lock().
         VInstant mLastLockTime;         ///< When the last acquisition of the lock occurred.
+        volatile bool mIsLocked;        ///< For use only by isLockedByCurrentThread(); value may change concurrently.
         
         static VDuration gVMutexLockDelayLoggingThreshold;  ///< If >=0, lock delays are logged.
         static int gVMutexLockDelayLoggingLevel;            ///< Log level at which lock delays are logged.

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -11,6 +11,7 @@ http://www.bombaydigital.com/
 #include "vlogger.h"
 #include "vinstant.h"
 
+#include "vassertunit.h"
 #include "vbentounit.h"
 #include "vbinaryiounit.h"
 #include "vcharunit.h"
@@ -57,6 +58,7 @@ void runAllVUnitTests(bool logOnSuccess, bool throwOnError, bool& success, int& 
     
     // Use the macro above to declare each unit test and run it in a single line of boilerplate.
     UNIT_TEST(VPlatformUnit)
+    UNIT_TEST(VAssertUnit)
     UNIT_TEST(VBentoUnit)
     UNIT_TEST(VBinaryIOUnit)
     UNIT_TEST(VCharUnit)

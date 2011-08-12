@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -166,7 +166,7 @@ Vs64 VDirectIOFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite)
         VString    path;
         mNode.getPath(path);
 
-        throw VException(errno, VString("VDirectIOFileStream::write to '%s' only wrote %lld of %lld requested bytes.", path.chars(), numBytesWritten, numBytesToWrite));
+        throw VException(errno, VSTRING_FORMAT("VDirectIOFileStream::write to '%s' only wrote %lld of %lld requested bytes.", path.chars(), numBytesWritten, numBytesToWrite));
         }
 
     return numBytesWritten;
@@ -231,6 +231,7 @@ Vs64 VDirectIOFileStream::available() const
     Vs64    currentOffset = this->getIOOffset();
     Vs64    eofOffset;
     
+    // const_cast: WORKAROUND. Save/restore state.
     const_cast<VDirectIOFileStream*>(this)->seek(0, SEEK_END);
     eofOffset = this->getIOOffset();
     const_cast<VDirectIOFileStream*>(this)->seek(currentOffset, SEEK_SET);    // restore original position

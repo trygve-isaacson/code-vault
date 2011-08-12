@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -62,16 +62,16 @@ void VHexUnit::run()
     dumpStream.writeLine(VString::EMPTY()); // blank line at end, so calling readHexDump() doesn't need to catch EOF
     
     // Print the hex dump to the unit test output as status for review.
-    dumpStream.seek(0, SEEK_SET); // back to start before reading
+    dumpStream.seek0(); // back to start before reading
     VString dumpText;
     dumpStream.readAll(dumpText);
-    this->logStatus(VString("Hex dump data:\n%s", dumpText.chars()));
+    this->logStatus(VSTRING_FORMAT("Hex dump data:\n%s", dumpText.chars()));
 
     // Now use the hex dump reader function to read the text, and verify
     // that we end up with the original data.
     VMemoryStream   reconstructedBuffer;
     VBinaryIOStream reconstructedStream(reconstructedBuffer);
-    dumpStream.seek(0, SEEK_SET); // back to start before reading
+    dumpStream.seek0(); // back to start before reading
     
     VHex::readHexDump(dumpStream, reconstructedStream);
     

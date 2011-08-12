@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -17,7 +17,7 @@ class TestThreadClass : public VThread
     {
     public:
     
-        TestThreadClass(VThreadsUnit* ownerUnit, const VString& namePrefix, int numSecondsToSleep, int numIterations, bool* boolToSetOnCompletion, TestThreadClass** thisPtrToNull, volatile VThreadID_Type* threadIDMember, volatile VThreadID_Type* threadIDSelf);
+        TestThreadClass(VThreadsUnit* ownerUnit, const VString& namePrefix, int numSecondsToSleep, int numIterations, bool* boolToSetOnCompletion, TestThreadClass** thisPtrToNull, volatile VThreadID_Type* threadIDMember, volatile VThreadID_Type* threadIDSelf, VMutex* mutexToLock);
         ~TestThreadClass();
         
         virtual void run();
@@ -29,6 +29,7 @@ class TestThreadClass : public VThread
         TestThreadClass**    mThisPtrToNull;
         volatile VThreadID_Type* mThreadIDMemberToSet; // stash mThreadID here; unit test will verify it matches threadSelf()
         volatile VThreadID_Type* mThreadIDSelfToSet;   // stash threadSelf() value here in run(); unit test will verify it matches mThreadID
+        VMutex* mMutexToLock;
 
     private:
 
@@ -36,15 +37,16 @@ class TestThreadClass : public VThread
         TestThreadClass& operator=(const TestThreadClass&); // not assignable
     };
 
-TestThreadClass::TestThreadClass(VThreadsUnit* ownerUnit, const VString& namePrefix, int numSecondsToSleep, int numIterations, bool* boolToSetOnCompletion, TestThreadClass** thisPtrToNull, volatile VThreadID_Type* threadIDMember, volatile VThreadID_Type* threadIDSelf) :
-VThread(VString("TestThreadClass.%s", namePrefix.chars()), thisPtrToNull != NULL, kCreateThreadJoinable, NULL),
+TestThreadClass::TestThreadClass(VThreadsUnit* ownerUnit, const VString& namePrefix, int numSecondsToSleep, int numIterations, bool* boolToSetOnCompletion, TestThreadClass** thisPtrToNull, volatile VThreadID_Type* threadIDMember, volatile VThreadID_Type* threadIDSelf, VMutex* mutexToLock) :
+VThread(VSTRING_FORMAT("TestThreadClass.%s", namePrefix.chars()), thisPtrToNull != NULL, kCreateThreadJoinable, NULL),
 mOwnerUnit(ownerUnit),
 mNumSecondsToSleep(numSecondsToSleep),
 mNumIterations(numIterations),
 mBoolToSetOnCompletion(boolToSetOnCompletion),
 mThisPtrToNull(thisPtrToNull),
 mThreadIDMemberToSet(threadIDMember),
-mThreadIDSelfToSet(threadIDSelf)
+mThreadIDSelfToSet(threadIDSelf),
+mMutexToLock(mutexToLock)
     {
     *mBoolToSetOnCompletion = false;
     }
@@ -57,6 +59,8 @@ TestThreadClass::~TestThreadClass()
 
 void TestThreadClass::run()
     {
+    VMutexLocker locker(mMutexToLock, "TestThreadClass::run"); // mMutexToLock can be null, meaning nothing to lock
+
     while ((mNumIterations > 0) && this->isRunning())
         {
         // We are now running in our own thread. Let's sleep a little...
@@ -65,6 +69,9 @@ void TestThreadClass::run()
         --mNumIterations;
         }
 
+    if (mMutexToLock != NULL)
+        mOwnerUnit->test(mMutexToLock->isLockedByCurrentThread(), "TestThreadClass sees that it has the lock");
+
     // Now our thread will finish, terminate, and delete this.
 
     // We set the values the unit test can examine so it can verify behavior.
@@ -72,7 +79,7 @@ void TestThreadClass::run()
     *mThreadIDSelfToSet = VThread::threadSelf();
     *mBoolToSetOnCompletion = true;
 
-    VString info("Thread::run completed '%s' : id=%lld self=%lld.", mName.chars(), (Vs64) *mThreadIDMemberToSet, (Vs64) *mThreadIDSelfToSet);
+    VString info(VSTRING_ARGS("Thread::run completed '%s' : id=%lld self=%lld.", mName.chars(), (Vs64) *mThreadIDMemberToSet, (Vs64) *mThreadIDSelfToSet));
     mOwnerUnit->logStatus(info);
     }
 
@@ -112,11 +119,11 @@ void VThreadsUnit::run()
     // In fact, in our case, thread2 runs for 2 seconds, so by the time thread1 join
     // completes, thread2 is presumably gone.
     bool thread1Flag = false; volatile VThreadID_Type thread1ID = 0; volatile VThreadID_Type thread1Self = 0;
-    TestThreadClass* thread1 = new TestThreadClass(this, "1", 4, 1, &thread1Flag, &thread1, &thread1ID, &thread1Self);
+    TestThreadClass* thread1 = new TestThreadClass(this, "1", 4, 1, &thread1Flag, &thread1, &thread1ID, &thread1Self, NULL);
     bool thread2Flag = false; volatile VThreadID_Type thread2ID = 0; volatile VThreadID_Type thread2Self = 0;
-    TestThreadClass* thread2 = new TestThreadClass(this, "2", 2, 3, &thread2Flag, &thread2, &thread2ID, &thread2Self);
+    TestThreadClass* thread2 = new TestThreadClass(this, "2", 2, 3, &thread2Flag, &thread2, &thread2ID, &thread2Self, NULL);
     bool thread3Flag = false; volatile VThreadID_Type thread3ID = 0; volatile VThreadID_Type thread3Self = 0;
-    TestThreadClass* thread3 = new TestThreadClass(this, "3", 3, 2, &thread3Flag, NULL, &thread3ID, &thread3Self);
+    TestThreadClass* thread3 = new TestThreadClass(this, "3", 3, 2, &thread3Flag, NULL/*do not self-delete*/, &thread3ID, &thread3Self, NULL);
     
     this->test(thread1->getDeleteAtEnd() == true &&
                 thread2->getDeleteAtEnd() == true &&
@@ -146,7 +153,7 @@ void VThreadsUnit::run()
     
     this->test(thread1Flag && thread2Flag && thread3Flag, "threads completed");
     
-    this->logStatus(VString("thread ids/selfs: %lld/%lld %lld/%lld %lld/%lld",
+    this->logStatus(VSTRING_FORMAT("thread ids/selfs: %lld/%lld %lld/%lld %lld/%lld",
         (Vs64) thread1ID, (Vs64) thread1Self,
         (Vs64) thread2ID, (Vs64) thread2Self,
         (Vs64) thread3ID, (Vs64) thread3Self));
@@ -158,5 +165,37 @@ void VThreadsUnit::run()
     VUNIT_ASSERT_EQUAL_LABELED((Vs64) thread3ID, (Vs64) thread3Self, "thread 3 self/id match");
     VUNIT_ASSERT_NOT_EQUAL_LABELED((Vs64) thread3ID, CONST_S64(0), "thread 3 self/id non-zero");
 
+        { // mutex and locker scope
+        // Test the ability to examine a mutex and see if it is locked by the current thread.
+
+        // First, declare and lock a mutex, and see that the API returns true.
+        VMutex mutexX("mutexX");
+        VUNIT_ASSERT_FALSE_LABELED(mutexX.isLockedByCurrentThread(), "1 - local mutex not locked by current thread");
+        mutexX.lock();
+        VUNIT_ASSERT_TRUE_LABELED(mutexX.isLockedByCurrentThread(), "2 - local mutex locked by current thread");
+        mutexX.unlock();
+        VUNIT_ASSERT_FALSE_LABELED(mutexX.isLockedByCurrentThread(), "3 - local mutex not locked by current thread");
+
+        // Next, create another thread that will lock the mutex, and verify that this thread can
+        // get the right answer.
+        bool threadXFlag = false; volatile VThreadID_Type threadXID = 0; volatile VThreadID_Type threadXSelf = 0;
+        TestThreadClass* threadX = new TestThreadClass(this, "4", 4, 1, &threadXFlag, NULL/*do not self-delete*/, &threadXID, &threadXSelf, &mutexX);
+        VUNIT_ASSERT_FALSE_LABELED(mutexX.isLockedByCurrentThread(), "4 - shared mutex not locked by current thread");
+        
+        threadX->start();
+        VThread::sleep(VDuration::SECOND()); // Give the thread a second to get going and lock.... it will sleep for 4 seconds once running.
+        VUNIT_ASSERT_FALSE_LABELED(mutexX.isLockedByCurrentThread(), "5 - shared mutex not locked by current thread while other thread has it locked");
+        
+        threadX->join();
+        VUNIT_ASSERT_FALSE_LABELED(mutexX.isLockedByCurrentThread(), "6 - shared mutex not locked by current thread after other thread finished");
+
+        // Finally, re-test this thread's ability to detect its own locking of the mutex.
+        VUNIT_ASSERT_FALSE_LABELED(mutexX.isLockedByCurrentThread(), "7 - local mutex not locked by current thread");
+        mutexX.lock();
+        VUNIT_ASSERT_TRUE_LABELED(mutexX.isLockedByCurrentThread(), "8 - local mutex locked by current thread");
+        mutexX.unlock();
+        VUNIT_ASSERT_FALSE_LABELED(mutexX.isLockedByCurrentThread(), "9 - local mutex not locked by current thread");
+        }
+    
     }
 

@@ -12,6 +12,8 @@
 
 DEPENDPATH += $${VAULT_BASE}/source/unittest
 INCLUDEPATH += $${VAULT_BASE}/source/unittest
+HEADERS += $${VAULT_BASE}/source/unittest/vassertunit.h
+SOURCES += $${VAULT_BASE}/source/unittest/vassertunit.cpp
 HEADERS += $${VAULT_BASE}/source/unittest/vbentounit.h
 SOURCES += $${VAULT_BASE}/source/unittest/vbentounit.cpp
 HEADERS += $${VAULT_BASE}/source/unittest/vbinaryiounit.h

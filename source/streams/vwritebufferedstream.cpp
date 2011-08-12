@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -18,7 +18,7 @@ mRawStream(rawStream)
 
 Vs64 VWriteBufferedStream::read(Vu8* /*targetBuffer*/, Vs64 /*numBytesToRead*/)
     {
-    throw VException("VWriteBufferedStream::read: Read is not permitted on buffered write stream.");
+    throw VUnimplementedException("VWriteBufferedStream::read: Read is not permitted on buffered write stream.");
     }
 
 void VWriteBufferedStream::flush()
@@ -34,6 +34,6 @@ void VWriteBufferedStream::flush()
 
 bool VWriteBufferedStream::skip(Vs64 /*numBytesToSkip*/)
     {
-    throw VException("VWriteBufferedStream::skip: Skip is not permitted on buffered write stream.");
+    throw VUnimplementedException("VWriteBufferedStream::skip: Skip is not permitted on buffered write stream.");
     }
 

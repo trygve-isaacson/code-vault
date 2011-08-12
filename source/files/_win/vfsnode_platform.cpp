@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.1
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -85,7 +85,7 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
     HRESULT result = ::SHGetFolderPathA(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, static_cast<LPSTR>(pathBuffer));
     
     if (result != S_OK)
-        throw VException(VString("VFSNode::_platform_getKnownDirectoryNode: Unable to find current user Application Data folder. Error code %d.", (int) result));
+        throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode: Unable to find current user Application Data folder. Error code %d.", (int) result));
 
     VString path(pathBuffer);
     VFSNode::_platform_normalizePath(path);
@@ -149,7 +149,7 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
             break;
             
         default:
-            throw VException(VString("VFSNode::_platform_getKnownDirectoryNode: Requested invalid directory ID %d.", (int) id));
+            throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode: Requested invalid directory ID %d.", (int) id));
             break;
         }
 
@@ -166,7 +166,7 @@ VFSNode VFSNode::_platform_getExecutable()
     DWORD result = ::GetModuleFileName(NULL, exePath.buffer(), _MAX_PATH);
 
     if (result == 0)
-        throw VException(VString("VFSNode::_platform_getExecutable: Unable to determine exe path. Error %d.", (int) ::GetLastError()));
+        throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getExecutable: Unable to determine exe path. Error %d.", (int) ::GetLastError()));
 
     exePath.postflight(result); // result is actual length of returned string data
     VFSNode::normalizePath(exePath); // must supply normalized form to VFSNode below
@@ -201,7 +201,7 @@ void VFSNode::_platform_createDirectory() const
     int result = VFileSystemAPI::wrap_mkdir(mPath, (S_IFDIR | S_IRWXO | S_IRWXG | S_IRWXU));
 
     if (result != 0)
-        throw VException(result, VString("VFSNode::_platform_createDirectory failed (error %d: %s) for '%s'.", errno, ::strerror(errno), mPath.chars()));
+        throw VException(result, VSTRING_FORMAT("VFSNode::_platform_createDirectory failed (error %d: %s) for '%s'.", errno, ::strerror(errno), mPath.chars()));
     }
 
 bool VFSNode::_platform_removeDirectory() const
@@ -221,7 +221,7 @@ void VFSNode::_platform_renameNode(const VString& newPath) const
     int result = VFileSystemAPI::wrap_rename(mPath, newPath);
     
     if (result != 0)
-        throw VException(result, VString("VFSNode::_platform_renameNode failed (error %d: %s) renaming '%s' to '%s'.", errno, ::strerror(errno), mPath.chars(), newPath.chars()));
+        throw VException(result, VSTRING_FORMAT("VFSNode::_platform_renameNode failed (error %d: %s) renaming '%s' to '%s'.", errno, ::strerror(errno), mPath.chars(), newPath.chars()));
     }
 
 // This is the Windows implementation of directory iteration using
@@ -234,7 +234,7 @@ void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) 
     // brute-force cast so that the compiler is happy.
     
     VString nodeName;
-    VString searchPath("%s/*", mPath.chars());
+    VString searchPath(VSTRING_ARGS("%s/*", mPath.chars()));
     
     VFSNode::denormalizePath(searchPath);    // make it have DOS syntax
 
@@ -252,7 +252,7 @@ void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) 
         if (error == ERROR_NO_MORE_FILES)
             return;
             
-        throw VException(VString("VFSNode::_platform_getDirectoryList failed (error %d) for directory '%s'.", error , searchPath.chars()));
+        throw VException(VSTRING_FORMAT("VFSNode::_platform_getDirectoryList failed (error %d) for directory '%s'.", error , searchPath.chars()));
         }
     
     try

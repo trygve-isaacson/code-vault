@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -21,7 +21,7 @@ const VChar& VChar::NULL_CHAR()
     }
 
 VChar::VChar() :
-mValue(0)
+mValue(VCHAR_NULL_TERMINATOR)
     {
     }
 

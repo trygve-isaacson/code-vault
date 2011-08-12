@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -111,6 +111,7 @@ class VTextIOStream : public VIOStream
         void readAll(VStringVector& lines);
         
         /**
+        This method is equivalent to writeString(s) + writeLineEnd().
         Writes a line of text to the stream, with line ending character(s).
         If the mLineEndingsWriteKind property is kUseSuppliedLineEndings, then
         it assumed that you are supplying a string that has the line ending
@@ -125,6 +126,13 @@ class VTextIOStream : public VIOStream
         @param    s    the string of text to write
         */
         void writeString(const VString& s);
+
+        /**
+        Writes just the line ending character(s). Does nothing if the
+        mLineEndingsWriteKind property is kUseSuppliedLineEndings, because
+        that means you supply the line endings in the strings you write.
+        */
+        void writeLineEnd();
         
         /**
         Returns the mLineEndingsReadKind property, describing the kind of

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -50,6 +50,48 @@ class VMutex;
     @ingroup vstring
 */
 
+#ifdef VAULT_VSTRING_STRICT_FORMATTING
+    #define VSTRING_FORMAT(format_string, ...) VString(0, format_string, __VA_ARGS__)
+    #define VSTRING_ARGS(format_string, ...) true, format_string, __VA_ARGS__
+    #define VSTRING_COPY(literal_string) VString(literal_string)
+#else
+    #define VSTRING_FORMAT(format_string, ...) VString(format_string, __VA_ARGS__)
+    #define VSTRING_ARGS(format_string, ...) format_string, __VA_ARGS__
+    #define VSTRING_COPY(literal_string) VString((char*)literal_string) // call non-formatting ctor
+#endif
+
+// The following macros define the proper formatting directives for the basic POD types,
+// and VString constructors for converting those types to strings. For convenience, we
+// also define a boolean string constructor.
+#define VSTRING_FORMATTER_INT       "%d"
+#define VSTRING_FORMATTER_UINT      "%ud"
+#define VSTRING_FORMATTER_S8        "%hhd"
+#define VSTRING_FORMATTER_U8        "%hhu"
+#define VSTRING_FORMATTER_S16       "%hd"
+#define VSTRING_FORMATTER_U16       "%hu"
+#define VSTRING_FORMATTER_S32       "%ld"
+#define VSTRING_FORMATTER_U32       "%lu"
+#define VSTRING_FORMATTER_S64       "%lld"
+#define VSTRING_FORMATTER_U64       "%llu"
+#define VSTRING_FORMATTER_FLOAT     "%f"
+#define VSTRING_FORMATTER_DOUBLE    "%lf"
+#define VSTRING_FORMATTER_PTR       "%p"
+
+#define VSTRING_INT(n)      VSTRING_FORMAT(VSTRING_FORMATTER_INT, n)
+#define VSTRING_UINT(n)     VSTRING_FORMAT(VSTRING_FORMATTER_UINT, n)
+#define VSTRING_S8(n)       VSTRING_FORMAT(VSTRING_FORMATTER_S8, n)
+#define VSTRING_U8(n)       VSTRING_FORMAT(VSTRING_FORMATTER_U8, n)
+#define VSTRING_S16(n)      VSTRING_FORMAT(VSTRING_FORMATTER_S16, n)
+#define VSTRING_U16(n)      VSTRING_FORMAT(VSTRING_FORMATTER_U16, n)
+#define VSTRING_S32(n)      VSTRING_FORMAT(VSTRING_FORMATTER_S32, n)
+#define VSTRING_U32(n)      VSTRING_FORMAT(VSTRING_FORMATTER_U32, n)
+#define VSTRING_S64(n)      VSTRING_FORMAT(VSTRING_FORMATTER_S64, n)
+#define VSTRING_U64(n)      VSTRING_FORMAT(VSTRING_FORMATTER_U64, n)
+#define VSTRING_FLOAT(n)    VSTRING_FORMAT(VSTRING_FORMATTER_FLOAT, n)
+#define VSTRING_DOUBLE(n)   VSTRING_FORMAT(VSTRING_FORMATTER_DOUBLE, n)
+#define VSTRING_PTR(p)      VSTRING_FORMAT(VSTRING_FORMATTER_PTR, p)
+#define VSTRING_BOOL(b)     VString(b?"true":"false")
+
 /**
 VString is a string container class that should help to eliminate almost all
 use of char buffer and char* and their inherent dangers, in the Vault APIs
@@ -97,24 +139,36 @@ class VString
         to size "n" from compiling.
         @param    c    the char
         */
-        explicit VString(const char c);
+        explicit VString(char c);
         /**
         Constructs a string from a C string.
-        Note that the param is not marked const so that
-        we avoid ambiguous linkage with the vararg ctor below.
+        Note that if strict formatting is off, the param is not marked const so that
+        we avoid ambiguous linkage vs. the const param in the vararg ctor below.
         @param    s    pointer to C string to copy
         */
-		//lint -e1776 Converting a string literal to char * is not const safe
+#ifdef VAULT_VSTRING_STRICT_FORMATTING
+        VString(const char* s);
+#else /* non-strict formatting */
+        //lint -e1776 Converting a string literal to char * is not const safe [OK: Intentionally non-const to disambiguate API; function treats parameter as const.]
         VString(char* s);
+#endif /* VAULT_VSTRING_STRICT_FORMATTING */
 
 #ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
         /**
         Constructs a string by sprintf-like formatting.
+        @param    dummy         not used, but distinguishes this fn signature from the one above;
+                                important to use a type that literal strings can't auto convert to,
+                                so compiler will always detect lack of dummy parameter
         @param    formatText    the format text
-        @param    ...            varargs to be formatted
+        @param    ...           varargs to be formatted
         */
+#ifdef VAULT_VSTRING_STRICT_FORMATTING
+        VString(Vs8 dummy, const char* formatText, ...);
+#else /* non-strict formatting */
         VString(const char* formatText, ...);
-#endif
+#endif /* VAULT_VSTRING_STRICT_FORMATTING */
+
+#endif /* VAULT_VARARG_STRING_FORMATTING_SUPPORT */
 
 #ifdef VAULT_QT_SUPPORT
         /**
@@ -241,9 +295,9 @@ class VString
         VString& operator=(Vs64 i);
         /**
         Assigns the string from a VDouble.
-        @param    f    the float value to be formatted
+        @param    d    the double value to be formatted
         */
-        VString& operator=(VDouble f);
+        VString& operator=(VDouble d);
         
 
         /**
@@ -801,11 +855,12 @@ class VString
         */
         void trim();
         /**
-        Copies the string's chars to the specified buffer, including the null
-        terminator byte. The caller is responsible for making sure that the
-        buffer is big enough to hold 1 + this->length() bytes.
-        @param    toBuffer    the char buffer to copy into
-        @param  bufferSize  the length of the target buffer (so we can verify capacity)
+        Copies the string's chars to the specified buffer, plus a null terminator byte; the
+        number of bytes copied (including null terminator) is limited to the specified
+        buffer size. That is, if bufferSize is N, and this string's length is greater than
+        (N-1), some characters will not be copied. The target buffer always gets null terminated.
+        @param  toBuffer    the char buffer to copy into
+        @param  bufferSize  the size of the target buffer; limits size of resulting copied string
         */
         void copyToBuffer(char* toBuffer, int bufferSize) const;
         /**

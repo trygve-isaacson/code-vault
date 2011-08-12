@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -32,17 +32,16 @@ class VMessageInputThread : public VSocketThread
 
         /**
         Constructs the socket thread with the specified socket, owner thread,
-        and message pool.
+        and server.
 
         @param  name        a name for the thread, useful for debugging purposes
         @param  socket      the socket this thread is managing
         @param  ownerThread the thread that created this one
         @param  server      the server we're running for
-        @param  messagePool the pool from which new VMessage objects are created;
-                            the caller retains ownership of the pool (it is not
-                            deleted by this object upon its destruction)
+        @param  messageFactory  a factory that instantiates messages suitable for this thread's input
+                                (The caller owns the factory.)
         */
-        VMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VMessagePool* messagePool);
+        VMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory);
         /**
         Virtual destructor.
         */
@@ -111,13 +110,13 @@ class VMessageInputThread : public VSocketThread
         */
         virtual void _afterProcessMessage(VMessageHandler* /*handler*/) {}
 
-        VMessagePool*           mMessagePool;       ///< The message pool from which new message objects are created.
         VSocketStream           mSocketStream;      ///< The underlying raw stream from which data is read.
         VBinaryIOStream         mInputStream;       ///< The formatted stream from which data is directly read.
         bool                    mConnected;         ///< True if the client has completed the connection sequence.
         VClientSessionReference mSessionReference;  ///< Reference to the session object we are associated with.
         VServer*                mServer;            ///< The server object that owns us.
-        bool                    mHasOutputThread;   ///< True if we are dependent on an output thread completion before returning from run(). (see run() code)
+        const VMessageFactory*  mMessageFactory;    ///< Factory for instantiating new messages to read from input stream.
+        volatile bool           mHasOutputThread;   ///< True if we are dependent on an output thread completion before returning from run(). (see run() code)
 
     private:
 
@@ -134,7 +133,7 @@ class VBentoMessageInputThread : public VMessageInputThread
     {
     public:
 
-        VBentoMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VMessagePool* messagePool);
+        VBentoMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory);
         ~VBentoMessageInputThread() {}
 
     protected:

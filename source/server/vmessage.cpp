@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -10,7 +10,7 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vsocketthread.h"
 #include "vmessagehandler.h"
-#include "vmessagepool.h"
+#include "vassert.h"
 
 // Is ASSERT_INVARIANT enabled/disabled specifically for VMessage?
 #ifdef V_ASSERT_INVARIANT_VMESSAGE_ENABLED
@@ -26,56 +26,79 @@ http://www.bombaydigital.com/
 
 const VString VMessage::kMessageLoggerName("messages");
 
+// static
+void VMessage::release(/* @Nullable */ VMessage* message)
+    {
+    if (message == NULL)
+        return;
+
+    if (message->isBeingBroadcast())
+        {
+        VMutexLocker locker(message->getBroadcastMutex(), VSTRING_FORMAT("releaseMessage(%d)bmtx.locker    ", (int)message->getMessageID()));
+        
+        if (message->numBroadcastTargets() != 0)    // don't "remove" if not actually a target
+            message->removeBroadcastTarget();
+
+        if (message->numBroadcastTargets() != 0)    // still in someone's output queue, so return w/o deleting
+            return;
+        }
+
+    VMessage::deleteMessage(message);
+    }
+
+// static
+void VMessage::deleteMessage(/* @Nullable */ VMessage* message)
+    {
+    if (message == NULL)
+        return;
+
+    const int broadcastCount = message->numBroadcastTargets();
+    if (broadcastCount != 0)
+        VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("Message ID=%d @0x%p deleted with a broadcast count of %d. Risk that a queue still references it.", message->getMessageID(), message, broadcastCount));
+    
+    delete message;
+    }
+
 VMessage::VMessage() :
 VBinaryIOStream(mMessageDataBuffer),
 mMessageDataBuffer(1024),
 mMessageID(0),
-mPool(NULL),
 mIsBeingBroadcast(false),
-mIsReleased(false),
 mNumBroadcastTargets(0),
-mBroadcastMutex("VMessage()bmtx                  ") // -> unlocked
+mBroadcastMutex("VMessage()") // -> unlocked
     {
     ASSERT_INVARIANT();
     }
 
-VMessage::VMessage(VMessageID messageID, VMessagePool* pool, Vs64 initialBufferSize) :
+VMessage::VMessage(VMessageID messageID, Vs64 initialBufferSize) :
 VBinaryIOStream(mMessageDataBuffer),
 mMessageDataBuffer(initialBufferSize),
 mMessageID(messageID),
-mPool(pool),
 mIsBeingBroadcast(false),
-mIsReleased(false),
 mNumBroadcastTargets(0),
-mBroadcastMutex(VString("VMessage(%d)bmtx                 ", (int)messageID)) // -> unlocked
+mBroadcastMutex(VSTRING_FORMAT("VMessage(%d)", (int)messageID)) // -> unlocked
     {
     ASSERT_INVARIANT();
     }
 
-VMessage::~VMessage()
-    {
-    mIsReleased = true;
-    }
-
-void VMessage::release()
-    {
-    ASSERT_INVARIANT();
-    mIsReleased = true;
-    mBroadcastMutex.setName(VString("VMessage(%d)(released)bmtx        ", (int)mMessageID));
-    }
-
-void VMessage::recycle(VMessageID messageID, bool makeEmpty)
+void VMessage::recycleForSend(VMessageID messageID)
     {
     mMessageID = messageID;
     mIsBeingBroadcast = false;
-    mIsReleased = false;
     mNumBroadcastTargets = 0;
-    mBroadcastMutex.setName(VString("VMessage(%d)(recycled)bmtx        ", (int)messageID));
+    mBroadcastMutex.setName(VSTRING_FORMAT("VMessage(%d)", (int)messageID));
+    (void) this->seek0();
 
-    if (makeEmpty)
-        mMessageDataBuffer.setEOF(CONST_S64(0));
-    else
-        (void) this->seek(CONST_S64(0), SEEK_SET);
+    ASSERT_INVARIANT();
+    }
+
+void VMessage::recycleForReceive()
+    {
+    mMessageID = 0;
+    mIsBeingBroadcast = false;
+    mNumBroadcastTargets = 0;
+    // mBroadcastMutex name remains, since no message ID is involved in its format.
+    mMessageDataBuffer.setEOF(CONST_S64(0));
 
     ASSERT_INVARIANT();
     }
@@ -86,7 +109,7 @@ void VMessage::copyMessageData(VMessage& targetMessage) const
 
     Vs64 savedOffset = mMessageDataBuffer.getIOOffset();
     
-    mMessageDataBuffer.seek(0, SEEK_SET);
+    mMessageDataBuffer.seek0();
     (void) VStream::streamCopy(mMessageDataBuffer, targetMessage, mMessageDataBuffer.getEOFOffset());
     mMessageDataBuffer.seek(savedOffset, SEEK_SET);
     }
@@ -117,6 +140,8 @@ void VMessage::addBroadcastTarget()
     ASSERT_INVARIANT();
 
     mNumBroadcastTargets++;
+
+    ASSERT_INVARIANT();
     }
 
 void VMessage::removeBroadcastTarget()
@@ -124,12 +149,12 @@ void VMessage::removeBroadcastTarget()
     ASSERT_INVARIANT();
 
     mNumBroadcastTargets--;
+
+    ASSERT_INVARIANT();
     }
 
 void VMessage::_assertInvariant() const
     {
-    V_ASSERT(
-        (mNumBroadcastTargets >= 0)
-        );
+    VASSERT_GREATER_THAN_OR_EQUAL(mNumBroadcastTargets, 0);
     }
 

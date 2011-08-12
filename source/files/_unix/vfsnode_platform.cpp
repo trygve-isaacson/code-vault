@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.1
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -135,7 +135,7 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
             break;
 
         default:
-            throw VException(VString("VFSNode::_platform_getKnownDirectoryNode: Requested invalid directory ID %d.", (int) id));
+            throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode: Requested invalid directory ID %d.", (int) id));
             break;
         }
 
@@ -174,11 +174,12 @@ VFSNode VFSNode::_platform_getExecutable()
     uint32_t bufsize = 3000; // can in theory be bigger than MAXPATH=1024
     VString executablePath;
     executablePath.preflight((int) bufsize);
-    int result = _NSGetExecutablePath(executablePath.buffer(), &bufsize);
+    char* buffer = executablePath.buffer();
+    int result = _NSGetExecutablePath(buffer, &bufsize);
     if (result == -1)
-        throw VException(VString("VFSNode::_platform_getExecutable: Failed to get path. _NSGetExecutablePath returned %d.", result));
+        throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getExecutable: Failed to get path. _NSGetExecutablePath returned %d.", result));
 
-    executablePath.postflight((int) bufsize);
+    executablePath.postflight((int) ::strlen(buffer));
 
     // todo: could then convert to a "real path" in case returned path has sym links
     VFSNode::normalizePath(executablePath); // must supply normalized form to VFSNode below
@@ -212,7 +213,7 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
 
     struct passwd* pwInfo = ::getpwuid(::getuid()); // Get info about the current user.
     if (pwInfo == NULL)
-        throw VException(errno, VString("VFSNode::_platform_getKnownDirectoryNode failed to get current user info from getpwuid() (error %d: %s)", errno, (errno==0 ? "No such user" : ::strerror(errno))));
+        throw VStackTraceException(errno, VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode failed to get current user info from getpwuid() (error %d: %s)", errno, (errno==0 ? "No such user" : ::strerror(errno))));
     const VString homePath(pwInfo->pw_dir);
 
     if (id == USER_HOME_DIRECTORY)
@@ -254,7 +255,7 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
             break;
 
         default:
-            throw VException(VString("VFSNode::_platform_getKnownDirectoryNode: Requested invalid directory ID %d.", (int) id));
+            throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode: Requested invalid directory ID %d.", (int) id));
             break;
         }
 
@@ -301,7 +302,7 @@ VFSNode VFSNode::_platform_getExecutable()
     executablePath.preflight(PATH_BUFFER_SIZE);
     ssize_t len = ::readlink(PROCESS_LINKPATH, executablePath.buffer(), PATH_BUFFER_SIZE-1);
     if (len == -1)
-        throw VException(VString("VFSNode::_platform_getExecutable: Unable to determine executable path. Error %d (%s)", (int) errno, ::strerror(errno)));
+        throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getExecutable: Unable to determine executable path. Error %d (%s)", (int) errno, ::strerror(errno)));
     executablePath.postflight(len);
     VFSNode::normalizePath(executablePath); // must supply normalized form to VFSNode below
     return VFSNode(executablePath);
@@ -336,7 +337,7 @@ void VFSNode::_platform_createDirectory() const
     int result = VFileSystemAPI::wrap_mkdir(mPath, (S_IFDIR | S_IRWXO | S_IRWXG | S_IRWXU));
 
     if (result != 0)
-        throw VException(result, VString("VFSNode::_platform_createDirectory failed (error %d: %s) for '%s'.", errno, ::strerror(errno), mPath.chars()));
+        throw VException(result, VSTRING_FORMAT("VFSNode::_platform_createDirectory failed (error %d: %s) for '%s'.", errno, ::strerror(errno), mPath.chars()));
     }
 
 bool VFSNode::_platform_removeDirectory() const
@@ -356,7 +357,7 @@ void VFSNode::_platform_renameNode(const VString& newPath) const
     int result = VFileSystemAPI::wrap_rename(mPath, newPath);
 
     if (result != 0)
-        throw VException(result, VString("VFSNode::_platform_renameNode failed (error %d: %s) renaming '%s' to '%s'.", errno, ::strerror(errno), mPath.chars(), newPath.chars()));
+        throw VException(result, VSTRING_FORMAT("VFSNode::_platform_renameNode failed (error %d: %s) renaming '%s' to '%s'.", errno, ::strerror(errno), mPath.chars(), newPath.chars()));
     }
 
 // This is the Unix implementation of directory iteration using
@@ -369,7 +370,7 @@ void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) 
     DIR* dir = ::opendir(mPath);
 
     if (dir == NULL)
-        throw VException(VString("VFSNode::_platform_getDirectoryList failed for directory '%s'.", mPath.chars()));
+        throw VException(VSTRING_FORMAT("VFSNode::_platform_getDirectoryList failed for directory '%s'.", mPath.chars()));
 
     try
         {

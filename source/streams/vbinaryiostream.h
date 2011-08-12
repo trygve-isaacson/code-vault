@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -188,6 +188,13 @@ class VBinaryIOStream : public VIOStream
         */
         Vs32 readS32();
         /**
+        Reads a signed 32-bit value from the stream, and casts the return value to int.
+        This is useful if you use int in your code and the data in question is known to
+        fit in an int value, so that you do not have truncation concerns.
+        @return    the Vs32 as int
+        */
+        int readInt32();
+        /**
         Reads an unsigned 32-bit value from the stream.
         @return    the Vu32
         */
@@ -306,6 +313,21 @@ class VBinaryIOStream : public VIOStream
         @param    i    the Vs32
         */
         void writeS32(Vs32 i);
+        /**
+        Writes a signed 32-bit value to the stream, casting from the supplied int.
+        This is useful if you use int in your code and the data in question is known to
+        fit in a signed 32-bit value, so that you do not have truncation concerns.
+        @param    i    the int to be written as a Vs32 value
+        */
+        void writeInt32(int i);
+        /**
+        Writes a signed 32-bit value to the stream, casting from the supplied size_type.
+        This is useful if you have a size_type or STL collection in your code and the data
+        in question is known to fit in a signed 32-bit value, so that you do not have
+        truncation concerns.
+        @param    i    the int to be written as a Vs32 value
+        */
+        void writeSize32(VSizeType i);
         /**
         Writes an unsigned 32-bit value to the stream.
         @param    i    the Vu32

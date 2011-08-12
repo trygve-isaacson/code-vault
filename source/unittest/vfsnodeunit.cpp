@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.1
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -48,15 +48,15 @@ void VFSNodeUnit::run()
     {
     // Note that we also do testing of streams and file i/o here.
 
-    this->logStatus(VString("getExecutable: '%s'", VFSNode::getExecutable().getPath().chars()));
-    this->logStatus(VString("getExecutableDirectory: '%s'", VFSNode::getExecutableDirectory().getPath().chars()));
-    this->logStatus(VString("USER_HOME_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::USER_HOME_DIRECTORY, "com", "app").getPath().chars()));
-    this->logStatus(VString("LOG_FILES_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::LOG_FILES_DIRECTORY, "com", "app").getPath().chars()));
-    this->logStatus(VString("USER_PREFERENCES_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::USER_PREFERENCES_DIRECTORY, "com", "app").getPath().chars()));
-    this->logStatus(VString("CACHED_DATA_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::CACHED_DATA_DIRECTORY, "com", "app").getPath().chars()));
-    this->logStatus(VString("APPLICATION_DATA_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::APPLICATION_DATA_DIRECTORY, "com", "app").getPath().chars()));
-    this->logStatus(VString("CURRENT_WORKING_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::CURRENT_WORKING_DIRECTORY, "com", "app").getPath().chars()));
-    this->logStatus(VString("EXECUTABLE_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::EXECUTABLE_DIRECTORY, "com", "app").getPath().chars()));
+    this->logStatus(VSTRING_FORMAT("getExecutable: '%s'", VFSNode::getExecutable().getPath().chars()));
+    this->logStatus(VSTRING_FORMAT("getExecutableDirectory: '%s'", VFSNode::getExecutableDirectory().getPath().chars()));
+    this->logStatus(VSTRING_FORMAT("USER_HOME_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::USER_HOME_DIRECTORY, "com", "app").getPath().chars()));
+    this->logStatus(VSTRING_FORMAT("LOG_FILES_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::LOG_FILES_DIRECTORY, "com", "app").getPath().chars()));
+    this->logStatus(VSTRING_FORMAT("USER_PREFERENCES_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::USER_PREFERENCES_DIRECTORY, "com", "app").getPath().chars()));
+    this->logStatus(VSTRING_FORMAT("CACHED_DATA_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::CACHED_DATA_DIRECTORY, "com", "app").getPath().chars()));
+    this->logStatus(VSTRING_FORMAT("APPLICATION_DATA_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::APPLICATION_DATA_DIRECTORY, "com", "app").getPath().chars()));
+    this->logStatus(VSTRING_FORMAT("CURRENT_WORKING_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::CURRENT_WORKING_DIRECTORY, "com", "app").getPath().chars()));
+    this->logStatus(VSTRING_FORMAT("EXECUTABLE_DIRECTORY: '%s'", VFSNode::getKnownDirectoryNode(VFSNode::EXECUTABLE_DIRECTORY, "com", "app").getPath().chars()));
 
     VFSNode tempDir = VFSNode::getKnownDirectoryNode(VFSNode::CACHED_DATA_DIRECTORY, "vault", "unittest");
     VString tempDirPath = tempDir.getPath();
@@ -226,7 +226,7 @@ void VFSNodeUnit::_testTextFileIO(const VString& seriesLabel, VFSNode& node, VAb
     for (VStringVector::const_iterator i = mTextFileLines.begin(); i != mTextFileLines.end(); ++i)
         {
         io.readLine(line);
-        VUNIT_ASSERT_EQUAL_LABELED(line, *i, VString("Line %d match", lineNumber));
+        VUNIT_ASSERT_EQUAL_LABELED(line, *i, VSTRING_FORMAT("Line %d match", lineNumber));
         ++lineNumber;
         }
 
@@ -262,7 +262,7 @@ void VFSNodeUnit::_testTextFileReadAll(VFSNode& node)
     int lineNumber = 1;
     for (size_t i = 0; i < lines.size(); ++i)
         {
-        VUNIT_ASSERT_EQUAL_LABELED(lines[i], mTextFileLines[i], VString("VFSNode::readAll() to VStringVector, line %d match", lineNumber));
+        VUNIT_ASSERT_EQUAL_LABELED(lines[i], mTextFileLines[i], VSTRING_FORMAT("VFSNode::readAll() to VStringVector, line %d match", lineNumber));
         ++lineNumber;
         }
     }
@@ -338,7 +338,7 @@ void VFSNodeUnit::_testDirectoryIteration(const VFSNode& dir)
     // Create 5 files in the deep directory, then test that we can find them.
     for (int i = 0; i < NUM_FILES_TO_CREATE; ++i)
         {
-        VString testIterFileName("iter_test_%d.txt", i);
+        VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", i));
         VFSNode testIterFileNode;
         dir.getChildNode(testIterFileName, testIterFileNode);
         VBufferedFileStream testIterStream(testIterFileNode);
@@ -351,11 +351,11 @@ void VFSNodeUnit::_testDirectoryIteration(const VFSNode& dir)
     VFSNode testIterNode;
     for (int i = 0; i < NUM_FILES_TO_CHECK; ++i)
         {
-        VString testIterFileName("iter_test_%d.txt", i);
+        VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", i));
         if (i < NUM_FILES_TO_CREATE)
-            this->test(dir.find(testIterFileName, testIterNode), VString("find() found #%d", i)); // this file should exist
+            this->test(dir.find(testIterFileName, testIterNode), VSTRING_FORMAT("find() found #%d", i)); // this file should exist
         else
-            this->test(! dir.find(testIterFileName, testIterNode), VString("find() did not find #%d", i)); // this file should not exist
+            this->test(! dir.find(testIterFileName, testIterNode), VSTRING_FORMAT("find() did not find #%d", i)); // this file should not exist
         }
     }
     
@@ -373,8 +373,8 @@ void VFSNodeUnit::_testDirectoryIteration(const VFSNode& dir)
     this->test(static_cast<int>(fileNames.size()) == NUM_FILES_TO_CREATE, "list names size");
     for (VStringVector::const_iterator i = fileNames.begin(); i != fileNames.end(); ++i, ++index)
         {
-        VString testIterFileName("iter_test_%d.txt", index);
-        this->test(*i == testIterFileName, VString("list names #%d", index));
+        VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", index));
+        this->test(*i == testIterFileName, VSTRING_FORMAT("list names #%d", index));
         }
     }
 
@@ -386,10 +386,10 @@ void VFSNodeUnit::_testDirectoryIteration(const VFSNode& dir)
     this->test(static_cast<int>(fileNodes.size()) == NUM_FILES_TO_CREATE, "list nodes size");
     for (VFSNodeVector::const_iterator i = fileNodes.begin(); i != fileNodes.end(); ++i, ++index)
         {
-        VString testIterFileName("iter_test_%d.txt", index);
+        VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", index));
         VString nodeFileName;
         i->getName(nodeFileName);
-        this->test(nodeFileName == testIterFileName, VString("list nodes #%d", index));
+        this->test(nodeFileName == testIterFileName, VSTRING_FORMAT("list nodes #%d", index));
         }
     }
 
@@ -401,8 +401,8 @@ void VFSNodeUnit::_testDirectoryIteration(const VFSNode& dir)
     this->test(static_cast<int>(callback.mNodeNames.size()) == NUM_FILES_TO_CREATE, "iterate size");
     for (VStringVector::const_iterator i = callback.mNodeNames.begin(); i != callback.mNodeNames.end(); ++i, ++index)
         {
-        VString testIterFileName("iter_test_%d.txt", index);
-        this->test(*i == testIterFileName, VString("iterate nodes #%d", index));
+        VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", index));
+        this->test(*i == testIterFileName, VSTRING_FORMAT("iterate nodes #%d", index));
         }
     }
 
@@ -434,6 +434,6 @@ void VFSNodeUnit::_writeKnownDirectoryTestFile(VFSNode::KnownDirectoryIdentifier
     out.writeLine(nowString);
     out.flush();
     
-    this->logStatus(VString("Wrote to file '%s'.", fileNode.getPath().chars()));
+    this->logStatus(VSTRING_FORMAT("Wrote to file '%s'.", fileNode.getPath().chars()));
     }
 

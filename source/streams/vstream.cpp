@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -26,13 +26,8 @@ void VStream::readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead)
     Vs64 numBytesRead = this->read(targetBuffer, numBytesToRead);
 
     if (numBytesRead != numBytesToRead)
-        throw VEOFException(VString(
+        throw VEOFException(VSTRING_FORMAT(
         "VStream::readGuaranteed encountered end of stream. Read %lld of %lld", numBytesRead, numBytesToRead));
-    }
-
-bool VStream::seek0()
-    {
-    return this->seek(0, SEEK_SET);
     }
 
 // static

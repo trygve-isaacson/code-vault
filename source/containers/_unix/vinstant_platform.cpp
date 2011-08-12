@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -74,7 +74,7 @@ Vs64 VInstant::_platform_now()
 #else
 
     // This means we can only get second resolution for VInstant values.
-    //lint -e418 -e421 "Passing null pointer to function 'time(long *)'"
+    //lint -e418 -e421 "Passing null pointer to function 'time(long *)'" [OK: IEEE POSIX disagrees with lint. NULL is meaningful.]
     return (CONST_S64(1000) * static_cast<Vs64>(::time(NULL)));
 
 #endif /* V_INSTANT_SNAPSHOT_IS_UTC */

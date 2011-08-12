@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -40,7 +40,7 @@ void VBinaryIOUnit::run()
     stream.writeBool(true);
     stream.writeString("Zevon");
 
-    (void) stream.seek(CONST_S64(0), SEEK_SET);
+    (void) stream.seek0();
 
     Vs8        s8 = stream.readS8();
     Vu8        u8 = stream.readU8();
@@ -71,9 +71,9 @@ void VBinaryIOUnit::run()
     // Let's also verify a known 64-bit double-precision binary layout,
     // so that we catch any future platform oddities.
     VDouble knownDouble = 3.1415926;
-    stream.seek(0, SEEK_SET);
+    stream.seek0();
     stream.writeDouble(knownDouble);
-    stream.seek(0, SEEK_SET);
+    stream.seek0();
     Vu8 bytes[8];
     bytes[0] = stream.readU8();
     bytes[1] = stream.readU8();

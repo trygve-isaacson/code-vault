@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -299,7 +299,7 @@ class VStream
         It has the same restrictions as noted in seek() above.
         @return true if the seek was successful
         */
-        bool seek0();
+        bool seek0() { return this->seek(0, SEEK_SET); }
         /**
         Returns the "current" "offset" in the stream. Those scare quotes are
         there because those terms do not quite have consistent or uniform

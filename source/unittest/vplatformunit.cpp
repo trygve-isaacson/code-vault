@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.1
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -21,6 +21,7 @@ void VPlatformUnit::run()
     this->_runByteswapCheck();
     this->_runMinMaxAbsCheck();
     this->_runTimeCheck();
+    this->_runUtilitiesTest();
     }
 
 void VPlatformUnit::_reportEnvironment()
@@ -78,7 +79,7 @@ void VPlatformUnit::_reportEnvironment()
     this->logStatus("Platform: VPLATFORM_WIN");
 
     #ifdef VCOMPILER_MSVC
-        this->logStatus("VCOMPILER_MSVC is set.");
+        this->logStatus(VSTRING_FORMAT("VCOMPILER_MSVC is set. _MSC_VER is %d.", _MSC_VER));
     #else
         this->logStatus("VCOMPILER_MSVC is not set.");
     #endif
@@ -387,3 +388,47 @@ void VPlatformUnit::_runTimeCheck()
         }
 
     }
+
+static int gNumDummyObjects = 0;
+
+// This dummy class is used to test utility functions below.
+class VPlatformUnitDummyClass
+    {
+    public:
+        VPlatformUnitDummyClass() { ++gNumDummyObjects; }
+        ~VPlatformUnitDummyClass() { --gNumDummyObjects; }
+    };
+typedef std::vector<VPlatformUnitDummyClass*> VPlatformUnitDummyClassPtrList;
+typedef std::map<VString,VPlatformUnitDummyClass*> VPlatformUnitDummyClassMap;
+
+void VPlatformUnit::_runUtilitiesTest()
+    {
+    VUNIT_ASSERT_EQUAL(gNumDummyObjects, 0);
+
+    VPlatformUnitDummyClassPtrList objList;
+    objList.push_back(new VPlatformUnitDummyClass());
+    objList.push_back(new VPlatformUnitDummyClass());
+    objList.push_back(new VPlatformUnitDummyClass());
+    VUNIT_ASSERT_EQUAL(gNumDummyObjects, 3);
+    VUNIT_ASSERT_EQUAL(objList.size(), (size_t) 3);
+
+    vault::vectorDeleteAll(objList);
+    VUNIT_ASSERT_EQUAL(gNumDummyObjects, 0);
+    VUNIT_ASSERT_EQUAL(objList.size(), (size_t) 0);
+
+    VPlatformUnitDummyClassMap objMap;
+    objMap["one"] = new VPlatformUnitDummyClass();
+    objMap["two"] = new VPlatformUnitDummyClass();
+    objMap["three"] = new VPlatformUnitDummyClass();
+    VUNIT_ASSERT_EQUAL(gNumDummyObjects, 3);
+    VUNIT_ASSERT_EQUAL(objMap.size(), (size_t) 3);
+
+    vault::mapDeleteOneValue(objMap, VString("two"));
+    VUNIT_ASSERT_EQUAL(gNumDummyObjects, 2);
+    VUNIT_ASSERT_EQUAL(objMap.size(), (size_t) 2);
+
+    vault::mapDeleteAllValues(objMap);
+    VUNIT_ASSERT_EQUAL(gNumDummyObjects, 0);
+    VUNIT_ASSERT_EQUAL(objMap.size(), (size_t) 0);
+    }
+

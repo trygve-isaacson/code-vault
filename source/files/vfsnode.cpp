@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.1
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -178,7 +178,7 @@ void VFSNode::safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinar
         catch (const VException& ex)
             {
             success = false;
-            errorMessage = VString("Unable to open temporary file '%s': %s", target.getPath().chars(), ex.what());
+            errorMessage = VSTRING_FORMAT("Unable to open temporary file '%s': %s", target.getPath().chars(), ex.what());
             }
         
         if (success)
@@ -191,7 +191,7 @@ void VFSNode::safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinar
             catch (const VException& ex)
                 {
                 success = false;
-                errorMessage = VString("Unable to write to temporary file '%s': %s", target.getPath().chars(), ex.what());
+                errorMessage = VSTRING_FORMAT("Unable to write to temporary file '%s': %s", target.getPath().chars(), ex.what());
                 }
             }
         } // end stream scope
@@ -207,7 +207,7 @@ void VFSNode::safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinar
         if (! target.rm())
             {
             success = false;
-            errorMessage = VString("Unable to remove target file '%s'.", target.getPath().chars());
+            errorMessage = VSTRING_FORMAT("Unable to remove target file '%s'.", target.getPath().chars());
             }
         }
 
@@ -221,7 +221,7 @@ void VFSNode::safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinar
         catch (const VException& ex)
             {
             success = false;
-            errorMessage = VString("Failed renaming '%s' to '%s': %s", temporaryFileNode.getPath().chars(), target.getPath().chars(), ex.what());
+            errorMessage = VSTRING_FORMAT("Failed renaming '%s' to '%s': %s", temporaryFileNode.getPath().chars(), target.getPath().chars(), ex.what());
             }
         }
 
@@ -229,7 +229,7 @@ void VFSNode::safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinar
     if (! success)
         {
         if (! temporaryFileNode.rm())
-            errorMessage += VString(" Removal of temporary file '%s' failed.", temporaryFileNode.getPath().chars());
+            errorMessage += VSTRING_FORMAT(" Removal of temporary file '%s' failed.", temporaryFileNode.getPath().chars());
         }
 
     // If we failed, throw an exception with the error message we built wherever we encountered errors.
@@ -494,7 +494,7 @@ VInstant VFSNode::creationDate() const
     bool nodeExists = this->_platform_getNodeInfo(info);
 
     if (!nodeExists)
-        throw VException(info.mErrNo, VString("VFSNode::creationDate failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars()));
+        throw VException(info.mErrNo, VSTRING_FORMAT("VFSNode::creationDate failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars()));
 
     return VInstant::instantFromRawValue(info.mCreationDate);
     }
@@ -505,7 +505,7 @@ VInstant VFSNode::modificationDate() const
     bool nodeExists = this->_platform_getNodeInfo(info);
 
     if (!nodeExists)
-        throw VException(info.mErrNo, VString("VFSNode::modificationDate failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars()));
+        throw VException(info.mErrNo, VSTRING_FORMAT("VFSNode::modificationDate failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars()));
 
     return VInstant::instantFromRawValue(info.mModificationDate);
     }
@@ -516,7 +516,7 @@ VFSize VFSNode::size() const
     bool nodeExists = this->_platform_getNodeInfo(info);
 
     if (!nodeExists)
-        throw VException(info.mErrNo, VString("VFSNode::size failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars()));
+        throw VException(info.mErrNo, VSTRING_FORMAT("VFSNode::size failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars()));
 
     return info.mFileSize;
     }

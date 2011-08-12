@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.1
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -13,6 +13,52 @@ http://www.bombaydigital.com/
 #include "vmanagementinterface.h"
 #include "vlogger.h"
 #include "vmutexlocker.h"
+#include "vbento.h"
+
+// This private map allows us to keep track of all VThread objects, and therefore to
+// find the current thread's VThread object from the thread ID. We also have an API
+// to get info about all these threads.
+typedef std::map<VThreadID_Type, VThread*> VThreadIDToVThreadMap;
+VThreadIDToVThreadMap gVThreadIDToVThreadMap;
+static VMutex gVThreadMapMutex("gVThreadMapMutex", true/*suppress logging because logging itself uses this*/);
+
+static void _vthreadStarting(VThread* thread)
+    {
+    VMutexLocker locker(&gVThreadMapMutex, "_vthreadStarting");
+    gVThreadIDToVThreadMap[thread->threadID()] = thread;
+    }
+
+static void _vthreadEnded(VThread* thread)
+    {
+    VMutexLocker locker(&gVThreadMapMutex, "_vthreadEnded");
+    VThreadIDToVThreadMap::iterator position = gVThreadIDToVThreadMap.find(thread->threadID());
+    if (position != gVThreadIDToVThreadMap.end())
+        gVThreadIDToVThreadMap.erase(position);
+    }
+
+class VStandinThread : public VThread
+    {
+    public:
+        VStandinThread() : VThread("?", false, false, NULL) {}
+        virtual ~VStandinThread() {}
+        virtual void run() {}
+    };
+
+static VStandinThread gStandinThread;
+
+static VThread* _getCurrentVThread()
+    {
+    VThreadID_Type currentThreadID = VThread::threadSelf();
+    VMutexLocker locker(&gVThreadMapMutex, "_getCurrentVThread");
+    VThreadIDToVThreadMap::const_iterator position = gVThreadIDToVThreadMap.find(currentThreadID);
+    if (position == gVThreadIDToVThreadMap.end())
+        return &gStandinThread; // If called from main thread, or non-VThread-derived thread, we won't find a VThread. This allows us to return something workable to any caller.
+
+    return (*position).second;
+    // Note: once we return, the thread could stop.
+    // But since this is called from the current thread, it really can't disappear while caller lives.
+    // It just can't be passed around to other threads!
+    }
 
 int VThread::gNumVThreads = 0;
 int VThread::gNumThreadMains = 0;
@@ -37,16 +83,16 @@ mIsRunning(false)
     {
     VThread::_updateThreadStatistics(VThread::eCreated);
 
-    VLOGGER_TRACE(VString("VThread::VThread: constructed VThread '%s'.", name.chars()));
+    VLOGGER_TRACE(VSTRING_FORMAT("VThread::VThread: constructed VThread '%s'.", name.chars()));
     }
 
 VThread::~VThread()
     {
     // Detect repeat deletion bug. Can't refer to mName because it's been deleted.
     if (mIsDeleted)
-        VLOGGER_ERROR(VString("Thread delete on already-deleted thread @0x%08X.", this));
+        VLOGGER_ERROR(VSTRING_FORMAT("Thread delete on already-deleted thread @0x%08X.", this));
     else
-        VLOGGER_TRACE(VString("VThread::~VThread: destructed VThread '%s'.", mName.chars()));
+        VLOGGER_TRACE(VSTRING_FORMAT("VThread::~VThread: destructed VThread '%s'.", mName.chars()));
 
     mIsDeleted = true;
     mIsRunning = false;
@@ -129,7 +175,7 @@ void* VThread::threadMain(void* arg)
     VThread*    thread = static_cast<VThread*> (arg);
     VString     threadName = thread->getName();
     
-    VLOGGER_TRACE(VString("VThread::threadMain: start of thread '%s' id 0x%08X.", threadName.chars(), thread->threadID()));
+    VLOGGER_TRACE(VSTRING_FORMAT("VThread::threadMain: start of thread '%s' id 0x%08X.", threadName.chars(), thread->threadID()));
     
     bool        deleteAtEnd = thread->getDeleteAtEnd();
     
@@ -138,6 +184,7 @@ void* VThread::threadMain(void* arg)
     try
         {
         VAutoreleasePool pool;
+        _vthreadStarting(thread);
         VThread::_threadStarting(thread);
 
         if (manager != NULL)
@@ -147,15 +194,15 @@ void* VThread::threadMain(void* arg)
         }
     catch (const VException& ex)
         {
-        VLOGGER_ERROR(VString("Thread '%s' main caught exception #%d '%s'.", threadName.chars(), ex.getError(), ex.what()));
+        VLOGGER_ERROR(VSTRING_FORMAT("Thread '%s' main caught exception #%d '%s'.", threadName.chars(), ex.getError(), ex.what()));
         }
     catch (const std::exception& ex)
         {
-        VLOGGER_ERROR(VString("Thread '%s' main caught exception '%s'.", threadName.chars(), ex.what()));
+        VLOGGER_ERROR(VSTRING_FORMAT("Thread '%s' main caught exception '%s'.", threadName.chars(), ex.what()));
         }
     catch (...)
         {
-        VLOGGER_ERROR(VString("Thread '%s' main caught unknown exception.", threadName.chars()));
+        VLOGGER_ERROR(VSTRING_FORMAT("Thread '%s' main caught unknown exception.", threadName.chars()));
         }
 
     // Let's be bulletproof even on this notification -- use try/catch.
@@ -163,25 +210,77 @@ void* VThread::threadMain(void* arg)
         {
         if (manager != NULL)
             {
-            VLOGGER_TRACE(VString("VThread '%s' notifying manager[0x%08X] of thread end.", threadName.chars(), manager));
+            VLOGGER_TRACE(VSTRING_FORMAT("VThread '%s' notifying manager[0x%08X] of thread end.", threadName.chars(), manager));
             manager->threadEnded(thread);
             }
         }
     catch (...) 
         {
-        VLOGGER_ERROR(VString("Thread '%s' main caught exception notifying manager of thread end.", threadName.chars()));
+        VLOGGER_ERROR(VSTRING_FORMAT("Thread '%s' main caught exception notifying manager of thread end.", threadName.chars()));
         }
 
     VThread::_threadEnded(thread);
+    _vthreadEnded(thread);
 
     if (deleteAtEnd)
         delete thread;
 
     VThread::_updateThreadStatistics(VThread::eMainCompleted);
 
-    VLOGGER_TRACE(VString("VThread::threadMain: completed thread '%s'.", threadName.chars()));
+    VLOGGER_TRACE(VSTRING_FORMAT("VThread::threadMain: completed thread '%s'.", threadName.chars()));
 
     return NULL;
+    }
+
+// static
+VThread* VThread::getCurrentThread()
+    {
+    return _getCurrentVThread();
+    }
+
+// static
+VString VThread::getCurrentThreadName()
+    {
+    VThread* currentThread = VThread::getCurrentThread();
+    if (currentThread != &gStandinThread)
+        return currentThread->getName();
+
+    // It's the stand-in thread for non-VThread threads. Its name is meaningless.
+    // Format the current OS thread ID.
+    Vs64 id64 = (Vs64) VThread::threadSelf();
+    return VSTRING_S64(id64);
+    }
+
+// static
+void VThread::getThreadsInfo(VBentoNode& bento)
+    {
+    bento.setName("threads");
+
+    VMutexLocker locker(&gVThreadMapMutex, "VThread::getThreadsInfo");
+    for (VThreadIDToVThreadMap::const_iterator i = gVThreadIDToVThreadMap.begin(); i != gVThreadIDToVThreadMap.end(); ++i)
+        {
+        VThread* thread = (*i).second;
+        VBentoNode* child = bento.addNewChildNode("thread");
+        child->addString("name", thread->getName());
+        child->addInt("threadID", (int) thread->mThreadID);
+        child->addBool("isRunning", thread->mIsRunning);
+        child->addBool("isDeleted", thread->mIsDeleted);
+        child->addBool("deleteAtEnd", thread->mDeleteAtEnd);
+        child->addBool("createdDetached", thread->mCreateDetached);
+        child->addBool("hasManager", thread->mManager != NULL);
+        }
+    }
+
+// static
+void VThread::stopThread(VThreadID_Type threadID)
+    {
+    VMutexLocker locker(&gVThreadMapMutex, "VThread::stopThread");
+    VThreadIDToVThreadMap::iterator position = gVThreadIDToVThreadMap.find(threadID);
+    if (position != gVThreadIDToVThreadMap.end())
+        {
+        VThread* thread = (*position).second;
+        thread->stop();
+        }
     }
 
 // static
@@ -235,8 +334,58 @@ void VThread::_updateThreadStatistics(eThreadAction action)
 // static
 void VThread::logStackCrawl(const VString& headerMessage, VLogger* logger, bool /*verbose*/)
     {
-    logger->emitStackCrawlLine(VString("%s (VThread::logStackCrawl: User stack crawl not implemented.)", headerMessage.chars()));
+    if (logger == NULL)
+        VLOGGER_ERROR(VSTRING_FORMAT("%s (VThread::logStackCrawl: User stack crawl not implemented.)", headerMessage.chars()));
+    else
+        logger->emitStackCrawlLine(VSTRING_FORMAT("%s (VThread::logStackCrawl: User stack crawl not implemented.)", headerMessage.chars()));
     }
 #endif /* VAULT_USER_STACKCRAWL_SUPPORT */
+
+// VMainThread ----------------------------------------------------------------
+
+VMainThread::VMainThread()
+: VThread("main", kDontDeleteSelfAtEnd, kCreateThreadJoinable/*doesn't matter*/, NULL)
+    {
+    mThreadID = VThread::threadSelf();
+    _vthreadStarting(this); // Register this object for lookup by mThreadID.
+    }
+
+VMainThread::~VMainThread()
+    {
+    _vthreadEnded(this); // De-register this object.
+    }
+
+void VMainThread::start()
+    {
+    VString errorMessage("Error: invalid attempt to start VMainThread.");
+    VLOGGER_FATAL(errorMessage);
+    throw VStackTraceException(errorMessage);
+    }
+
+int VMainThread::execute(int argc, char** argv)
+    {
+    return VThread::userMain(argc, argv);
+    }
+
+// VForeignThread ----------------------------------------------------------------
+
+VForeignThread::VForeignThread(const VString& name)
+: VThread(name, kDontDeleteSelfAtEnd, kCreateThreadJoinable/*doesn't matter*/, NULL)
+    {
+    mThreadID = VThread::threadSelf();
+    _vthreadStarting(this); // Register this object for lookup by mThreadID.
+    }
+
+VForeignThread::~VForeignThread()
+    {
+    _vthreadEnded(this); // De-register this object.
+    }
+
+void VForeignThread::start()
+    {
+    VString errorMessage("Error: invalid attempt to start VForeignThread.");
+    VLOGGER_FATAL(errorMessage);
+    throw VStackTraceException(errorMessage);
+    }
 
 

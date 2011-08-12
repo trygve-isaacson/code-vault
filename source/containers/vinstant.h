@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -354,10 +354,7 @@ class VInstant
         */
         static VInstant instantFromRawValue(Vs64 value) { return VInstant(value); }
 
-		//Returns a raw value from an instant. Need to write this.
-        //Vs64 VInstant instantToRawValue(const VInstant& instant);
-
-       /**
+        /**
         Returns an instant created from a POSIX time_t value, which is defined as the
         number of seconds since UTC 1970 00:00:00.000.
         @param    value    the POSIX time value (seconds since UTC 1970 00:00:00.000) (negative values

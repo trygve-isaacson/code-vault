@@ -1,5 +1,68 @@
 CODE VAULT RELEASE NOTES
 
+---------- VERSION 3.2 ----------
+Trygve Isaacson, August 2011
+
+* VException
+New option to have an exception capture and store a stack trace on construction.
+Some classes capture the stack trace by default; others do not. It depends on typical use:
+- VException has it as an option, OFF by default.
+- VStackTraceException captures a stack trace.
+- VEOFException and VSocketClosedException do not capture a stack trace.
+- VRangeException, VUnimplementedException, and VOSStatusException have it as an option, ON by default.
+
+* VASSERT et al
+Macro-based assertions that check a condition and if not satisfied, log an error and optionally
+throw a VStackTraceException. This replaces the older primitive V_ASSERT macro and Vassert function.
+On by default. To disable, in vconfigure.h define VAULT_THROW_ON_ASSERTION_FAILURE to 0.
+
+* VString
+Strict formatting macro option:
+- To enable, define VAULT_VSTRING_STRICT_FORMATTING in vconfigure.h.
+- Forces use of VSTRING_FORMAT or VSTRING_ARGS macros to construct a string with vararg sprintf formatting.
+- Allows compiler to optimize construction from literal string, skipping the formatting logic.
+Standard formatting directive constants made available to facilitate correctness in formatting strings.
+
+* VLogger
+New hierarchical logger naming mechanism: dot-separated logger names act as search hierarchy.
+Short-circuiting logic uses global max level to avoid logger lookup when possible.
+Loggers now organized by map instead of list.
+Current thread name is included in log statements.
+VStringVectorLogger allows storage to be specified by caller.
+TODO: Revise structure to allow multiple named loggers, with different log levels) to append to
+the same output stream.
+
+* VThread
+Thread objects are tracked:
+- Current thread name can be looked up. Compatible with main thread and other non-VThread threads.
+- Info on instantiated threads can be retrieved.
+Fixed handle leak on Win32 during thread termination.
+
+* VMutex
+New API for checking whether a VMutex is held by the current thread.
+
+* VBento
+Refined XML conversion output.
+Interim change to allow node/attribute find to be case-insensitive.
+
+* VSocket
+VSocketClosedException used to identify socket closure as separate from more obscure errors.
+
+* VCompactingDeque<T>
+A std::deque<T> template subclass that avoids the STL deque behavior that is effectively a memory leak,
+by compacting the deque when certain thresholds are reached.
+
+* VMessagePool
+This feature has been removed completely.
+
+* General
+Improved 64-bit compilation strictness.
+VClientSession closes socket to trigger session shutdown if posting exceeds limits.
+VMessageInputThread warns if teardown is delayed beyond threshold.
+VStream::seek0() API used whenever possible.
+VUnit defines additional test assertions.
+New unit tests added.
+
 ---------- VERSION 3.1 ----------
 Trygve Isaacson, June 2010
 
@@ -51,7 +114,7 @@ New APIs to get well-defined (but platform-specific) system and user directories
 New API safelyOverwriteFile() to write a file using temporary-remove-rename pattern.
 New API to construct from node and child name.
 New convenience APIs readAll() and readTextFile() to read a file in a single line of code.
-Added support for iOS4 using one Objective-C API low-level API to get executable file path.
+Added support for iOS using one Objective-C API low-level API to get executable file path.
 
 * VServer / VClientSession
 VServer now defines abstract API for posting a broadcast message.

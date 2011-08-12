@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -10,6 +10,7 @@ http://www.bombaydigital.com/
 #include "vtypes.h"
 
 #include "vtypes_internal_platform.h"
+#include "vassert.h" // needed by many internal .cpp files
 
 #define READ_ONLY_MODE          (O_RDONLY | O_BINARY)
 #define READWRITE_MODE          (O_RDWR | O_CREAT | O_BINARY)

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -65,7 +65,7 @@ const VSettingsNode* VSettingsNode::findNode(const VString& path) const
 
 VSettingsNode* VSettingsNode::findMutableNode(const VString& path)
     {
-    return const_cast<VSettingsNode*>(this->findNode(path));
+    return const_cast<VSettingsNode*>(this->findNode(path)); // const_cast: NON-CONST WRAPPER
     }
 
 int VSettingsNode::countNodes(const VString& path) const
@@ -91,7 +91,6 @@ void VSettingsNode::deleteNode(const VString& path)
     
     VSettings::splitPathLast(path, leadingPath, lastNode);
     
-    // FIXME: const_cast is ugly, but this is the only time we find a node and then do a non-const op on it
     VSettingsNode* parent = this->findMutableNode(leadingPath);
     
     if (parent != NULL)
@@ -375,20 +374,17 @@ bool VSettingsNode::nodeExists(const VString& path) const
 
 void VSettingsNode::addIntValue(const VString& path, int value)
     {
-    VString valueString("%d", value);
-    this->addStringValue(path, valueString);
+    this->addStringValue(path, VSTRING_INT(value));
     }
 
 void VSettingsNode::addS64Value(const VString& path, Vs64 value)
     {
-    VString valueString("%lld", value);
-    this->addStringValue(path, valueString);
+    this->addStringValue(path, VSTRING_S64(value));
     }
 
 void VSettingsNode::addBooleanValue(const VString& path, bool value)
     {
-    VString valueString(value ? "true":"false");
-    this->addStringValue(path, valueString);
+    this->addStringValue(path, VSTRING_BOOL(value));
     }
 
 void VSettingsNode::addStringValue(const VString& path, const VString& value)
@@ -398,8 +394,7 @@ void VSettingsNode::addStringValue(const VString& path, const VString& value)
 
 void VSettingsNode::addDoubleValue(const VString& path, VDouble value)
     {
-    VString valueString("%lf", value);
-    this->addStringValue(path, valueString);
+    this->addStringValue(path, VSTRING_DOUBLE(value));
     }
 
 void VSettingsNode::addSizeValue(const VString& path, const VSize& value)
@@ -440,13 +435,13 @@ void VSettingsNode::addPolygonValue(const VString& path, const VPolygon& value)
 
 void VSettingsNode::addColorValue(const VString& path, const VColor& value)
     {
-    VString valueString("#%02x%02x%02x", (Vu8)value.getRed(), (Vu8)value.getGreen(), (Vu8)value.getBlue());
+    VString valueString(VSTRING_ARGS("#%02x%02x%02x", (Vu8)value.getRed(), (Vu8)value.getGreen(), (Vu8)value.getBlue()));
     this->addStringValue(path, valueString);
     }
 
 void VSettingsNode::addDurationValue(const VString& path, const VDuration& value)
     {
-    VString valueString("%lldms", value.getDurationMilliseconds());
+    VString valueString(VSTRING_ARGS(VSTRING_FORMATTER_S64 "ms", value.getDurationMilliseconds()));
     this->addStringValue(path, valueString);
     }
 
@@ -458,14 +453,12 @@ void VSettingsNode::addItem(const VString& path)
 
 void VSettingsNode::setIntValue(const VString& path, int value)
     {
-    VString valueString("%d", value);
-    this->setStringValue(path, valueString);
+    this->setStringValue(path, VSTRING_INT(value));
     }
 
 void VSettingsNode::setBooleanValue(const VString& path, bool value)
     {
-    VString valueString(value ? "true":"false");
-    this->setStringValue(path, valueString);
+    this->setStringValue(path, VSTRING_BOOL(value));
     }
 
 void VSettingsNode::setStringValue(const VString& path, const VString& value)
@@ -480,8 +473,7 @@ void VSettingsNode::setStringValue(const VString& path, const VString& value)
 
 void VSettingsNode::setDoubleValue(const VString& path, VDouble value)
     {
-    VString valueString("%lf", value);
-    this->setStringValue(path, valueString);
+    this->setStringValue(path, VSTRING_DOUBLE(value));
     }
 
 void VSettingsNode::setSizeValue(const VString& path, const VSize& value)
@@ -515,7 +507,7 @@ void VSettingsNode::setColorValue(const VString& path, const VColor& value)
 
 void VSettingsNode::setDurationValue(const VString& path, const VDuration& value)
     {
-    VString valueString("%lldms", value.getDurationMilliseconds());
+    VString valueString(VSTRING_ARGS(VSTRING_FORMATTER_S64 "ms", value.getDurationMilliseconds()));
     this->setStringValue(path, valueString);
     }
 
@@ -574,12 +566,12 @@ void VSettingsNode::add(const VString& path, bool hasValue, const VString& value
 
 void VSettingsNode::addValue(const VString& path)
     {
-    throw VException(VString("VSettingsNode::addValue called for invalid object at '%s'", path.chars()));
+    throw VStackTraceException(VSTRING_FORMAT("VSettingsNode::addValue called for invalid object at '%s'", path.chars()));
     }
 
 void VSettingsNode::addChildNode(VSettingsNode* /*node*/)
     {
-    throw VException(VString("VSettingsNode::addChildNode called for invalid object at '%s'", this->getPath().chars()));
+    throw VStackTraceException(VSTRING_FORMAT("VSettingsNode::addChildNode called for invalid object at '%s'", this->getPath().chars()));
     }
 
 VSettingsTag* VSettingsNode::getParent()
@@ -589,12 +581,12 @@ VSettingsTag* VSettingsNode::getParent()
 
 void VSettingsNode::_addLeafValue(const VString& name, bool /*hasValue*/, const VString& value)
     {
-    throw VException(VString("VSettingsNode::_addLeafValue (%s, %s) called for invalid object at '%s'", name.chars(), value.chars(), this->getPath().chars()));
+    throw VStackTraceException(VSTRING_FORMAT("VSettingsNode::_addLeafValue (%s, %s) called for invalid object at '%s'", name.chars(), value.chars(), this->getPath().chars()));
     }
 
 void VSettingsNode::throwNotFound(const VString& dataKind, const VString& missingTrail) const
     {
-    throw VException(VString("%s setting '%s' not found starting at path '%s'.", dataKind.chars(), missingTrail.chars(), this->getPath().chars()));
+    throw VException(VSTRING_FORMAT("%s setting '%s' not found starting at path '%s'.", dataKind.chars(), missingTrail.chars(), this->getPath().chars()));
     }
 
 const char VSettingsNode::kPathDelimiterChar = '/';
@@ -640,7 +632,7 @@ void VSettings::writeToFile(const VFSNode& file) const
     VMemoryStream buffer;
     VTextIOStream out(buffer);
     this->writeToStream(out);
-    buffer.seek(0, SEEK_SET);
+    buffer.seek0();
     VBinaryIOStream binaryStream(buffer);
     VFSNode::safelyOverwriteFile(file, buffer.getEOFOffset(), binaryStream);
     }
@@ -778,52 +770,52 @@ void VSettings::deleteNamedChildren(const VString& name)
 
 Vs64 VSettings::getS64Value() const
     {
-    throw VException("Tried to get raw int value on top level settings object.");
+    throw VStackTraceException("Tried to get raw int value on top level settings object.");
     }
 
 bool VSettings::getBooleanValue() const
     {
-    throw VException("Tried to get raw boolean value on top level settings object.");
+    throw VStackTraceException("Tried to get raw boolean value on top level settings object.");
     }
 
 VString VSettings::getStringValue() const
     {
-    throw VException("Tried to get raw string value on top level settings object.");
+    throw VStackTraceException("Tried to get raw string value on top level settings object.");
     }
 
 VSize VSettings::getSizeValue() const
     {
-    throw VException("Tried to get raw size value on top level settings object.");
+    throw VStackTraceException("Tried to get raw size value on top level settings object.");
     }
 
 VDouble VSettings::getDoubleValue() const
     {
-    throw VException("Tried to get raw double value on top level settings object.");
+    throw VStackTraceException("Tried to get raw double value on top level settings object.");
     }
 
 VPoint VSettings::getPointValue() const
     {
-    throw VException("Tried to get raw point value on top level settings object.");
+    throw VStackTraceException("Tried to get raw point value on top level settings object.");
     }
 
 VRect VSettings::getRectValue() const
     {
-    throw VException("Tried to get raw rect value on top level settings object.");
+    throw VStackTraceException("Tried to get raw rect value on top level settings object.");
     }
 
 VPolygon VSettings::getPolygonValue() const
     {
-    throw VException("Tried to get raw polygon value on top level settings object.");
+    throw VStackTraceException("Tried to get raw polygon value on top level settings object.");
     }
 
 VColor VSettings::getColorValue() const
     {
-    throw VException("Tried to get raw color value on top level settings object.");
+    throw VStackTraceException("Tried to get raw color value on top level settings object.");
     }
 
 VDuration VSettings::getDurationValue() const
     {
-    throw VException("Tried to get raw duration value on top level settings object.");
+    throw VStackTraceException("Tried to get raw duration value on top level settings object.");
     }
 
 void VSettings::addChildNode(VSettingsNode* node)
@@ -930,7 +922,7 @@ void VSettingsTag::writeToStream(VTextIOStream& outputStream, int indentLevel) c
     for (int i = 0; i < indentLevel; ++i)
         outputStream.writeString(" ");
     
-    VString beginTag("<%s", mName.chars());
+    VString beginTag(VSTRING_ARGS("<%s", mName.chars()));
     outputStream.writeString(beginTag);
     
     if (mAttributes.size() > 0)
@@ -963,7 +955,7 @@ void VSettingsTag::writeToStream(VTextIOStream& outputStream, int indentLevel) c
         for (int i = 0; i < indentLevel; ++i)
             outputStream.writeString(" ");
         
-        VString endTag("</%s>", mName.chars());
+        VString endTag(VSTRING_ARGS("</%s>", mName.chars()));
         outputStream.writeLine(endTag);
         }
 
@@ -1202,12 +1194,12 @@ VSettingsTag* VSettingsTag::_findChildTag(const VString& name) const
         int     leftBracketIndex = name.indexOf('[');
         VString indexString;
         name.getSubstring(indexString, leftBracketIndex+1, name.length() - 1);
-        int     theIndex = atoi(indexString);
+        int     theIndex = indexString.parseInt();
         
         VString nameOnly;
         name.getSubstring(nameOnly, 0, leftBracketIndex);
         
-        return static_cast<VSettingsTag*> (const_cast<VSettingsNode*> (this->getNamedChild(nameOnly, theIndex)));
+        return static_cast<VSettingsTag*>(const_cast<VSettingsNode*>(this->getNamedChild(nameOnly, theIndex))); // const_cast: NON-CONST RETURN
         }
     else
         {
@@ -1229,16 +1221,26 @@ void VSettingsTag::_addLeafValue(const VString& name, bool hasValue, const VStri
 
 void VSettingsTag::_removeAttribute(VSettingsAttribute* attribute)
     {
-    for (VSizeType i = 0; i < mAttributes.size(); ++i)
-        if (mAttributes[i] == attribute)
-            mAttributes.erase(mAttributes.begin() + i);
+    for (VSettingsAttributePtrVector::iterator i = mAttributes.begin(); i != mAttributes.end(); ++i)
+        {
+        if ((*i) == attribute)
+            {
+            mAttributes.erase(i);
+            return;
+            }
+        }
     }
 
 void VSettingsTag::_removeChildNode(VSettingsNode* child)
     {
-    for (VSizeType i = 0; i < mChildNodes.size(); ++i)
-        if (mChildNodes[i] == child)
-            mChildNodes.erase(mChildNodes.begin() + i);
+    for (VSettingsNodePtrVector::iterator i = mChildNodes.begin(); i != mChildNodes.end(); ++i)
+        {
+        if ((*i) == child)
+            {
+            mChildNodes.erase(i);
+            return;
+            }
+        }
     }
 
 // VSettingsAttribute ------------------------------------------------------------
@@ -1261,12 +1263,12 @@ void VSettingsAttribute::writeToStream(VTextIOStream& outputStream, int /*indent
     {
     if (mHasValue)
         {
-        VString attributeString("%s=\"%s\"", mName.chars(), mValue.chars());
+        VString attributeString(VSTRING_ARGS("%s=\"%s\"", mName.chars(), mValue.chars()));
         outputStream.writeString(attributeString);
         }
     else
         {
-        VString attributeString("%s", mName.chars());
+        VString attributeString(VSTRING_ARGS("%s", mName.chars()));
         outputStream.writeString(attributeString);
         }
     }
@@ -1497,7 +1499,7 @@ void VSettingsXMLParser::parseLine()
                     this->changeState(kComment2_bang_dash);
                 else
                     {
-                    VString s("Invalid character '%c' after presumed start of comment.", c.charValue());
+                    VString s(VSTRING_ARGS("Invalid character '%c' after presumed start of comment.", c.charValue()));
                     this->stateError(s);
                     }
                 break;
@@ -1507,7 +1509,7 @@ void VSettingsXMLParser::parseLine()
                     this->changeState(kComment3_in_comment);
                 else
                     {
-                    VString s("Invalid character '%c' after presumed start of comment.", c.charValue());
+                    VString s(VSTRING_ARGS("Invalid character '%c' after presumed start of comment.", c.charValue()));
                     this->stateError(s);
                     }
                 break;
@@ -1571,7 +1573,7 @@ void VSettingsXMLParser::parseLine()
                     }
                 else
                     {
-                    VString    s("Invalid character '%c' in tag name.", c.charValue());
+                    VString s(VSTRING_ARGS("Invalid character '%c' in tag name.", c.charValue()));
                     this->stateError(s);
                     }
                 break;
@@ -1590,7 +1592,7 @@ void VSettingsXMLParser::parseLine()
                     }
                 else
                     {
-                    VString s("Invalid character '%c' in tag after name.", c.charValue());
+                    VString s(VSTRING_ARGS("Invalid character '%c' in tag after name.", c.charValue()));
                     this->stateError(s);
                     }
                 break;
@@ -1615,7 +1617,7 @@ void VSettingsXMLParser::parseLine()
                     }
                 else
                     {
-                    VString s("Invalid character '%c' in attribute name.", c.charValue());
+                    VString s(VSTRING_ARGS("Invalid character '%c' in attribute name.", c.charValue()));
                     this->stateError(s);
                     }
                 break;
@@ -1669,7 +1671,7 @@ void VSettingsXMLParser::parseLine()
                     }
                 else
                     {
-                    VString s("Invalid character '%c' in unquoted attribute value.", c.charValue());
+                    VString s(VSTRING_ARGS("Invalid character '%c' in unquoted attribute value.", c.charValue()));
                     this->stateError(s);
                     }
                 break;
@@ -1682,7 +1684,7 @@ void VSettingsXMLParser::parseLine()
                     }
                 else
                     {
-                    VString s("Invalid character '%c' after solo close tag slash.", c.charValue());
+                    VString s(VSTRING_ARGS("Invalid character '%c' after solo close tag slash.", c.charValue()));
                     this->stateError(s);
                     }
                 break;
@@ -1697,7 +1699,7 @@ void VSettingsXMLParser::parseLine()
                     }
                 else
                     {
-                    VString s("Invalid character '%c' in closing tag.", c.charValue());
+                    VString s(VSTRING_ARGS("Invalid character '%c' in closing tag.", c.charValue()));
                     this->stateError(s);
                     }
                 break;
@@ -1717,7 +1719,7 @@ void VSettingsXMLParser::parseLine()
                     this->accumulate(c);
                 else
                     {
-                    VString s("Invalid character '%c' in closing tag.", c.charValue());
+                    VString s(VSTRING_ARGS("Invalid character '%c' in closing tag.", c.charValue()));
                     this->stateError(s);
                     }
                 break;
@@ -1729,7 +1731,7 @@ void VSettingsXMLParser::parseLine()
                     this->changeState(kReady);
                 else
                     {
-                    VString s("Invalid character '%c' in closing tag.", c.charValue());
+                    VString s(VSTRING_ARGS("Invalid character '%c' in closing tag.", c.charValue()));
                     this->stateError(s);
                     }
                 break;
@@ -1758,8 +1760,8 @@ void VSettingsXMLParser::changeState(ParserState newState)
 
 void VSettingsXMLParser::stateError(const VString& errorMessage)
     {
-    VString completeMessage("Syntax error in state %d at line %d, column %d: %s", mParserState, mCurrentLineNumber, mCurrentColumnNumber, errorMessage.chars());
-    throw VException(completeMessage);
+    VString completeMessage(VSTRING_ARGS("Syntax error in state %d at line %d, column %d: %s", mParserState, mCurrentLineNumber, mCurrentColumnNumber, errorMessage.chars()));
+    throw VStackTraceException(completeMessage);
     }
 
 void VSettingsXMLParser::emitCDATA()

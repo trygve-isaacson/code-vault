@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -42,14 +42,14 @@ void VGeometry::readPairFromStream(VBinaryIOStream& stream, VDouble& item1, VDou
 
 void VGeometry::writePairToStream(VBinaryIOStream& stream, int item1, int item2)
     {
-    stream.writeS32(static_cast<Vs32>(item1));
-    stream.writeS32(static_cast<Vs32>(item2));
+    stream.writeInt32(item1);
+    stream.writeInt32(item2);
     }
 
 void VGeometry::readPairFromStream(VBinaryIOStream& stream, int& item1, int& item2)
     {
-    item1 = static_cast<int>(stream.readS32());
-    item2 = static_cast<int>(stream.readS32());
+    item1 = stream.readInt32();
+    item2 = stream.readInt32();
     }
 
 void VGeometry::writeTripletToStream(VBinaryIOStream& stream, VDouble item1, VDouble item2, VDouble item3)
@@ -68,16 +68,16 @@ void VGeometry::readTripletFromStream(VBinaryIOStream& stream, VDouble& item1, V
 
 void VGeometry::writeTripletToStream(VBinaryIOStream& stream, int item1, int item2, int item3)
     {
-    stream.writeS32(static_cast<Vs32>(item1));
-    stream.writeS32(static_cast<Vs32>(item2));
-    stream.writeS32(static_cast<Vs32>(item3));
+    stream.writeInt32(item1);
+    stream.writeInt32(item2);
+    stream.writeInt32(item3);
     }
 
 void VGeometry::readTripletFromStream(VBinaryIOStream& stream, int& item1, int& item2, int& item3)
     {
-    item1 = static_cast<int>(stream.readS32());
-    item2 = static_cast<int>(stream.readS32());
-    item3 = static_cast<int>(stream.readS32());
+    item1 = stream.readInt32();
+    item2 = stream.readInt32();
+    item3 = stream.readInt32();
     }
 
 VDouble VGeometry::getDistance(VDouble dx, VDouble dy)

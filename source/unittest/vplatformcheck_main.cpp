@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.1
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -92,6 +92,7 @@ int VThread::userMain(int argc, char** argv)
 
 int main(int argc, char** argv)
     {
-    return VThread::userMain(argc, argv);
+    VMainThread mainThread;
+    return mainThread.execute(argc, argv);
     }
 

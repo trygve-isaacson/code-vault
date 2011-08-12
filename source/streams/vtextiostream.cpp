@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -10,6 +10,7 @@ http://www.bombaydigital.com/
 
 #include "vchar.h"
 #include "vexception.h"
+#include "vassert.h"
 
 VTextIOStream::VTextIOStream(VStream& rawStream, int lineEndingsWriteKind) :
 VIOStream(rawStream),
@@ -139,7 +140,7 @@ void VTextIOStream::readAll(VString& s, bool includeLineEndings)
     try
         {
         VString line;
-        while (true)
+        for (;;)
             {
             this->readLine(line, includeLineEndings);
             s += line;
@@ -153,7 +154,7 @@ void VTextIOStream::readAll(VStringVector& lines)
     try
         {
         VString line;
-        while (true)
+        for (;;)
             {
             this->readLine(line);
             lines.push_back(line);
@@ -164,15 +165,19 @@ void VTextIOStream::readAll(VStringVector& lines)
 
 void VTextIOStream::writeLine(const VString& s)
     {
-    (void) this->write(s.getDataBufferConst(), static_cast<Vs64> (s.length()));
-
-    if (mLineEndingCharsLength != 0)
-        (void) this->write(mLineEndingChars, static_cast<Vs64>(mLineEndingCharsLength));
+    this->writeString(s);
+    this->writeLineEnd();
     }
 
 void VTextIOStream::writeString(const VString& s)
     {
     (void) this->write(s.getDataBufferConst(), static_cast<Vs64> (s.length()));
+    }
+
+void VTextIOStream::writeLineEnd()
+    {
+    if (mLineEndingCharsLength != 0)
+        (void) this->write(mLineEndingChars, static_cast<Vs64>(mLineEndingCharsLength));
     }
 
 void VTextIOStream::_updateLineEndingsReadKind(int lineEndingKind)
@@ -184,7 +189,7 @@ void VTextIOStream::_updateLineEndingsReadKind(int lineEndingKind)
                 {
                 case kLineEndingsUnknown:
                 case kLineEndingsMixed:
-                    V_ASSERT(false);    // invalid input value
+                    VASSERT(false);    // invalid input value
                     break;
 
                 case kLineEndingsUnix:
@@ -200,7 +205,7 @@ void VTextIOStream::_updateLineEndingsReadKind(int lineEndingKind)
                 {
                 case kLineEndingsUnknown:
                 case kLineEndingsMixed:
-                    V_ASSERT(false);    // invalid input value
+                    VASSERT(false);    // invalid input value
                     break;
 
                 case kLineEndingsUnix:
@@ -220,7 +225,7 @@ void VTextIOStream::_updateLineEndingsReadKind(int lineEndingKind)
                 {
                 case kLineEndingsUnknown:
                 case kLineEndingsMixed:
-                    V_ASSERT(false);    // invalid input value
+                    VASSERT(false);    // invalid input value
                     break;
 
                 case kLineEndingsUnix:
@@ -240,7 +245,7 @@ void VTextIOStream::_updateLineEndingsReadKind(int lineEndingKind)
                 {
                 case kLineEndingsUnknown:
                 case kLineEndingsMixed:
-                    V_ASSERT(false);    // invalid input value
+                    VASSERT(false);    // invalid input value
                     break;
 
                 case kLineEndingsUnix:
@@ -318,7 +323,7 @@ void VTextIOStream::setLineEndingsKind(int kind)
             mLineEndingCharsLength = 0;
             break;
         default:
-            throw VException(VString("VTextIOStream::writeLine using invalid line ending mode %d.", kind));
+            throw VStackTraceException(VSTRING_FORMAT("VTextIOStream::writeLine using invalid line ending mode %d.", kind));
             break;
         }
 

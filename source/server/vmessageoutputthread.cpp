@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -8,15 +8,13 @@ http://www.bombaydigital.com/
 
 #include "vexception.h"
 #include "vclientsession.h"
-#include "vmessagepool.h"
 #include "vsocket.h"
 #include "vmessageinputthread.h"
 
 // VMessageOutputThread -------------------------------------------------------
 
-VMessageOutputThread::VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSession* session, VMessageInputThread* dependentInputThread, VMessagePool* messagePool, int maxQueueSize, Vs64 maxQueueDataSize, const VDuration& maxQueueGracePeriod) :
+VMessageOutputThread::VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSession* session, VMessageInputThread* dependentInputThread, int maxQueueSize, Vs64 maxQueueDataSize, const VDuration& maxQueueGracePeriod) :
 VSocketThread(name, socket, ownerThread),
-mMessagePool(messagePool),
 mOutputQueue(), // -> empty
 mSocketStream(socket, "VMessageOutputThread"),
 mOutputStream(mSocketStream),
@@ -46,7 +44,6 @@ VMessageOutputThread::~VMessageOutputThread()
     */
     mSocket = NULL;
 
-    mMessagePool = NULL;
     mServer = NULL;
     mDependentInputThread = NULL;
     }
@@ -60,7 +57,7 @@ void VMessageOutputThread::run()
         }
     catch (const VSocketClosedException& /*ex*/)
         {
-        VLOGGER_MESSAGE_LEVEL(VLogger::kDebug, VString("[%s] VMessageOutputThread: Socket has closed, thread will end.", mName.chars()));
+        VLOGGER_MESSAGE_DEBUG(VSTRING_FORMAT("[%s] VMessageOutputThread: Socket has closed, thread will end.", mName.chars()));
         }
     catch (const VException& ex)
         {
@@ -72,19 +69,19 @@ void VMessageOutputThread::run()
         being closed programmatically are to be expected, so we check that before logging an error.
         */
         if (this->isRunning())
-            VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageOutputThread::run: Exiting due to top level exception #%d '%s'.", mName.chars(), ex.getError(), ex.what()));
+            VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageOutputThread::run: Exiting due to top level exception #%d '%s'.", mName.chars(), ex.getError(), ex.what()));
         else
-            VLOGGER_MESSAGE_LEVEL(VLogger::kDebug, VString("[%s] VMessageOutputThread: Socket has closed, thread will end.", mName.chars()));
+            VLOGGER_MESSAGE_DEBUG(VSTRING_FORMAT("[%s] VMessageOutputThread: Socket has closed, thread will end.", mName.chars()));
         }
     catch (const std::exception& ex)
         {
         if (this->isRunning())
-            VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageOutputThread: Exiting due to top level exception '%s'.", mName.chars(), ex.what()));
+            VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageOutputThread: Exiting due to top level exception '%s'.", mName.chars(), ex.what()));
         }
     catch (...)
         {
         if (this->isRunning())
-            VLOGGER_MESSAGE_ERROR(VString("[%s] VMessageOutputThread: Exiting due to top level unknown exception.", mName.chars()));
+            VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageOutputThread: Exiting due to top level unknown exception.", mName.chars()));
         }
 
     if (mSessionReference.getSession() != NULL)
@@ -105,7 +102,7 @@ void VMessageOutputThread::attachSession(VClientSession* session)
     mSessionReference.setSession(session);
     }
 
-void VMessageOutputThread::postOutputMessage(VMessage* message, bool respectQueueLimits)
+bool VMessageOutputThread::postOutputMessage(VMessage* message, bool respectQueueLimits)
     {
     if (respectQueueLimits)
         {
@@ -145,13 +142,13 @@ void VMessageOutputThread::postOutputMessage(VMessage* message, bool respectQueu
                 {
                 if (this->isRunning()) // Only stop() once; we may land here repeatedly under fast queueing, before stop completes.
                     {
-                    VLOGGER_ERROR(VString("[%s] VMessageOutputThread::postOutputMessage: Closing socket to shut down session because output queue size of %d messages and %lld bytes is over limit.",
+                    VLOGGER_ERROR(VSTRING_FORMAT("[%s] VMessageOutputThread::postOutputMessage: Closing socket to shut down session because output queue size of %d messages and %lld bytes is over limit.",
                         mName.chars(), currentQueueSize, currentQueueDataSize));
 
                     this->stop();
                     }
 
-                return;
+                return false;
                 }
             else
                 {
@@ -159,24 +156,26 @@ void VMessageOutputThread::postOutputMessage(VMessage* message, bool respectQueu
                     {
                     mWhenMaxQueueSizeWarned = now;
                     VDuration gracePeriodRemaining = (mWhenWentOverLimit + mMaxQueueGracePeriod) - now;
-                    VLOGGER_WARN(VString("[%s] VMessageOutputThread::postOutputMessage: Posting to queue with excess size of %d messages and %lld bytes. Remaining grace period %d seconds.",
+                    VLOGGER_WARN(VSTRING_FORMAT("[%s] VMessageOutputThread::postOutputMessage: Posting to queue with excess size of %d messages and %lld bytes. Remaining grace period %d seconds.",
                         mName.chars(), currentQueueSize, currentQueueDataSize, gracePeriodRemaining.getDurationSeconds()));
                     }
                 }
             }
         }
 
-  	// 2009.08.31 JHR ARGO-20463 XPS Server Crash: 08/20/09
-	// push_back can throw a std::bad_alloc, which may indicate we have a leak or have
-	// run out of space on the hard disk (for paging), etc.
-	try {
-		mOutputQueue.postMessage(message);
-		}
-	catch (...) {
-        VLOGGER_ERROR(VString("[%s] VMessageOutputThread::postOutputMessage: Closing socket to shut down session because ran out memory.", mName.chars()));
-
+    bool posted = false;
+    try
+        {
+        mOutputQueue.postMessage(message); // can throw bad_alloc if out of memory and queue cannot push_back
+        posted = true;
+        }
+    catch (...)
+        {
+        VLOGGER_ERROR(VSTRING_FORMAT("[%s] VMessageOutputThread::postOutputMessage: Closing socket to shut down session because ran out memory.", mName.chars()));
         this->stop();
-		}
+        }
+
+    return posted;
     }
 
 void VMessageOutputThread::releaseAllQueuedMessages()
@@ -213,11 +212,11 @@ void VMessageOutputThread::_processNextOutboundMessage()
         else
             {
             // We are just a client. No "session". Just send.
-            VLOGGER_CONDITIONAL_MESSAGE_LEVEL(VMessage::kMessageQueueOpsLevel, VString("[%s] VMessageOutputThread::_processNextOutboundMessage: Sending message@0x%08X.", mName.chars(), message));
+            VLOGGER_MESSAGE_LEVEL(VMessage::kMessageQueueOpsLevel, VSTRING_FORMAT("[%s] VMessageOutputThread::_processNextOutboundMessage: Sending message@0x%08X.", mName.chars(), message));
             message->send(mName, mOutputStream);
             }
 
-        VMessagePool::releaseMessage(message, mMessagePool);
+        VMessage::release(message);
         }
     }
 

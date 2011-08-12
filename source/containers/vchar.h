@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -14,6 +14,8 @@ http://www.bombaydigital.com/
 /**
     @ingroup vstring
 */
+
+#define VCHAR_NULL_TERMINATOR '\0'
 
 /**
 VChar is a simple wrapper for C char values.

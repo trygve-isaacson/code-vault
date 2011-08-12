@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.1
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -29,12 +29,12 @@ void VThread::threadCreate(VThreadID_Type* threadID, bool createDetached, thread
     result = ::pthread_attr_init(&threadAttributes);
     
     if (result != 0)
-        throw VException(result, VString("VThread::threadCreate: pthread_attr_init returned %d (%s).", result, ::strerror(result)));
+        throw VStackTraceException(result, VSTRING_FORMAT("VThread::threadCreate: pthread_attr_init returned %d (%s).", result, ::strerror(result)));
 
     result = ::pthread_attr_setdetachstate(&threadAttributes, createDetached ? PTHREAD_CREATE_DETACHED : PTHREAD_CREATE_JOINABLE);
     
     if (result != 0)
-        throw VException(result, VString("VThread::threadCreate: pthread_attr_setdetachstate returned %d (%s).", result, ::strerror(result)));
+        throw VStackTraceException(result, VSTRING_FORMAT("VThread::threadCreate: pthread_attr_setdetachstate returned %d (%s).", result, ::strerror(result)));
 
     result = ::pthread_create(threadID, &threadAttributes, threadMainProcPtr, threadArgument);
     
@@ -51,15 +51,15 @@ void VThread::threadCreate(VThreadID_Type* threadID, bool createDetached, thread
         
         VThread::getThreadStatistics(numVThreads, numThreadMains, numVThreadsCreated, numThreadMainsStarted, numVThreadsDestructed, numThreadMainsCompleted);
 
-        VLOGGER_ERROR(VString("VThread::threadCreate: pthread_create returned %d (%s).", result, ::strerror(result)));
-        VLOGGER_ERROR(VString(" VThread::gNumVThreads             = %d", numVThreads));
-        VLOGGER_ERROR(VString(" VThread::gNumThreadMains          = %d", numThreadMains));
-        VLOGGER_ERROR(VString(" VThread::gNumVThreadsCreated      = %d", numVThreadsCreated));
-        VLOGGER_ERROR(VString(" VThread::gNumThreadMainsStarted   = %d", numThreadMainsStarted));
-        VLOGGER_ERROR(VString(" VThread::gNumVThreadsDestructed   = %d", numVThreadsDestructed));
-        VLOGGER_ERROR(VString(" VThread::gNumThreadMainsCompleted = %d", numThreadMainsCompleted));
+        VLOGGER_ERROR(VSTRING_FORMAT("VThread::threadCreate: pthread_create returned %d (%s).", result, ::strerror(result)));
+        VLOGGER_ERROR(VSTRING_FORMAT(" VThread::gNumVThreads             = %d", numVThreads));
+        VLOGGER_ERROR(VSTRING_FORMAT(" VThread::gNumThreadMains          = %d", numThreadMains));
+        VLOGGER_ERROR(VSTRING_FORMAT(" VThread::gNumVThreadsCreated      = %d", numVThreadsCreated));
+        VLOGGER_ERROR(VSTRING_FORMAT(" VThread::gNumThreadMainsStarted   = %d", numThreadMainsStarted));
+        VLOGGER_ERROR(VSTRING_FORMAT(" VThread::gNumVThreadsDestructed   = %d", numVThreadsDestructed));
+        VLOGGER_ERROR(VSTRING_FORMAT(" VThread::gNumThreadMainsCompleted = %d", numThreadMainsCompleted));
         
-        throw VException(result, VString("VThread::threadCreate: pthread_create returned %d (%s).", result, ::strerror(result)));
+        throw VStackTraceException(result, VSTRING_FORMAT("VThread::threadCreate: pthread_create returned %d (%s).", result, ::strerror(result)));
         }
 
     (void) ::pthread_attr_destroy(&threadAttributes);

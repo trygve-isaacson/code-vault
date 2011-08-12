@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -23,43 +23,52 @@ http://www.bombaydigital.com/
 class VServer;
 
 typedef Vs32 VMessageLength;    ///< The length of a message. Meaning and format on the wire are determined by actual message protocol.
-typedef Vs16 VMessageID;        ///< Message identifier (verb) to distinguish it from other messages in the protocol.
+typedef int  VMessageID;        ///< Message identifier (verb) to distinguish it from other messages in the protocol.
 
-class VMessagePool;
-
-/** Emits a message at kFatal level to the message logger. */
-#define VLOGGER_MESSAGE_FATAL(message) VLogger::getLogger(VMessage::kMessageLoggerName)->log(VLogger::kFatal, __FILE__, __LINE__, message)
-/** Emits a message at kError level to the message logger. */
-#define VLOGGER_MESSAGE_ERROR(message) VLogger::getLogger(VMessage::kMessageLoggerName)->log(VLogger::kError, __FILE__, __LINE__, message)
-/** Emits a message at kWarn level to the message logger. */
-#define VLOGGER_MESSAGE_WARN(message) VLogger::getLogger(VMessage::kMessageLoggerName)->log(VLogger::kWarn, NULL, 0, message)
-/** Emits a message at kInfo level to the message logger. */
-#define VLOGGER_MESSAGE_INFO(message) VLogger::getLogger(VMessage::kMessageLoggerName)->log(VLogger::kInfo, NULL, 0, message)
-/** Emits a message at kDebug level to the message logger. */
-#define VLOGGER_MESSAGE_DEBUG(message) VLogger::getLogger(VMessage::kMessageLoggerName)->log(VLogger::kDebug, NULL, 0, message)
 /** Emits a message at specified level to the message logger; use the level constants defined in VMessage. */
-#define VLOGGER_MESSAGE_LEVEL(level, message) do { VLogger* vmxcond = VLogger::getLoggerConditional(VMessage::kMessageLoggerName, level); if (vmxcond != NULL) vmxcond->log(level, NULL, 0, message); } while (false)
+#define VLOGGER_MESSAGE_LEVEL(level, message) VLOGGER_NAMED_LEVEL(VMessage::kMessageLoggerName, level, message)
+/** Emits a message at kFatal level to the message logger. */
+#define VLOGGER_MESSAGE_FATAL(message) VLOGGER_NAMED_FATAL(VMessage::kMessageLoggerName, message)
+/** Emits a message at kError level to the message logger. */
+#define VLOGGER_MESSAGE_ERROR(message) VLOGGER_NAMED_ERROR(VMessage::kMessageLoggerName, message)
+/** Emits a message at kWarn level to the message logger. */
+#define VLOGGER_MESSAGE_WARN(message) VLOGGER_NAMED_WARN(VMessage::kMessageLoggerName, message)
+/** Emits a message at kInfo level to the message logger. */
+#define VLOGGER_MESSAGE_INFO(message) VLOGGER_NAMED_INFO(VMessage::kMessageLoggerName, message)
+/** Emits a message at kDebug level to the message logger. */
+#define VLOGGER_MESSAGE_DEBUG(message) VLOGGER_NAMED_DEBUG(VMessage::kMessageLoggerName, message)
+/** Emits a message at kTrace level to the message logger. */
+#define VLOGGER_MESSAGE_TRACE(message) VLOGGER_NAMED_TRACE(VMessage::kMessageLoggerName, message)
 /** Emits a hex dump at a specified level to the specified logger. */
-#define VLOGGER_MESSAGE_HEXDUMP(message, buffer, length) do { VLogger* vmxcond = VLogger::getLoggerConditional(VMessage::kMessageLoggerName, VMessage::kMessageContentHexDumpLevel); if (vmxcond != NULL) vmxcond->logHexDump(VMessage::kMessageContentHexDumpLevel, message, buffer, length); } while (false)
-/** More efficient macro that avoids building log output unless log level is satisfied; Emits a message at specified level to the message logger; use the level constants defined in VMessage. */
-#define VLOGGER_CONDITIONAL_MESSAGE_LEVEL(level, message) do { VLogger* vmxcond = VLogger::getLoggerConditional(VMessage::kMessageLoggerName, level); if (vmxcond != NULL) vmxcond->log(level, NULL, 0, message); } while (false)
-// VLOGGER_CONDITIONAL_MESSAGE_LEVEL is no longer necessary since VLOGGER_MESSAGE_LEVEL now does the same conditional check.
+#define VLOGGER_MESSAGE_HEXDUMP(message, buffer, length) VLOGGER_NAMED_HEXDUMP(VMessage::kMessageLoggerName, VMessage::kMessageContentHexDumpLevel, message, buffer, length)
+/** Returns true if the message logger would emit at the specified level. */
+#define VLOGGER_MESSAGE_WOULD_LOG(level) VLOGGER_NAMED_WOULD_LOG(VMessage::kMessageLoggerName, level)
 
 /**
 VMessage is an abstract base class that implements the basic messaging
 capabilities; the concrete subclass must implement the send() and receive()
 functions, which know how to read and write the particular message protocol
-format (the wire protocol). This class works with VMessagePool by allowing
-messages to be "recycled"; recycling takes an existing pooled message and
-makes it ready to be used again as if it had been newly instantiated.
+format (the wire protocol).
 */
 class VMessage : public VBinaryIOStream
     {
     public:
-
-        // Constants for the recycle() parameter makeEmpty.
-        static const bool kMakeEmpty = true;    ///< (Default) The message buffer length will be set to zero, effectively resetting the message buffer to empty.
-        static const bool kKeepData = false;    ///< The message buffer will be left alone so that the existing message data can be retained.
+    
+        /**
+        Releases a message. For a non-broadcast message, it simply deletes the message.
+        For a broadcast message, it decrements the broadcast target count, and then if
+        the count is zero deletes the message. The caller must not refer to the message
+        after releasing it, because it may have been deleted.
+        @param  message the message to release; null is allowed
+        */
+        static void release(/* @Nullable */ VMessage* message);
+        /**
+        This helper function (also used by release) deletes the message after first
+        doing a sanity check on its broadcast count. The message is always deleted,
+        but if the broadcast count is non-zero, an error is logged; this is useful for
+        detecting flawed logic in the calling code's use of messages.
+        */
+        static void deleteMessage(/* @Nullable */ VMessage* message);
 
         /**
         Constructs an empty message with no message ID defined,
@@ -70,31 +79,32 @@ class VMessage : public VBinaryIOStream
         /**
         Constructs a message with a message ID, suitable for use
         with send(), optionally writing message data first.
-        @param    messageID        the message ID
+        @param  messageID           the message ID
+        @param  initialBufferSize   if specified, the size of data buffer to preallocate
         */
-        VMessage(VMessageID messageID, VMessagePool* pool, Vs64 initialBufferSize=1024);
+        VMessage(VMessageID messageID, Vs64 initialBufferSize=1024);
         /**
         Virtual destructor.
         */
-        virtual ~VMessage();
+        virtual ~VMessage() {}
 
         /**
-        Returns the pool to which this message belongs; when releasing
-        a message, it must be released to the correct pool.
-        @return the pool this message belongs to
-        */
-        VMessagePool* getPool() const { return mPool; }
-
-        /**
-        Re-initializes the message to be in a usable state as if
-        it had just been instantiated; useful when re-using a single
-        message object for multiple messages, or when pooling.
+        Readies the message to be re-used with the existing message data intact,
+        for posting to a session or client. The new message ID is applied, and
+        some internal bookkeeping may be performed, but the message data is left
+        alone to be sent, as if it had just been formed. This is designed for use
+        when you receive a message, and then decide to post it or send it without
+        modification (except optionally changing the message ID).
         @param    messageID    the message ID to set for the message
-        @param    makeEmpty    normally true, which resets the message length to zero; if false,
-                            leaves the message buffer alone so the data there remains intact
-                            and available as the recycled message's data
         */
-        virtual void recycle(VMessageID messageID=0, bool makeEmpty=kMakeEmpty);
+        virtual void recycleForSend(VMessageID messageID);
+        /**
+        Readies the message to be re-used to read another message from a stream,
+        as if it had just been instantiated, but without pre/re-allocating the
+        data buffer space. This can be effective if you have an input loop
+        that reads many messages using a single VMessage on the stack.
+        */
+        virtual void recycleForReceive();
 
         /**
         Sets the message ID, which is used when sending.
@@ -171,9 +181,9 @@ class VMessage : public VBinaryIOStream
         /**
         Marks this message as being for broadcast. This must be called by any broadcast
         functions (i.e., bottlenecked in VServer::postBroadcastMessage) in
-        order to mark the message so that during pool release we know to lock the
-        broadcast mutex and correctly release the message only when the last broadcast
-        target is done with the message.
+        order to mark the message so that after a queued message is sent, we know to lock the
+        broadcast mutex and correctly delete the message only when the last broadcast
+        target is done with the message. This flag must be set before posting, and never altered.
         @return true if this message is being broadcast
         */
         void markForBroadcast() { mIsBeingBroadcast = true; }
@@ -196,13 +206,9 @@ class VMessage : public VBinaryIOStream
         Decrements this message's broadcast target count; caller must lock mutex as appropriate.
         */
         void removeBroadcastTarget();
-        /**
-        The message is no longer used (and is queued).
-        */
-        void release();
         /*
         These are the log level definitions used for consistent logging
-        of message traffic, processing, pooling, and dispatch. Use these
+        of message traffic, processing, and dispatch. Use these
         levels and log to the logger named VMessage::kMessageLoggerName
         in order to be consistent in message logging.
 
@@ -226,7 +232,6 @@ class VMessage : public VBinaryIOStream
         static const int kMessageQueueOpsLevel          = VLogger::kDebug + 6;  // low-level operations of message i/o queues
         static const int kMessageTraceDetailLevel       = VLogger::kTrace;      // extremely low-level message processing details
         static const int kMessageHandlerLifecycleLevel  = VLogger::kTrace;      // message handler constructor and destructor
-        static const int kMessagePoolTraceLevel         = VLogger::kTrace;      // low-level operations of message reuse pools
 
     protected:
 
@@ -241,17 +246,15 @@ class VMessage : public VBinaryIOStream
         void _assertInvariant() const;
 
         VMessageID      mMessageID;             ///< The message ID, either read during receive or to be written during send.
-        VMessagePool*   mPool;                  ///< The pool where this message should be released to.
         bool            mIsBeingBroadcast;      ///< True if this message is an outbound broadcast message.
-        bool            mIsReleased;            ///< True if this message has been deleted/released
         int             mNumBroadcastTargets;   ///< Number of pending broadcast targets, if for broadcast.
         VMutex          mBroadcastMutex;        ///< Mutex to control multiple threads using this message during broadcasting. This is declared public because the caller is responsible for locking this mutex via a VMutexLocker while posting for broadcast.
     };
 
 /**
-VMessageFactory is an abstract base class that you must implement and
-supply to a VMessagePool, so that the pool can instantiate new messages
-when needed. All you have to do is implement the instantiateNewMessage()
+VMessageFactory is an abstract base class that you must implement for purposes
+of giving an input thread a way to instantiate the correct concrete type of
+message. All you have to do is implement the instantiateNewMessage()
 function to return a new VMessage of the desired subclass type.
 */
 class VMessageFactory
@@ -267,7 +270,7 @@ class VMessageFactory
         @param    messageID    the ID to supply to the message constructor
         @return    pointer to a new message object
         */
-        virtual VMessage* instantiateNewMessage(VMessageID messageID, VMessagePool* pool) = 0;
+        virtual VMessage* instantiateNewMessage(VMessageID messageID=0) const = 0;
     };
 
 #endif /* vmessage_h */

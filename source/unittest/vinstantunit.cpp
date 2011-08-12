@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -27,10 +27,10 @@ void VInstantUnit::run()
     now.getLocalString(nowLocalString);
     now.getUTCString(nowUTCString);
     
-    this->logStatus(VString("VInstant current local time is %s. This must be visually confirmed to be correct.",
+    this->logStatus(VSTRING_FORMAT("VInstant current local time is %s. This must be visually confirmed to be correct.",
         nowLocalString.chars()));
     
-    this->logStatus(VString("VInstant current UTC time is %s. This must be visually confirmed to be correct.",
+    this->logStatus(VSTRING_FORMAT("VInstant current UTC time is %s. This must be visually confirmed to be correct.",
         nowUTCString.chars()));
     }
     

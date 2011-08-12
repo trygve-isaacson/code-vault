@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -79,6 +79,6 @@ const VClassFactory* VClassRegistry::findClassFactory(const VString& classID) co
         if (mFactories[i]->matchesClassID(classID))
             return mFactories[i];
         
-    throw VException(VString("Unable to find class factory for '%s' in class registry.", classID.chars()));
+    throw VStackTraceException(VSTRING_FORMAT("Unable to find class factory for '%s' in class registry.", classID.chars()));
     }
 

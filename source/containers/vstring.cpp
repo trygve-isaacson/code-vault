@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -51,24 +51,12 @@ const VString& VString::EMPTY()
 const VString& VString::NATIVE_LINE_ENDING()
     {
 #ifdef VPLATFORM_WIN
-    static const VString kLineEndingString("%c%c", (char) 0x0D, (char) 0x0A);
+    static const VString kLineEndingString(VSTRING_ARGS("%c%c", (char) 0x0D, (char) 0x0A));
 #else /* Unix and Mac OS X use Unix style */
     static const VString kLineEndingString((char) 0x0A);
 #endif
     return kLineEndingString;
     }
-
-static const char* kFormat_int = "%d";
-static const char* kFormat_Vu8 = "%hhu";
-static const char* kFormat_Vs8 = "%hhd";
-static const char* kFormat_Vu16 = "%hu";
-static const char* kFormat_Vs16 = "%hd";
-static const char* kFormat_Vu32 = "%lu";
-static const char* kFormat_Vs32 = "%ld";
-static const char* kFormat_Vu64 = "%llu";
-static const char* kFormat_Vs64 = "%lld";
-// static const char* kFormat_VFloat = "%f"; // (not currently used)
-static const char* kFormat_VDouble = "%lf";
 
 VString::VString() :
 mStringLength(0),
@@ -106,7 +94,7 @@ mBuffer(NULL)
     ASSERT_INVARIANT();
     }
 
-VString::VString(const char c) :
+VString::VString(char c) :
 mStringLength(0),
 mBufferLength(0),
 mBuffer(NULL)
@@ -118,12 +106,16 @@ mBuffer(NULL)
     ASSERT_INVARIANT();
     }
 
+#ifdef VAULT_VSTRING_STRICT_FORMATTING
+VString::VString(const char* s) :
+#else
 VString::VString(char* s) :
+#endif
 mStringLength(0),
 mBufferLength(0),
 mBuffer(NULL)
     {
-    if ((s != NULL) || (s[0] != '\0')) // if s is NULL or zero length, leave as initialized to empty
+    if ((s != NULL) && (s[0] != VCHAR_NULL_TERMINATOR)) // if s is NULL or zero length, leave as initialized to empty
         {
         int    theLength = (int) ::strlen(s);
         this->preflight(theLength);
@@ -135,29 +127,79 @@ mBuffer(NULL)
     }
 
 #ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
+
+#ifndef VAULT_VSTRING_STRICT_FORMATTING
+/**
+Utility used in the vararg constructor's optimization; returns -1 if the string
+contains possible formatting directives (i.e., any '%' character). Otherwise, returns
+the string length.
+@param  s   NULL or a null-terminated C string
+@return -1 if s is NULL or contains any '%' character; the length of the string otherwise.
+*/
+static int _getStrlenIfNonFormatting(const char* s)
+    {
+    if (s == NULL)
+        return -1;
+
+    int len = 0;
+    while (s[len] != VCHAR_NULL_TERMINATOR)
+        {
+        if (s[len] == '%')
+            return -1;
+
+        ++len;
+        }
+
+    return len;
+    }
+#endif /* VAULT_VSTRING_STRICT_FORMATTING */
+
+#ifdef VAULT_VSTRING_STRICT_FORMATTING
+VString::VString(Vs8 /*dummy*/, const char* formatText, ...) :
+#else /* non-strict formatting */
 VString::VString(const char* formatText, ...) :
+#endif /* VAULT_VSTRING_STRICT_FORMATTING */
 mStringLength(0),
 mBufferLength(0),
 mBuffer(NULL)
     {
-    va_list args;
-    va_start(args, formatText);
-
-    if ((formatText != NULL) && (formatText[0] != '\0')) // if formatText is NULL or zero length, leave as initialized to empty
+    if ((formatText != NULL) && (formatText[0] != VCHAR_NULL_TERMINATOR)) // if formatText is NULL or zero length, leave as initialized to empty
         {
+#ifndef VAULT_VSTRING_STRICT_FORMATTING
         // A common problem is constructing a string as "%", arriving that this constructor rather than the (char*) constructor.
         // It fails to format as desired. We can special case for this.
-        if (formatText[0] == '%' && formatText[1] == '\0')
+        if (formatText[0] == '%' && formatText[1] == VCHAR_NULL_TERMINATOR)
+            {
             this->copyFromBuffer("%", 0, 1);
+            }
         else
-            this->vaFormat(formatText, args);
-        }
+#endif
+            {
+#ifndef VAULT_VSTRING_STRICT_FORMATTING
+            // Scan for formatting directives. If none exist, avoid overhead of trying to format, and just copy.
+            int nonFormattingLen = _getStrlenIfNonFormatting(formatText);
+#else
+            int nonFormattingLen = -1; // not necessary if strict formatting in use
+#endif
+            if (nonFormattingLen == -1)
+                {
+                va_list args;
+                va_start(args, formatText);
 
-    va_end(args);
+                this->vaFormat(formatText, args);
+
+                va_end(args);
+                }
+            else
+                {
+                this->copyFromBuffer(formatText, 0, nonFormattingLen);
+                }
+            }
+        }
 
     ASSERT_INVARIANT();
     }
-#endif
+#endif /* VAULT_VARARG_STRING_FORMATTING_SUPPORT */
 
 #ifdef VAULT_QT_SUPPORT
 VString::VString(const QString& s) :
@@ -319,13 +361,13 @@ VString& VString::operator=(const char* s)
         this->_setLength(0);
     else
         {
-        int    theLength = static_cast<int> (::strlen(s));
+        int theLength = static_cast<int> (::strlen(s));
 
         if (theLength != 0)
             {
             this->preflight(theLength);
-            //lint -e668 "Possibly passing a null pointer to function"
-            ::memcpy(mBuffer, s, static_cast<VSizeType> (theLength));    // faster than strcpy?
+            //lint -e668 "Possibly passing a null pointer to function" [OK: Preflight guarantees mBuffer exists.]
+            ::memcpy(mBuffer, s, static_cast<VSizeType>(theLength)); // faster than strcpy?
             }
 
         this->_setLength(theLength);
@@ -340,7 +382,7 @@ VString& VString::operator=(int i)
     {
     ASSERT_INVARIANT();
 
-    this->format(kFormat_int, i);
+    this->format(VSTRING_FORMATTER_INT, i);
 
     ASSERT_INVARIANT();
 
@@ -351,7 +393,7 @@ VString& VString::operator=(Vu8 i)
     {
     ASSERT_INVARIANT();
 
-    this->format(kFormat_Vu8, (int) i);
+    this->format(VSTRING_FORMATTER_U8, (int) i);
 
     ASSERT_INVARIANT();
 
@@ -362,7 +404,7 @@ VString& VString::operator=(Vs8 i)
     {
     ASSERT_INVARIANT();
 
-    this->format(kFormat_Vs8, (int) i);
+    this->format(VSTRING_FORMATTER_S8, (int) i);
 
     ASSERT_INVARIANT();
 
@@ -373,7 +415,7 @@ VString& VString::operator=(Vu16 i)
     {
     ASSERT_INVARIANT();
 
-    this->format(kFormat_Vu16, i);
+    this->format(VSTRING_FORMATTER_U16, i);
 
     ASSERT_INVARIANT();
 
@@ -384,7 +426,7 @@ VString& VString::operator=(Vs16 i)
     {
     ASSERT_INVARIANT();
 
-    this->format(kFormat_Vs16, i);
+    this->format(VSTRING_FORMATTER_S16, i);
 
     ASSERT_INVARIANT();
 
@@ -395,7 +437,7 @@ VString& VString::operator=(Vu32 i)
     {
     ASSERT_INVARIANT();
 
-    this->format(kFormat_Vu32, i);
+    this->format(VSTRING_FORMATTER_U32, i);
 
     ASSERT_INVARIANT();
 
@@ -406,7 +448,7 @@ VString& VString::operator=(Vs32 i)
     {
     ASSERT_INVARIANT();
 
-    this->format(kFormat_Vs32, i);
+    this->format(VSTRING_FORMATTER_S32, i);
 
     ASSERT_INVARIANT();
 
@@ -417,7 +459,7 @@ VString& VString::operator=(Vu64 i)
     {
     ASSERT_INVARIANT();
 
-    this->format(kFormat_Vu64, i);
+    this->format(VSTRING_FORMATTER_U64, i);
 
     ASSERT_INVARIANT();
 
@@ -428,7 +470,7 @@ VString& VString::operator=(Vs64 i)
     {
     ASSERT_INVARIANT();
 
-    this->format(kFormat_Vs64, i);
+    this->format(VSTRING_FORMATTER_S64, i);
 
     ASSERT_INVARIANT();
 
@@ -439,7 +481,7 @@ VString& VString::operator=(VDouble f)
     {
     ASSERT_INVARIANT();
 
-    this->format(kFormat_VDouble, f);
+    this->format(VSTRING_FORMATTER_DOUBLE, f);
 
     ASSERT_INVARIANT();
 
@@ -448,19 +490,19 @@ VString& VString::operator=(VDouble f)
 
 VString VString::operator+(const char c) const
     {
-    VString newString("%s%c", this->chars(), c);
+    VString newString(VSTRING_ARGS("%s%c", this->chars(), c));
     return newString;
     }
 
 VString VString::operator+(const char* s) const
     {
-    VString newString("%s%s", this->chars(), s);
+    VString newString(VSTRING_ARGS("%s%s", this->chars(), s));
     return newString;
     }
 
 VString VString::operator+(const VString& s) const
     {
-    VString newString("%s%s", this->chars(), s.chars());
+    VString newString(VSTRING_ARGS("%s%s", this->chars(), s.chars()));
     return newString;
     }
 
@@ -498,7 +540,7 @@ VString& VString::operator+=(const VString& s)
 
     this->preflight(theLength + mStringLength);
 
-    //lint -e668 "Possibly passing a null pointer to function"
+    //lint -e668 "Possibly passing a null pointer to function" [OK: Preflight guarantees mBuffer exists.]
     ::memcpy(&(mBuffer[mStringLength]), s.chars(), static_cast<VSizeType> (theLength));
 
     this->_setLength(theLength + mStringLength);
@@ -529,7 +571,7 @@ VString& VString::operator+=(const char* s)
     int theLength = (int) ::strlen(s);
 
     this->preflight(theLength + mStringLength);
-    //lint -e668 "Possibly passing a null pointer to function"
+    //lint -e668 "Possibly passing a null pointer to function" [OK: Preflight guarantees mBuffer exists.]
     ::memcpy(&(mBuffer[mStringLength]), s, static_cast<VSizeType> (theLength));
     this->_setLength(theLength + mStringLength);
 
@@ -543,10 +585,10 @@ VString& VString::operator+=(const boost::format& fmt)
     {
     ASSERT_INVARIANT();
 
-    int    theLength = (int) fmt.size();
+    int theLength = (int) fmt.size();
 
     this->preflight(theLength + mStringLength);
-    //lint -e668 "Possibly passing a null pointer to function"
+    //lint -e668 "Possibly passing a null pointer to function" [OK: Preflight guarantees mBuffer exists.]
     ::memcpy(&(mBuffer[mStringLength]), fmt.str().c_str(), static_cast<VSizeType> (theLength));
     this->_setLength(theLength + mStringLength);
 
@@ -560,8 +602,7 @@ VString& VString::operator+=(int i)
     {
     ASSERT_INVARIANT();
 
-    VString s(kFormat_int, i);
-    *this += s;
+    *this += VSTRING_INT(i);
 
     ASSERT_INVARIANT();
 
@@ -572,8 +613,7 @@ VString& VString::operator+=(Vu8 i)
     {
     ASSERT_INVARIANT();
 
-    VString s(kFormat_Vu8, (int) i);
-    *this += s;
+    *this += VSTRING_U8((int) i); // int case req'd for some compilers
 
     ASSERT_INVARIANT();
 
@@ -584,8 +624,7 @@ VString& VString::operator+=(Vs8 i)
     {
     ASSERT_INVARIANT();
 
-    VString s(kFormat_Vs8, (int) i);
-    *this += s;
+    *this += VSTRING_S8((int) i); // int case req'd for some compilers
 
     ASSERT_INVARIANT();
 
@@ -596,8 +635,7 @@ VString& VString::operator+=(Vu16 i)
     {
     ASSERT_INVARIANT();
 
-    VString s(kFormat_Vu16, i);
-    *this += s;
+    *this += VSTRING_U16(i);
 
     ASSERT_INVARIANT();
 
@@ -608,8 +646,7 @@ VString& VString::operator+=(Vs16 i)
     {
     ASSERT_INVARIANT();
 
-    VString s(kFormat_Vs16, i);
-    *this += s;
+    *this += VSTRING_S16(i);
 
     ASSERT_INVARIANT();
 
@@ -620,8 +657,7 @@ VString& VString::operator+=(Vu32 i)
     {
     ASSERT_INVARIANT();
 
-    VString s(kFormat_Vu32, i);
-    *this += s;
+    *this += VSTRING_U32(i);
 
     ASSERT_INVARIANT();
 
@@ -632,8 +668,7 @@ VString& VString::operator+=(Vs32 i)
     {
     ASSERT_INVARIANT();
 
-    VString s(kFormat_Vs32, i);
-    *this += s;
+    *this += VSTRING_S32(i);
 
     ASSERT_INVARIANT();
 
@@ -644,8 +679,7 @@ VString& VString::operator+=(Vu64 i)
     {
     ASSERT_INVARIANT();
 
-    VString s(kFormat_Vu64, i);
-    *this += s;
+    *this += VSTRING_U64(i);
 
     ASSERT_INVARIANT();
 
@@ -656,20 +690,18 @@ VString& VString::operator+=(Vs64 i)
     {
     ASSERT_INVARIANT();
 
-    VString s(kFormat_Vs64, i);
-    *this += s;
+    *this += VSTRING_S64(i);
 
     ASSERT_INVARIANT();
 
     return *this;
     }
 
-VString& VString::operator+=(VDouble f)
+VString& VString::operator+=(VDouble d)
     {
     ASSERT_INVARIANT();
 
-    VString s(kFormat_VDouble, f);
-    *this += s;
+    *this += VSTRING_DOUBLE(d);
 
     ASSERT_INVARIANT();
 
@@ -826,7 +858,7 @@ VChar VString::at(int i) const
     ASSERT_INVARIANT();
 
     if (i > mStringLength)
-        throw VException(VString("VString::at(%d) index out of range for length %d.", i, mStringLength));
+        throw VRangeException(VSTRING_FORMAT("VString::at(%d) index out of range for length %d.", i, mStringLength));
     else if (i == 0 && mStringLength == 0)
         return VChar::NULL_CHAR();
 
@@ -838,7 +870,7 @@ VChar VString::operator[](int i) const
     ASSERT_INVARIANT();
 
     if (i > mStringLength)
-        throw VException(VString("VString::operator[%d] index out of range for length %d.", i, mStringLength));
+        throw VRangeException(VSTRING_FORMAT("VString::operator[%d] index out of range for length %d.", i, mStringLength));
     else if (i == 0 && mStringLength == 0)
         return VChar::NULL_CHAR();
 
@@ -850,7 +882,7 @@ char& VString::operator[](int i)
     ASSERT_INVARIANT();
 
     if (i >= mStringLength)
-        throw VException(VString("VString::operator[%d] index out of range for length %d.", i, mStringLength));
+        throw VRangeException(VSTRING_FORMAT("VString::operator[%d] index out of range for length %d.", i, mStringLength));
 
     return mBuffer[i];
     }
@@ -860,7 +892,7 @@ char VString::charAt(int i) const
     ASSERT_INVARIANT();
 
     if (i > mStringLength)
-        throw VException(VString("VString::charAt(%d) index out of range for length %d.", i, mStringLength));
+        throw VRangeException(VSTRING_FORMAT("VString::charAt(%d) index out of range for length %d.", i, mStringLength));
     else if (i == 0 && mStringLength == 0)
         return (char) 0;
 
@@ -1236,7 +1268,7 @@ int VString::replace(const VString& searchString, const VString& replacementStri
         mBuffer[currentOffset] = 0;    // terminate the C string buffer to create the BEFORE part
         char*   beforePart = mBuffer;
         char*   afterPart = &mBuffer[currentOffset + searchLength];
-        VString alteredString("%s%s%s", beforePart, replacementString.chars(), afterPart);
+        VString alteredString(VSTRING_ARGS("%s%s%s", beforePart, replacementString.chars(), afterPart));
 
         // Assign the new string to ourself -- copies its buffer into ours correctly.
         // (Could be optimized to just swap buffers if we defined a new friend function or two.)
@@ -1326,7 +1358,7 @@ int VString::parseInt() const
         }
 
     if ((result < minValue) || (result > maxValue))
-        throw VRangeException(VString("VString::parseInt %s value is out of range.", mBuffer));
+        throw VRangeException(VSTRING_FORMAT("VString::parseInt %s value is out of range.", mBuffer));
 
     return static_cast<int>(result);
     }
@@ -1357,9 +1389,9 @@ VDouble VString::parseDouble() const
         return 0.0;
 
     VDouble result;
-    int n = ::sscanf(mBuffer, kFormat_VDouble, &result);
+    int n = ::sscanf(mBuffer, VSTRING_FORMATTER_DOUBLE, &result);
     if (n == 0)
-        throw VRangeException(VString("VString::parseDouble '%s' is invalid format.", mBuffer));
+        throw VRangeException(VSTRING_FORMAT("VString::parseDouble '%s' is invalid format.", mBuffer));
 
     return result;
     }
@@ -1369,7 +1401,7 @@ void VString::set(int i, const VChar& c)
     ASSERT_INVARIANT();
 
     if (i >= mStringLength)
-        throw VException(VString("VString::set(%d,%c) index out of range for string length %d.", i, c.charValue(), mStringLength));
+        throw VRangeException(VSTRING_FORMAT("VString::set(%d,%c) index out of range for string length %d.", i, c.charValue(), mStringLength));
 
     if (mBuffer != NULL)
         mBuffer[i] = c.charValue();
@@ -1394,7 +1426,7 @@ void VString::getSubstring(VString& toString, int startIndex, int endIndex) cons
 
     if (mBuffer == NULL)
         toString = VString::EMPTY();
-	else
+    else
         toString.copyFromBuffer(mBuffer, startIndex, endIndex);
     }
 
@@ -1544,22 +1576,18 @@ void VString::copyToBuffer(char* toBuffer, int bufferSize) const
     if (toBuffer == NULL)
         throw VRangeException("VString::copyToBuffer: target buffer pointer is null.");
 
-	// 2008.09.15 mpompa ARGO-14411 When we used to throw an error, XPS would quit in production. Truncate and continue is better.
-    if (bufferSize <= mStringLength && mBuffer != NULL)
-        VLOGGER_ERROR(VString("VString: %s will be truncated to %d characaters.", mBuffer, bufferSize-1));
-
     if ((mBuffer == NULL) || (mBufferLength == 0) || (mStringLength == 0))
         {
-        toBuffer[0] = 0;
+        toBuffer[0] = VCHAR_NULL_TERMINATOR;
         }
-    else if (mStringLength > bufferSize)
+    else if (mStringLength < bufferSize)
         {
-        ::memcpy(toBuffer, mBuffer, static_cast<VSizeType> (bufferSize - 1));
-        toBuffer[bufferSize-1] = '\0';
+        ::memcpy(toBuffer, mBuffer, static_cast<VSizeType>(1 + mStringLength)); // includes our null terminator
         }
     else
         {
-        ::memcpy(toBuffer, mBuffer, static_cast<VSizeType> (1 + mStringLength));
+        ::memcpy(toBuffer, mBuffer, static_cast<VSizeType>(bufferSize - 1)); // only copying the part that will fit
+        toBuffer[bufferSize-1] = VCHAR_NULL_TERMINATOR;
         }
     }
 
@@ -1568,14 +1596,14 @@ void VString::copyFromBuffer(const char* fromBuffer, int startIndex, int endInde
     ASSERT_INVARIANT();
 
     if (startIndex < 0)
-        throw VRangeException(VString("VString::copyFromBuffer: out of range start index %d.", startIndex));
+        throw VRangeException(VSTRING_FORMAT("VString::copyFromBuffer: out of range start index %d.", startIndex));
 
     // We allow endIndex to be less than startIndex, and compensate for that
     if (endIndex < startIndex)
         endIndex = startIndex;
 
     this->preflight(endIndex - startIndex);
-    //lint -e668 "Possibly passing a null pointer to function"
+    //lint -e668 "Possibly passing a null pointer to function" [OK: Preflight guarantees mBuffer exists.]
     ::memcpy(mBuffer, fromBuffer + startIndex, static_cast<VSizeType> (endIndex - startIndex));
     this->postflight(endIndex - startIndex);
 
@@ -1606,7 +1634,7 @@ void VString::copyFromPascalString(const char* pascalBuffer)
     int theLength = static_cast<int> (static_cast<Vu8> (pascalBuffer[0]));
 
     this->preflight(theLength);
-    //lint -e668 "Possibly passing a null pointer to function"
+    //lint -e668 "Possibly passing a null pointer to function" [OK: Preflight guarantees mBuffer exists.]
     ::memcpy(mBuffer, &(pascalBuffer[1]), static_cast<VSizeType> (theLength));
     this->postflight(theLength);
 
@@ -1626,7 +1654,7 @@ void VString::setFourCharacterCode(Vu32 fourCharacterCode)
         codeChars[i] = byteValue;
 
         if (codeChars[i] == 0)
-            throw VRangeException(VString("VString::setFourCharacterCode: Code 0x%08X has a zero byte.", fourCharacterCode));
+            throw VRangeException(VSTRING_FORMAT("VString::setFourCharacterCode: Code 0x%08X has a zero byte.", fourCharacterCode));
         }
 
     this->copyFromBuffer(codeChars, 0, 4);
@@ -1665,7 +1693,7 @@ void VString::preflight(int stringLength)
     ASSERT_INVARIANT();
 
     if (stringLength < 0)
-        throw VRangeException(VString("VString::preflight: negative length %d.", stringLength));
+        throw VRangeException(VSTRING_FORMAT("VString::preflight: negative length %d.", stringLength));
 
     if ((mBuffer == NULL) || (stringLength >= mBufferLength))    // buffer must be at least stringLength + 1, or we need to reallocate
         {
@@ -1697,7 +1725,7 @@ void VString::preflight(int stringLength)
                 // Copy our old data, including the null terminator byte, to the new buffer.
                 // We know that stringLength is greater than mStringLength, or we wouldn't be growing
                 // the buffer in the first place.
-                //lint -e668 -e669 -e670 "Possibly passing a null pointer to function"
+                //lint -e668 -e669 -e670 "Possibly passing a null pointer to function" [OK: if() clause handles null mBuffer condition.]
                 ::memcpy(newBuffer, mBuffer, static_cast<VSizeType>(mStringLength + 1));
                 }
 
@@ -1722,12 +1750,12 @@ void VString::preflight(int stringLength)
         catch (const std::exception& ex)
             {
             ASSERT_INVARIANT();
-            throw VException(VString("VString::preflight caught exception preflighting buffer of length %d: %s", (stringLength + 1), ex.what()));
+            throw VStackTraceException(VSTRING_FORMAT("VString::preflight caught exception preflighting buffer of length %d: %s", (stringLength + 1), ex.what()));
             }
         catch (...)
             {
             ASSERT_INVARIANT();
-            throw VException(VString("VString::preflight caught exception preflighting buffer of length %d.", (stringLength + 1)));
+            throw VStackTraceException(VSTRING_FORMAT("VString::preflight caught exception preflighting buffer of length %d.", (stringLength + 1)));
             }
         }
 
@@ -1738,7 +1766,7 @@ void VString::preflightWithSimulatedFailure()
     {
     ASSERT_INVARIANT();
 
-    throw VException("VString::preflight unable to allocate buffer. (Simulated failure)");
+    throw VStackTraceException("VString::preflight unable to allocate buffer. (Simulated failure)");
     }
 
 char* VString::buffer()
@@ -1808,7 +1836,7 @@ void VString::vaFormat(const char* formatText, va_list args)
             // We were unable to determine the buffer length needed. Log an error and make the preflight
             // use as big a buffer as we dare: how about the size of the temporary formatting buffer.
             const int kTruncatedStringLength = 32768;
-            VLOGGER_ERROR(VString("VString: formatted string will be truncated to %d characaters.", kTruncatedStringLength));
+            VLOGGER_ERROR(VSTRING_FORMAT("VString: formatted string will be truncated to %d characaters.", kTruncatedStringLength));
             newStringLength = kTruncatedStringLength;
             }
 
@@ -1826,15 +1854,15 @@ void VString::vaFormat(const char* formatText, va_list args)
 void VString::_setLength(int stringLength)
     {
     if (stringLength < 0)
-        throw VRangeException(VString("VString::_setLength: Out of bounds negative value %d.", stringLength));
+        throw VRangeException(VSTRING_FORMAT("VString::_setLength: Out of bounds negative value %d.", stringLength));
 
     if ((mBuffer == NULL) && (stringLength != 0))
-        throw VRangeException(VString("VString::_setLength: Out of bounds value %d with null buffer pointer.", stringLength));
+        throw VRangeException(VSTRING_FORMAT("VString::_setLength: Out of bounds value %d with null buffer pointer.", stringLength));
 
     if (mBuffer != NULL)
         {
         if (stringLength >= mBufferLength)
-            throw VRangeException(VString("VString::_setLength: Out of bounds value %d exceeds buffer length of %d.", stringLength, mBufferLength));
+            throw VRangeException(VSTRING_FORMAT("VString::_setLength: Out of bounds value %d exceeds buffer length of %d.", stringLength, mBufferLength));
 
         if (stringLength == 0)
             {
@@ -1868,14 +1896,14 @@ Vs64 VString::_parseSignedInteger() const
                 {
                 case '-':
                     if (i != 0)
-                        throw VRangeException(VString("VString::_parseSignedInteger %c at index %d is invalid format.", mBuffer[i], i));
+                        throw VRangeException(VSTRING_FORMAT("VString::_parseSignedInteger %c at index %d is invalid format.", mBuffer[i], i));
 
                     result = -result;
                     break;
 
                 case '+':
                     if (i != 0)
-                        throw VRangeException(VString("VString::_parseSignedInteger %c at index %d is invalid format.", mBuffer[i], i));
+                        throw VRangeException(VSTRING_FORMAT("VString::_parseSignedInteger %c at index %d is invalid format.", mBuffer[i], i));
                     break;
 
                 case '0':
@@ -1892,7 +1920,7 @@ Vs64 VString::_parseSignedInteger() const
                     break;
 
                 default:
-                    throw VRangeException(VString("VString::_parseSignedInteger %c at index %d is invalid format.", mBuffer[i], i));
+                    throw VRangeException(VSTRING_FORMAT("VString::_parseSignedInteger %c at index %d is invalid format.", mBuffer[i], i));
                     break;
                 }
 
@@ -1917,12 +1945,12 @@ Vu64 VString::_parseUnsignedInteger() const
             switch (mBuffer[i])
                 {
                 case '-':
-                    throw VRangeException(VString("VString::_parseUnsignedInteger %c at index %d is invalid format.", mBuffer[i], i));
+                    throw VRangeException(VSTRING_FORMAT("VString::_parseUnsignedInteger %c at index %d is invalid format.", mBuffer[i], i));
                     break;
 
                 case '+':
                     if (i != 0)
-                        throw VRangeException(VString("VString::_parseUnsignedInteger %c at index %d is invalid format.", mBuffer[i], i));
+                        throw VRangeException(VSTRING_FORMAT("VString::_parseUnsignedInteger %c at index %d is invalid format.", mBuffer[i], i));
                     break;
 
                 case '0':
@@ -1939,7 +1967,7 @@ Vu64 VString::_parseUnsignedInteger() const
                     break;
 
                 default:
-                    throw VRangeException(VString("VString::_parseUnsignedInteger %c at index %d is invalid format.", mBuffer[i], i));
+                    throw VRangeException(VSTRING_FORMAT("VString::_parseUnsignedInteger %c at index %d is invalid format.", mBuffer[i], i));
                     break;
                 }
 
@@ -1955,12 +1983,10 @@ void VString::_assertInvariant() const
     if (mBuffer == NULL)
         return;
 
-    V_ASSERT(
-        (mBuffer != VCPP_DEBUG_BAD_POINTER_VALUE) &&
-        (mStringLength >= 0) &&
-        (mBufferLength > mStringLength) &&
-        (mBuffer[mStringLength] == 0)
-        );
+    VASSERT_NOT_EQUAL(mBuffer, VCPP_DEBUG_BAD_POINTER_VALUE);
+    VASSERT_GREATER_THAN_OR_EQUAL(mStringLength, 0);
+    VASSERT_GREATER_THAN(mBufferLength, mStringLength); // buffer must always have room for null terminator not included in string length
+    VASSERT(mBuffer[mStringLength] == VCHAR_NULL_TERMINATOR);
     }
 
 #ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
@@ -2032,7 +2058,7 @@ void VString::_assignFromCFString(const CFStringRef& s)
             }
 
         if (! success)
-            throw VException(VString("VString CFStringRef constructor allocated up to %d bytes, which was insufficient for CFStringRef of length %d.", finalLength, originalLength));
+            throw VStackTraceException(VSTRING_FORMAT("VString CFStringRef constructor allocated up to %d bytes, which was insufficient for CFStringRef of length %d.", finalLength, originalLength));
 
         this->_setLength(finalLength);
         }

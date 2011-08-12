@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -69,7 +69,7 @@ VString VColor::getCSSColor() const
     if (*this == YELLOW())
         return "yellow";
 
-    return VString("#%02x%02x%02x", mRed, mGreen, mBlue);
+    return VSTRING_FORMAT("#%02x%02x%02x", mRed, mGreen, mBlue);
     }
 
 VDouble VColor::getLightness() const
@@ -247,7 +247,7 @@ void VColor::setCSSColor(const VString& cssColor)
         }
     
     if (!valid)
-        throw VRangeException(VString("VColor::setCSSColor '%s' is invalid.", cssColor.chars()));
+        throw VRangeException(VSTRING_FORMAT("VColor::setCSSColor '%s' is invalid.", cssColor.chars()));
     }
 
 // VColorPair -----------------------------------------------------------------
@@ -272,7 +272,7 @@ mFg(fg)
 
 VString VColorPair::getCSSColor() const
     {
-    return VString("%s-on-%s", mFg.getCSSColor().chars(), mBg.getCSSColor().chars());
+    return VSTRING_FORMAT("%s-on-%s", mFg.getCSSColor().chars(), mBg.getCSSColor().chars());
     }
 
 // static
@@ -331,7 +331,7 @@ mAliases()
     int numMappers = paletteNode.countNamedChildren("color-map");
 
     if ((numMappers == 0) && (errorList != NULL))
-        errorList->push_back(VString("Color palette '%s' has no color maps.", mName.chars()));
+        errorList->push_back(VSTRING_FORMAT("Color palette '%s' has no color maps.", mName.chars()));
 
     for (int i = 0; i < numMappers; ++i)
         {
@@ -423,7 +423,7 @@ void VColorPalette::_addMapper(const VSettingsNode& mapperNode, VStringVector* e
     catch (const std::exception& ex)
         {
         if (errorList != NULL)
-            errorList->push_back(VString("At %s/%s: %s", mapperNode.getPath().chars(), mapperNode.getString("name","").chars(), ex.what()));
+            errorList->push_back(VSTRING_FORMAT("At %s/%s: %s", mapperNode.getPath().chars(), mapperNode.getString("name","").chars(), ex.what()));
         }
     }
 
@@ -448,7 +448,7 @@ VColorMapper* VColorPalette::_readNewMapper(const VString& mapperType, const VSe
     else if (mapperType == "real-ranges")
         mapper = new VDoubleRangeColorMapper();
     else if (errorList != NULL)
-        errorList->push_back(VString("At %s/%s: Invalid color-map type '%s'.", mapperNode.getPath().chars(), mapperNode.getString("name","").chars(), mapperType.chars()));
+        errorList->push_back(VSTRING_FORMAT("At %s/%s: Invalid color-map type '%s'.", mapperNode.getPath().chars(), mapperNode.getString("name","").chars(), mapperType.chars()));
 
     if (mapper != NULL)
         mapper->readColors(mapperNode, errorList);
@@ -492,7 +492,7 @@ void VColorMapper::readColors(const VSettingsNode& mapperNode, VStringVector* er
     int numColors = mapperNode.countNamedChildren("color");
 
     if ((numColors == 0) && (errorList != NULL))
-        errorList->push_back(VString("At %s/%s: No colors defined in color-map.", mapperNode.getPath().chars(), mapperNode.getString("name","").chars()));
+        errorList->push_back(VSTRING_FORMAT("At %s/%s: No colors defined in color-map.", mapperNode.getPath().chars(), mapperNode.getString("name","").chars()));
 
     for (int i = 0; i < numColors; ++i)
         {
@@ -505,7 +505,7 @@ void VColorMapper::readColors(const VSettingsNode& mapperNode, VStringVector* er
         catch (const std::exception& ex)
             {
             if (errorList != NULL)
-                errorList->push_back(VString("At %s/%s: Error reading color value [%d]: %s", mapperNode.getPath().chars(), mapperNode.getString("name","").chars(), i, ex.what()));
+                errorList->push_back(VSTRING_FORMAT("At %s/%s: Error reading color value [%d]: %s", mapperNode.getPath().chars(), mapperNode.getString("name","").chars(), i, ex.what()));
             }
         }
     }
@@ -551,20 +551,17 @@ VColorPair VStringColorMapper::getColors(const VString& stringValue) const
 
 VColorPair VStringColorMapper::getColors(int intValue) const
     {
-    VString stringValue("%d", intValue);
-    return this->getColors(stringValue);
+    return this->getColors(VSTRING_INT(intValue));
     }
 
 VColorPair VStringColorMapper::getColors(Vs64 int64Value) const
     {
-    VString stringValue("%lld", int64Value);
-    return this->getColors(stringValue);
+    return this->getColors(VSTRING_S64(int64Value));
     }
 
 VColorPair VStringColorMapper::getColors(VDouble doubleValue) const
     {
-    VString stringValue("%lf", doubleValue);
-    return this->getColors(stringValue);
+    return this->getColors(VSTRING_DOUBLE(doubleValue));
     }
 
 void VStringColorMapper::addColors(const VString& stringValue, const VColorPair& colors)
@@ -679,8 +676,7 @@ VColorPair VDoubleColorMapper::getColors(Vs64 int64Value) const
 
 VColorPair VDoubleColorMapper::getColors(VDouble doubleValue) const
     {
-    VString doubleString("%lf", doubleValue);
-    VStringColorMap::const_iterator position = mColorMap.find(doubleString);
+    VStringColorMap::const_iterator position = mColorMap.find(VSTRING_DOUBLE(doubleValue));
     if (position == mColorMap.end())
         return mDefaultColors;
 
@@ -689,8 +685,7 @@ VColorPair VDoubleColorMapper::getColors(VDouble doubleValue) const
 
 void VDoubleColorMapper::addColors(VDouble doubleValue, const VColorPair& colors)
     {
-    VString doubleString("%lf", doubleValue);
-    mColorMap[doubleString] = colors;
+    mColorMap[VSTRING_DOUBLE(doubleValue)] = colors;
     }
 
 void VDoubleColorMapper::_readColorElement(const VSettingsNode& colorNode)
@@ -757,20 +752,17 @@ VColorPair VStringRangeColorMapper::_getColorsWithPrefixModeCheck(const VColorPa
 
 VColorPair VStringRangeColorMapper::getColors(int intValue) const
     {
-    VString stringValue("%d", intValue);
-    return this->getColors(stringValue);
+    return this->getColors(VSTRING_INT(intValue));
     }
 
 VColorPair VStringRangeColorMapper::getColors(Vs64 int64Value) const
     {
-    VString stringValue("%lld", int64Value);
-    return this->getColors(stringValue);
+    return this->getColors(VSTRING_S64(int64Value));
     }
 
 VColorPair VStringRangeColorMapper::getColors(VDouble doubleValue) const
     {
-    VString stringValue("%lf", doubleValue);
-    return this->getColors(stringValue);
+    return this->getColors(VSTRING_DOUBLE(doubleValue));
     }
 
 void VStringRangeColorMapper::addColors(const VString& rangeMin, const VColorPair& rangeColors)

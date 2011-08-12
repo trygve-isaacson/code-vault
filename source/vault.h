@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -14,6 +14,7 @@ This set of includes is enough to pull in all vault header files.
 
 #include "vtypes.h"
 #include "vexception.h"
+#include "vassert.h"
 #include "vchar.h"
 #include "vlogger.h"
 #include "vsettings.h"
@@ -37,7 +38,6 @@ This set of includes is enough to pull in all vault header files.
 #include "vserver.h"
 #include "vclientsession.h"
 #include "vmessage.h"
-#include "vmessagepool.h"
 #include "vmessagequeue.h"
 #include "vmessagehandler.h"
 #include "vmessageinputthread.h"

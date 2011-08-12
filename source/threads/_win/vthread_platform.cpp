@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -52,7 +52,7 @@ void VThread::threadCreate(VThreadID_Type* threadID, bool /*createDetached*/, th
     if (threadHandle == NULL)
         {
         int errorCode = (int) ::GetLastError();
-        throw VException(errorCode, VString("VThread::threadCreate: CreateThread returned null, error %d.", errorCode));
+        throw VStackTraceException(errorCode, VSTRING_FORMAT("VThread::threadCreate: CreateThread returned null, error %d.", errorCode));
         }
     
     _addThreadToMap(*threadID, threadHandle);
@@ -71,6 +71,7 @@ void VThread::_threadEnded(const VThread* thread)
     HANDLE threadHandle = _lookupThreadHandle(thread->threadID());
     _removeThreadFromMap(thread->threadID());
     SetEvent(threadHandle);    // signal on this thread, so join()ers unblock
+    CloseHandle(threadHandle); // we use CreateThread() so must call CloseHandle() after thread ends
     }
 
 // static

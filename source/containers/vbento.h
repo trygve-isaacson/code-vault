@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -310,12 +310,14 @@ class VBentoNode
         objects, to a text stream in Bento Text Format.
         @param    stream    the stream to write to
         @param    lineWrap  true if each bento node should start on its own indented line
-        @param    depth     if lineWrap is true, the indent level depth of this node
+        @param    indentDepth if lineWrap is true, the indent level depth of this node
         */
-        void writeToBentoTextStream(VTextIOStream& stream, bool lineWrap=false, int depth=0) const;
+        void writeToBentoTextStream(VTextIOStream& stream, bool lineWrap=false, int indentDepth=0) const;
         /**
         Writes the object, including its attributes and contained child
-        objects, to a text stream in Bento Text Format.
+        objects, to a text stream in Bento Text Format. Use some caution in calling this vs.
+        writeToBentoTextStream, since the entire hierarchy must be collected into a single
+        string here.
         @param    s    the string to write to
         */
         void writeToBentoTextString(VString& s) const;
@@ -527,10 +529,10 @@ class VBentoNode
         Writes the object, including its attributes and contained child
         objects, to an XML text stream.
         @param    stream    the stream to write to
-        @param    indentLevel    the number of spaces to indent this object's
-                            level in the object hierarchy
+        @param    lineWrap  true if each bento node should start on its own indented line
+        @param    indentDepth if lineWrap is true, the indent level depth of this node
         */
-        void writeToXMLTextStream(VTextIOStream& stream, int indentLevel=0) const;
+        void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap=false, int indentDepth=0) const;
         /**
         Prints the node's XML text rendering to stdout for debugging purposes.
         */
@@ -624,6 +626,17 @@ class VBentoNode
         @return    a pointer to the found attribute object, or NULL if not found
         */
         const VBentoAttribute* _findAttribute(const VString& name, const VString& dataType) const;
+        /**
+        This is the same as _findAttribute, but it returns a non-const pointer, and is
+        itself non-const, for use in non-const code that needs to update an existing
+        attribute. 
+        @param    name        the attribute name to match
+        @param    dataType    the data type name to match; typically you should
+                            supply the static DATA_TYPE_ID() method of the desired
+                            VBentoAttribute class, for example VBentoS8::DATA_TYPE_ID()
+        @return    a pointer to the found attribute object, or NULL if not found
+        */
+        VBentoAttribute* _findMutableAttribute(const VString& name, const VString& dataType);
 
         /**
         Reads a dynamically-sized length indicator from the stream.
@@ -814,7 +827,9 @@ class VBentoAttribute
 
         const VString& getName() const; ///< Returns the attribute name. @return a reference to the attribute name string.
         const VString& getDataType() const; ///< Returns the data type name. @return a reference to the data type name string.
-        virtual void getValueAsPlainText(VString& s) const = 0; ///< Returns the attribute value in its plain, unadorned text form.
+
+        virtual bool xmlAppearsAsArray() const { return false; } ///< True if XML output requires this attribute to use a separate child tag for its array elements; implies override of writeToXMLTextStream
+        virtual void getValueAsXMLText(VString& s) const = 0; ///< Returns a string suitable for an XML attribute value, including escaping via _escapeXMLValue() if needed.
         virtual void getValueAsString(VString& s) const = 0; ///< Returns a printable form of the attribute value.
         virtual void getValueAsBentoTextString(VString& s) const = 0; ///< Returns a Bento Text form of the attribute value.
 
@@ -822,7 +837,9 @@ class VBentoAttribute
         Vs64 calculateTotalSize() const; ///< Returns the size, in bytes, of the attribute content plus dynamic size indicator if written to a binary stream. @return the attribute's binary size
         void writeToStream(VBinaryIOStream& stream) const; ///< Writes the attribute to a binary stream. @param stream the stream to write to
         void writeToBentoTextStream(VTextIOStream& stream) const; ///< Writes the object, including its attributes and contained child objects, to a text stream in Bento Text Format. @param stream the stream to write to
-        void writeToXMLTextStream(VTextIOStream& stream) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to
+
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int indentDepth) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to @param lineWrap true if each bento node should start on its own indented line @param indentDepth if lineWrap is true, the indent level depth of this node
+
         void printHexDump(VHex& hexDump) const; ///< Debugging method. Prints a hex dump of the stream. @param hexDump the hex dump formatter object
 
         static VBentoAttribute* newObjectFromStream(VBinaryIOStream& stream); ///< Creates a new attribute object by reading a binary stream. @param stream the stream to read from @return the new object
@@ -832,8 +849,9 @@ class VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const = 0; ///< Returns the length of this object's raw data only; pure virtual. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const = 0; ///< Writes the object's raw data only to a binary stream; pure virtual. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const = 0; ///< Writes the object's raw data only to a text stream as XML; pure virtual. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const = 0; ///< Writes the object's raw data only to a binary stream; pure virtual. @param stream the stream to write to
+
+        static void _escapeXMLValue(VString& text); ///< Modifies the input XML value string by replacing any necessary characters with XML escape sequences. @param text the value text to be escaped
 
     private:
 
@@ -858,9 +876,9 @@ class VBentoS8 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoS8(this->getName(), mValue); }
         VBentoS8& operator=(const VBentoS8& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%d", mValue); }
-        virtual void getValueAsString(VString& s) const { s.format("%d 0x%02X", mValue, mValue); }
-        virtual void getValueAsBentoTextString(VString& s) const { s.format("%d", mValue); }
+        virtual void getValueAsXMLText(VString& s) const { s = VSTRING_S8(mValue); }
+        virtual void getValueAsString(VString& s) const { s.format(VSTRING_FORMATTER_S8 " 0x%02X", mValue, mValue); }
+        virtual void getValueAsBentoTextString(VString& s) const { s = VSTRING_S8(mValue); }
 
         inline Vs8 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(Vs8 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
@@ -868,8 +886,7 @@ class VBentoS8 : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 1; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeS8(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%d", (int) mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeS8(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -893,9 +910,9 @@ class VBentoU8 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoU8(this->getName(), mValue); }
         VBentoU8& operator=(const VBentoU8& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%u", mValue); }
-        virtual void getValueAsString(VString& s) const { s.format("%u 0x%02X", mValue, mValue); }
-        virtual void getValueAsBentoTextString(VString& s) const { s.format("%u", mValue); }
+        virtual void getValueAsXMLText(VString& s) const { s = VSTRING_U8(mValue); }
+        virtual void getValueAsString(VString& s) const { s.format(VSTRING_FORMATTER_U8 " 0x%02X", mValue, mValue); }
+        virtual void getValueAsBentoTextString(VString& s) const { s = VSTRING_U8(mValue); }
 
         inline Vu8 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(Vu8 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
@@ -903,8 +920,7 @@ class VBentoU8 : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 1; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeU8(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%d", (int) mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeU8(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -928,9 +944,9 @@ class VBentoS16 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoS16(this->getName(), mValue); }
         VBentoS16& operator=(const VBentoS16& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%hd", mValue); }
-        virtual void getValueAsString(VString& s) const { s.format("%hd 0x%04X", mValue, mValue); }
-        virtual void getValueAsBentoTextString(VString& s) const { s.format("%hd", mValue); }
+        virtual void getValueAsXMLText(VString& s) const { s = VSTRING_S16(mValue); }
+        virtual void getValueAsString(VString& s) const { s.format(VSTRING_FORMATTER_S16 " 0x%04X", mValue, mValue); }
+        virtual void getValueAsBentoTextString(VString& s) const { s = VSTRING_S16(mValue); }
 
         inline Vs16 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(Vs16 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
@@ -938,8 +954,7 @@ class VBentoS16 : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 2; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeS16(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%d", (int) mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeS16(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -963,9 +978,9 @@ class VBentoU16 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoU16(this->getName(), mValue); }
         VBentoU16& operator=(const VBentoU16& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%hu", mValue); }
-        virtual void getValueAsString(VString& s) const { s.format("%hu 0x%04X", mValue, mValue); }
-        virtual void getValueAsBentoTextString(VString& s) const { s.format("%hu", mValue); }
+        virtual void getValueAsXMLText(VString& s) const { s = VSTRING_U16(mValue); }
+        virtual void getValueAsString(VString& s) const { s.format(VSTRING_FORMATTER_U16 " 0x%04X", mValue, mValue); }
+        virtual void getValueAsBentoTextString(VString& s) const { s = VSTRING_U16(mValue); }
 
         inline Vu16 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(Vu16 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
@@ -973,8 +988,7 @@ class VBentoU16 : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 2; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeU16(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%d", (int) mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeU16(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -998,9 +1012,9 @@ class VBentoS32 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoS32(this->getName(), mValue); }
         VBentoS32& operator=(const VBentoS32& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%ld", mValue); }
-        virtual void getValueAsString(VString& s) const { s.format("%ld 0x%08X", mValue, mValue); }
-        virtual void getValueAsBentoTextString(VString& s) const { s.format("%ld", mValue); }
+        virtual void getValueAsXMLText(VString& s) const { s = VSTRING_S32(mValue); }
+        virtual void getValueAsString(VString& s) const { s.format(VSTRING_FORMATTER_S32 " 0x%08X", mValue, mValue); }
+        virtual void getValueAsBentoTextString(VString& s) const { s = VSTRING_S32(mValue); }
 
         inline Vs32 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(Vs32 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
@@ -1008,8 +1022,7 @@ class VBentoS32 : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 4; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeS32(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%d", mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeS32(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1033,9 +1046,9 @@ class VBentoU32 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoU32(this->getName(), mValue); }
         VBentoU32& operator=(const VBentoU32& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%lu", mValue); }
-        virtual void getValueAsString(VString& s) const { s.format("%lu 0x%08X", mValue, mValue); }
-        virtual void getValueAsBentoTextString(VString& s) const { s.format("%lu", mValue); }
+        virtual void getValueAsXMLText(VString& s) const { s = VSTRING_U32(mValue); }
+        virtual void getValueAsString(VString& s) const { s.format(VSTRING_FORMATTER_U32 " 0x%08X", mValue, mValue); }
+        virtual void getValueAsBentoTextString(VString& s) const { s = VSTRING_U32(mValue); }
 
         inline Vu32 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(Vu32 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
@@ -1043,8 +1056,7 @@ class VBentoU32 : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 4; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeU32(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%u", mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeU32(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1068,9 +1080,9 @@ class VBentoS64 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoS64(this->getName(), mValue); }
         VBentoS64& operator=(const VBentoS64& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%lld", mValue); }
-        virtual void getValueAsString(VString& s) const { s.format("%lld 0x%016llX", mValue, mValue); }
-        virtual void getValueAsBentoTextString(VString& s) const { s.format("%lld", mValue); }
+        virtual void getValueAsXMLText(VString& s) const { s = VSTRING_S64(mValue); }
+        virtual void getValueAsString(VString& s) const { s.format(VSTRING_FORMATTER_S64 " 0x%016llX", mValue, mValue); }
+        virtual void getValueAsBentoTextString(VString& s) const { s = VSTRING_S64(mValue); }
 
         inline Vs64 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(Vs64 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
@@ -1078,8 +1090,7 @@ class VBentoS64 : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 8; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeS64(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%lld", mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeS64(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1103,9 +1114,9 @@ class VBentoU64 : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoU64(this->getName(), mValue); }
         VBentoU64& operator=(const VBentoU64& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%llu", mValue); }
-        virtual void getValueAsString(VString& s) const { s.format("%llu 0x%016llX", mValue, mValue); }
-        virtual void getValueAsBentoTextString(VString& s) const { s.format("%llu", mValue); }
+        virtual void getValueAsXMLText(VString& s) const { s = VSTRING_U64(mValue); }
+        virtual void getValueAsString(VString& s) const { s.format(VSTRING_FORMATTER_U64 " 0x%016llX", mValue, mValue); }
+        virtual void getValueAsBentoTextString(VString& s) const { s = VSTRING_U64(mValue); }
 
         inline Vu64 getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(Vu64 i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
@@ -1113,8 +1124,7 @@ class VBentoU64 : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 8; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeU64(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { VString s("%llu", mValue); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeU64(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1138,9 +1148,9 @@ class VBentoBool : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoBool(this->getName(), mValue); }
         VBentoBool& operator=(const VBentoBool& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%s", (mValue ? "true":"false")); }
+        virtual void getValueAsXMLText(VString& s) const { s = VSTRING_BOOL(mValue); }
         virtual void getValueAsString(VString& s) const { s.format("%s 0x%02X", (mValue ? "true":"false"), static_cast<Vu8>(mValue)); }
-        virtual void getValueAsBentoTextString(VString& s) const { s.format("%s", (mValue ? "true":"false")); }
+        virtual void getValueAsBentoTextString(VString& s) const { s = VSTRING_BOOL(mValue); }
 
         inline bool getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(bool b) { mValue = b; } ///< Sets the attribute's value. @param b the attribute value
@@ -1148,8 +1158,7 @@ class VBentoBool : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 1; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeBool(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(mValue?"true":"false"); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeBool(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1173,7 +1182,7 @@ class VBentoString : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoString(this->getName(), mValue, mEncoding); }
         VBentoString& operator=(const VBentoString& rhs) { VBentoAttribute::operator=(rhs); mEncoding = rhs.mEncoding; mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s = mValue; }
+        virtual void getValueAsXMLText(VString& s) const { s = mValue; VBentoAttribute::_escapeXMLValue(s); }
         virtual void getValueAsString(VString& s) const { s.format("\"%s\"", mValue.chars()); }
         virtual void getValueAsBentoTextString(VString& s) const { s = mValue; }
 
@@ -1186,8 +1195,7 @@ class VBentoString : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return VBentoNode::_getBinaryStringLength(mEncoding) + VBentoNode::_getBinaryStringLength(mValue); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeString(mEncoding); stream.writeString(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(mValue); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeString(mEncoding); stream.writeString(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1212,7 +1220,7 @@ class VBentoChar : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoChar(this->getName(), mValue); }
         VBentoChar& operator=(const VBentoChar& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s = mValue; }
+        virtual void getValueAsXMLText(VString& s) const { s = mValue; VBentoAttribute::_escapeXMLValue(s); }
         virtual void getValueAsString(VString& s) const { s.format("\"%c\"", mValue.charValue()); }
         virtual void getValueAsBentoTextString(VString& s) const { s = mValue; }
 
@@ -1222,8 +1230,7 @@ class VBentoChar : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 1; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeU8(static_cast<Vu8>(mValue.charValue())); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%c",mValue.charValue())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeU8(static_cast<Vu8>(mValue.charValue())); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1247,9 +1254,9 @@ class VBentoFloat : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoFloat(this->getName(), mValue); }
         VBentoFloat& operator=(const VBentoFloat& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%f", mValue); }
-        virtual void getValueAsString(VString& s) const { s.format("\"%f\"", mValue); }
-        virtual void getValueAsBentoTextString(VString& s) const { s.format("%f", mValue); }
+        virtual void getValueAsXMLText(VString& s) const { s = VSTRING_FLOAT(mValue); }
+        virtual void getValueAsString(VString& s) const { s = VSTRING_FLOAT(mValue); }
+        virtual void getValueAsBentoTextString(VString& s) const { s = VSTRING_FLOAT(mValue); }
 
         inline VFloat getValue() const { return mValue; } ///< Returns the attribute's value. @return a reference to the value object
         inline void setValue(VFloat f) { mValue = f; } ///< Sets the attribute's value. @param f the attribute value
@@ -1257,8 +1264,7 @@ class VBentoFloat : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 4; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeFloat(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%f",mValue)); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeFloat(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1282,9 +1288,9 @@ class VBentoDouble : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoDouble(this->getName(), mValue); }
         VBentoDouble& operator=(const VBentoDouble& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%lf", mValue); }
-        virtual void getValueAsString(VString& s) const { s.format("\"%lf\"", mValue); }
-        virtual void getValueAsBentoTextString(VString& s) const { s.format("%lf", mValue); } // Not: %lf uses 6 decimal places by default; this limits output resolution.
+        virtual void getValueAsXMLText(VString& s) const { s = VSTRING_DOUBLE(mValue); }
+        virtual void getValueAsString(VString& s) const { s = VSTRING_DOUBLE(mValue); }
+        virtual void getValueAsBentoTextString(VString& s) const { s = VSTRING_DOUBLE(mValue); } // Note: %lf uses 6 decimal places by default; this limits output resolution.
 
         inline VDouble getValue() const { return mValue; } ///< Returns the attribute's value. @return a reference to the value object
         inline void setValue(VDouble d) { mValue = d; } ///< Sets the attribute's value. @param d the attribute value
@@ -1292,8 +1298,7 @@ class VBentoDouble : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 8; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeDouble(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%lf",mValue)); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeDouble(mValue); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1317,9 +1322,9 @@ class VBentoDuration : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoDuration(this->getName(), mValue); }
         VBentoDuration& operator=(const VBentoDuration& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%lld", mValue.getDurationMilliseconds()); }
-        virtual void getValueAsString(VString& s) const { s.format("\"%lldms\"", mValue.getDurationMilliseconds()); }
-        virtual void getValueAsBentoTextString(VString& s) const { s.format("%lldms", mValue.getDurationMilliseconds()); }
+        virtual void getValueAsXMLText(VString& s) const { s = mValue.getDurationString(); }
+        virtual void getValueAsString(VString& s) const { s.format(VSTRING_FORMATTER_S64 "ms", mValue.getDurationMilliseconds()); }
+        virtual void getValueAsBentoTextString(VString& s) const { s.format(VSTRING_FORMATTER_S64 "ms", mValue.getDurationMilliseconds()); }
 
         inline const VDuration& getValue() const { return mValue; } ///< Returns the attribute's value. @return a reference to the value object
         inline void setValue(const VDuration& d) { mValue = d; } ///< Sets the attribute's value. @param d the attribute value
@@ -1327,8 +1332,7 @@ class VBentoDuration : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 8; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeS64(mValue.getDurationMilliseconds()); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%lldms",mValue.getDurationMilliseconds())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeS64(mValue.getDurationMilliseconds()); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1352,7 +1356,7 @@ class VBentoInstant : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoInstant(this->getName(), mValue); }
         VBentoInstant& operator=(const VBentoInstant& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { mValue.getUTCString(s); }
+        virtual void getValueAsXMLText(VString& s) const { mValue.getUTCString(s); }
         virtual void getValueAsString(VString& s) const { mValue.getUTCString(s); }
         virtual void getValueAsBentoTextString(VString& s) const { mValue.getUTCString(s); }
 
@@ -1362,8 +1366,7 @@ class VBentoInstant : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 8; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { stream.writeS64(mValue.getValue()); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%lld",mValue.getValue())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeS64(mValue.getValue()); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1387,7 +1390,10 @@ class VBentoSize : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoSize(this->getName(), mValue); }
         VBentoSize& operator=(const VBentoSize& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%lf,%lf", mValue.getWidth(), mValue.getHeight()); }
+        virtual bool xmlAppearsAsArray() const { return true; } // Complex attribute requires its own child tag, formatted via writeToXMLTextStream().
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int indentDepth) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to @param lineWrap true if each bento node should start on its own indented line @param indentDepth if lineWrap is true, the indent level depth of this node
+
+        virtual void getValueAsXMLText(VString&) const {} // n/a, since xmlAppearsAsArray() returns true for this class
         virtual void getValueAsString(VString& s) const { s.format("%lf,%lf", mValue.getWidth(), mValue.getHeight()); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%lf,%lf", mValue.getWidth(), mValue.getHeight()); }
 
@@ -1397,8 +1403,7 @@ class VBentoSize : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 16; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%lf,%lf", mValue.getWidth(), mValue.getHeight())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1422,7 +1427,10 @@ class VBentoISize : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoISize(this->getName(), mValue); }
         VBentoISize& operator=(const VBentoISize& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%d,%d", mValue.getWidth(), mValue.getHeight()); }
+        virtual bool xmlAppearsAsArray() const { return true; } // Complex attribute requires its own child tag, formatted via writeToXMLTextStream().
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int indentDepth) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to @param lineWrap true if each bento node should start on its own indented line @param indentDepth if lineWrap is true, the indent level depth of this node
+
+        virtual void getValueAsXMLText(VString&) const {} // n/a, since xmlAppearsAsArray() returns true for this class
         virtual void getValueAsString(VString& s) const { s.format("%d,%d", mValue.getWidth(), mValue.getHeight()); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%d,%d", mValue.getWidth(), mValue.getHeight()); }
 
@@ -1432,8 +1440,7 @@ class VBentoISize : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 8; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%d,%d", mValue.getWidth(), mValue.getHeight())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1457,7 +1464,10 @@ class VBentoPoint : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoPoint(this->getName(), mValue); }
         VBentoPoint& operator=(const VBentoPoint& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%lf,%lf", mValue.getX(), mValue.getY()); }
+        virtual bool xmlAppearsAsArray() const { return true; } // Complex attribute requires its own child tag, formatted via writeToXMLTextStream().
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int indentDepth) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to @param lineWrap true if each bento node should start on its own indented line @param indentDepth if lineWrap is true, the indent level depth of this node
+
+        virtual void getValueAsXMLText(VString&) const {} // n/a, since xmlAppearsAsArray() returns true for this class
         virtual void getValueAsString(VString& s) const { s.format("%lf,%lf", mValue.getX(), mValue.getY()); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%lf,%lf", mValue.getX(), mValue.getY()); }
 
@@ -1467,8 +1477,7 @@ class VBentoPoint : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 16; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%lf,%lf", mValue.getX(), mValue.getY())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1492,7 +1501,10 @@ class VBentoIPoint : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoIPoint(this->getName(), mValue); }
         VBentoIPoint& operator=(const VBentoIPoint& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%d,%d", mValue.getX(), mValue.getY()); }
+        virtual bool xmlAppearsAsArray() const { return true; } // Complex attribute requires its own child tag, formatted via writeToXMLTextStream().
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int indentDepth) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to @param lineWrap true if each bento node should start on its own indented line @param indentDepth if lineWrap is true, the indent level depth of this node
+
+        virtual void getValueAsXMLText(VString&) const {} // n/a, since xmlAppearsAsArray() returns true for this class
         virtual void getValueAsString(VString& s) const { s.format("%d,%d", mValue.getX(), mValue.getY()); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%d,%d", mValue.getX(), mValue.getY()); }
 
@@ -1502,8 +1514,7 @@ class VBentoIPoint : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 8; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%d,%d", mValue.getX(), mValue.getY())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1527,7 +1538,10 @@ class VBentoPoint3D : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoPoint3D(this->getName(), mValue); }
         VBentoPoint3D& operator=(const VBentoPoint3D& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%lf,%lf,%lf", mValue.getX(), mValue.getY(), mValue.getZ()); }
+        virtual bool xmlAppearsAsArray() const { return true; } // Complex attribute requires its own child tag, formatted via writeToXMLTextStream().
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int indentDepth) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to @param lineWrap true if each bento node should start on its own indented line @param indentDepth if lineWrap is true, the indent level depth of this node
+
+        virtual void getValueAsXMLText(VString&) const {} // n/a, since xmlAppearsAsArray() returns true for this class
         virtual void getValueAsString(VString& s) const { s.format("%lf,%lf,%lf", mValue.getX(), mValue.getY(), mValue.getZ()); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%lf,%lf,%lf", mValue.getX(), mValue.getY(), mValue.getZ()); }
 
@@ -1537,8 +1551,7 @@ class VBentoPoint3D : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 24; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%lf,%lf,%lf", mValue.getX(), mValue.getY(), mValue.getZ())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1562,7 +1575,10 @@ class VBentoIPoint3D : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoIPoint3D(this->getName(), mValue); }
         VBentoIPoint3D& operator=(const VBentoIPoint3D& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%d,%d,%d", mValue.getX(), mValue.getY(), mValue.getZ()); }
+        virtual bool xmlAppearsAsArray() const { return true; } // Complex attribute requires its own child tag, formatted via writeToXMLTextStream().
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int indentDepth) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to @param lineWrap true if each bento node should start on its own indented line @param indentDepth if lineWrap is true, the indent level depth of this node
+
+        virtual void getValueAsXMLText(VString&) const {} // n/a, since xmlAppearsAsArray() returns true for this class
         virtual void getValueAsString(VString& s) const { s.format("%d,%d,%d", mValue.getX(), mValue.getY(), mValue.getZ()); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%d,%d,%d", mValue.getX(), mValue.getY(), mValue.getZ()); }
 
@@ -1572,8 +1588,7 @@ class VBentoIPoint3D : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 12; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%d,%d,%d", mValue.getX(), mValue.getY(), mValue.getZ())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1597,7 +1612,10 @@ class VBentoLine : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoLine(this->getName(), mValue); }
         VBentoLine& operator=(const VBentoLine& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%lf,%lf:%lf,%lf", mValue.getP1().getX(), mValue.getP1().getY(), mValue.getP2().getX(), mValue.getP2().getY()); }
+        virtual bool xmlAppearsAsArray() const { return true; } // Complex attribute requires its own child tag, formatted via writeToXMLTextStream().
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int indentDepth) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to @param lineWrap true if each bento node should start on its own indented line @param indentDepth if lineWrap is true, the indent level depth of this node
+
+        virtual void getValueAsXMLText(VString&) const {} // n/a, since xmlAppearsAsArray() returns true for this class
         virtual void getValueAsString(VString& s) const { s.format("%lf,%lf:%lf,%lf", mValue.getP1().getX(), mValue.getP1().getY(), mValue.getP2().getX(), mValue.getP2().getY()); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%lf,%lf:%lf,%lf", mValue.getP1().getX(), mValue.getP1().getY(), mValue.getP2().getX(), mValue.getP2().getY()); }
 
@@ -1607,8 +1625,7 @@ class VBentoLine : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 32; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%lf,%lf:%lf,%lf", mValue.getP1().getX(), mValue.getP1().getY(), mValue.getP2().getX(), mValue.getP2().getY())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1632,7 +1649,10 @@ class VBentoILine : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoILine(this->getName(), mValue); }
         VBentoILine& operator=(const VBentoILine& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%d,%d:%d,%d", mValue.getP1().getX(), mValue.getP1().getY(), mValue.getP2().getX(), mValue.getP2().getY()); }
+        virtual bool xmlAppearsAsArray() const { return true; } // Complex attribute requires its own child tag, formatted via writeToXMLTextStream().
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int indentDepth) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to @param lineWrap true if each bento node should start on its own indented line @param indentDepth if lineWrap is true, the indent level depth of this node
+
+        virtual void getValueAsXMLText(VString&) const {} // n/a, since xmlAppearsAsArray() returns true for this class
         virtual void getValueAsString(VString& s) const { s.format("%d,%d:%d,%d", mValue.getP1().getX(), mValue.getP1().getY(), mValue.getP2().getX(), mValue.getP2().getY()); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%d,%d:%d,%d", mValue.getP1().getX(), mValue.getP1().getY(), mValue.getP2().getX(), mValue.getP2().getY()); }
 
@@ -1642,8 +1662,7 @@ class VBentoILine : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 16; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%d,%d:%d,%d", mValue.getP1().getX(), mValue.getP1().getY(), mValue.getP2().getX(), mValue.getP2().getY())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1667,7 +1686,10 @@ class VBentoRect : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoRect(this->getName(), mValue); }
         VBentoRect& operator=(const VBentoRect& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%lf,%lf:%lf*%lf", mValue.getLeft(), mValue.getTop(), mValue.getWidth(), mValue.getHeight()); }
+        virtual bool xmlAppearsAsArray() const { return true; } // Complex attribute requires its own child tag, formatted via writeToXMLTextStream().
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int indentDepth) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to @param lineWrap true if each bento node should start on its own indented line @param indentDepth if lineWrap is true, the indent level depth of this node
+
+        virtual void getValueAsXMLText(VString&) const {} // n/a, since xmlAppearsAsArray() returns true for this class
         virtual void getValueAsString(VString& s) const { s.format("%lf,%lf:%lf*%lf", mValue.getLeft(), mValue.getTop(), mValue.getWidth(), mValue.getHeight()); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%lf,%lf:%lf*%lf", mValue.getLeft(), mValue.getTop(), mValue.getWidth(), mValue.getHeight()); }
 
@@ -1677,8 +1699,7 @@ class VBentoRect : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 32; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%lf,%lf:%lf*%lf", mValue.getLeft(), mValue.getTop(), mValue.getWidth(), mValue.getHeight())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1702,7 +1723,10 @@ class VBentoIRect : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoIRect(this->getName(), mValue); }
         VBentoIRect& operator=(const VBentoIRect& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%d,%d:%d*%d", mValue.getLeft(), mValue.getTop(), mValue.getWidth(), mValue.getHeight()); }
+        virtual bool xmlAppearsAsArray() const { return true; } // Complex attribute requires its own child tag, formatted via writeToXMLTextStream().
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int indentDepth) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to @param lineWrap true if each bento node should start on its own indented line @param indentDepth if lineWrap is true, the indent level depth of this node
+
+        virtual void getValueAsXMLText(VString&) const {} // n/a, since xmlAppearsAsArray() returns true for this class
         virtual void getValueAsString(VString& s) const { s.format("%d,%d:%d*%d", mValue.getLeft(), mValue.getTop(), mValue.getWidth(), mValue.getHeight()); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%d,%d:%d*%d", mValue.getLeft(), mValue.getTop(), mValue.getWidth(), mValue.getHeight()); }
 
@@ -1712,8 +1736,7 @@ class VBentoIRect : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 16; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%d,%d:%d*%d", mValue.getLeft(), mValue.getTop(), mValue.getWidth(), mValue.getHeight())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1739,7 +1762,10 @@ class VBentoPolygon : public VBentoAttribute
 
         static void readPolygonFromBentoTextString(const VString& s, VPolygon& p);
 
-        virtual void getValueAsPlainText(VString& s) const { VBentoPolygon::_formatPolygonAsBentoTextString(mValue, s); }
+        virtual bool xmlAppearsAsArray() const { return true; } // Complex attribute requires its own child tag, formatted via writeToXMLTextStream().
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int indentDepth) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to @param lineWrap true if each bento node should start on its own indented line @param indentDepth if lineWrap is true, the indent level depth of this node
+
+        virtual void getValueAsXMLText(VString&) const {} // n/a, since xmlAppearsAsArray() returns true for this class
         virtual void getValueAsString(VString& s) const { VBentoPolygon::_formatPolygonAsBentoTextString(mValue, s); }
         virtual void getValueAsBentoTextString(VString& s) const { VBentoPolygon::_formatPolygonAsBentoTextString(mValue, s); }
 
@@ -1749,8 +1775,7 @@ class VBentoPolygon : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 4 + (16*mValue.getNumPoints()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { VString s; VBentoPolygon::_formatPolygonAsBentoTextString(mValue, s); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
     
@@ -1778,7 +1803,10 @@ class VBentoIPolygon : public VBentoAttribute
 
         static void readPolygonFromBentoTextString(const VString& s, VIPolygon& p);
 
-        virtual void getValueAsPlainText(VString& s) const { VBentoIPolygon::_formatPolygonAsBentoTextString(mValue, s); }
+        virtual bool xmlAppearsAsArray() const { return true; } // Complex attribute requires its own child tag, formatted via writeToXMLTextStream().
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int indentDepth) const; ///< Writes the attribute to a text stream as XML. @param stream the stream to write to @param lineWrap true if each bento node should start on its own indented line @param indentDepth if lineWrap is true, the indent level depth of this node
+
+        virtual void getValueAsXMLText(VString&) const {} // n/a, since xmlAppearsAsArray() returns true for this class
         virtual void getValueAsString(VString& s) const { VBentoIPolygon::_formatPolygonAsBentoTextString(mValue, s); }
         virtual void getValueAsBentoTextString(VString& s) const { VBentoIPolygon::_formatPolygonAsBentoTextString(mValue, s); }
 
@@ -1788,8 +1816,7 @@ class VBentoIPolygon : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 4 + (8*mValue.getNumPoints()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { VString s; VBentoIPolygon::_formatPolygonAsBentoTextString(mValue, s); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1815,7 +1842,7 @@ class VBentoColor : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoColor(this->getName(), mValue); }
         VBentoColor& operator=(const VBentoColor& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { s.format("%d,%d,%d,%d", mValue.getRed(), mValue.getGreen(), mValue.getBlue(), mValue.getAlpha()); }
+        virtual void getValueAsXMLText(VString& s) const { s = mValue.getCSSColor(); }
         virtual void getValueAsString(VString& s) const { s.format("%d,%d,%d,%d", mValue.getRed(), mValue.getGreen(), mValue.getBlue(), mValue.getAlpha()); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format("%d,%d,%d,%d", mValue.getRed(), mValue.getGreen(), mValue.getBlue(), mValue.getAlpha()); }
 
@@ -1825,8 +1852,7 @@ class VBentoColor : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return 4; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString(VString("%d,%d,%d,%d", mValue.getRed(), mValue.getGreen(), mValue.getBlue(), mValue.getAlpha())); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1853,7 +1879,7 @@ class VBentoBinary : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoBinary(this->getName(), mValue.getBuffer(), mValue.getEOFOffset()); }
         VBentoBinary& operator=(const VBentoBinary& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { this->_getValueAsHexString(s); }
+        virtual void getValueAsXMLText(VString& s) const { this->_getValueAsHexString(s); }
         virtual void getValueAsString(VString& s) const { this->_getValueAsHexString(s); }
         virtual void getValueAsBentoTextString(VString& s) const { this->_getValueAsHexString(s); }
 
@@ -1863,8 +1889,7 @@ class VBentoBinary : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { Vs64 bufferLength = mValue.getEOFOffset(); return VBentoNode::_getLengthOfLength(bufferLength) + bufferLength; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const; ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { VString s; this->_getValueAsHexString(s); stream.writeString(s); } ///< Writes the object's raw data only to a text stream. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const; ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
     
@@ -1890,10 +1915,10 @@ class VBentoUnknownValue : public VBentoAttribute
         VBentoUnknownValue(VBinaryIOStream& stream, Vs64 dataLength, const VString& dataType); ///< Constructs by reading from stream. @param stream the stream to read @param dataLength the length of stream data to read @param dataType the original data type value
         virtual ~VBentoUnknownValue() {} ///< Destructor.
 
-        virtual VBentoAttribute* clone() const { throw VException("VBentoUnknownValue does not support clone()."); }
-        VBentoAttribute& operator=(const VBentoAttribute& /*rhs*/) { throw VException("VBentoUnknownValue does not support operator=()."); }
+        virtual VBentoAttribute* clone() const { throw VUnimplementedException("VBentoUnknownValue does not support clone()."); }
+        VBentoAttribute& operator=(const VBentoAttribute& /*rhs*/) { throw VUnimplementedException("VBentoUnknownValue does not support operator=()."); }
 
-        virtual void getValueAsPlainText(VString& s) const { s = VString::EMPTY(); }
+        virtual void getValueAsXMLText(VString& s) const { VHex::bufferToHexString(mValue.getBuffer(), mValue.getEOFOffset(), s, true/* want leading "0x" */); }
         virtual void getValueAsString(VString& s) const { VHex::bufferToHexString(mValue.getBuffer(), mValue.getEOFOffset(), s, true/* want leading "0x" */); }
         virtual void getValueAsBentoTextString(VString& s) const { VHex::bufferToHexString(mValue.getBuffer(), mValue.getEOFOffset(), s, true/* want leading "0x" */); }
 
@@ -1902,8 +1927,7 @@ class VBentoUnknownValue : public VBentoAttribute
     protected:
 
         virtual Vs64 getDataLength() const { return mValue.getEOFOffset(); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const; ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
-        virtual void writeDataToStream(VTextIOStream& stream) const { stream.writeString("(binary data)"); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const; ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
@@ -1925,14 +1949,15 @@ class VBentoArray : public VBentoAttribute
 
         VBentoArray& operator=(const VBentoArray& rhs) { VBentoAttribute::operator=(rhs); return *this; }
 
-        virtual void getValueAsPlainText(VString& s) const { this->_getValueAsBentoTextString(s); }
+        virtual bool xmlAppearsAsArray() const { return true; } // Complex attribute requires its own child tag, formatted via writeToXMLTextStream().
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const = 0; // Force subclasses to implement.
+
+        virtual void getValueAsXMLText(VString&) const {} // n/a, since xmlAppearsAsArray() returns true for this class
         virtual void getValueAsString(VString& s) const { this->_getValueAsBentoTextString(s); }
         virtual void getValueAsBentoTextString(VString& s) const { this->_getValueAsBentoTextString(s); }
 
     protected:
 
-        virtual void writeDataToStream(VTextIOStream& stream) const { VString s; this->_getValueAsBentoTextString(s); stream.writeString(s); } ///< Writes the object's raw data only to a text stream as XML. @param stream the stream to write to
-    
         virtual int _getNumElements() const = 0;
         virtual void _appendElementBentoText(int elementIndex, VString& s) const = 0;
 
@@ -1966,10 +1991,12 @@ class VBentoS8Array : public VBentoArray
         inline void appendValue(Vs8 element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
         inline void appendValues(const Vs8Array& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
+
     protected:
 
         virtual Vs64 getDataLength() const { return 4 + (1 * mValue.size()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (Vs8Array::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeS8(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (Vs8Array::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeS8(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
         virtual int _getNumElements() const { return static_cast<int>(mValue.size()); }
         virtual void _appendElementBentoText(int elementIndex, VString& s) const { s += mValue[elementIndex]; }
@@ -2004,10 +2031,12 @@ class VBentoS16Array : public VBentoArray
         inline void appendValue(Vs16 element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
         inline void appendValues(const Vs16Array& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
+
     protected:
 
         virtual Vs64 getDataLength() const { return 4 + (2 * mValue.size()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (Vs16Array::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeS16(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (Vs16Array::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeS16(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
         virtual int _getNumElements() const { return static_cast<int>(mValue.size()); }
         virtual void _appendElementBentoText(int elementIndex, VString& s) const { s += mValue[elementIndex]; }
@@ -2042,10 +2071,12 @@ class VBentoS32Array : public VBentoArray
         inline void appendValue(Vs32 element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
         inline void appendValues(const Vs32Array& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
+
     protected:
 
         virtual Vs64 getDataLength() const { return 4 + (4 * mValue.size()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (Vs32Array::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeS32(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (Vs32Array::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeS32(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
         virtual int _getNumElements() const { return static_cast<int>(mValue.size()); }
         virtual void _appendElementBentoText(int elementIndex, VString& s) const { s += mValue[elementIndex]; }
@@ -2080,10 +2111,12 @@ class VBentoS64Array : public VBentoArray
         inline void appendValue(Vs64 element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
         inline void appendValues(const Vs64Array& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
+
     protected:
 
         virtual Vs64 getDataLength() const { return 4 + (8 * mValue.size()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (Vs64Array::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeS64(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (Vs64Array::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeS64(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
         virtual int _getNumElements() const { return static_cast<int>(mValue.size()); }
         virtual void _appendElementBentoText(int elementIndex, VString& s) const { s += mValue[elementIndex]; }
@@ -2118,10 +2151,12 @@ class VBentoStringArray : public VBentoArray
         inline void appendValue(const VString& element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
         inline void appendValues(const VStringVector& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
+
     protected:
 
         virtual Vs64 getDataLength() const { Vs64 binaryStringsLength = 0; for (VStringVector::const_iterator i = mValue.begin(); i != mValue.end(); ++i) binaryStringsLength += VBentoNode::_getBinaryStringLength(*i); return 4 + binaryStringsLength; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (VStringVector::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeString(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (VStringVector::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeString(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
         virtual int _getNumElements() const { return static_cast<int>(mValue.size()); }
         virtual void _appendElementBentoText(int elementIndex, VString& s) const { VString valueString = mValue[elementIndex]; valueString.replace("\"","\\\\\""); s += '"'; s += valueString; s += '"'; }
@@ -2156,10 +2191,12 @@ class VBentoBoolArray : public VBentoArray
         inline void appendValue(bool element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
         inline void appendValues(const VBoolArray& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
+
     protected:
 
         virtual Vs64 getDataLength() const { return 4 + (1 * mValue.size()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (VBoolArray::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeBool(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (VBoolArray::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeBool(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
         virtual int _getNumElements() const { return static_cast<int>(mValue.size()); }
         virtual void _appendElementBentoText(int elementIndex, VString& s) const { s += (mValue[elementIndex] ? "true":"false"); }
@@ -2194,10 +2231,12 @@ class VBentoDoubleArray : public VBentoArray
         inline void appendValue(VDouble element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
         inline void appendValues(const VDoubleArray& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
+
     protected:
 
         virtual Vs64 getDataLength() const { return 4 + (8 * mValue.size()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (VDoubleArray::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeDouble(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (VDoubleArray::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeDouble(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
         virtual int _getNumElements() const { return static_cast<int>(mValue.size()); }
         virtual void _appendElementBentoText(int elementIndex, VString& s) const { s += mValue[elementIndex]; }
@@ -2232,10 +2271,12 @@ class VBentoDurationArray : public VBentoArray
         inline void appendValue(const VDuration& element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
         inline void appendValues(const VDurationVector& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
+
     protected:
 
         virtual Vs64 getDataLength() const { return 4 + (8 * mValue.size()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (VDurationVector::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeDuration(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (VDurationVector::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeDuration(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
         virtual int _getNumElements() const { return static_cast<int>(mValue.size()); }
         virtual void _appendElementBentoText(int elementIndex, VString& s) const { s += mValue[elementIndex].getDurationMilliseconds(); s += "ms"; }
@@ -2270,10 +2311,12 @@ class VBentoInstantArray : public VBentoArray
         inline void appendValue(const VInstant& element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
         inline void appendValues(const VInstantVector& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
+        virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
+
     protected:
 
         virtual Vs64 getDataLength() const { return 4 + (8 * mValue.size()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (VInstantVector::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeInstant(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (VInstantVector::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeInstant(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
         virtual int _getNumElements() const { return static_cast<int>(mValue.size()); }
         virtual void _appendElementBentoText(int elementIndex, VString& s) const { VString instantString; mValue[elementIndex].getUTCString(instantString); s += instantString; }

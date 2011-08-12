@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.1
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -47,7 +47,7 @@ static void getCurrentTZ(VString& tz)
 
 static void setCurrentTZ(const VString& tz)
     {
-    VString envString("TZ=%s", tz.chars());
+    VString envString(VSTRING_ARGS("TZ=%s", tz.chars()));
 
     /*
     The IEEE docs describe putenv()'s strange behavior:
@@ -83,7 +83,7 @@ time_t timegm(struct tm* t)
 #include "vexception.h"
 int vault::open(const char* path, int flags, mode_t mode)
     {
-    throw VException(VString("Error opening '%s': POSIX open() is not supported by CodeWarrior on Windows.", path));
+    throw VException(VSTRING_FORMAT("Error opening '%s': POSIX open() is not supported by CodeWarrior on Windows.", path));
     }
 #endif
 

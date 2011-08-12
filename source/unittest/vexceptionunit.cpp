@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -60,12 +60,12 @@ void VExceptionUnit::_testConstructors()
                 VString(ex2.what()) == "ex2",
                 "constructor 2");
 
-    VException    ex3(-3, VString("ex%d", 3));
+    VException    ex3(-3, VSTRING_FORMAT("ex%d", 3));
     this->test((ex3.getError() == -3) &&
                 VString(ex3.what()) == "ex3",
                 "constructor 3");
 
-    VException    ex4(-4, VString("ex%d", 4));
+    VException    ex4(-4, VSTRING_FORMAT("ex%d", 4));
     this->test((ex4.getError() == -4) &&
                 VString(ex4.what()) == "ex4",
                 "constructor 4");
@@ -75,12 +75,12 @@ void VExceptionUnit::_testConstructors()
                 VString(ex5.what()) == "ex5",
                 "constructor 5");
 
-    VException    ex6(VString("ex%d", 6));
+    VException    ex6(VSTRING_FORMAT("ex%d", 6));
     this->test((ex6.getError() == VException::kGenericError) &&
                 VString(ex6.what()) == "ex6",
                 "constructor 6");
 
-    VException    ex7(VString("ex%d", 7));
+    VException    ex7(VSTRING_FORMAT("ex%d", 7));
     this->test((ex7.getError() == VException::kGenericError) &&
                 VString(ex7.what()) == "ex7",
                 "constructor 7");
@@ -92,7 +92,7 @@ void VExceptionUnit::_testConstructors()
 
     VUnimplementedException    exUnimplemented("Unimplemented");
     this->test((exUnimplemented.getError() == VException::kGenericError) &&
-                VString(exUnimplemented.what()) == "Unimplemented",
+                VString(exUnimplemented.what()).startsWith("Unimplemented"),
                 "Unimplemented Exception constructor");
     }
 
@@ -221,12 +221,12 @@ void VExceptionUnit::_testCheckedDynamicCast()
         VExceptionUnit_ExampleBase* result;
         
         // This should return null and eat the expected exception.
-        VLOGGER_INFO(VString("Note: You may see a stack crawl for a bad dynamic cast originating at %s line %d after this line in the log. This is expected test output.", __FILE__, (__LINE__ + 1)));
+        VLOGGER_INFO(VSTRING_FORMAT("Note: You may see a stack crawl for a bad dynamic cast originating at %s line %d after this line in the log. This is expected test output.", __FILE__, (__LINE__ + 1)));
         result = V_CHECKED_DYNAMIC_CAST_NOTHROW(VExceptionUnit_SubclassBranchA*, garbage);
         this->test(result == NULL, "V_CHECKED_DYNAMIC_CAST_NOTHROW particular garbage => null");
 
         // This should throw an exception, so we should land in the catch block.
-        VLOGGER_INFO(VString("Note: You may see a stack crawl for a bad dynamic cast originating at %s line %d after this line in the log. This is expected test output.", __FILE__, (__LINE__ + 1)));
+        VLOGGER_INFO(VSTRING_FORMAT("Note: You may see a stack crawl for a bad dynamic cast originating at %s line %d after this line in the log. This is expected test output.", __FILE__, (__LINE__ + 1)));
         result = V_CHECKED_DYNAMIC_CAST(VExceptionUnit_SubclassBranchA*, garbage);
         this->test(false, "V_CHECKED_DYNAMIC_CAST particular garbage => throws exception");
         }
@@ -256,8 +256,8 @@ void VExceptionUnit::_testWin32SEH()
     try
         {
         caughtException = false;
-        int* nullptr = NULL;
-        *nullptr = 0; // kerblammo!
+        int* nullPtr = NULL;
+        *nullPtr = 0; // kerblammo!
         }
     catch (const VException& ex)
         {
@@ -343,6 +343,8 @@ void VExceptionUnit::_testWin32SEH()
     if (caughtException)
         this->logStatus(exceptionStack);
 
+#ifdef NDEBUG
+    // This negative test fails when running in the VC++ debugger, because the debugger intercepts it, preventing our throw.
     try
         {
         caughtException = false;
@@ -360,7 +362,10 @@ void VExceptionUnit::_testWin32SEH()
     this->test(caughtException, "Caught exception when dividing double by zero. If caught, stack follows");
     if (caughtException)
         this->logStatus(exceptionStack);
+#endif
 
+#ifdef NDEBUG
+    // This negative test fails when running in the VC++ debugger, because the debugger intercepts it, preventing our throw.
     try
         {
         caughtException = false;
@@ -377,7 +382,10 @@ void VExceptionUnit::_testWin32SEH()
     this->test(caughtException, "Caught exception when writing to misaligned address (32 bit write on odd byte boundary). If caught, stack follows");
     if (caughtException)
         this->logStatus(exceptionStack);
+#endif
 
+#ifdef VCOMPILER_MSVC
+#if _MSC_VER < 1600 // Visual C++ 2010 sees this code as improper (which it is, intentionally) and emits a compilation error. Only try to compile with earlier compiler versions.
     try
         {
         caughtException = false;
@@ -393,7 +401,12 @@ void VExceptionUnit::_testWin32SEH()
     this->test(caughtException, "Caught exception when writing to out of bounds stack array element. If caught, stack follows");
     if (caughtException)
         this->logStatus(exceptionStack);
+#endif
+#endif
 
+#ifdef VCOMPILER_MSVC
+#if _MSC_VER < 1600 // Visual C++ 2010 sees this code as improper (which it is, intentionally) and emits a compilation error. Only try to compile with earlier compiler versions.
+    // This negative test fails when running in the debugger, because the debugger catches it.
     try
         {
         caughtException = false;
@@ -409,6 +422,8 @@ void VExceptionUnit::_testWin32SEH()
     this->test(caughtException, "Caught exception when writing to negative index stack array element. If caught, stack follows");
     if (caughtException)
         this->logStatus(exceptionStack);
+#endif
+#endif
 
 #endif
     }

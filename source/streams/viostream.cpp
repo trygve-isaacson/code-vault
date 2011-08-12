@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -47,7 +47,7 @@ bool VIOStream::seek(Vs64 offset, int whence)
 
 bool VIOStream::seek0()
     {
-    return mRawStream.seek(0, SEEK_SET);
+    return mRawStream.seek0();
     }
 
 Vs64 VIOStream::getIOOffset() const

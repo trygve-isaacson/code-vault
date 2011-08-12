@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -18,6 +18,7 @@ http://www.bombaydigital.com/
 class VManagementInterface;
 class VThreadActionListener;
 class VLogger;
+class VBentoNode;
 
 /**
 
@@ -269,7 +270,7 @@ class VThread
         so you can set it later by calling this method. If you want the name to
         be really useful when debugging (or looking at log files) as a unique
         identifier (to tell threads apart), make it unique; one way would be to
-        use the object's address (e.g., VString("0x%08X", aThread)); if the thread
+        use the object's address (e.g., VSTRING_FORMAT("0x%08X", aThread)); if the thread
         is related to a socket, a more useful name would be a prefix plus the
         client IP and port (e.g., "INPUT:127.0.0.1:3922" for an input thread).
         @param    name    a name for this thread
@@ -283,6 +284,24 @@ class VThread
         */
         static void* threadMain(void* arg);
         
+        /**
+        Returns a Bento data hierarchy describing the set of threads existent at the
+        time of the call. Note that upon return, some of those threads may end, and
+        others may start; this is why we do not return thread pointers.
+        @param  bento   a bento node, presumed to be empty-constructed, which will be
+                        filled out with a name, and a child for each thread
+        */
+        static void getThreadsInfo(VBentoNode& bento);
+
+        /**
+        Calls stop() on a VThread specified by thread id, if it exists. If the thread does
+        not exists, this does nothing. If the thread does exist, stop() is called, and there
+        are no guarantees about whether the VThread will still exist upon return, because it
+        may terminate before return or after.
+        @param  threadID    the id of the thread to stop
+        */
+        static void stopThread(VThreadID_Type threadID);
+
         /**
         Returns thread statistics counters for debugging/diagnostic purposes.
         @see the statistics fields comments for meaning of each value
@@ -342,6 +361,21 @@ class VThread
         static VThreadID_Type threadSelf();
         
         /**
+        Returns the current thread's VThread. If the current thread is main or a thread that
+        was not created using VThread, a dummy "stand-in" object is returned, that is not actually
+        running or having a valid thread ID. But this means we guarantee to not return NULL.
+        */
+        static VThread* getCurrentThread();
+        
+        /**
+        This is a preferred alternative to getCurrentThread()->getName() to handle the case where
+        it is called from a thread that was not created with a VThread. It is smart enough to
+        return a name converted from the thread ID, rather than using the dummy "stand-in" thread
+        object that has a single name.
+        */
+        static VString getCurrentThreadName();
+
+        /**
         Sets the current thread's priority, specifying the Unix nice level.
         Wrapper for Unix setpriority using PRIO_PROCESS.
         @param    level    the nice level
@@ -388,7 +422,7 @@ class VThread
         bool                    mCreateDetached;    ///< True if the thread is created in detached state.
         VManagementInterface*   mManager;           ///< The VManagementInterface that manages us, or NULL.
         VThreadID_Type          mThreadID;          ///< The OS-specific thread ID value.
-        bool                    mIsRunning;         ///< The running state of the thread (@see isRunning()).
+        volatile bool           mIsRunning;         ///< The running state of the thread (@see isRunning()).
     
         // These static members track and control the existence of threads we create.
         static int gNumVThreads;                ///< The number of VThread objects that currently exist.
@@ -418,6 +452,43 @@ class VThread
         // threadEnded() calls.
         static void _threadStarting(const VThread* thread);
         static void _threadEnded(const VThread* thread);
+    };
+
+/**
+The VMainThread is a special case that is intended to be declared and called by the application's main function as follows:
+    int main(int argc, char** argv) {
+        VMainThread mainThread;
+        return mainThread.execute(argc, argv);
+    }
+This allows Vault to have a VThread object to represent the main thread, even though it is not a VThread-launched thread.
+Therefore you can call VThread::getCurrentThread() from the main thread and it will return the VMainThread object.
+You must not "start" the VMainThread, because it is not a real VThread. If you do, its start() method will throw.
+VMainThread's execute() method simply calls VThread::userMain() which is defined by the application as always.
+*/
+class VMainThread : public VThread
+    {
+    public:
+        VMainThread();
+        virtual ~VMainThread();
+        virtual void start();
+        virtual void run() {} // Will never be called because start() throws.
+
+        int execute(int argc, char** argv);
+    };
+
+/**
+VForeignThread is a special case that is intended to be declared on the stack in a callback or similar function that
+is called by a foreign (non-VThread) source such as the Windows Service Control Manager. It allows you to give a
+name to that thread via the constructor, and it will register the current thread id with that name. This provides
+for getting a useful thread name (useful in VLogger output) from within that thread.
+*/
+class VForeignThread : public VThread
+    {
+    public:
+        VForeignThread(const VString& name);
+        virtual ~VForeignThread();
+        virtual void start();
+        virtual void run() {} // Will never be called because start() throws.
     };
 
 /**

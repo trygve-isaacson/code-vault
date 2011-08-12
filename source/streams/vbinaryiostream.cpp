@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -61,6 +61,11 @@ Vs32 VBinaryIOStream::readS32()
     return value;
     }
 
+int VBinaryIOStream::readInt32()
+    {
+    return static_cast<int>(this->readS32());
+    }
+
 Vu32 VBinaryIOStream::readU32()
     {
     Vu32 value;
@@ -111,7 +116,7 @@ void VBinaryIOStream::readString(VString& s)
     Vs64 length = this->readDynamicCount();
 
     if (length > V_MAX_S32)
-        throw VException("String with unsupported length > 2GB encountered in stream.");
+        throw VStackTraceException("String with unsupported length > 2GB encountered in stream.");
 
     if (length == 0) // Avoid forced allocation of a buffer if none is needed.
         {
@@ -254,6 +259,16 @@ void VBinaryIOStream::writeS32(Vs32 i)
     Vs32 value = i;
     V_BYTESWAP_HTON_S32_IN_PLACE(value);
     (void) this->write(reinterpret_cast<Vu8*> (&value), CONST_S64(4));
+    }
+
+void VBinaryIOStream::writeSize32(VSizeType i)
+    {
+    this->writeS32(static_cast<Vs32>(i));
+    }
+
+void VBinaryIOStream::writeInt32(int i)
+    {
+    this->writeS32(static_cast<Vs32>(i));
     }
 
 void VBinaryIOStream::writeU32(Vu32 i)

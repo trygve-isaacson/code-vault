@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -93,37 +93,38 @@ class VException : public std::exception
     
         /**
         Constructs a VException with default error code and empty message.
+        @param  recordStackTrace if true, will attempt to collect stack trace into mCallStack
         */
-        VException();
+        VException(bool recordStackTrace=false);
         /**
         Constructs a copy of another VException. Note that if the mErrorMessage
         is non-null, both objects will share a (const char*) value, which neither
         deletes on destruction since it is owned by the caller.
         @param  other   the exception to copy
         */
-        VException(const VException& other);
+        VException(const VException& other, bool recordStackTrace=false);
         /**
         Constructs a VException with error code and static message.
         @param    error            the error code
         @param    errorMessage    a static error message
         */
-        VException(int error, const char* errorMessage);
+        VException(int error, const char* errorMessage, bool recordStackTrace=false);
         /**
         Constructs a VException with error code and VString message.
         @param    error        the error code
         @param    errorString    the error message
         */
-        VException(int error, const VString& errorString);
+        VException(int error, const VString& errorString, bool recordStackTrace=false);
         /**
         Constructs a VException with default error code and static message.
         @param    errorMessage    a static error message
         */
-        VException(const char* errorMessage);
+        VException(const char* errorMessage, bool recordStackTrace=false);
         /**
         Constructs a VException with default error code and VString message.
         @param    errorString    the error message
         */
-        VException(const VString& errorString);
+        VException(const VString& errorString, bool recordStackTrace=false);
         /**
         Destructor. The throw() declaration is required to satisfy the
         base class std::exception definition.
@@ -153,6 +154,14 @@ class VException : public std::exception
         int getError() const;
         
         static const int kGenericError = -1;    ///< The default error code.
+        
+        /**
+        Returns a reference to the string vector containing the stack trace, if collected.
+        The vector will be empty if no stack trace was collected. The reference is invalid
+        when the exception is destructed.
+        @return the stack trace information, if it was collected
+        */
+        const VStringVector& getStackTrace() const;
 
         /**
         On Windows, and if V_TRANSLATE_WIN32_STRUCTURED_EXCEPTIONS is enabled, this function
@@ -187,13 +196,17 @@ class VException : public std::exception
         /** Asserts if any invariant is broken. */
         void _assertInvariant() const;
         
+        /** Called during construction if a stack trace was requested. */
+        void _recordStackTrace();
+
         /** Called by each ctor to make for a convenient place to set a
         breakpoint that will be hit on any exception. */
         static void _breakpointLocation();
-
+        
         int         mError;         ///< The error code.
         VString     mErrorString;   ///< The error string if NOT supplied as const char*.
         const char* mErrorMessage;  ///< The error string if supplied as const char*, else NULL.
+        VStringVector mStackTrace;   ///< Optional stack frame info strings.
         
         static bool gWin32SEHEnabled; ///< If false, compile-time-enabled installWin32SEHandler() does nothing at runtime.
     };
@@ -201,6 +214,21 @@ class VException : public std::exception
 /**
     @ingroup vexception
 */
+
+/**
+This simple helper class throws an exception with a stack trace included,
+without having to pass the boolean as you do with the base class.
+*/
+class VStackTraceException : public VException
+    {
+    public:
+    
+        VStackTraceException(const VString& errorString) :
+            VException(errorString, true) {}
+        VStackTraceException(int error, const VString& errorString) :
+            VException(error, errorString, true) {}
+        virtual ~VStackTraceException() throw() {}
+    };
 
 /**
 VEOFException is a VException that indicates that a stream reader has hit the
@@ -267,12 +295,12 @@ class VRangeException : public VException
         Constructs the exception with an error message.
         @param    errorMessage    the message
         */
-        VRangeException(const char* errorMessage) : VException(errorMessage) {}
+        VRangeException(const char* errorMessage, bool recordStackTrace=true) : VException(errorMessage, recordStackTrace) {}
         /**
         Constructs the exception with default error code and VString message.
         @param    errorString    the error message
         */
-        VRangeException(const VString& errorString) : VException(errorString) {}
+        VRangeException(const VString& errorString, bool recordStackTrace=true) : VException(errorString, recordStackTrace) {}
         /**
         Destructor.
         */
@@ -291,12 +319,12 @@ class VUnimplementedException : public VException
         Constructs the exception with an error message.
         @param    errorMessage    the message
         */
-        VUnimplementedException(const char* errorMessage) : VException(errorMessage) {}
+        VUnimplementedException(const char* errorMessage, bool recordStackTrace=true) : VException(errorMessage, recordStackTrace) {}
         /**
         Constructs the exception with default error code and VString message.
         @param    errorString    the error message
         */
-        VUnimplementedException(const VString& errorString) : VException(errorString) {}
+        VUnimplementedException(const VString& errorString, bool recordStackTrace=true) : VException(errorString, recordStackTrace) {}
         /**
         Destructor.
         */
@@ -316,14 +344,14 @@ class VOSStatusException : public VException
         Throws a VOSStatusException if err is non-zero; the error value is used for the
         VException error code.
         */
-        static void throwIfError(OSStatus err, const VString& message) { if (0 != err) throw VOSStatusException(err, message); }
+        static void throwIfError(OSStatus err, const VString& message, bool recordStackTrace=true) { if (0 != err) throw VOSStatusException(err, message, recordStackTrace); }
         
         /**
         Constructs the exception with the OSStatus value. The value is
         stored in the VException error code.
         @param err the error code
         */
-        VOSStatusException(OSStatus err, const VString& message) : VException(static_cast<int>(err), message) {}
+        VOSStatusException(OSStatus err, const VString& message, bool recordStackTrace=true) : VException(static_cast<int>(err), message, recordStackTrace) {}
         /**
         Destructor.
         */
@@ -366,7 +394,7 @@ static cast_to_type VcheckedDynamicCast(an_object_ptr& obj, const char* file, in
         // Avoid message construction overhead if no flags require it.
         if (logException || rethrowException)
             {
-            VString message("Exception in dynamic_cast operation at %s:%d: '%s'", file, line, ex.what());
+            VString message(VSTRING_ARGS("Exception in dynamic_cast operation at %s:%d: '%s'", file, line, ex.what()));
 
             if (logException)
                 {

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -21,7 +21,6 @@ http://www.bombaydigital.com/
     @ingroup vsocket
 */
 
-class VMessagePool;
 class VServer;
 class VSocketThread;
 
@@ -83,16 +82,16 @@ class VMessageHandler
         @param    session    the session for the client that sent this message, or NULL if n/a
         @param    thread    the thread processing the message (used to
                         correlate the message to a client session)
-        @param    pool    the message pool the
-                        message is released to when the handler is cleaned up
+        @param    messageFactory  a factory that instantiates messages suitable for this handler
+                            when it needs to send a message (assuming all such messages are uniform;
+                            if not, messages can be instantiated explicitly) (The caller owns the factory.)
         @param  mutex   if not null, a mutex that will be initially locked by the constructor
                         and unlocked by the destructor
         */
-        VMessageHandler(const VString& name, VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread, VMessagePool* pool, VMutex* mutex);
+        VMessageHandler(const VString& name, VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread, const VMessageFactory* messageFactory, VMutex* mutex);
         /**
-        Virtual destructor. VMessageHandler normally does not delete the
-        mMessage because the message will be put back in a message pool by the
-        caller.
+        Virtual destructor. VMessageHandler will delete the owned message (setting mMessage to NULL
+        will obviously circumvent this).
         */
         virtual ~VMessageHandler();
 
@@ -101,15 +100,15 @@ class VMessageHandler
         */
         virtual void processMessage() = 0;
         /**
-        Releases the message back to the pool. The subclass can prevent this
+        Releases the mMessage. The subclass can prevent this
         if needs to hang onto the message for longer, by either setting
-        fMessage to NULL before returning from processMessage() or by
+        mMessage to NULL before returning from processMessage() or by
         overridding this method.
         */
         virtual void releaseMessage();
         /**
-        Returns a message, which is either recycled from the pool, or newly
-        instantiated if the pool is empty.
+        Returns a newly instantiated message, using the message factory associated with
+        this message handler.
         @param    messageID        value with which to init the message's message ID
         @return a message object
         */
@@ -152,7 +151,10 @@ class VMessageHandler
                         look up the logger
         */
         void logMessageContentFields(const VString& details, VLogger* logger=NULL) const;
-
+        /**
+        Similar to logMessageContentFields, but for a lower level of messaging.
+        */
+        void logMessageDetailsFields(const VString& details, VLogger* logger=NULL) const;
         /**
         Logs (at the appropriate log level) the message handler name to
         indicate that the handler has been invoked or has ended.
@@ -202,7 +204,7 @@ class VMessageHandler
         VServer*                mServer;        ///< The server in which we are running.
         VClientSessionReference mSessionReference;  ///< The session reference for which we are running, which holds NULL if n/a.
         VSocketThread*          mThread;        ///< The thread in which we are running.
-        VMessagePool*           mPool;          ///< The pool to get/release messages from/to.
+        const VMessageFactory*  mMessageFactory;///< Factory for instantiating new messages this handler wants to send.
         VInstant                mStartTime;     ///< The time at which this handler was instantiated (message receipt). MUST BE DECLARED BEFORE mLocker.
         VMutexLocker            mLocker;        ///< The mutex locker for the mutex we were given.
         VInstant                mUnblockTime;   ///< The time at which this handler obtained the mLocker lock. MUST BE DECLARED AFTER mLocker.

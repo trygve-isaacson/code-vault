@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -52,7 +52,7 @@ void VStreamsUnit::run()
     this->test(rawStream.getIOOffset() == CONST_S64(20), "write-buffered stream offset");
     
     VBinaryIOStream    verifier(rawStream);
-    verifier.seek(0, SEEK_SET);
+    verifier.seek0();
     this->test(verifier.readS32() == 1234, "write-buffered stream check 1");
     this->test(verifier.readS32() == 9012, "write-buffered stream check 2");
     this->test(verifier.readS32() == 3456, "write-buffered stream check 3");
@@ -74,7 +74,7 @@ void VStreamsUnit::run()
     // in order to check the behavior of iterating over the chunks.
 
         {
-        copierIOStream1.seek(0, SEEK_SET);
+        copierIOStream1.seek0();
         copierRawStream2.setEOF(0);
         VStreamCopier    copier(64, &copierRawStream1, &copierRawStream2);
         while (copier.copyChunk())
@@ -83,7 +83,7 @@ void VStreamsUnit::run()
         }
 
         {
-        copierIOStream1.seek(0, SEEK_SET);
+        copierIOStream1.seek0();
         copierRawStream2.setEOF(0);
         VStreamCopier    copier(64, &copierIOStream1, &copierIOStream2);
         while (copier.copyChunk())
@@ -92,7 +92,7 @@ void VStreamsUnit::run()
         }
 
         {
-        copierIOStream1.seek(0, SEEK_SET);
+        copierIOStream1.seek0();
         copierRawStream2.setEOF(0);
         VStreamCopier    copier(64, &copierRawStream1, &copierIOStream2);
         while (copier.copyChunk())
@@ -101,7 +101,7 @@ void VStreamsUnit::run()
         }
 
         {
-        copierIOStream1.seek(0, SEEK_SET);
+        copierIOStream1.seek0();
         copierRawStream2.setEOF(0);
         VStreamCopier    copier(64, &copierIOStream1, &copierRawStream2);
         while (copier.copyChunk())
@@ -111,28 +111,28 @@ void VStreamsUnit::run()
 
     VStreamCopier    copier;
 
-    copierIOStream1.seek(0, SEEK_SET);
+    copierIOStream1.seek0();
     copierRawStream2.setEOF(0);
     copier.init(64, &copierRawStream1, &copierRawStream2);
     while (copier.copyChunk())
         { }
     this->test(copierRawStream1 == copierRawStream2, "stream copier init raw->raw");
 
-    copierIOStream1.seek(0, SEEK_SET);
+    copierIOStream1.seek0();
     copierRawStream2.setEOF(0);
     copier.init(64, &copierIOStream1, &copierIOStream2);
     while (copier.copyChunk())
         { }
     this->test(copierRawStream1 == copierRawStream2, "stream copier init io->io");
 
-    copierIOStream1.seek(0, SEEK_SET);
+    copierIOStream1.seek0();
     copierRawStream2.setEOF(0);
     copier.init(64, &copierRawStream1, &copierIOStream2);
     while (copier.copyChunk())
         { }
     this->test(copierRawStream1 == copierRawStream2, "stream copier init raw->io");
 
-    copierIOStream1.seek(0, SEEK_SET);
+    copierIOStream1.seek0();
     copierRawStream2.setEOF(0);
     copier.init(64, &copierIOStream1, &copierRawStream2);
     while (copier.copyChunk())
@@ -237,7 +237,7 @@ void VStreamsUnit::run()
         this->test(ro1.readS32() == 3, "ro1 3");
         
         // Verify that any attempt to write will throw EOF, regardless of io offset.
-        ro3.seek(0, SEEK_SET); // go back to start of stream
+        ro3.seek0(); // go back to start of stream
         try
             {
             ro3.writeS32(1);
@@ -262,7 +262,7 @@ void VStreamsUnit::run()
         // Write a very long string into the source, and reset it.
         const VString EXAMPLE_STRING("This is a very long string that we will copy from stream to stream using different overloaded APIs.");
         viostreamFrom.writeString(EXAMPLE_STRING);
-        viostreamFrom.seek(0, SEEK_SET);
+        viostreamFrom.seek0();
         
         // Copy 10 bytes at a time, using each of the 4 overloaded APIs.
         // 1. VStream to VStream
@@ -276,7 +276,7 @@ void VStreamsUnit::run()
         
         // Verify that the data was correctly copied.
         
-        viostreamTo.seek(0, SEEK_SET);
+        viostreamTo.seek0();
         this->test(viostreamTo.available() == 40, "all 40 bytes copied");
         
         VString whatWasCopied;

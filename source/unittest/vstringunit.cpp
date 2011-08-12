@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -142,7 +142,7 @@ void VStringUnit::run()
     VString nullFormatted(nullPointer);
     this->test(nullFormatted, VString::EMPTY(), "null ctor formatting");
     
-    VString    formatted("%s is %d years old", "Spot", 5);
+    VString    formatted(VSTRING_ARGS("%s is %d years old", "Spot", 5));
     this->test(formatted, "Spot is 5 years old", "ctor formatting");
 
     formatted.format("%s is %d years old", "Rover", 3);
@@ -177,6 +177,20 @@ void VStringUnit::run()
     testSource.copyToBuffer(testBuffer, sizeof(testBuffer));
     VString    testTarget(testBuffer);
     this->test(testTarget, "This text should be copied out.", "copy to chars");
+    // Test copying out to undersized buffer.
+    char    smallBuffer[5]; // holds a string of length 4, plus a null terminator
+    VString smallFit3("abc");
+    smallFit3.copyToBuffer(smallBuffer, 5);
+    VString smallVerify3(smallBuffer);
+    this->test(smallFit3, smallVerify3, "copyToBuffer len = n-2");
+    VString smallFit4("defg");
+    smallFit4.copyToBuffer(smallBuffer, 5);
+    VString smallVerify4(smallBuffer);
+    this->test(smallFit4, smallVerify4, "copyToBuffer len = n-1");
+    VString smallWontFit5("ghijk");
+    smallWontFit5.copyToBuffer(smallBuffer, 5);
+    VString smallVerify5(smallBuffer);
+    this->test("ghij", smallVerify5, "copyToBuffer len = n");
     // Test copying in.
     testTarget = "           "; // clear out some of what we expect to alter
     testTarget.copyFromBuffer(testBuffer, 0, 4);

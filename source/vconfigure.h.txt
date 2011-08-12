@@ -16,6 +16,16 @@ clear by reading which ones you are not using.
 /* This flag enables formatting VString with the vararg ctor and the format() method. */
 #define VAULT_VARARG_STRING_FORMATTING_SUPPORT
 
+/* This flag enforces strict formatting for VString using VSTRING_FORMAT and VSTRING_ARGS macros. */
+#define VAULT_VSTRING_STRICT_FORMATTING
+
+/* This flag enables the VASSERT macros in general. Define to 0 to disable. Enabled if not defined. */
+#define VAULT_ASSERTIONS_ENABLED 1
+
+/* This flag means that a failed VASSERT condition check will throw a VStackTraceException in addition to logging an error. */
+/* Define to 0 to disable. Enabled if not defined. */
+#define VAULT_ASSERTIONS_THROW 1
+
 /* This flag enables formatting VString with boost:format on several methods. */
 /* It is only available if you are using Boost. */
 #define VAULT_BOOST_STRING_FORMATTING_SUPPORT
@@ -24,7 +34,7 @@ clear by reading which ones you are not using.
 /* It is only available if you are using Qt. */
 #define VAULT_QT_SUPPORT
 
-/* This flag enables use of a user-defined stack crawl handler hook in VThread and Vassert. */
+/* This flag enables use of a user-defined stack crawl handler hook in VThread and VASSERT. */
 /* It requires you to create a stack crawl header file that contains certain items (see VThread.cpp). */
 #define VAULT_USER_STACKCRAWL_SUPPORT
 

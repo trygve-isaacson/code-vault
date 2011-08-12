@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.1
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -90,7 +90,7 @@ void VUnit::logNormalEnd()
 
 void VUnit::logExceptionalEnd(const VString& exceptionMessage)
     {
-    VTestInfo error(false, VString("after %s, threw exception: %s", mLastTestDescription.chars(), exceptionMessage.chars()), VDuration::ZERO());
+    VTestInfo error(false, VSTRING_FORMAT("after %s, threw exception: %s", mLastTestDescription.chars(), exceptionMessage.chars()), VDuration::ZERO());
     mResults.push_back(error);
 
     ++mNumFailedTests;
@@ -107,14 +107,14 @@ void VUnit::testAssertion(bool successful, const VString& filePath, int lineNumb
     {
     VString fileName;
     filePath.getSubstring(fileName, filePath.lastIndexOf('/') + 1);
-    VString testName("%s:%d %s", fileName.chars(), lineNumber, labelSuffix.chars());
+    VString testName(VSTRING_ARGS("%s:%d %s", fileName.chars(), lineNumber, labelSuffix.chars()));
 
     mLastTestDescription = testName;
 
     if (successful)
         this->recordSuccess(testName);
     else
-        this->recordFailure(VString("%s: %s", testName.chars(), expectedDescription.chars()));
+        this->recordFailure(VSTRING_FORMAT("%s: %s", testName.chars(), expectedDescription.chars()));
 
     mPreviousTestEndedSnapshot = VInstant::snapshot();
     }
@@ -141,16 +141,6 @@ void VUnit::logStatus(const VString& description)
     if (mWriters != NULL)
         for (VUnitOutputWriterList::iterator i = mWriters->begin(); i != mWriters->end(); ++i)
             (*i)->testSuiteStatusMessage(description);
-    }
-
-void VUnit::logMessage(const VString& message)
-    {
-    // Note that we don't use VLOGGER_xxx and its time stamping and
-    // formatting, but use raw logging, so that:
-    // - we don't time stamp the messages, so diff will work well
-    // - the code undergoing testing can log w/o us interfering and vice versa
-
-    VLogger::getLogger("VUnit")->rawLog(message);
     }
 
 void VUnit::recordSuccess(const VString& description)
@@ -206,7 +196,7 @@ VUnit(testName, logOnSuccess, throwOnError), fErrorMessage(errorMessage)
 
 void VFailureEmitter::run()
     {
-    this->logStatus(VString("%s failed due to this error: %s", this->getName().chars(), fErrorMessage.chars()));
+    this->logStatus(VSTRING_FORMAT("%s failed due to this error: %s", this->getName().chars(), fErrorMessage.chars()));
     this->test(false, fErrorMessage);
     }
 
@@ -312,13 +302,13 @@ VLogger* VUnitOutputWriter::_newLoggerByType(const VString& outputType, const VS
     VLogger* logger = NULL;
     if (filePath == OUTPUT_FILEPATH_STDOUT)
         {
-        logger = new VCoutLogger(VLogger::kTrace, VString("vunit-%s-cout", outputType.chars()), VString::EMPTY());
+        logger = new VCoutLogger(VLogger::kTrace, VSTRING_FORMAT("vunit-%s-cout", outputType.chars()), VString::EMPTY());
         }
     else
         {
         VFSNode logFile(filePath);
         logFile.rm();
-        logger = new VFileLogger(VLogger::kTrace, VString("vunit-%s-%s", outputType.chars(), filePath.chars()), VString::EMPTY(), filePath);
+        logger = new VFileLogger(VLogger::kTrace, VSTRING_FORMAT("vunit-%s-%s", outputType.chars(), filePath.chars()), VString::EMPTY(), filePath);
         }
 
     return logger;
@@ -347,7 +337,7 @@ VUnitOutputWriter* VUnitOutputWriter::_newOutputWriterByType(const VString& outp
         }
     else
         {
-        VLOGGER_ERROR(VString("Invalid unit test output type '%s' will be ignored.", outputType.chars()));
+        VLOGGER_ERROR(VSTRING_FORMAT("Invalid unit test output type '%s' will be ignored.", outputType.chars()));
         }
 
     return writer;
@@ -443,12 +433,12 @@ void VUnitJUnitXMLOutput::testSuiteEnd()
 
     VDuration testSuiteDuration = mCurrentTestSuiteEndTime - mCurrentTestSuiteStartTime;
 
-    mLogger.rawLog(VString(" <testsuite errors=\"%d\" failures=\"0\" name=\"%s\" tests=\"%d\" time=\"%s\">",
+    mLogger.rawLog(VSTRING_FORMAT(" <testsuite errors=\"%d\" failures=\"0\" name=\"%s\" tests=\"%d\" time=\"%s\">",
         mCurrentTestSuiteNumErrors, mCurrentTestSuiteName.chars(), (int)mCurrentTestSuiteResults.size(), testSuiteDuration.getDurationString().chars()));
 
     for (TestInfoVector::const_iterator i = mCurrentTestSuiteResults.begin(); i != mCurrentTestSuiteResults.end(); ++i)
         {
-        mLogger.rawLog(VString("  <testcase class=\"%s\" name=\"%s\" time=\"%s\"></testcase>",
+        mLogger.rawLog(VSTRING_FORMAT("  <testcase class=\"%s\" name=\"%s\" time=\"%s\"></testcase>",
             mCurrentTestSuiteName.chars(), _escapeXMLString((*i).mDescription).chars(), (*i).mDuration.getDurationString().chars()));
         }
 
@@ -473,7 +463,7 @@ void VUnitSimpleTextOutput::testSuitesBegin()
 
     VString nowText;
     mTestSuitesStartTime.getLocalString(nowText);
-    mLogger.rawLog(VString("[status ] Test run starting at %s.", nowText.chars()));
+    mLogger.rawLog(VSTRING_FORMAT("[status ] Test run starting at %s.", nowText.chars()));
     mLogger.rawLog(VString::EMPTY());
     }
 
@@ -481,12 +471,12 @@ void VUnitSimpleTextOutput::testSuiteBegin(const VString& testSuiteName)
     {
     this->_testSuiteBegin(testSuiteName);
 
-    mLogger.rawLog(VString("[status ] %s : starting.", testSuiteName.chars()));
+    mLogger.rawLog(VSTRING_FORMAT("[status ] %s : starting.", testSuiteName.chars()));
     }
 
 void VUnitSimpleTextOutput::testSuiteStatusMessage(const VString& message)
     {
-    mLogger.rawLog(VString("[status ] %s : %s", mCurrentTestSuiteName.chars(), message.chars()));
+    mLogger.rawLog(VSTRING_FORMAT("[status ] %s : %s", mCurrentTestSuiteName.chars(), message.chars()));
     }
 
 void VUnitSimpleTextOutput::testCaseBegin(const VString& testCaseName)
@@ -498,25 +488,25 @@ void VUnitSimpleTextOutput::testCaseEnd(const VTestInfo& testInfo)
     {
     this->_testCaseEnd(testInfo);
 
-    mLogger.rawLog(VString("[%s] %s : %s.", (testInfo.mSuccess ? "success":"FAILURE"), mCurrentTestSuiteName.chars(), testInfo.mDescription.chars()));
+    mLogger.rawLog(VSTRING_FORMAT("[%s] %s : %s.", (testInfo.mSuccess ? "success":"FAILURE"), mCurrentTestSuiteName.chars(), testInfo.mDescription.chars()));
     }
 
 void VUnitSimpleTextOutput::testSuiteEnd()
     {
     this->_testSuiteEnd();
 
-    mLogger.rawLog(VString("[status ] %s : ended.", mCurrentTestSuiteName.chars()));
-    mLogger.rawLog(VString("[results] %s : tests passed: %d", mCurrentTestSuiteName.chars(), mCurrentTestSuiteNumSuccesses));
-    mLogger.rawLog(VString("[results] %s : tests failed: %d", mCurrentTestSuiteName.chars(), mCurrentTestSuiteNumErrors));
-    mLogger.rawLog(VString("[results] %s : summary: %s.", mCurrentTestSuiteName.chars(), ((mCurrentTestSuiteNumErrors == 0) ? "success":"FAILURE")));
+    mLogger.rawLog(VSTRING_FORMAT("[status ] %s : ended.", mCurrentTestSuiteName.chars()));
+    mLogger.rawLog(VSTRING_FORMAT("[results] %s : tests passed: %d", mCurrentTestSuiteName.chars(), mCurrentTestSuiteNumSuccesses));
+    mLogger.rawLog(VSTRING_FORMAT("[results] %s : tests failed: %d", mCurrentTestSuiteName.chars(), mCurrentTestSuiteNumErrors));
+    mLogger.rawLog(VSTRING_FORMAT("[results] %s : summary: %s.", mCurrentTestSuiteName.chars(), ((mCurrentTestSuiteNumErrors == 0) ? "success":"FAILURE")));
     mLogger.rawLog(VString::EMPTY());
     }
 
 void VUnitSimpleTextOutput::testSuitesEnd()
     {
-    mLogger.rawLog(VString("[results] TOTAL tests passed: %d", mTotalNumSuccesses));
-    mLogger.rawLog(VString("[results] TOTAL tests failed: %d", mTotalNumErrors));
-    mLogger.rawLog(VString("[results] TOTAL summary: %s.", ((mTotalNumErrors == 0) ? "success":"FAILURE")));
+    mLogger.rawLog(VSTRING_FORMAT("[results] TOTAL tests passed: %d", mTotalNumSuccesses));
+    mLogger.rawLog(VSTRING_FORMAT("[results] TOTAL tests failed: %d", mTotalNumErrors));
+    mLogger.rawLog(VSTRING_FORMAT("[results] TOTAL summary: %s.", ((mTotalNumErrors == 0) ? "success":"FAILURE")));
 
     if (mFailedTestSuiteNames.size() != 0)
         {
@@ -526,7 +516,7 @@ void VUnitSimpleTextOutput::testSuitesEnd()
             names += ' ';
             names += *i;
             }
-        mLogger.rawLog(VString("[results] Names of suites with failures:%s", names.chars()));
+        mLogger.rawLog(VSTRING_FORMAT("[results] Names of suites with failures:%s", names.chars()));
         }
 
     VInstant now;
@@ -534,7 +524,7 @@ void VUnitSimpleTextOutput::testSuitesEnd()
     VString nowText;
     now.getLocalString(nowText);
     mLogger.rawLog(VString::EMPTY());
-    mLogger.rawLog(VString("[status ] Test run ending at %s. Total time %s.", nowText.chars(), totalTestTime.getDurationString().chars()));
+    mLogger.rawLog(VSTRING_FORMAT("[status ] Test run ending at %s. Total time %s.", nowText.chars(), totalTestTime.getDurationString().chars()));
     }
 
 // VUnitTeamCityOutput -------------------------------------------------------
@@ -566,7 +556,7 @@ void VUnitTeamCityOutput::testSuiteBegin(const VString& testSuiteName)
     {
     this->_testSuiteBegin(testSuiteName);
 
-    mLogger.rawLog(VString("##teamcity[testSuiteStarted name='%s']", _escapeTeamCityString(testSuiteName).chars()));
+    mLogger.rawLog(VSTRING_FORMAT("##teamcity[testSuiteStarted name='%s']", _escapeTeamCityString(testSuiteName).chars()));
     }
 
 void VUnitTeamCityOutput::testSuiteStatusMessage(const VString& /*message*/)
@@ -577,7 +567,7 @@ void VUnitTeamCityOutput::testCaseBegin(const VString& testCaseName)
     {
     this->_testCaseBegin(testCaseName);
 
-    mLogger.rawLog(VString("##teamcity[testStarted name='%s']", _escapeTeamCityString(testCaseName).chars()));
+    mLogger.rawLog(VSTRING_FORMAT("##teamcity[testStarted name='%s']", _escapeTeamCityString(testCaseName).chars()));
     }
 
 void VUnitTeamCityOutput::testCaseEnd(const VTestInfo& testInfo)
@@ -585,16 +575,16 @@ void VUnitTeamCityOutput::testCaseEnd(const VTestInfo& testInfo)
     this->_testCaseEnd(testInfo);
 
     if (!testInfo.mSuccess)
-        mLogger.rawLog(VString("##teamcity[testFailed name='%s' message='%s']", _escapeTeamCityString(mCurrentTestCaseName).chars(), _escapeTeamCityString(testInfo.mDescription).chars()));
+        mLogger.rawLog(VSTRING_FORMAT("##teamcity[testFailed name='%s' message='%s']", _escapeTeamCityString(mCurrentTestCaseName).chars(), _escapeTeamCityString(testInfo.mDescription).chars()));
 
-    mLogger.rawLog(VString("##teamcity[testFinished name='%s']", _escapeTeamCityString(mCurrentTestCaseName).chars()));
+    mLogger.rawLog(VSTRING_FORMAT("##teamcity[testFinished name='%s']", _escapeTeamCityString(mCurrentTestCaseName).chars()));
     }
 
 void VUnitTeamCityOutput::testSuiteEnd()
     {
     this->_testSuiteEnd();
 
-    mLogger.rawLog(VString("##teamcity[testSuiteFinished name='%s']", _escapeTeamCityString(mCurrentTestSuiteName).chars()));
+    mLogger.rawLog(VSTRING_FORMAT("##teamcity[testSuiteFinished name='%s']", _escapeTeamCityString(mCurrentTestSuiteName).chars()));
     }
 
 void VUnitTeamCityOutput::testSuitesEnd()
@@ -642,9 +632,9 @@ void VUnitTeamCityBuildStatusOutput::testSuitesEnd()
     try
         {
         mLogger.rawLog(VString("<build number=\"{build.number}\">"));
-        mLogger.rawLog(VString(" <statusInfo status=\"%s\">", (mTotalNumErrors == 0 ? "SUCCESS" : "FAILURE")));
-        mLogger.rawLog(VString("  <text action=\"append\">Tests passed: %d</text>", mTotalNumSuccesses));
-        mLogger.rawLog(VString("  <text action=\"append\">Tests failed: %d</text>", mTotalNumErrors));
+        mLogger.rawLog(VSTRING_FORMAT(" <statusInfo status=\"%s\">", (mTotalNumErrors == 0 ? "SUCCESS" : "FAILURE")));
+        mLogger.rawLog(VSTRING_FORMAT("  <text action=\"append\">Tests passed: %d</text>", mTotalNumSuccesses));
+        mLogger.rawLog(VSTRING_FORMAT("  <text action=\"append\">Tests failed: %d</text>", mTotalNumErrors));
 
         if (mFailedTestSuiteNames.size() != 0)
             {
@@ -655,14 +645,14 @@ void VUnitTeamCityBuildStatusOutput::testSuitesEnd()
                 names += *i;
                 }
 
-            mLogger.rawLog(VString("  <text action=\"append\">These are the names of the failed tests:%s</text>", names.chars()));
+            mLogger.rawLog(VSTRING_FORMAT("  <text action=\"append\">These are the names of the failed tests:%s</text>", names.chars()));
             }
 
         mLogger.rawLog(VString(" </statusInfo>"));
 
-        mLogger.rawLog(VString(" <statisticValue key=\"testCount\" value=\"%d\"/>", mTotalNumSuccesses + mTotalNumErrors));
-        mLogger.rawLog(VString(" <statisticValue key=\"testsPassed\" value=\"%d\"/>", mTotalNumSuccesses));
-        mLogger.rawLog(VString(" <statisticValue key=\"testsFailed\" value=\"%d\"/>", mTotalNumErrors));
+        mLogger.rawLog(VSTRING_FORMAT(" <statisticValue key=\"testCount\" value=\"%d\"/>", mTotalNumSuccesses + mTotalNumErrors));
+        mLogger.rawLog(VSTRING_FORMAT(" <statisticValue key=\"testsPassed\" value=\"%d\"/>", mTotalNumSuccesses));
+        mLogger.rawLog(VSTRING_FORMAT(" <statisticValue key=\"testsFailed\" value=\"%d\"/>", mTotalNumErrors));
 
         mLogger.rawLog(VString("</build>"));
         }

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -32,6 +32,8 @@ documented are:
 1300 - version 7 (a.k.a. "2003" or ".NET")
 1310 - version 7.1 (patch/update to version 7)
 1400 - version 8.0 (a.k.a. "2005")
+1500 - version 9.0 (a.k.a. "2008")
+1600 - version 10.0 (a.k.a. "2010")
 
 Symbols we define conditionally:
 
@@ -142,7 +144,9 @@ so our convenience macros V_MIN, V_MAX, and V_ABS need to be implemented as
 old-fashioned C preprocessor macros rather than standard C++ library inlines.
 */
 #ifdef VCOMPILER_MSVC
-    #define DEFINE_V_MINMAXABS 1
+    #if _MSC_VER < 1600 // VC++ 10.0 (2010) (_MSC_VER = 1600) has std::min/max/abs/fabs available; not sure about 1400/1500.
+        #define DEFINE_V_MINMAXABS 1
+    #endif
 #endif
 
 #ifdef DEFINE_V_MINMAXABS

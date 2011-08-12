@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -611,7 +611,7 @@ void VGeometryUnit::_testVPolygon()
     VMemoryStream buffer;
     VBinaryIOStream io(buffer);
     p.writeToStream(io);
-    io.seek(0, SEEK_SET);
+    io.seek0();
     VPolygon polygonFromStream;
     polygonFromStream.readFromStream(io);
     this->test(p == polygonFromStream, "stream write + read");

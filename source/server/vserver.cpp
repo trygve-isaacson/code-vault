@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -53,11 +53,11 @@ void VServer::_garbageCollectTerminatedSessions()
             sessionLocker.unlock();
             delete session;
             (void) mTerminatedSessions.erase(mTerminatedSessions.begin() + i);
-            VLOGGER_TRACE(VString("VServer::_garbageCollectTerminatedSessions: Deleted session '%s'.", sessionName.chars()));
+            VLOGGER_TRACE(VSTRING_FORMAT("VServer::_garbageCollectTerminatedSessions: Deleted session '%s'.", sessionName.chars()));
             }
         else
             {
-            VLOGGER_TRACE(VString("VServer::_garbageCollectTerminatedSessions: Session '%s' still has reference count %d.", sessionName.chars(), session->mReferenceCount));
+            VLOGGER_TRACE(VSTRING_FORMAT("VServer::_garbageCollectTerminatedSessions: Session '%s' still has reference count %d.", sessionName.chars(), session->mReferenceCount));
             }
         }
     }

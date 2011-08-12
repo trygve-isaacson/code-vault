@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -128,7 +128,7 @@ class VSingleton : public MShutdownHandler
             if (gInstance == NULL)
                 {
                 if (gInstanceDeleted && !mAllowResurrection)
-                    throw VException("VSingleton called with invalid attempt to get instance of deleted singleton.");
+                    throw VStackTraceException("VSingleton called with invalid attempt to get instance of deleted singleton.");
 
                 gInstance = new T();
 

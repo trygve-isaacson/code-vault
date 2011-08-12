@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -10,6 +10,7 @@ http://www.bombaydigital.com/
 #include "vtypes.h"
 #include "vmutex.h"
 #include "vsemaphore.h"
+#include "vcompactingdeque.h"
 
 /** @file */
 
@@ -18,9 +19,7 @@ http://www.bombaydigital.com/
 */
 
 class VMessage;
-class VMessagePool;
 
-typedef std::deque<VMessage*> MessageQueueT;    ///< A deque of VMessage object pointers.
 
 /**
 VMessageQueue is a thread-safe FIFO queue of messages. Multiple threads may
@@ -105,7 +104,7 @@ class VMessageQueue
     
     private:
 
-        MessageQueueT   mQueuedMessages;            ///< The actual queue of messages.
+        VCompactingDeque<VMessage*> mQueuedMessages;///< The actual queue of messages.
         Vs64            mQueuedMessagesDataSize;    ///< The number of bytes in the queued messages.
         VMutex          mMessageQueueMutex;         ///< The mutex used to synchronize.
         VSemaphore      mMessageQueueSemaphore;     ///< The semaphore used to block/awaken.
@@ -113,6 +112,6 @@ class VMessageQueue
         
         static VDuration gVMessageQueueLagLoggingThreshold; ///< If >=0, queuing lags are logged.
         static int gVMessageQueueLagLoggingLevel;           ///< Log level at which queuing lags are logged.
-    };
+};
 
 #endif /* vmessagequeue_h */

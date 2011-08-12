@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -106,7 +106,7 @@ void VCharUnit::run()
                 !c.isNumeric() &&
                 !c.isAlphaNumeric() &&
                 c.isWhitespace(),
-                VString("%d char properties", i));
+                VSTRING_FORMAT("%d char properties", i));
             }
         else if (i <= 0x2F)
             {
@@ -119,7 +119,7 @@ void VCharUnit::run()
                 !c.isNumeric() &&
                 !c.isAlphaNumeric() &&
                 !c.isWhitespace(),
-                VString("%d char properties", i));
+                VSTRING_FORMAT("%d char properties", i));
             }
         else if (i <= 0x39)
             {
@@ -132,7 +132,7 @@ void VCharUnit::run()
                 c.isNumeric() &&
                 c.isAlphaNumeric() &&
                 !c.isWhitespace(),
-                VString("%d char properties", i));
+                VSTRING_FORMAT("%d char properties", i));
             }
         else if (i <= 0x40)
             {
@@ -145,7 +145,7 @@ void VCharUnit::run()
                 !c.isNumeric() &&
                 !c.isAlphaNumeric() &&
                 !c.isWhitespace(),
-                VString("%d char properties", i));
+                VSTRING_FORMAT("%d char properties", i));
             }
         else if (i <= 0x5A)
             {
@@ -158,7 +158,7 @@ void VCharUnit::run()
                 !c.isNumeric() &&
                 c.isAlphaNumeric() &&
                 !c.isWhitespace(),
-                VString("%d char properties", i));
+                VSTRING_FORMAT("%d char properties", i));
             }
         else if (i <= 0x60)
             {
@@ -171,7 +171,7 @@ void VCharUnit::run()
                 !c.isNumeric() &&
                 !c.isAlphaNumeric() &&
                 !c.isWhitespace(),
-                VString("%d char properties", i));
+                VSTRING_FORMAT("%d char properties", i));
             }
         else if (i <= 0x7A)
             {
@@ -184,7 +184,7 @@ void VCharUnit::run()
                 !c.isNumeric() &&
                 c.isAlphaNumeric() &&
                 !c.isWhitespace(),
-                VString("%d char properties", i));
+                VSTRING_FORMAT("%d char properties", i));
             }
         else if (i <= 0x7E)
             {
@@ -197,7 +197,7 @@ void VCharUnit::run()
                 !c.isNumeric() &&
                 !c.isAlphaNumeric() &&
                 !c.isWhitespace(),
-                VString("%d char properties", i));
+                VSTRING_FORMAT("%d char properties", i));
             }
         else // (we already checked 0x7F) so 0x80 <= i <= 0xFF
             {
@@ -207,7 +207,7 @@ void VCharUnit::run()
             this->test(
                 (c.intValue() == i) &&
                 !c.isWhitespace(),
-                VString("%d char properties", i));
+                VSTRING_FORMAT("%d char properties", i));
             }
         }
 

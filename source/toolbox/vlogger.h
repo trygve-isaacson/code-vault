@@ -1,11 +1,11 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
-#ifndef vlogplus_h
-#define vlogplus_h
+#ifndef vlogger_h
+#define vlogger_h
 
 /** @file */
 
@@ -23,59 +23,72 @@ class VBentoNode;
     @ingroup toolbox
 */
 
-// These macros make it easier to emit log messages without as much verbose typing.
-// Each macro has two versions: one using the default logger, one using a named logger.
+/*
+These macros make it easier to emit log messages without as much verbose typing.
+They are also far more efficient than calling APIs directly, because they can avoid
+message formatting overhead if the log level will not in fact emit anything.
+Each macro has two versions: one using the default logger, one using a named logger.
+At ERROR level or lower, these macros add the caller's file and line number to the
+output automatically.
 
+Most common use cases, using INFO level:
+    VLOGGER_INFO("Hey!"); // writes to default logger
+    VLOGGER_LEVEL(VLogger::kInfo, "Hey!"); // equivalent, but wordier; useful if level is a variable
+    VLOGGER_NAMED_INFO("mylogger", "Hey!"); // outputs to "mylogger" if present, default logger otherwise
+    VLOGGER_LINE(VLogger::kInfo, "Hey!"); // like VLOGGER_INFO, but adds file and line number
+    VLOGGER_HEXDUMP(VLogger::kInfo, "Hey!", myBuffer, bufferLength); // hex dump of buffer to default logger at INFO level
+*/
+
+/** Emits a message at a specified level to the default logger. */
+#define VLOGGER_LEVEL(level, message) do { if (!VLogger::isLogLevelActive(level)) break; VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), level); if (vlcond != NULL) vlcond->log(level, NULL, 0, message); } while (false)
+/** Emits a message at a specified level to the default logger, including file and line number passed in (used by macros below which have file/line). */
+#define VLOGGER_LEVEL_FILELINE(level, message, file, line) do { if (!VLogger::isLogLevelActive(level)) break; VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), level); if (vlcond != NULL) vlcond->log(level, file, line, message); } while (false)
 /** Emits a message at kFatal level to the default logger, then throws that message in a VException.
 Note that this is not inherently "fatal" unless your call stack decides to make it so. This is just a
 convenience function to do both steps in one call. */
-#define VLOGGER_FATAL_AND_THROW(message) do { VLogger::getDefaultLogger()->log(VLogger::kFatal, __FILE__, __LINE__, message); throw VException(message); } while (false)
+#define VLOGGER_FATAL_AND_THROW(message) do { VLogger::getDefaultLogger()->log(VLogger::kFatal, __FILE__, __LINE__, message); throw VStackTraceException(message); } while (false)
 /** Emits a message at kFatal level to the default logger.
 Note that emitting this log message is not a fatal action and does not terminate the application. */
 #define VLOGGER_FATAL(message) VLogger::getDefaultLogger()->log(VLogger::kFatal, __FILE__, __LINE__, message)
 /** Emits a message at kError level to the default logger. */
-#define VLOGGER_ERROR(message) VLogger::getDefaultLogger()->log(VLogger::kError, __FILE__, __LINE__, message)
+#define VLOGGER_ERROR(message) VLOGGER_LEVEL_FILELINE(VLogger::kError, message, __FILE__, __LINE__)
 /** Emits a message at kWarn level to the default logger. */
-#define VLOGGER_WARN(message) VLogger::getDefaultLogger()->log(VLogger::kWarn, NULL, 0, message)
+#define VLOGGER_WARN(message) VLOGGER_LEVEL(VLogger::kWarn, message)
 /** Emits a message at kInfo level to the default logger. */
-#define VLOGGER_INFO(message) VLogger::getDefaultLogger()->log(VLogger::kInfo, NULL, 0, message)
+#define VLOGGER_INFO(message) VLOGGER_LEVEL(VLogger::kInfo, message)
 /** Emits a message at kDebug level to the default logger. */
-//lint -e717 do ... while(0);
-#define VLOGGER_DEBUG(message) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), VLogger::kDebug); if (vlcond != NULL) vlcond->log(VLogger::kDebug, NULL, 0, message); } while (false)
+#define VLOGGER_DEBUG(message) VLOGGER_LEVEL(VLogger::kDebug, message)
 /** Emits a message at kTrace level to the default logger. */
-//lint -e717 do ... while(0);
-#define VLOGGER_TRACE(message) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), VLogger::kTrace); if (vlcond != NULL) vlcond->log(VLogger::kTrace, NULL, 0, message); } while (false)
-/** Emits a message at a specified level to the default logger. */
-//lint -e717 do ... while(0);
-#define VLOGGER_LEVEL(level, message) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), level); if (vlcond != NULL) vlcond->log(level, NULL, 0, message); } while (false)
+#define VLOGGER_TRACE(message) VLOGGER_LEVEL(VLogger::kTrace, message)
 /** Emits a message at a specified level, including file and line number, to the default logger. */
-//lint -e717 do ... while(0);
-#define VLOGGER_LINE(level, message) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), level); if (vlcond != NULL) vlcond->log(level, __FILE__, __LINE__, message); } while (false)
+#define VLOGGER_LINE(level, message) VLOGGER_LEVEL_FILELINE(level, message, __FILE__, __LINE__)
 /** Emits a hex dump at a specified level to the default logger. */
-#define VLOGGER_HEXDUMP(level, message, buffer, length) do { VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), level); if (vlcond != NULL) vlcond->logHexDump(level, message, buffer, length); } while (false)
+#define VLOGGER_HEXDUMP(level, message, buffer, length) do { if (!VLogger::isLogLevelActive(level)) break; VLogger* vlcond = VLogger::getLoggerConditional(VString::EMPTY(), level); if (vlcond != NULL) vlcond->logHexDump(level, message, buffer, length); } while (false)
 /** Returns true if the default logger would emit at the specified level. */
-#define VLOGGER_WOULD_LOG(level) (VLogger::getDefaultLogger()->getLevel() >= level)
+#define VLOGGER_WOULD_LOG(level) (VLogger::isLogLevelActive(level) && (VLogger::getDefaultLogger()->getLevel() >= level))
 
+/** Emits a message at a specified level to the specified logger. */
+#define VLOGGER_NAMED_LEVEL(loggername, level, message) do { if (!VLogger::isLogLevelActive(level)) break; VLogger* vlcond = VLogger::getLoggerConditional(loggername, level); if (vlcond != NULL) vlcond->log(level, NULL, 0, message); } while (false)
+/** Emits a message at a specified level, including file and line number, to the specified logger. */
+#define VLOGGER_NAMED_LEVEL_FILELINE(loggername, level, message, file, line) do { if (!VLogger::isLogLevelActive(level)) break; VLogger* vlcond = VLogger::getLoggerConditional(loggername, level); if (vlcond != NULL) vlcond->log(level, file, line, message); } while (false)
 /** Emits a message at kFatal level to the specified logger. */
 #define VLOGGER_NAMED_FATAL(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kFatal, __FILE__, __LINE__, message)
 /** Emits a message at kError level to the specified logger. */
-#define VLOGGER_NAMED_ERROR(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kError, __FILE__, __LINE__, message)
+#define VLOGGER_NAMED_ERROR(loggername, message) VLOGGER_NAMED_LEVEL_FILELINE(loggername, VLogger::kError, message, __FILE__, __LINE__)
 /** Emits a message at kWarn level to the specified logger. */
-#define VLOGGER_NAMED_WARN(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kWarn, NULL, 0, message)
+#define VLOGGER_NAMED_WARN(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLogger::kWarn, message)
 /** Emits a message at kInfo level to the specified logger. */
-#define VLOGGER_NAMED_INFO(loggername, message) VLogger::getLogger(loggername)->log(VLogger::kInfo, NULL, 0, message)
+#define VLOGGER_NAMED_INFO(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLogger::kInfo, message)
 /** Emits a message at kDebug level to the specified logger. */
-#define VLOGGER_NAMED_DEBUG(loggername, message) do { VLogger* vlcond = VLogger::getLoggerConditional(loggername, VLogger::kDebug); if (vlcond != NULL) vlcond->log(VLogger::kDebug, NULL, 0, message); } while (false)
+#define VLOGGER_NAMED_DEBUG(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLogger::kDebug, message)
 /** Emits a message at kTrace level to the specified logger. */
-#define VLOGGER_NAMED_TRACE(loggername, message) do { VLogger* vlcond = VLogger::getLoggerConditional(loggername, VLogger::kTrace); if (vlcond != NULL) vlcond->log(VLogger::kTrace, NULL, 0, message); } while (false)
-/** Emits a message at a specified level to the specified logger. */
-#define VLOGGER_NAMED_LEVEL(loggername, level, message) do { VLogger* vlcond = VLogger::getLoggerConditional(loggername, level); if (vlcond != NULL) vlcond->log(level, NULL, 0, message); } while (false)
+#define VLOGGER_NAMED_TRACE(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLogger::kTrace, message)
 /** Emits a message at a specified level, including file and line number, to the specified logger. */
-#define VLOGGER_NAMED_LINE(loggername, level, message) do { VLogger* vlcond = VLogger::getLoggerConditional(loggername, level); if (vlcond != NULL) vlcond->log(level, __FILE__, __LINE__, message); } while (false)
+#define VLOGGER_NAMED_LINE(loggername, level, message) VLOGGER_NAMED_LEVEL_FILELINE(loggername, level, message, __FILE__, __LINE__)
 /** Emits a hex dump at a specified level to the specified logger. */
-#define VLOGGER_NAMED_HEXDUMP(loggername, level, message, buffer, length) do { VLogger* vlcond = VLogger::getLoggerConditional(loggername, level); if (vlcond != NULL) vlcond->logHexDump(level, message, buffer, length); } while (false)
+#define VLOGGER_NAMED_HEXDUMP(loggername, level, message, buffer, length) do { if (!VLogger::isLogLevelActive(level)) break; VLogger* vlcond = VLogger::getLoggerConditional(loggername, level); if (vlcond != NULL) vlcond->logHexDump(level, message, buffer, length); } while (false)
 /** Returns true if the specified logger would emit at the specified level. */
-#define VLOGGER_NAMED_WOULD_LOG(loggername, level) do { VLogger* vlcond = VLogger::getLoggerConditional(loggername, level); return (vlcond != NULL); } while (false)
+#define VLOGGER_NAMED_WOULD_LOG(loggername, level) (VLogger::isLogLevelActive(level) && (VLogger::getLogger(loggername)->getLevel() >= level))
 
 class VLogger;
 typedef std::vector<VLogger*> VLoggerList;
@@ -201,6 +214,15 @@ class VLogger
         */
         static VLogger* getLoggerConditional(const VString& name, int logLevel);
         /**
+        Returns true if the specified level is active for at least one logger.
+        False means no logger would log at that level. This is used by the logging
+        macros to efficiently avoid all work (including message formatting) if none
+        of the loggers would currently log at the specified level.
+        @param logLevel the log level intended to log at
+        @return true if some logger would emit at that log level; false if not
+        */
+        static bool isLogLevelActive(int logLevel);
+        /**
         Returns the named logger, or NULL if there is no logger with that name.
         @param    name    the name of the logger to access
         @return the specified logger, or NULL if not found
@@ -325,7 +347,7 @@ class VLogger
         suppressed when logged.
         @param    logLevel    the level of detail for messages to emit
         */
-        void setLevel(int logLevel) { mLogLevel = logLevel; }
+        void setLevel(int logLevel);
         /**
         Enables or disables the repetition filter.
         */
@@ -398,22 +420,20 @@ class VLogger
         */
         static void getLevelName(int logLevel, VString& name);
 
-		// 2008.08.12 JHR ARGO-13876 Logging messages to N4 to script output 
         /**
         Add a log to chain to (replaces the old "next").
         @param    name    name of the "next" log to chain to
         */
-		void setNextLogger(const VString& name);
-		// 2008.08.13 JHR ARGO-13876 Logging messages to N4 to script output 
+        void setNextLogger(const VString& name);
         /**
         Return the next log in the chain (if any)
         */
-		const VString& getNextLogger() const { return mNextLoggerName; }
-       /**
+        const VString& getNextLogger() const { return mNextLoggerName; }
+        /**
         Removes a log to chain to
         @param    logLevel    the level of detail for messages to emit
         */
-		void removeNextLogger();
+        void removeNextLogger();
 
     protected:
 
@@ -480,7 +500,35 @@ class VLogger
 
         static void _breakpointLocationForLog();
         static void _breakpointLocationForEmit();
+        
+        static void _checkMaxActiveLogLevelForNewLogger(int newActiveLogLevel); ///< Maintains the gMaxActiveLogLevel; called whenever some logger's level is changed to the supplied value.
+        static void _checkMaxActiveLogLevelForRemovedLogger(int removedActiveLogLevel); ///< Maintains the gMaxActiveLogLevel; called whenever some logger's level is changed to the supplied value.
+        static void _checkMaxActiveLogLevelForChangedLogger(int oldActiveLogLevel, int newActiveLogLevel); ///< Maintains the gMaxActiveLogLevel; called whenever some logger's level is changed to the supplied value.
+        static void _recalculateMaxActiveLogLevel(); ///< Maintains the gMaxActiveLogLevel; called whenever a full rescan is needed to find the max log level.
 
+        /**
+        Finds the specified logger using an exact name match, without locking (assumes caller has locked
+        the _mutexInstance()).
+        @param  name    the logger name to match exactly
+        @return the found logger, or NULL if not found
+        */
+        static VLogger* _findLoggerFromExactName(const VString& name);
+        /**
+        Finds the specified logger using a path name search, without locking (assumes caller has locked
+        the _mutexInstance()). Path names are like Java packages (e.g, "path.to.my.logger.name"). The search
+        first repeatedly strips off the tail until it either finds a match. If it fails to match even the
+        first element, we return NULL.
+        @param  name    the logger path name to match against
+        @return the found logger, or NULL if not found at any path level
+        */
+        static VLogger* _findLoggerFromPathName(const VString& pathName);
+
+        /**
+        Set's the logger's detail level, and assumes the caller (usually the public setLevel())
+        has locked the _mutexInstance().
+        @param    logLevel    the level of detail for messages to emit
+        */
+        void _setLevel(int logLevel);
         /**
         Forwards the log output to the next logger in the chain if applicable.
         */
@@ -522,8 +570,10 @@ class VLogger
         VInstant mPrintStackExpiration; ///< Next instant when stack printing countdown will reset (INFINITE_FUTURE means never).
 
         static VLogger* gDefaultLogger; ///< The default logger returned if get by name fails.
+        volatile static int gMaxActiveLogLevel; ///< The max log level of the registered loggers. Allows fast fail of log level check without having to examine each logger.
 
         friend class VLoggerRepetitionFilter; // It will call our emitMessage() function to emit saved messages.
+        friend class VLoggerUnit; // Unit test can peek into our internal state to verify intended behavior.
     };
 
 /**
@@ -739,18 +789,32 @@ class VStringLogger : public VLogger
         */
         virtual ~VStringLogger() {}
         
-        /*
+        /**
         Depending on how you use this logger, you may need to be careful about
         locking the mutex while accessing the lines. The rule is that during a period
         in which this logger may be logged to, you must not depend on the immutability
         of the mLines, except while you have locked the mutex; and while you have
         locked the mutex, another thread that attempts to log will block. The typical
-        use case of this logger will be to cause output to be logged, and then use the
-        lines before continuing; such a use case doesn't require you to lock the mutex.
+        use case of this logger will be to capture some logger output locally, and then use
+        those lines before continuing; such a use case doesn't require you to lock the mutex.
+        @return a reference to the mutex controlling access to this logger's data
         */
         VMutex& getMutex() { return mMutex; }
+        /**
+        Returns a reference to the VString holding the captured log lines; if you need to
+        retain access to the lines after this logger is destructed (e.g. beyond a scope block),
+        then you must assign the result to a separate VString, or use orphanLines().
+        @return a reference to the string of captured log data
+        */
         const VString& getLines() const { return mLines; }
-        char* orphanLines() { return mLines.orphanDataBuffer(); }
+        /**
+        Returns the raw char buffer underlying the captured log data, transfers ownership and
+        delete[] responsibility of that buffer to the caller, and as a necessary side-effect resets
+        the capture string to empty. This is most useful if you wish to efficiently use the captured
+        log data beyond the lifecycle scope of this VStringLogger object once it has done the capture.
+        @return the captured log data raw char buffer, now owned by the caller
+        */
+        const char* orphanLines() { return mLines.orphanDataBuffer(); }
 
     protected:
 
@@ -774,24 +838,33 @@ class VStringVectorLogger : public VLogger
         @param  logLevel        the level of detail for messages to emit
         @param  name            the name of the logger, used for finding by name
         @param  nextLoggerName  the name of the next logger in chain, or empty if none
+        @param  storage         if not NULL, an existing vector where the output is collected, rather than here;
+                                    the supplied pointer must remain valid as long as this logger can log
         */
-        VStringVectorLogger(int logLevel, const VString& name, const VString& nextLoggerName);
+        VStringVectorLogger(int logLevel, const VString& name, const VString& nextLoggerName, VStringVector* storage=NULL);
         /**
         Destructor.
         */
-        virtual ~VStringVectorLogger() {}
+        virtual ~VStringVectorLogger();
 
-        /*
+        /**
         Depending on how you use this logger, you may need to be careful about
         locking the mutex while accessing the lines. The rule is that during a period
         in which this logger may be logged to, you must not depend on the immutability
         of the mLines, except while you have locked the mutex; and while you have
         locked the mutex, another thread that attempts to log will block. The typical
-        use case of this logger will be to cause output to be logged, and then use the
-        lines before continuing; such a use case doesn't require you to lock the mutex.
+        use case of this logger will be to capture some logger output locally, and then use
+        those lines before continuing; such a use case doesn't require you to lock the mutex.
+        @return a reference to the mutex controlling access to this logger's data
         */
         VMutex& getMutex() { return mMutex; }
-        const VStringVector& getLines() const { return mLines; }
+        /**
+        Returns a reference to the VString holding the captured log lines; if you need to
+        retain access to the lines after this logger is destructed (e.g. beyond a scope block),
+        then you must assign the result to a separate VStringVector.
+        @return a reference to the string of captured log data
+        */
+        const VStringVector& getLines() const { return *mStorage; }
 
     protected:
 
@@ -803,10 +876,9 @@ class VStringVectorLogger : public VLogger
 
     private:
     
-        VStringVector mLines;
+        VStringVector*  mStorage;   ///< Points to supplied storage if non-NULL storage was supplied in constructor; points to mLines otherwise.
+        VStringVector   mLines;     ///< If no storage was supplied, we store the log data here.
     };
 
-void _logFile(const VString& fileName, const VString& line);
-
-#endif /* vlogplus_h */
+#endif /* vlogger_h */
 

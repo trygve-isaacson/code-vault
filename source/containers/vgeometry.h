@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -804,7 +804,7 @@ class VPolygonT
         void writeToStream(VBinaryIOStream& stream) const
             {
             int numPoints = this->getNumPoints();
-            stream.writeS32(static_cast<Vs32>(numPoints));
+            stream.writeInt32(numPoints);
             for (int i = 0; i < numPoints; ++i)
                 {
                 mPoints[i].writeToStream(stream);
@@ -816,8 +816,8 @@ class VPolygonT
         int getNumPoints() const { return static_cast<int>(mPoints.size()); }
         size_t size() const { return mPoints.size(); }
         const std::vector<VPointT<T> >& getPoints() const { return mPoints; }
-        VPointT<T> getPoint(int index) const { if (index >= this->getNumPoints()) { throw VRangeException(VString("getPoint: Invalid index %d into %d-point polygon.", index, this->getNumPoints())); } return mPoints[index]; }
-        void setPoint(int index, VPointT<T> p) { if (index >= this->getNumPoints()) { throw VRangeException(VString("setPoint: Invalid index %d into %d-point polygon.", index, this->getNumPoints())); } mPoints[index] = p; }
+        VPointT<T> getPoint(int index) const { if (index >= this->getNumPoints()) { throw VRangeException(VSTRING_FORMAT("getPoint: Invalid index %d into %d-point polygon.", index, this->getNumPoints())); } return mPoints[index]; }
+        void setPoint(int index, VPointT<T> p) { if (index >= this->getNumPoints()) { throw VRangeException(VSTRING_FORMAT("setPoint: Invalid index %d into %d-point polygon.", index, this->getNumPoints())); } mPoints[index] = p; }
         VPointT<T>& operator[](int index) { return mPoints[index]; } // Note that operator[] by definition does no range checking.
         VPointT<T> operator[](int index) const { return mPoints[index]; } // Note that operator[] by definition does no range checking.
 
@@ -852,7 +852,7 @@ class VPolygonT
             int maxValidIndex = this->getNumPoints() - 1;
             if (index > maxValidIndex)
                 {
-                throw VRangeException(VString("getSide: Invalid index %d into %d-point polygon.", index, this->getNumPoints()));
+                throw VRangeException(VSTRING_FORMAT("getSide: Invalid index %d into %d-point polygon.", index, this->getNumPoints()));
                 }
 
             int index2 = (index == maxValidIndex) ? 0 : index+1;

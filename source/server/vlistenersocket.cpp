@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -13,7 +13,7 @@ http://www.bombaydigital.com/
 #include "vsocketfactory.h"
 
 VListenerSocket::VListenerSocket(int portNumber, const VString& bindAddress, VSocketFactory* factory, int backlog) :
-VSocket(VString("listener(%d)", portNumber), portNumber),
+VSocket(VSTRING_FORMAT("listener(%d)", portNumber), portNumber),
 mBindAddress(bindAddress),
 mBacklog(backlog),
 mFactory(factory)
@@ -40,7 +40,7 @@ VSocket* VListenerSocket::accept()
     {
     if (mSocketID == kNoSocketID)
         {
-        throw VException("VListenerSocket::accept called before socket is listening.");
+        throw VStackTraceException("VListenerSocket::accept called before socket is listening.");
         }
 
     struct sockaddr_in  clientaddr;
@@ -64,7 +64,7 @@ VSocket* VListenerSocket::accept()
 
         if (result == -1)
             {
-            throw VException(VString("VListenerSocket::accept select error, errno=%s", ::strerror(errno)));
+            throw VException(VSTRING_FORMAT("VListenerSocket::accept select error, errno=%s", ::strerror(errno)));
             }
 
         //lint -e573 Signed-unsigned mix with divide"
@@ -78,7 +78,7 @@ VSocket* VListenerSocket::accept()
 
         if (handlerSockID == kNoSocketID)
             {
-            throw VException(VString("VListenerSocket::accept accept error, errno=%s", ::strerror(errno)));
+            throw VException(VSTRING_FORMAT("VListenerSocket::accept accept error, errno=%s", ::strerror(errno)));
             }
         else
             {

@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -31,22 +31,17 @@ class VMessageOutputThread : public VSocketThread
     public:
 
         /**
-        Constructs the output thread. The supplied message pool and message
-        queue, server, and session are still owned by the caller; this class
+        Constructs the output thread. The supplied message queue,
+        server, and session are still owned by the caller; this class
         does not delete them in its destructor.
         @param    name        a name for the thread, useful for debugging purposes
         @param    socket        the socket this thread is managing
         @param    ownerThread    the thread that created this one
-        @param    messagePool    the pool from which to get and recycle messages
-        @param    outputQueue    the message queue where we pull outbound messages from
         @param    server        the server object
         @param    session        the session object
         @param    dependentInputThread   if non-null, the VMessageInputThread that is dependent
                                 upon this output thread, and which we must notify before we
                                 return from our run() method
-        @param    messagePool    the pool from which new VMessage objects are created;
-                            the caller retains ownership of the pool (it is not
-                            deleted by this object upon its destruction)
         @param maxQueueSize if non-zero, the max number of queued messages allowed; if a call
                             to postOutputMessage() occurs when the limit has been exceeded,
                             the call will just close the socket and return
@@ -56,7 +51,7 @@ class VMessageOutputThread : public VSocketThread
         @param maxQueueGracePeriod how long the maxQueueSize and maxQueueDataSize limits may be exceeded
                             before the socket is closed upon next posted message
         */
-        VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSession* session, VMessageInputThread* dependentInputThread, VMessagePool* messagePool, int maxQueueSize=0, Vs64 maxQueueDataSize=0, const VDuration& maxQueueGracePeriod=VDuration::ZERO());
+        VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSession* session, VMessageInputThread* dependentInputThread, int maxQueueSize=0, Vs64 maxQueueDataSize=0, const VDuration& maxQueueGracePeriod=VDuration::ZERO());
         /**
         Virtual destructor.
         */
@@ -90,11 +85,13 @@ class VMessageOutputThread : public VSocketThread
         @param  message the message to post (and send)
         @param  respectQueueLimits normally true, can be set false to bypass the
                 checks on the queue limits
+        @return true if the message was successfully posted; false means it was not, so
+                caller needs to free the message
         */
-        void postOutputMessage(VMessage* message, bool respectQueueLimits=true);
+        bool postOutputMessage(VMessage* message, bool respectQueueLimits=true);
 
         /**
-        Releases all queued message back to the pool. This is called when
+        Releases/destroys all queued messages. This is called when
         the session shuts down. That is, any messages sitting on the output
         queue at the time the session shuts down are not sent.
         */
@@ -124,7 +121,6 @@ class VMessageOutputThread : public VSocketThread
         */
         void _processNextOutboundMessage();
 
-        VMessagePool*           mMessagePool;       ///< The message pool where messages are released after they are sent.
         VMessageQueue           mOutputQueue;       ///< The output queue that this thread pulls messages from.
         VSocketStream           mSocketStream;      ///< The underlying raw stream the message data is written to.
         VBinaryIOStream         mOutputStream;      ///< The formatted stream the message data is written to.

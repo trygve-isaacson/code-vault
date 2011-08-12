@@ -1,6 +1,6 @@
 /*
-Copyright c1997-2008 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.0
+Copyright c1997-2011 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 3.2
 http://www.bombaydigital.com/
 */
 
@@ -8,7 +8,6 @@ http://www.bombaydigital.com/
 
 #include "vmutexlocker.h"
 #include "vmessage.h"
-#include "vmessagepool.h"
 #include "vlogger.h"
 
 // VMessageQueue --------------------------------------------------------------
@@ -79,6 +78,7 @@ VMessage* VMessageQueue::getNextMessage()
 
         if (message != NULL)
             mQueuedMessagesDataSize -= message->getMessageDataLength();
+
         }
 
     if ((message != NULL) && (gVMessageQueueLagLoggingThreshold >= VDuration::ZERO()))
@@ -86,7 +86,7 @@ VMessage* VMessageQueue::getNextMessage()
         VInstant now;
         VDuration delayInterval = now - mLastMessagePostTime;
         if (delayInterval >= gVMessageQueueLagLoggingThreshold)
-            VLOGGER_LEVEL(gVMessageQueueLagLoggingLevel, VString("VMessageQueue saw a delay of %lldms when getting a message with ID %d.", delayInterval.getDurationMilliseconds(), message->getMessageID()));
+            VLOGGER_LEVEL(gVMessageQueueLagLoggingLevel, VSTRING_FORMAT("VMessageQueue saw a delay of %lldms when getting a message with ID %d.", delayInterval.getDurationMilliseconds(), message->getMessageID()));
         }
     
     return message;
@@ -123,7 +123,7 @@ void VMessageQueue::releaseAllMessages()
         if (message != NULL)
             {
             mQueuedMessagesDataSize -= message->getMessageDataLength();
-            VMessagePool::releaseMessage(message, message->getPool());
+            VMessage::release(message);
             }
         }
     }
