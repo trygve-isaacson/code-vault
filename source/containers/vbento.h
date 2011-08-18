@@ -1322,7 +1322,7 @@ class VBentoDuration : public VBentoAttribute
         virtual VBentoAttribute* clone() const { return new VBentoDuration(this->getName(), mValue); }
         VBentoDuration& operator=(const VBentoDuration& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsXMLText(VString& s) const { s = mValue.getDurationString(); }
+        virtual void getValueAsXMLText(VString& s) const { s = (mValue.isSpecific() ? (VSTRING_S64(mValue.getDurationMilliseconds())) : (mValue.getDurationString())); }
         virtual void getValueAsString(VString& s) const { s.format(VSTRING_FORMATTER_S64 "ms", mValue.getDurationMilliseconds()); }
         virtual void getValueAsBentoTextString(VString& s) const { s.format(VSTRING_FORMATTER_S64 "ms", mValue.getDurationMilliseconds()); }
 

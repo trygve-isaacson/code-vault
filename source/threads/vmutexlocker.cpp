@@ -41,7 +41,7 @@ void VMutexLocker::lock()
     {
     if (mMutex != NULL)
         {
-        mMutex->lock(mName);
+        mMutex->_lock(mName); // specific friend access to private API
         mIsLocked = true;
         }
     }
@@ -50,22 +50,23 @@ void VMutexLocker::unlock()
     {
     if ((mMutex != NULL) && this->isLocked())
         {
-        mMutex->unlock();
+        mMutex->_unlock(); // specific friend access to private API
         mIsLocked = false;
         }
     }
 
 void VMutexLocker::yield()
     {
-    bool wasLocked = this->isLocked();
-    
-    if (wasLocked)
-        this->unlock();
-
-    VThread::yield();
-
-    if (wasLocked)
-        this->lock();
+    if (this->isLocked())
+        {
+        this->unlock(); // will allow other threads to acquire the mutex
+        VThread::yield(); 
+        this->lock(); // will block on the mutex if another thread now has it
+        }
+    else
+        {
+        VThread::yield();
+        }
     }
 
 // VMutexUnlocker --------------------------------------------------------------

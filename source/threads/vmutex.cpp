@@ -38,7 +38,7 @@ void VMutex::setName(const VString& name)
     mName = name;
     }
 
-void VMutex::lock(const VString& lockerName)
+void VMutex::_lock(const VString& lockerName)
     {
 #ifdef VAULT_MUTEX_LOCK_DELAY_CHECK
     VInstant start;
@@ -62,6 +62,8 @@ void VMutex::lock(const VString& lockerName)
 #endif
 
         // Note: These properties are only valid with the understanding that they are not set atomically during lock/unlock.
+        // The only guarantee is that they end up set to their new values after the lock is acquired above, and before we return.
+        // They may only be used for mutex diagnostics (e.g. isLockedByCurrentThread() and lock delay reporting), not for concurrency control.
         mLastLockThread = VThread::threadSelf();
         mLastLockerName = lockerName;
         mIsLocked = true;
@@ -75,7 +77,7 @@ void VMutex::lock(const VString& lockerName)
         }
     }
 
-void VMutex::unlock()
+void VMutex::_unlock()
     {
 #ifdef VAULT_MUTEX_LOCK_DELAY_CHECK
     if ((gVMutexLockDelayLoggingThreshold >= VDuration::ZERO()) && ! mSuppressLogging)
@@ -90,15 +92,15 @@ void VMutex::unlock()
         }
 #endif
 
+    mIsLocked = false; // Note: Must set false *before* unlocking, otherwise we may set it false after another thread jumps in, locks, sets it true, confusing isLockedByCurrentThread(). Part of non-atomicity warning above.
     if (! VMutex::mutexUnlock(&mMutex))
         {
+        mIsLocked = true; // Restore value since we failed to unlock.
         if (mName.isEmpty())
             throw VStackTraceException("VMutex::unlock unable to unlock mutex.");
         else
             throw VStackTraceException(VSTRING_FORMAT("VMutex::unlock unable to unlock mutex '%s'.", mName.chars()));
         }
-
-    mIsLocked = false;
     }
 
 VMutex_Type* VMutex::getMutex()

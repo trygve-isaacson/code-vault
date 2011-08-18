@@ -60,22 +60,6 @@ class VMutex
         void setName(const VString& name);
 
         /**
-        Acquires the mutex lock; if the mutex is currently locked by another
-        thread, this call blocks until the mutex lock can be acquired (if
-        several threads are competing, the order in which they acquire the
-        mutex is not known). You can supply a name to identify who is attempting
-        to lock, for diagnostic purposes (the name is stored).
-        @param lockerName the name of the caller, for diagnostic purposes
-        */
-        void lock(const VString& lockerName=VString::EMPTY());
-        /**
-        Releases the mutex lock; if one or more other threads is waiting on
-        the mutex, one of them will unblock and acquire the mutex lock once
-        this thread releases it.
-        */
-        void unlock();
-
-        /**
         Returns a pointer to the raw OS mutex handle.
         @return    a pointer to the raw OS mutex handle
         */
@@ -147,6 +131,27 @@ class VMutex
     
         VMutex(const VMutex&); // not copyable
         VMutex& operator=(const VMutex&); // not assignable
+        
+        // _lock() and _unlock() are only accessible to the locker and unlocker classes, and unit test.
+        friend class VMutexLocker;
+        friend class VMutexUnlocker;
+        friend class VThreadsUnit;
+
+        /**
+        Acquires the mutex lock; if the mutex is currently locked by another
+        thread, this call blocks until the mutex lock can be acquired (if
+        several threads are competing, the order in which they acquire the
+        mutex is not known). You can supply a name to identify who is attempting
+        to lock, for diagnostic purposes (the name is stored).
+        @param lockerName the name of the caller, for diagnostic purposes
+        */
+        void _lock(const VString& lockerName=VString::EMPTY());
+        /**
+        Releases the mutex lock; if one or more other threads is waiting on
+        the mutex, one of them will unblock and acquire the mutex lock once
+        this thread releases it.
+        */
+        void _unlock();
 
         VMutex_Type mMutex;             ///< The OS mutex handle.
         VString mName;                  ///< The name of this mutex for diagnostic purposes.

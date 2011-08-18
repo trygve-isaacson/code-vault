@@ -171,9 +171,9 @@ void VThreadsUnit::run()
         // First, declare and lock a mutex, and see that the API returns true.
         VMutex mutexX("mutexX");
         VUNIT_ASSERT_FALSE_LABELED(mutexX.isLockedByCurrentThread(), "1 - local mutex not locked by current thread");
-        mutexX.lock();
+        mutexX._lock();
         VUNIT_ASSERT_TRUE_LABELED(mutexX.isLockedByCurrentThread(), "2 - local mutex locked by current thread");
-        mutexX.unlock();
+        mutexX._unlock();
         VUNIT_ASSERT_FALSE_LABELED(mutexX.isLockedByCurrentThread(), "3 - local mutex not locked by current thread");
 
         // Next, create another thread that will lock the mutex, and verify that this thread can
@@ -191,9 +191,9 @@ void VThreadsUnit::run()
 
         // Finally, re-test this thread's ability to detect its own locking of the mutex.
         VUNIT_ASSERT_FALSE_LABELED(mutexX.isLockedByCurrentThread(), "7 - local mutex not locked by current thread");
-        mutexX.lock();
+        mutexX._lock();
         VUNIT_ASSERT_TRUE_LABELED(mutexX.isLockedByCurrentThread(), "8 - local mutex locked by current thread");
-        mutexX.unlock();
+        mutexX._unlock();
         VUNIT_ASSERT_FALSE_LABELED(mutexX.isLockedByCurrentThread(), "9 - local mutex not locked by current thread");
         }
     

@@ -272,6 +272,19 @@ void VThread::getThreadsInfo(VBentoNode& bento)
     }
 
 // static
+VString VThread::getThreadName(VThreadID_Type threadID)
+    {
+    VMutexLocker locker(&gVThreadMapMutex, "VThread::getThreadName");
+    VThreadIDToVThreadMap::iterator position = gVThreadIDToVThreadMap.find(threadID);
+    if (position == gVThreadIDToVThreadMap.end())
+        return VString::EMPTY();
+
+    VThread* thread = (*position).second;
+    VString threadName = thread->getName();
+    return threadName;
+    }
+
+// static
 void VThread::stopThread(VThreadID_Type threadID)
     {
     VMutexLocker locker(&gVThreadMapMutex, "VThread::stopThread");

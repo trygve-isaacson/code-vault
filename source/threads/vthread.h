@@ -292,6 +292,14 @@ class VThread
                         filled out with a name, and a child for each thread
         */
         static void getThreadsInfo(VBentoNode& bento);
+        
+        /**
+        Returns the name of the VThread specified by thread id, if it exists. If the thread
+        does not exist, an empty string is returned.
+        @param  threadID    the id of the thread to find
+        @return the name of the thread, or empty if not found
+        */
+        static VString getThreadName(VThreadID_Type threadID);
 
         /**
         Calls stop() on a VThread specified by thread id, if it exists. If the thread does

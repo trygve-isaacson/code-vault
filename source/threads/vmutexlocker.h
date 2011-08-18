@@ -90,13 +90,13 @@ class VMutexLocker
         several threads are competing, the order in which they acquire the
         mutex is not known).
         */
-        void lock();
+        virtual void lock();
         /**
         Releases the mutex lock; if one or more other threads is waiting on
         the mutex, one of them will unblock and acquire the mutex lock once
         this thread releases it.
         */
-        void unlock();
+        virtual void unlock();
         /**
         Returns true if this object has acquired the lock.
         @return    true if this object has acquired the lock
