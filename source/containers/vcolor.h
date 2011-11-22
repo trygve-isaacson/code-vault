@@ -118,14 +118,14 @@ class VColor
         void setValues(int r, int g, int b, int alpha=255) { this->setRed(r); this->setGreen(g); this->setBlue(b); this->setAlpha(alpha); }
         void setCSSColor(const VString& cssColor); ///< See the css color constructor above for details.
 
-        friend inline bool operator==(const VColor& c1, const VColor& c2);  // exact equality
-        friend inline bool operator!=(const VColor& c1, const VColor& c2);  // exact inequality
+        friend inline bool operator==(const VColor& lhs, const VColor& rhs);  // exact equality
+        friend inline bool operator!=(const VColor& lhs, const VColor& rhs);  // exact inequality
         // The < operator is needed for to support STL sort(); others provided for completeness.
         // It would be just as valid, perhaps more so, to sort based on HSV values or something like that.
-        friend inline bool operator>(const VColor& c1, const VColor& c2);
-        friend inline bool operator>=(const VColor& c1, const VColor& c2);
-        friend inline bool operator<(const VColor& c1, const VColor& c2);
-        friend inline bool operator<=(const VColor& c1, const VColor& c2);
+        friend inline bool operator< (const VColor& lhs, const VColor& rhs);
+        friend inline bool operator<=(const VColor& lhs, const VColor& rhs);
+        friend inline bool operator>=(const VColor& lhs, const VColor& rhs);
+        friend inline bool operator> (const VColor& lhs, const VColor& rhs);
 
 #ifdef VAULT_QT_SUPPORT
         void setQColor(const QColor& c) { this->setValues(c.red(), c.blue(), c.green(), c.alpha()); }
@@ -144,12 +144,12 @@ class VColor
         Vu8 mAlpha;
     };
 
-inline bool operator==(const VColor& c1, const VColor& c2) { return c1.mRed == c2.mRed && c1.mGreen == c2.mGreen && c1.mBlue == c2.mBlue && c1.mAlpha == c2.mAlpha; }
-inline bool operator!=(const VColor& c1, const VColor& c2) { return c1.mRed != c2.mRed || c1.mGreen != c2.mGreen || c1.mBlue != c2.mBlue || c1.mAlpha != c2.mAlpha; }
-inline bool operator>(const VColor& c1, const VColor& c2) { return c1._getStreamValue() > c2._getStreamValue(); }
-inline bool operator>=(const VColor& c1, const VColor& c2) { return c1._getStreamValue() >= c2._getStreamValue(); }
-inline bool operator<(const VColor& c1, const VColor& c2) { return c1._getStreamValue() < c2._getStreamValue(); }
-inline bool operator<=(const VColor& c1, const VColor& c2) { return c1._getStreamValue() <= c2._getStreamValue(); }
+inline bool operator==(const VColor& lhs, const VColor& rhs) { return lhs.mRed == rhs.mRed && lhs.mGreen == rhs.mGreen && lhs.mBlue == rhs.mBlue && lhs.mAlpha == rhs.mAlpha; }
+inline bool operator!=(const VColor& lhs, const VColor& rhs) { return !operator==(lhs, rhs); }
+inline bool operator< (const VColor& lhs, const VColor& rhs) { return lhs._getStreamValue() < rhs._getStreamValue(); }
+inline bool operator<=(const VColor& lhs, const VColor& rhs) { return !operator>(lhs, rhs); }
+inline bool operator>=(const VColor& lhs, const VColor& rhs) { return !operator<(lhs, rhs); }
+inline bool operator> (const VColor& lhs, const VColor& rhs) { return  operator<(rhs, lhs); }
 
 // VColorPair -----------------------------------------------------------------
 
@@ -300,6 +300,9 @@ class VColorPalette
 
 typedef std::map<VString,VColorPair> VStringColorMap;
 
+/**
+VStringColorMapper maps string values to colors.
+*/
 class VStringColorMapper : public VColorMapper
     {
     public:
@@ -328,11 +331,14 @@ class VStringColorMapper : public VColorMapper
 
 // VIntegerColorMapper --------------------------------------------------------
 
-// Note that we use Vs64 so that this class can handle any size integer.
-// We don't need separate mapper types for (32-bit) int and Vs64.
-
 typedef std::map<Vs64,VColorPair> VIntegerColorMap;
 
+/**
+VIntegerColorMapper maps integer values to colors.
+
+Note that we use Vs64 so that this class can handle any size integer.
+We don't need separate mapper types for (32-bit) int and Vs64.
+*/
 class VIntegerColorMapper : public VColorMapper
     {
     public:
@@ -358,14 +364,17 @@ class VIntegerColorMapper : public VColorMapper
 
 // VDoubleColorMapper ---------------------------------------------------------
 
-// Note that because of the usual floating-point discrepancies, we don't attempt to
-// provide a mapping of arbitrary precision values here. Instead, we convert each
-// key value to a string with 6 digits after the decimal point. This way we can get
-// perfect matching in the map of values to that level of precision, regardless of
-// the math operations that generate them. It does, however come at the cost of
-// string conversion. If you want more precision then you probably want to use the
-// VDoubleRangeColorMapper and treat the values as boundaries rather than keys.
+/**
+VDoubleColorMapper maps double values to colors.
 
+Note that because of the usual floating-point discrepancies, we don't attempt to
+provide a mapping of arbitrary precision values here. Instead, we convert each
+key value to a string with 6 digits after the decimal point. This way we can get
+perfect matching in the map of values to that level of precision, regardless of
+the math operations that generate them. It does, however come at the cost of
+string conversion. If you want more precision then you probably want to use the
+VDoubleRangeColorMapper and treat the values as boundaries rather than keys.
+*/
 class VDoubleColorMapper : public VColorMapper
     {
     public:
@@ -391,16 +400,10 @@ class VDoubleColorMapper : public VColorMapper
 
 // VStringRangeColorMapper --------------------------------------------------------
 
-// Note that VStringRangeColorMapper should work pretty well for some "wildcard"
-// string uses, because the lexical string sort works if you define string ranges
-// with boundary values that are the start of a set of strings. For example:
-//   rangeMin[n] = "Q"
-//   rangeMin[n+1] = "R"
-// This will match all strings starting with "Q" to range n.
-// To make this work as most people would expect, we fold the string values to
-// lower case internally. Otherwise, the normal sort order would put all upper
-// case letters before all lower case letters, which is not what would be expected.
-
+/**
+VStringRangeColorElement stores one range element for a VStringRangeColorMapper.
+The range defines the lower bound of the range, and its color pair.
+*/
 class VStringRangeColorElement
     {
     public:
@@ -420,6 +423,21 @@ inline bool operator<(const VStringRangeColorElement& e1, const VStringRangeColo
 
 typedef std::vector<VStringRangeColorElement> VStringRangeVector;
 
+/**
+VStringRangeColorMapper maps ranges of string values to colors.
+
+Note that VStringRangeColorMapper should work pretty well for some "wildcard"
+string uses, because the lexical string sort works if you define string ranges
+with boundary values that are the start of a set of strings. For example:
+<pre>
+  rangeMin[n] = "Q"
+  rangeMin[n+1] = "R"
+</pre>
+This will match all strings starting with "Q" to range n.
+To make this work as most people would expect, we fold the string values to
+lower case internally. Otherwise, the normal sort order would put all upper
+case letters before all lower case letters, which is not what would be expected.
+*/
 class VStringRangeColorMapper : public VColorMapper
     {
     public:
@@ -453,9 +471,10 @@ class VStringRangeColorMapper : public VColorMapper
 
 // VIntegerRangeColorMapper --------------------------------------------------------
 
-// Note that we use Vs64 so that this class can handle any size integer.
-// We don't need separate mapper types for (32-bit) int and Vs64.
-
+/**
+VIntegerRangeColorElement stores one range element for a VIntegerRangeColorMapper.
+The range defines the lower bound of the range, and its color pair.
+*/
 class VIntegerRangeColorElement
     {
     public:
@@ -475,6 +494,12 @@ inline bool operator<(const VIntegerRangeColorElement& e1, const VIntegerRangeCo
 
 typedef std::vector<VIntegerRangeColorElement> VIntegerRangeVector;
 
+/**
+VIntegerRangeColorMapper maps ranges of integer values to colors.
+
+Note that we use Vs64 so that this class can handle any size integer.
+We don't need separate mapper types for (32-bit) int and Vs64.
+*/
 class VIntegerRangeColorMapper : public VColorMapper
     {
     public:
@@ -502,6 +527,10 @@ class VIntegerRangeColorMapper : public VColorMapper
 
 // VDoubleRangeColorMapper --------------------------------------------------------
 
+/**
+VDoubleRangeColorElement stores one range element for a VDoubleRangeColorMapper.
+The range defines the lower bound of the range, and its color pair.
+*/
 class VDoubleRangeColorElement
     {
     public:
@@ -521,6 +550,9 @@ inline bool operator<(const VDoubleRangeColorElement& e1, const VDoubleRangeColo
 
 typedef std::vector<VDoubleRangeColorElement> VDoubleRangeVector;
 
+/**
+VDoubleRangeColorMapper maps ranges of double values to colors.
+*/
 class VDoubleRangeColorMapper : public VColorMapper
     {
     public:

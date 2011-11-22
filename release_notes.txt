@@ -1,5 +1,41 @@
 CODE VAULT RELEASE NOTES
 
+---------- VERSION 3.3 ----------
+Trygve Isaacson, November 2011
+
+* Doxygen
+- Updated doc comments to add missing items and better formatted output.
+- Generated Doxygen HTML output.
+
+* VLogger
+Restructured logging infrastructure:
+- Macro APIs for logging are unchanged.
+- VLogger is now mostly a helper class through which most logger management is performed.
+- VNamedLogger defines a log target with name and level. Existing macro APIs log to these.
+- VLogAppender-derived classes define concrete output implementation (file, console, etc.).
+- A logger can send its filtered (by log level) output to multiple appenders.
+- An appender can receive output from multiple named loggers.
+- A "global appender" is one to whom all loggers send their filtered output.
+- A config API can be called at startup to set up logging based on a VSettings/XML config.
+- Custom appender factories can be registered, so that config init can instantiate custom appenders.
+
+* VMutex/VMutexLocker
+- Tightened locking constraints: only locker and unlocker classes may lock and unlock a mutex.
+- Locker's lock/unlock can be overridden, so a mutex-specific subclass can detect bad locking sequences.
+
+* VThread
+Removed obsolete/deprecated APIs and features:
+- As of 3.2, VThread keeps track of threads; removed thread counter statistics.
+- Removed unused VThreadActionListener interface used for keeping statistics.
+
+* General
+- Corrected VString::split() API to be const.
+- Streamlined comparison operators to always forward to operator== and operator< implementations.
+- Consolidated and corrected ambiguity in non-specific instant/duration comparisons and operations.
+- Cast ::sscanf to void when ignoring return value.
+- Added #pragmas to silence static analysis warnings for includes of non-compliant Microsoft headers.
+- Re-order includes so Boost headers are first if they are used.
+
 ---------- VERSION 3.2 ----------
 Trygve Isaacson, August 2011
 
@@ -29,8 +65,6 @@ Short-circuiting logic uses global max level to avoid logger lookup when possibl
 Loggers now organized by map instead of list.
 Current thread name is included in log statements.
 VStringVectorLogger allows storage to be specified by caller.
-TODO: Revise structure to allow multiple named loggers, with different log levels) to append to
-the same output stream.
 
 * VThread
 Thread objects are tracked:
@@ -47,6 +81,9 @@ Interim change to allow node/attribute find to be case-insensitive.
 
 * VSocket
 VSocketClosedException used to identify socket closure as separate from more obscure errors.
+
+* VMessagePool
+This feature has been removed completely.
 
 * VCompactingDeque<T>
 A std::deque<T> template subclass that avoids the STL deque behavior that is effectively a memory leak,

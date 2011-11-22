@@ -36,6 +36,10 @@ static void _vthreadEnded(VThread* thread)
         gVThreadIDToVThreadMap.erase(position);
     }
 
+/**
+VStandinThread is a special VThread object we simply declare as gStandinThread (but never execute) and reference
+if we need to return a reference to the current thread but it's not one of our threads.
+*/
 class VStandinThread : public VThread
     {
     public:
@@ -60,18 +64,6 @@ static VThread* _getCurrentVThread()
     // It just can't be passed around to other threads!
     }
 
-int VThread::gNumVThreads = 0;
-int VThread::gNumThreadMains = 0;
-int VThread::gNumVThreadsCreated = 0;
-int VThread::gNumThreadMainsStarted = 0;
-int VThread::gNumVThreadsDestructed = 0;
-int VThread::gNumThreadMainsCompleted = 0;
-VThreadActionListener* VThread::gActionListener = NULL;
-
-// If we just declare this as an object, not a pointer, static initialization order
-// problems can occur. This form ensures it is NULL until properly constructed.
-static VMutex* gThreadStatsMutex = new VMutex("gThreadStatsMutex");
-
 VThread::VThread(const VString& name, bool deleteAtEnd, bool createDetached, VManagementInterface* manager) :
 mIsDeleted(false),
 mName(name),
@@ -81,9 +73,6 @@ mManager(manager),
 mThreadID((VThreadID_Type) -1),
 mIsRunning(false)
     {
-    VThread::_updateThreadStatistics(VThread::eCreated);
-
-    VLOGGER_TRACE(VSTRING_FORMAT("VThread::VThread: constructed VThread '%s'.", name.chars()));
     }
 
 VThread::~VThread()
@@ -91,19 +80,10 @@ VThread::~VThread()
     // Detect repeat deletion bug. Can't refer to mName because it's been deleted.
     if (mIsDeleted)
         VLOGGER_ERROR(VSTRING_FORMAT("Thread delete on already-deleted thread @0x%08X.", this));
-    else
-        VLOGGER_TRACE(VSTRING_FORMAT("VThread::~VThread: destructed VThread '%s'.", mName.chars()));
 
     mIsDeleted = true;
     mIsRunning = false;
     mThreadID = (VThreadID_Type) -1;
-
-    // Prevent all exceptions from escaping destructor.
-    try
-        {
-        VThread::_updateThreadStatistics(VThread::eDestroyed);
-        }
-    catch (...) {}
     }
 
 void VThread::start()
@@ -170,8 +150,6 @@ void* VThread::threadMain(void* arg)
     {
     VException::installWin32SEHandler(); // A no-op if not configured to be used.
 
-    VThread::_updateThreadStatistics(VThread::eMainStarted);
-
     VThread*    thread = static_cast<VThread*> (arg);
     VString     threadName = thread->getName();
     
@@ -225,8 +203,6 @@ void* VThread::threadMain(void* arg)
     if (deleteAtEnd)
         delete thread;
 
-    VThread::_updateThreadStatistics(VThread::eMainCompleted);
-
     VLOGGER_TRACE(VSTRING_FORMAT("VThread::threadMain: completed thread '%s'.", threadName.chars()));
 
     return NULL;
@@ -262,7 +238,7 @@ void VThread::getThreadsInfo(VBentoNode& bento)
         VThread* thread = (*i).second;
         VBentoNode* child = bento.addNewChildNode("thread");
         child->addString("name", thread->getName());
-        child->addInt("threadID", (int) thread->mThreadID);
+        child->addS64("threadID", reinterpret_cast<Vs64>(thread->mThreadID));
         child->addBool("isRunning", thread->mIsRunning);
         child->addBool("isDeleted", thread->mIsDeleted);
         child->addBool("deleteAtEnd", thread->mDeleteAtEnd);
@@ -296,56 +272,9 @@ void VThread::stopThread(VThreadID_Type threadID)
         }
     }
 
-// static
-void VThread::getThreadStatistics(int& numVThreads, int& numThreadMains, int& numVThreadsCreated, int& numThreadMainsStarted, int& numVThreadsDestructed, int& numThreadMainsCompleted)
-    {
-    VMutexLocker locker(gThreadStatsMutex, "VThread::getThreadStatistics()");
-    
-    numVThreads = gNumVThreads;
-    numThreadMains = gNumThreadMains;
-    numVThreadsCreated = gNumVThreadsCreated;
-    numThreadMainsStarted = gNumThreadMainsStarted;
-    numVThreadsDestructed = gNumVThreadsDestructed;
-    numThreadMainsCompleted = gNumThreadMainsCompleted;
-    }
-
-// static
-void VThread::setActionListener(VThreadActionListener* listener)
-    {
-    VMutexLocker locker(gThreadStatsMutex, "VThread::setActionListener()");
-
-    gActionListener = listener;
-    }
-
-// static
-void VThread::_updateThreadStatistics(eThreadAction action)
-    {
-    VMutexLocker locker(gThreadStatsMutex, "VThread::_updateThreadStatistics()");
-
-    switch (action)
-        {
-        case VThread::eCreated:
-            ++VThread::gNumVThreads;
-            ++VThread::gNumVThreadsCreated;
-            break;
-        case VThread::eDestroyed:
-            --VThread::gNumVThreads;
-            ++VThread::gNumVThreadsDestructed;
-            break;
-        case VThread::eMainStarted:
-            ++VThread::gNumThreadMains;
-            ++VThread::gNumThreadMainsStarted;
-            break;
-        case VThread::eMainCompleted:
-            --VThread::gNumThreadMains;
-            ++VThread::gNumThreadMainsCompleted;
-            break;
-        }
-    }
-
 #ifndef VAULT_USER_STACKCRAWL_SUPPORT
 // static
-void VThread::logStackCrawl(const VString& headerMessage, VLogger* logger, bool /*verbose*/)
+void VThread::logStackCrawl(const VString& headerMessage, VNamedLoggerPtr logger, bool /*verbose*/)
     {
     if (logger == NULL)
         VLOGGER_ERROR(VSTRING_FORMAT("%s (VThread::logStackCrawl: User stack crawl not implemented.)", headerMessage.chars()));

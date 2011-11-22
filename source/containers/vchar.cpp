@@ -47,34 +47,37 @@ VChar& VChar::operator=(int i)
     return *this;
     }
 
+// Note: Use of static_cast<Vu8> here is to force to positive int before calling int-based library APIs.
+// Alternative would be to call this->intValue(), but that might incur one extra copy of the char.
+
 bool VChar::isLowerCase() const
     {
-    return (islower(mValue) != 0);    // Note: global scope operator removed to compile against HPUX headers which use a macro
+    return (islower(static_cast<Vu8>(mValue)) != 0);    // Note: global scope operator removed to compile against HPUX headers which use a macro
     }
 
 VChar VChar::lowerCase() const
     {
-    return VChar(::tolower(mValue));
+    return VChar(::tolower(static_cast<Vu8>(mValue)));
     }
 
 void VChar::toLowerCase()
     {
-    mValue = static_cast<char>(::tolower(mValue));
+    mValue = static_cast<char>(::tolower(static_cast<Vu8>(mValue)));
     }
 
 bool VChar::isUpperCase() const
     {
-    return (isupper(mValue) != 0);    // Note: global scope operator removed to compile against HPUX headers which use a macro
+    return (isupper(static_cast<Vu8>(mValue)) != 0);    // Note: global scope operator removed to compile against HPUX headers which use a macro
     }
 
 VChar VChar::upperCase() const
     {
-    return VChar(::toupper(mValue));
+    return VChar(::toupper(static_cast<Vu8>(mValue)));
     }
 
 void VChar::toUpperCase()
     {
-    mValue = static_cast<char>(::toupper(mValue));
+    mValue = static_cast<char>(::toupper(static_cast<Vu8>(mValue)));
     }
 
 char VChar::charValue() const

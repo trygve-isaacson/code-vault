@@ -13,7 +13,7 @@ http://www.bombaydigital.com/
 #include "vlogger.h"
 
 VDuration VMutex::gVMutexLockDelayLoggingThreshold(100 * VDuration::MILLISECOND());
-int VMutex::gVMutexLockDelayLoggingLevel(VLogger::kDebug);
+int VMutex::gVMutexLockDelayLoggingLevel(VLoggerLevel::DEBUG);
 
 VMutex::VMutex(const VString& name, bool suppressLogging) :
 mMutex(),
@@ -38,6 +38,16 @@ void VMutex::setName(const VString& name)
     mName = name;
     }
 
+VMutex_Type* VMutex::getMutex()
+    {
+    return &mMutex;
+    }
+
+bool VMutex::isLockedByCurrentThread() const
+    {
+    return mIsLocked && (mLastLockThread == VThread::threadSelf());
+    }
+
 void VMutex::_lock(const VString& lockerName)
     {
 #ifdef VAULT_MUTEX_LOCK_DELAY_CHECK
@@ -55,7 +65,7 @@ void VMutex::_lock(const VString& lockerName)
 
             if (waitTime >= gVMutexLockDelayLoggingThreshold)
                 {
-                VLOGGER_LEVEL(gVMutexLockDelayLoggingLevel, VSTRING_FORMAT("Delay: '%s' was blocked %lldms on mutex '%s' released by '%s'.",
+                VLOGGER_LEVEL(gVMutexLockDelayLoggingLevel, VSTRING_FORMAT("Delay: '%s' was blocked " VSTRING_FORMATTER_S64 "ms on mutex '%s' released by '%s'.",
                     lockerName.chars(), waitTime.getDurationMilliseconds(), mName.chars(), mLastLockerName.chars()));
                 }
             }
@@ -86,7 +96,7 @@ void VMutex::_unlock()
         VDuration delay = now - mLastLockTime;
         if (delay >= gVMutexLockDelayLoggingThreshold)
             {
-            VLOGGER_LEVEL(gVMutexLockDelayLoggingLevel, VSTRING_FORMAT("Delay: '%s' is unlocking mutex '%s' after holding it for %lldms.",
+            VLOGGER_LEVEL(gVMutexLockDelayLoggingLevel, VSTRING_FORMAT("Delay: '%s' is unlocking mutex '%s' after holding it for " VSTRING_FORMATTER_S64 "ms.",
                 mLastLockerName.chars(), mName.chars(), delay.getDurationMilliseconds()));
             }
         }
@@ -101,15 +111,5 @@ void VMutex::_unlock()
         else
             throw VStackTraceException(VSTRING_FORMAT("VMutex::unlock unable to unlock mutex '%s'.", mName.chars()));
         }
-    }
-
-VMutex_Type* VMutex::getMutex()
-    {
-    return &mMutex;
-    }
-
-bool VMutex::isLockedByCurrentThread() const
-    {
-    return mIsLocked && (mLastLockThread == VThread::threadSelf());
     }
 

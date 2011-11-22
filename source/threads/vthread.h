@@ -14,10 +14,9 @@ http://www.bombaydigital.com/
 #include "vstring.h"
 #include "vmutex.h"
 #include "vinstant.h"
+#include "vlogger.h"
 
 class VManagementInterface;
-class VThreadActionListener;
-class VLogger;
 class VBentoNode;
 
 /**
@@ -171,7 +170,7 @@ class VThread
         @param  verbose         false will restrict output to just the function names, avoiding
                                 all annotation, registers, etc. so just the fucntion names are logged
         */
-        static void logStackCrawl(const VString& headerMessage, VLogger* logger, bool verbose);
+        static void logStackCrawl(const VString& headerMessage, VNamedLoggerPtr logger, bool verbose);
 
         // Constants to pass for VThread constructor deleteSelfAtEnd parameter:
         static const bool kDeleteSelfAtEnd = true;      ///< The thread main deletes the VThread at end.
@@ -310,12 +309,6 @@ class VThread
         */
         static void stopThread(VThreadID_Type threadID);
 
-        /**
-        Returns thread statistics counters for debugging/diagnostic purposes.
-        @see the statistics fields comments for meaning of each value
-        */
-        static void getThreadStatistics(int& numVThreads, int& numThreadMains, int& numVThreadsCreated, int& numThreadMainsStarted, int& numVThreadsDestructed, int& numThreadMainsCompleted);
-
         /* PLATFORM-SPECIFIC STATIC FUNCTIONS --------------------------------
         The remaining functions defined here are the low-level interfaces to
         the platform-specific threading APIs. These are implemented in each
@@ -408,20 +401,6 @@ class VThread
         */
         static void yield();
         
-        /**
-        Defines the actions indicated in calls to updateThreadStats.
-        */
-        enum eThreadAction { eCreated, eDestroyed, eMainStarted, eMainCompleted };
-        
-        /**
-        Call this to assign a thread action listener; you MUST call this
-        later with NULL before exiting if the listener object has a shorter
-        lifetime than all thread actions.
-        @param listener the listener to be called with thread actions, or NULL
-                        to de-register so no actions cause calls to a listener
-        */
-        static void setActionListener(VThreadActionListener* listener);
-
     protected:
     
         bool                    mIsDeleted;         ///< For debugging purposes it's useful to detect when an attempt is made to delete a thread twice.
@@ -432,22 +411,6 @@ class VThread
         VThreadID_Type          mThreadID;          ///< The OS-specific thread ID value.
         volatile bool           mIsRunning;         ///< The running state of the thread (@see isRunning()).
     
-        // These static members track and control the existence of threads we create.
-        static int gNumVThreads;                ///< The number of VThread objects that currently exist.
-        static int gNumThreadMains;             ///< The number of VThread::main() functions currently underway.
-        static int gNumVThreadsCreated;         ///< The total number of VThread objects ever created.
-        static int gNumThreadMainsStarted;      ///< The total number of VThread::main() functions ever entered.
-        static int gNumVThreadsDestructed;      ///< The total number of VThread objects ever destructed.
-        static int gNumThreadMainsCompleted;    ///< The total number of VThread::main() functions ever completed.
-
-        static VThreadActionListener* gActionListener; ///< For now, there can only be 1; if more are needed, make this a collection.
-
-        /**
-        Updates the thread statistics based on the specified action happening.
-        @param    action    what happened (@see eThreadAction)
-        */
-        static void _updateThreadStatistics(eThreadAction action);
-
     private:
     
         // Prevent copy construction and assignment since there is no provision for sharing the underlying thread.
@@ -497,23 +460,6 @@ class VForeignThread : public VThread
         virtual ~VForeignThread();
         virtual void start();
         virtual void run() {} // Will never be called because start() throws.
-    };
-
-/**
-VThreadActionListener is a notification interface that you can implement and
-register with VThread::registerActionListener, in order to be notified of
-thread lifecycle events, for purposes of tracking thread statistics. The
-threadAction() method is called any time a thread is created or destroyed,
-or a thread main is started or completes.
-*/
-class VThreadActionListener
-    {
-    public:
-    
-        VThreadActionListener() {}
-        virtual ~VThreadActionListener() {}
-        
-        virtual void threadAction(VThread::eThreadAction action) = 0;
     };
 
 #endif /* vthread_h */

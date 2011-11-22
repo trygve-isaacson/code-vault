@@ -47,6 +47,8 @@ typedef std::vector<VTestInfo> TestInfoVector;
 class VUnitOutputWriter;
 typedef std::vector<VUnitOutputWriter*> VUnitOutputWriterList;
 
+typedef std::vector<VLogAppender*> VUnitLogAppenderList;
+
 /**
 VUnitOutputWriter provides an abstract API for providing test results
 in various formats. Provided concrete implementations are at the bottom of
@@ -75,12 +77,12 @@ class VUnitOutputWriter
         @param  args the command line arguments
         @param  writers a vector of VUnitOutputWriter* to which this function adds
             the caller is responsible for deleting these objects when done with unit tests
-        @param  loggers a vector of VLogger* to which this function adds
+        @param  appenders a vector of VLogAppender* to which this function appends
             the caller is responsible for deleting these objects when done with unit tests
         */
-        static void createOutputWriters(const VStringVector& args, VUnitOutputWriterList& writers, VLoggerList& loggers);
+        static void createOutputWriters(const VStringVector& args, VUnitOutputWriterList& writers, VUnitLogAppenderList& appenders);
     
-        VUnitOutputWriter(VLogger& outputLogger);
+        VUnitOutputWriter(VLogAppender& outputAppender);
         virtual ~VUnitOutputWriter() {}
         
         virtual void testSuitesBegin() = 0;
@@ -101,7 +103,7 @@ class VUnitOutputWriter
         void _testCaseEnd(const VTestInfo& testInfo);
         void _testSuiteEnd();
     
-        VLogger& mLogger;
+        VLogAppender& mLogAppender;
         VInstant mTestSuitesStartTime;
         int mTotalNumSuccesses;
         int mTotalNumErrors;
@@ -123,9 +125,9 @@ class VUnitOutputWriter
         VUnitOutputWriter& operator=(const VUnitOutputWriter& other);
 
         // These are the functions used by createOutputWriters().
-        static VLogger* _newLoggerByType(const VString& outputType, const VString& filePath);
-        static VUnitOutputWriter* _newOutputWriterByType(const VString& outputType, VLogger* logger);
-        static void _addNewOutputWriter(VUnitOutputWriterList& outputters, VLoggerList& outputLoggers, const VString& outputType, const VString& filePath);
+        static VLogAppender* _newLogAppenderByType(const VString& outputType, const VString& filePath);
+        static VUnitOutputWriter* _newOutputWriterByType(const VString& outputType, VLogAppender* logAppender);
+        static void _addNewOutputWriter(VUnitOutputWriterList& outputters, VUnitLogAppenderList& outpuAppenders, const VString& outputType, const VString& filePath);
     };
 
 /**
@@ -349,7 +351,7 @@ class VTestSuitesWrapper
         virtual ~VTestSuitesWrapper();
         
         VUnitOutputWriterList   mWriters;
-        VLoggerList             mLoggers;
+        VUnitLogAppenderList    mAppenders;
     };
 
 /**
@@ -385,7 +387,7 @@ class VUnitJUnitXMLOutput : public VUnitOutputWriter
     {
     public:
     
-        VUnitJUnitXMLOutput(VLogger& outputLogger);
+        VUnitJUnitXMLOutput(VLogAppender& outputAppender);
         virtual ~VUnitJUnitXMLOutput() {}
         
         virtual void testSuitesBegin();
@@ -406,7 +408,7 @@ class VUnitSimpleTextOutput : public VUnitOutputWriter
     {
     public:
     
-        VUnitSimpleTextOutput(VLogger& outputLogger);
+        VUnitSimpleTextOutput(VLogAppender& outputAppender);
         virtual ~VUnitSimpleTextOutput() {}
         
         virtual void testSuitesBegin();
@@ -427,7 +429,7 @@ class VUnitTeamCityOutput : public VUnitOutputWriter
     {
     public:
     
-        VUnitTeamCityOutput(VLogger& outputLogger);
+        VUnitTeamCityOutput(VLogAppender& outputAppender);
         virtual ~VUnitTeamCityOutput() {}
         
         virtual void testSuitesBegin();
@@ -447,7 +449,7 @@ class VUnitTeamCityBuildStatusOutput : public VUnitOutputWriter
     {
     public:
     
-        VUnitTeamCityBuildStatusOutput(VLogger& outputLogger);
+        VUnitTeamCityBuildStatusOutput(VLogAppender& outputAppender);
         virtual ~VUnitTeamCityBuildStatusOutput() {}
         
         virtual void testSuitesBegin();

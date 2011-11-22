@@ -1456,7 +1456,7 @@ void VString::substringInPlace(int startIndex, int endIndex)
     ASSERT_INVARIANT();
     }
 
-void VString::split(VStringVector& result, const VChar& delimiter, int limit, bool stripTrailingEmpties)
+void VString::split(VStringVector& result, const VChar& delimiter, int limit, bool stripTrailingEmpties) const
     {
     result.clear();
     VString nextItem;
@@ -1495,7 +1495,7 @@ void VString::split(VStringVector& result, const VChar& delimiter, int limit, bo
         }
     }
 
-VStringVector VString::split(const VChar& delimiter, int limit, bool stripTrailingEmpties)
+VStringVector VString::split(const VChar& delimiter, int limit, bool stripTrailingEmpties) const
     {
     VStringVector result;
     this->split(result, delimiter, limit, stripTrailingEmpties);
@@ -1703,7 +1703,7 @@ void VString::preflight(int stringLength)
             // requested; this easily yields an order of magnitude improvement when a string is
             // created with multiple appends.
             int newBufferLength = stringLength + 1;
-            if (kStringBufferChunkSize != 1)
+            if (kStringBufferChunkSize != 1) // If static analyzer complains about constant comparison, disable it in the tool.
                 {
                 int remainder = newBufferLength % kStringBufferChunkSize;
                 int extra = kStringBufferChunkSize - remainder;
@@ -2023,7 +2023,7 @@ void VString::_assignFromCFString(const CFStringRef& s)
     const char* cfStringBuffer = CFStringGetCStringPtr(s, kCFStringEncodingUTF8);
     if (cfStringBuffer != NULL) // was able to get fast direct buffer access
         {
-        this->copyFromBuffer(cfStringBuffer, 0, strlen(cfStringBuffer));
+        this->copyFromBuffer(cfStringBuffer, 0, (int) ::strlen(cfStringBuffer));
         }
     else
         {

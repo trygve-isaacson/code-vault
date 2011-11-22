@@ -25,6 +25,16 @@ http://www.bombaydigital.com/
 // VMessage -------------------------------------------------------------------
 
 const VString VMessage::kMessageLoggerName("messages");
+const int VMessage::kMessageContentRecordingLevel;
+const int VMessage::kMessageHeaderLevel;
+const int VMessage::kMessageContentFieldsLevel;
+const int VMessage::kMessageTrafficDetailsLevel;
+const int VMessage::kMessageHandlerDispatchLevel;
+const int VMessage::kMessageHandlerDetailLevel;
+const int VMessage::kMessageContentHexDumpLevel;
+const int VMessage::kMessageQueueOpsLevel;
+const int VMessage::kMessageTraceDetailLevel;
+const int VMessage::kMessageHandlerLifecycleLevel;
 
 // static
 void VMessage::release(/* @Nullable */ VMessage* message)
@@ -54,7 +64,7 @@ void VMessage::deleteMessage(/* @Nullable */ VMessage* message)
 
     const int broadcastCount = message->numBroadcastTargets();
     if (broadcastCount != 0)
-        VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("Message ID=%d @0x%p deleted with a broadcast count of %d. Risk that a queue still references it.", message->getMessageID(), message, broadcastCount));
+        VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("Message ID=%d @%p deleted with a broadcast count of %d. Risk that a queue still references it.", message->getMessageID(), message, broadcastCount));
     
     delete message;
     }

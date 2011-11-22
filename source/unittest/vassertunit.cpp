@@ -295,10 +295,11 @@ void VAssertUnit::_negativeAssertionsForInstant()
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(testValue, futureValue, futureValue + VDuration::MINUTE()));
     }
 
-// We need to disable signed/unsigned comparison warnings from VC++ here. The reason is that we
-// are generically testing all numeric types, some of which are unsigned, and several of the
-// tests here do assertions comparing with int, which can generate the warning. User code that
-// makes such comparisons will legitimately warn, but we are doing a generic test so it's expected.
+// Compilers will legitimately warn about signed/unsigned comparisons here, but we are intentionally
+// performing them as part of the test suite. For VC++ we can disable the warnings locally with a
+// VC++-specific pragma. GCC has no such feature, so I have separated the relevant tests (those that
+// use an (int) cast) and left them out of the Unix build. User code that tries to perform such
+// comparisons will warn legitimately and should be corrected.
 #ifdef VCOMPILER_MSVC
 #pragma warning(disable: 4018)
 #endif
@@ -309,29 +310,32 @@ void VAssertUnit::_positiveAssertionsForNumericType(const VString& dataTypeName,
     const T i = testValue;
     
     TEST_POSITIVE_ASSERTION_CALL(VASSERT(i == testValue));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT(i == (int)testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT(i == (T)testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_VALUE(i == testValue, i, VSTRING_INT((int)i)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_EQUAL(i, testValue));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_EQUAL(i, (int)testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_EQUAL(i, (T)testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_NON_ZERO(i));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (int)(testValue-10)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (T)(testValue-10)));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (int)(testValue+10)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (T)(testValue+10)));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (int)(testValue+1)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (T)(testValue+1)));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (int)testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (T)testValue));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (int)(testValue-10)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (T)(testValue-10)));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)(testValue-1)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (T)(testValue-1)));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (T)testValue));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (int)(testValue-5), (int)(testValue+5)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (T)(testValue-5), (T)(testValue+5)));
+
+#ifndef VPLATFORM_UNIX // GCC Linux correctly warns on these when T is an unsigned type.
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT(i == (int)testValue));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_EQUAL(i, (int)testValue));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (int)(testValue-10)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (int)(testValue+10)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (int)(testValue+1)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (int)testValue));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (int)(testValue-10)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)(testValue-1)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)testValue));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (int)(testValue-5), (int)(testValue+5)));
+#endif /* if not unix */
     }
 
 template <class T>
@@ -341,27 +345,30 @@ void VAssertUnit::_negativeAssertionsForNumericType(const VString& dataTypeName,
     const T x = i + 5; // a value that should fail to test equal
     
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT(x == testValue));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT(x  == (int)testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT(x == (T)testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_VALUE(x == testValue, x, VSTRING_INT((int)x)));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_EQUAL(x, testValue));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_EQUAL(x, (int)testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_EQUAL(x, (T)testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_NON_ZERO(0));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (int)i));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (T)i));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (int)(testValue-10)));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (T)(testValue-10)));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (int)(testValue-1)));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (T)(testValue-1)));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (int)(testValue+10)));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (T)(testValue+10)));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)(testValue+1)));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (T)(testValue+1)));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)testValue+10));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (T)testValue+10));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (int)(testValue+5), (int)(testValue+10)));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (T)(testValue+5), (T)(testValue+10)));
+
+#ifndef VPLATFORM_UNIX // GCC Linux correctly warns on these when T is an unsigned type.
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT(x  == (int)testValue));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_EQUAL(x, (int)testValue));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (int)i));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (int)(testValue-10)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (int)(testValue-1)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (int)(testValue+10)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)(testValue+1)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)testValue+10));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (int)(testValue+5), (int)(testValue+10)));
+#endif /* if not unix */
     }
 
 #ifdef VCOMPILER_MSVC

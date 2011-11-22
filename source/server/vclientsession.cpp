@@ -136,7 +136,7 @@ bool VClientSession::postOutputMessage(VMessage* message, bool isForBroadcast)
             if ((mMaxClientQueueDataSize > 0) && (currentQueueDataSize >= mMaxClientQueueDataSize))
                 {
                 // We have hit the queue size limit. Do not post. Initiate a shutdown of this session.
-                VLOGGER_ERROR(VSTRING_FORMAT("[%s] VClientSession::postOutputMessage: Reached output queue limit of %lld bytes. Not posting message ID=%d. Closing socket to force shutdown of session and its i/o threads.", this->getName().chars(), mMaxClientQueueDataSize, message->getMessageID()));
+                VLOGGER_ERROR(VSTRING_FORMAT("[%s] VClientSession::postOutputMessage: Reached output queue limit of " VSTRING_FORMATTER_S64 " bytes. Not posting message ID=%d. Closing socket to force shutdown of session and its i/o threads.", this->getName().chars(), mMaxClientQueueDataSize, message->getMessageID()));
                 mSocket->close();
                 }
             else if ((mStandbyTimeLimit == VDuration::ZERO()) || (now <= mStandbyStartTime + mStandbyTimeLimit))

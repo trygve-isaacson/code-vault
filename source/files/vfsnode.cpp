@@ -16,6 +16,9 @@ http://www.bombaydigital.com/
 
 // VListNodeInfoCallback -----------------------------------------------------
 
+/**
+This iteration callback is used to capture a directory's children's names as a list of nodes.
+*/
 class VFSNodeListCallback : public VDirectoryIterationCallback
     {
     public:
@@ -42,6 +45,9 @@ bool VFSNodeListCallback::handleNextNode(const VFSNode& node)
 
 // VFSNodeNameCallback -----------------------------------------------------
 
+/**
+This iteration callback is used to capture a directory's children's names as a list of strings.
+*/
 class VFSNodeNameCallback : public VDirectoryIterationCallback
     {
     public:
@@ -70,6 +76,10 @@ bool VFSNodeNameCallback::handleNextNode(const VFSNode& node)
 
 // VFSNodeFindCallback -----------------------------------------------------
 
+/**
+This directory iterator is used by VFSNode::find() to search for a node with
+a specified name.
+*/
 class VFSNodeFindCallback : public VDirectoryIterationCallback
     {
     public:

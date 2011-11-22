@@ -37,10 +37,10 @@ namespace VGeometry
     In order for the templates to work with both VDouble and int, we define int versions,
     too, and those do an exact test.
     */
-    extern bool equal(VDouble a, VDouble b);
-    extern bool notEqual(VDouble a, VDouble b);
-    extern bool equal(int a, int b);
-    extern bool notEqual(int a, int b);
+    extern bool equal(VDouble a, VDouble b);    ///< Returns true if the two doubles are equal to within 0.000001.
+    extern bool notEqual(VDouble a, VDouble b); ///< Returns true if the two doubles are not equal to within 0.000001.
+    extern bool equal(int a, int b);            ///< Returns true if the two ints are equal. (Used in template-based code below regardless of type.)
+    extern bool notEqual(int a, int b);         ///< Returns true if the two ints are not equal. (Used in template-based code below regardless of type.)
     extern void writePairToStream(VBinaryIOStream& stream, VDouble item1, VDouble item2);
     extern void readPairFromStream(VBinaryIOStream& stream, VDouble& item1, VDouble& item2);
     extern void writePairToStream(VBinaryIOStream& stream, int item1, int item2);
@@ -49,8 +49,8 @@ namespace VGeometry
     extern void readTripletFromStream(VBinaryIOStream& stream, VDouble& item1, VDouble& item2, VDouble& item3);
     extern void writeTripletToStream(VBinaryIOStream& stream, int item1, int item2, int item3);
     extern void readTripletFromStream(VBinaryIOStream& stream, int& item1, int& item2, int& item3);
-    extern VDouble getDistance(VDouble dx, VDouble dy);
-    extern VDouble getDistance(int dx, int dy);
+    extern VDouble getDistance(VDouble dx, VDouble dy); ///< Returns the distance between two double-based points.
+    extern VDouble getDistance(int dx, int dy);         ///< Returns the distance between two int-based points; the result must be a double.
     }
 
 /*
@@ -62,10 +62,6 @@ function I just put it on the same line as the function name; otherwise I break 
 into a multi-line code block kind of like a normal implementation.
 */
 
-/**
-VSizeT defines a width and height. VSize uses VDouble values; VISize uses int values.
-*/
-
 template <typename T> class VSizeT;
 template <typename T> bool operator== (const VSizeT<T>& s1, const VSizeT<T>& s2);
 template <typename T> bool operator!= (const VSizeT<T>& s1, const VSizeT<T>& s2);
@@ -75,6 +71,9 @@ template <typename T> VSizeT<T> operator* (const VSizeT<T>& x, T scale);
 template <typename T> VSizeT<T> operator* (T scale, const VSizeT<T>& x);
 template <typename T> VSizeT<T> operator/ (const VSizeT<T>& x, T divisor);
 
+/**
+VSizeT defines a width and height. VSize uses VDouble values; VISize uses int values.
+*/
 template <typename T>
 class VSizeT
     {
@@ -145,12 +144,9 @@ template<typename T> VSizeT<T> operator*(const VSizeT<T>& x, T scale) { return V
 template<typename T> VSizeT<T> operator*(T scale, const VSizeT<T>& x) { return VSizeT<T>(x.mWidth * scale, x.mHeight * scale); }
 template<typename T> VSizeT<T> operator/(const VSizeT<T>& x, T divisor) { if (divisor == 0) throw VRangeException("VSizeT divide by zero."); return VSizeT<T>(x.mWidth / divisor, x.mHeight / divisor); }
 
-typedef VSizeT<VDouble> VSize;
-typedef VSizeT<int> VISize;
+typedef VSizeT<VDouble> VSize;  ///< A size defined by w/h doubles.
+typedef VSizeT<int> VISize;     ///< A size defined by w/h ints.
 
-/**
-VPointT defines a point with x and y coordinates. VPoint uses VDouble coordinates; VIPoint uses int coordinates.
-*/
 template <typename T> class VPointT;
 template <typename T> bool operator== (const VPointT<T>& p1, const VPointT<T>& p2);
 template <typename T> bool operator!= (const VPointT<T>& p1, const VPointT<T>& p2);
@@ -163,6 +159,9 @@ template <typename T> VPointT<T> operator* (const VPointT<T>& p, T scale);
 template <typename T> VPointT<T> operator* (T scale, const VPointT<T>& p);
 template <typename T> VPointT<T> operator/ (const VPointT<T>& p, T divisor);
 
+/**
+VPointT defines a point with x and y coordinates. VPoint uses VDouble coordinates; VIPoint uses int coordinates.
+*/
 template <typename T>
 class VPointT
     {
@@ -242,15 +241,12 @@ template<typename T> VPointT<T> operator*(const VPointT<T>& p, T scale) { return
 template<typename T> VPointT<T> operator*(T scale, const VPointT<T>& p) { return VPointT<T>(p.mX * scale, p.mY * scale); }
 template<typename T> VPointT<T> operator/(const VPointT<T>& p, T divisor) { if (divisor == 0) throw VRangeException("VPointT divide by zero."); return VPointT<T>(p.mX / divisor, p.mY / divisor); }
 
-typedef VPointT<VDouble> VPoint;
-typedef VPointT<int> VIPoint;
+typedef VPointT<VDouble> VPoint;    ///< A point defined by x/y doubles.
+typedef VPointT<int> VIPoint;       ///< A point defined by x/y ints.
 
 typedef std::vector<VPoint> VPointVector;
 typedef std::vector<VIPoint> VIPointVector;
 
-/**
-VPoint3DT defines a point with x, y, and z coordinates. VPoint3D uses VDouble coordinates; VIPoint3D uses int coordinates.
-*/
 template <typename T> class VPoint3DT;
 template <typename T> bool operator== (const VPoint3DT<T>& p1, const VPoint3DT<T>& p2);
 template <typename T> bool operator!= (const VPoint3DT<T>& p1, const VPoint3DT<T>& p2);
@@ -261,6 +257,9 @@ template <typename T> VPoint3DT<T> operator* (const VPoint3DT<T>& p, T scale);
 template <typename T> VPoint3DT<T> operator* (T scale, const VPoint3DT<T>& p);
 template <typename T> VPoint3DT<T> operator/ (const VPoint3DT<T>& p, T divisor);
 
+/**
+VPoint3DT defines a point with x, y, and z coordinates. VPoint3D uses VDouble coordinates; VIPoint3D uses int coordinates.
+*/
 template <typename T>
 class VPoint3DT
     {
@@ -325,18 +324,18 @@ template<typename T> VPoint3DT<T> operator*(const VPoint3DT<T>& p, T scale) { re
 template<typename T> VPoint3DT<T> operator*(T scale, const VPoint3DT<T>& p) { return VPoint3DT<T>(p.mX * scale, p.mY * scale, p.mZ * scale); }
 template<typename T> VPoint3DT<T> operator/(const VPoint3DT<T>& p, T divisor) { if (divisor == 0) throw VRangeException("VPoint3DT divide by zero."); return VPoint3DT<T>(p.mX / divisor, p.mY / divisor, p.mZ / divisor); }
 
-typedef VPoint3DT<VDouble> VPoint3D;
-typedef VPoint3DT<int> VIPoint3D;
+typedef VPoint3DT<VDouble> VPoint3D;    ///< A 3D point defined by x/y/z doubles.
+typedef VPoint3DT<int> VIPoint3D;       ///< A 3D point defined by x/y/z ints.
+
+template <typename T> class VLineT;
+template <typename T> bool operator== (const VLineT<T>& line1, const VLineT<T>& line2); // equality of start and end
+template <typename T> bool operator!= (const VLineT<T>& line1, const VLineT<T>& line2); // inequality of start or end
 
 /**
 VLineT defines a line segment with two points. The order matters for equality and math.
 Use the same() function to test equality without respect to the order of the two points.
 VLine uses VDouble coordinates; VILine uses int coordinates.
 */
-template <typename T> class VLineT;
-template <typename T> bool operator== (const VLineT<T>& line1, const VLineT<T>& line2); // equality of start and end
-template <typename T> bool operator!= (const VLineT<T>& line1, const VLineT<T>& line2); // inequality of start or end
-
 template <typename T>
 class VLineT
     {
@@ -519,18 +518,18 @@ class VLineT
 template<typename T> bool operator==(const VLineT<T>& line1, const VLineT<T>& line2) { return line1.mP1 == line2.mP1 && line1.mP2 == line2.mP2; }
 template<typename T> bool operator!=(const VLineT<T>& line1, const VLineT<T>& line2) { return line1.mP1 != line2.mP1 || line1.mP2 != line2.mP2; }
 
-typedef VLineT<VDouble> VLine;
-typedef VLineT<int> VILine;
+typedef VLineT<VDouble> VLine;  ///< A line defined by double-based points.
+typedef VLineT<int> VILine;     ///< A line defined by integer-based points.
 
 template <typename T> class VPolygonT; // forward declaration for use by VRectT
 
-/**
-VRectT defines a rectangle. VRect uses VDouble coordinates; VIRect uses int coordinates.
-*/
 template <typename T> class VRectT;
 template <typename T> bool operator== (const VRectT<T>& p1, const VRectT<T>& p2);
 template <typename T> bool operator!= (const VRectT<T>& p1, const VRectT<T>& p2);
 
+/**
+VRectT defines a rectangle. VRect uses VDouble coordinates; VIRect uses int coordinates.
+*/
 template <typename T>
 class VRectT
     {
@@ -746,16 +745,16 @@ class VRectT
 template<typename T> bool operator==(const VRectT<T>& r1, const VRectT<T>& r2) { return r1.mLeftTop == r2.mLeftTop && r1.mSize == r2.mSize; }
 template<typename T> bool operator!=(const VRectT<T>& r1, const VRectT<T>& r2) { return r1.mLeftTop != r2.mLeftTop || r1.mSize != r2.mSize; }
 
-typedef VRectT<VDouble> VRect;
-typedef VRectT<int> VIRect;
+typedef VRectT<VDouble> VRect;  ///< A rectangle defined by double-based points.
+typedef VRectT<int> VIRect;     ///< A rectangle defined by integer-based points.
 
-/**
-VPolygonT defines a polygon or series of points. VPolygon uses VDouble coordinates; VIPolygon uses int coordinates.
-*/
 template <typename T> class VPolygonT;
 template <typename T> bool operator== (const VPolygonT<T>& p1, const VPolygonT<T>& p2);
 template <typename T> bool operator!= (const VPolygonT<T>& p1, const VPolygonT<T>& p2);
 
+/**
+VPolygonT defines a polygon or series of points. VPolygon uses VDouble coordinates; VIPolygon uses int coordinates.
+*/
 template <typename T>
 class VPolygonT
     {
@@ -1006,8 +1005,8 @@ class VPolygonT
 template<typename T> bool operator==(const VPolygonT<T>& p1, const VPolygonT<T>& p2) { return p1.mPoints == p2.mPoints; }
 template<typename T> bool operator!=(const VPolygonT<T>& p1, const VPolygonT<T>& p2) { return p1.mPoints != p2.mPoints; }
 
-typedef VPolygonT<VDouble> VPolygon;
-typedef VPolygonT<int> VIPolygon;
+typedef VPolygonT<VDouble> VPolygon;    ///< A polygon defined by double-based points.
+typedef VPolygonT<int> VIPolygon;       ///< A polygon defined by integer-based points.
 
 /*
 Comments about "dead zones":

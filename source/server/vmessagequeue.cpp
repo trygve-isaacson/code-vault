@@ -13,7 +13,7 @@ http://www.bombaydigital.com/
 // VMessageQueue --------------------------------------------------------------
 
 VDuration VMessageQueue::gVMessageQueueLagLoggingThreshold(-1 * VDuration::MILLISECOND()); // -1 means we don't examine the lag time at all
-int VMessageQueue::gVMessageQueueLagLoggingLevel(VLogger::kDebug);
+int VMessageQueue::gVMessageQueueLagLoggingLevel(VLoggerLevel::DEBUG);
 
 VMessageQueue::VMessageQueue() :
 mQueuedMessages(), // -> empty
@@ -86,7 +86,7 @@ VMessage* VMessageQueue::getNextMessage()
         VInstant now;
         VDuration delayInterval = now - mLastMessagePostTime;
         if (delayInterval >= gVMessageQueueLagLoggingThreshold)
-            VLOGGER_LEVEL(gVMessageQueueLagLoggingLevel, VSTRING_FORMAT("VMessageQueue saw a delay of %lldms when getting a message with ID %d.", delayInterval.getDurationMilliseconds(), message->getMessageID()));
+            VLOGGER_LEVEL(gVMessageQueueLagLoggingLevel, VSTRING_FORMAT("VMessageQueue saw a delay of %s when getting a message with ID %d.", delayInterval.getDurationString().chars(), message->getMessageID()));
         }
     
     return message;

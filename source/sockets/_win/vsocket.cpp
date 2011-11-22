@@ -11,7 +11,13 @@ http://www.bombaydigital.com/
 
 #include "vexception.h"
 
+#ifdef VCOMPILER_MSVC
+#pragma warning(disable: 6386)  // the library file doesn't past muster
+#endif
 #include <ws2tcpip.h> // For the WSA calls in enumerateNetworkInterfaces()
+#ifdef VCOMPILER_MSVC
+#pragma warning(default: 6386)
+#endif  
 
 V_STATIC_INIT_TRACE
 
@@ -164,7 +170,8 @@ int VSocket::available()
         ::ioctlsocket(mSocketID, FIONBIO, &argp);
 
         //See if there is any data in the buffer.
-        result = ::recv(mSocketID, NULL, 0 , MSG_PEEK);
+        char recvBuffer[4]; // It's unclear if NULL buffer parameter is runtime safe, even with 0 length parameter. Provide valid buffer pointer to be sure.
+        result = ::recv(mSocketID, recvBuffer, 0 , MSG_PEEK);
 
         //restore the blocking
         argp = 1;

@@ -96,6 +96,10 @@ VASSERT_LESS_THAN(balance, MAX_BALANCE);
     #define VASSERT_IN_RANGE(i, minVal, maxVal)             ((void) 0)
 #endif
 
+/**
+This static helper class provides the various overloaded assertion functions that we call from our VASSERT
+macros.
+*/
 class VAssert
     {
     public:

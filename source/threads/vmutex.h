@@ -40,8 +40,8 @@ class VMutex
         /**
         Creates and initializes the mutex with an optional name that can be
         used when debugging mutex and lock behavior.
-        @param a name for the mutex; should be unique to avoid confusion
-        @param if this mutex is specifically locked during logging, this flag
+        @param name             a name for the mutex; should be unique to avoid confusion
+        @param suppressLogging  if this mutex is specifically locked during logging, this flag
                 must be set so that VMutex doesn't try to log information
                 about this mutex (avoids recursive locking deadlock)
         */
@@ -55,7 +55,7 @@ class VMutex
         In some cases it's more convenient to name a mutex after constructing,
         in which case you can call setName(). The name is only used for
         diagnostic purposes when debugging mutex and lock behavior.
-        @param a name for the mutex; should be unique to avoid confusion
+        @param name     a name for the mutex; should be unique to avoid confusion
         */
         void setName(const VString& name);
 

@@ -421,7 +421,7 @@ void VColorUnit::_testVIntegerRangeColorMapper()
     int index = 0;
     for (VIntegerRangeVector::const_iterator i = mapper.mColorRanges.begin(); i != mapper.mColorRanges.end(); ++i)
         {
-        this->logStatus(VSTRING_FORMAT("range[%d] >= %lld %s", index, (*i).mRangeMin, (*i).mColors.getCSSColor().chars()));
+        this->logStatus(VSTRING_FORMAT("range[%d] >= " VSTRING_FORMATTER_S64 " %s", index, (*i).mRangeMin, (*i).mColors.getCSSColor().chars()));
         ++index;
         }
 */
@@ -497,7 +497,7 @@ void VColorUnit::_testVDoubleRangeColorMapper()
     int index = 0;
     for (VDoubleRangeVector::const_iterator i = mapper.mColorRanges.begin(); i != mapper.mColorRanges.end(); ++i)
         {
-        this->logStatus(VSTRING_FORMAT("range[%d] >= %lf %s", index, (*i).mRangeMin, (*i).mColors.getCSSColor().chars()));
+        this->logStatus(VSTRING_FORMAT("range[%d] >= " VSTRING_FORMATTER_DOUBLE " %s", index, (*i).mRangeMin, (*i).mColors.getCSSColor().chars()));
         ++index;
         }
 */

@@ -26,8 +26,7 @@ void VStream::readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead)
     Vs64 numBytesRead = this->read(targetBuffer, numBytesToRead);
 
     if (numBytesRead != numBytesToRead)
-        throw VEOFException(VSTRING_FORMAT(
-        "VStream::readGuaranteed encountered end of stream. Read %lld of %lld", numBytesRead, numBytesToRead));
+        throw VEOFException(VSTRING_FORMAT("VStream::readGuaranteed encountered end of stream. Read " VSTRING_FORMATTER_S64 " of " VSTRING_FORMATTER_S64 " bytes.", numBytesRead, numBytesToRead));
     }
 
 // static
@@ -152,10 +151,7 @@ Vs64 VStream::streamCopy(VStream& fromStream, VIOStream& toStream, Vs64 numBytes
 // static
 bool VStream::needSizeConversion(Vs64 sizeValue)
     {
-    if ((sizeof(Vs64) != sizeof(size_t)) && (sizeValue > V_MAX_S32))
-        return true;
-    else
-        return false;
+    return ((sizeof(Vs64) != sizeof(size_t)) && (sizeValue > V_MAX_S32)); // If static analyzer complains about constant comparison, disable it in the tool.
     }
 
 // static

@@ -10,7 +10,7 @@ http://www.bombaydigital.com/
 
 static void _failedAssert(const VString& failMessage, const char* file, int line)
     {
-    VLOGGER_LEVEL_FILELINE(VLogger::kError, failMessage, file, line);
+    VLOGGER_LEVEL_FILELINE(VLoggerLevel::ERROR, failMessage, file, line);
 #ifdef V_ASSERT_THROWS_EXCEPTION
     throw VStackTraceException(failMessage);
 #endif /* V_ASSERT_THROWS_EXCEPTION */
@@ -19,37 +19,25 @@ static void _failedAssert(const VString& failMessage, const char* file, int line
 static void _failedAssertEqual(const VString& valueA, const VString& valueB, const char* expressionA, const char* expressionB, const char* file, int line)
     {
     const VString failMessage(VSTRING_ARGS("Equal assertion failed. (%s = %s) (%s = %s)", expressionA, valueA.chars(), expressionB, valueB.chars()), file, line);
-    VLOGGER_LEVEL_FILELINE(VLogger::kError, failMessage, file, line);
-#ifdef V_ASSERT_THROWS_EXCEPTION
-    throw VStackTraceException(failMessage);
-#endif /* V_ASSERT_THROWS_EXCEPTION */
+    _failedAssert(failMessage, file, line);
     }
 
 static void _failedAssertNotEqual(const VString& commonValue, const char* expressionA, const char* expressionB, const char* file, int line)
     {
     const VString failMessage(VSTRING_ARGS("Not Equal assertion failed. (%s = %s = %s)", expressionA, expressionB, commonValue.chars()), file, line);
-    VLOGGER_LEVEL_FILELINE(VLogger::kError, failMessage, file, line);
-#ifdef V_ASSERT_THROWS_EXCEPTION
-    throw VStackTraceException(failMessage);
-#endif /* V_ASSERT_THROWS_EXCEPTION */
+    _failedAssert(failMessage, file, line);
     }
 
 static void _failedLessOrGreaterThan(bool comparingLessThan, bool comparingOrEqualTo, const VString& valueA, const VString& valueB, const char* expressionA, const char* expressionB, const char* file, int line)
     {
     const VString failMessage(VSTRING_ARGS("%s%s assertion failed. (%s = %s) (%s = %s)", (comparingLessThan?"Less Than":"Greater Than"), (comparingOrEqualTo?" Or Equal To":""), expressionA, valueA.chars(), expressionB, valueB.chars()), file, line);
-    VLOGGER_LEVEL_FILELINE(VLogger::kError, failMessage, file, line);
-#ifdef V_ASSERT_THROWS_EXCEPTION
-    throw VStackTraceException(failMessage);
-#endif /* V_ASSERT_THROWS_EXCEPTION */
+    _failedAssert(failMessage, file, line);
     }
 
 static void _failedAssertRangeCheck(const VString& val, const VString& minVal, const VString& maxVal, const char* expressionVal, const char* expressionMinVal, const char* expressionMaxVal, const char* file, int line)
     {
     const VString failMessage(VSTRING_ARGS("Range assertion failed. (%s = %s) (MIN: %s = %s) (MAX: %s = %s)", expressionVal, val.chars(), expressionMinVal, minVal.chars(), expressionMaxVal, maxVal.chars()), file, line);
-    VLOGGER_LEVEL_FILELINE(VLogger::kError, failMessage, file, line);
-#ifdef V_ASSERT_THROWS_EXCEPTION
-    throw VStackTraceException(failMessage);
-#endif /* V_ASSERT_THROWS_EXCEPTION */
+    _failedAssert(failMessage, file, line);
     }
 
 // static

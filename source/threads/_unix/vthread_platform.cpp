@@ -42,24 +42,7 @@ void VThread::threadCreate(VThreadID_Type* threadID, bool createDetached, thread
         {
         // Usually this means we have hit the limit of threads allowed per process.
         // Log our statistics. Maybe we have a thread handle leak.
-        int numVThreads;
-        int numThreadMains;
-        int numVThreadsCreated;
-        int numThreadMainsStarted;
-        int numVThreadsDestructed;
-        int numThreadMainsCompleted;
-        
-        VThread::getThreadStatistics(numVThreads, numThreadMains, numVThreadsCreated, numThreadMainsStarted, numVThreadsDestructed, numThreadMainsCompleted);
-
-        VLOGGER_ERROR(VSTRING_FORMAT("VThread::threadCreate: pthread_create returned %d (%s).", result, ::strerror(result)));
-        VLOGGER_ERROR(VSTRING_FORMAT(" VThread::gNumVThreads             = %d", numVThreads));
-        VLOGGER_ERROR(VSTRING_FORMAT(" VThread::gNumThreadMains          = %d", numThreadMains));
-        VLOGGER_ERROR(VSTRING_FORMAT(" VThread::gNumVThreadsCreated      = %d", numVThreadsCreated));
-        VLOGGER_ERROR(VSTRING_FORMAT(" VThread::gNumThreadMainsStarted   = %d", numThreadMainsStarted));
-        VLOGGER_ERROR(VSTRING_FORMAT(" VThread::gNumVThreadsDestructed   = %d", numVThreadsDestructed));
-        VLOGGER_ERROR(VSTRING_FORMAT(" VThread::gNumThreadMainsCompleted = %d", numThreadMainsCompleted));
-        
-        throw VStackTraceException(result, VSTRING_FORMAT("VThread::threadCreate: pthread_create returned %d (%s).", result, ::strerror(result)));
+        throw VStackTraceException(result, VSTRING_FORMAT("VThread::threadCreate: pthread_create returned %d (%s). Likely due to lack of resources.", result, ::strerror(result)));
         }
 
     (void) ::pthread_attr_destroy(&threadAttributes);

@@ -700,7 +700,7 @@ void VStringUnit::run()
     this->test(parseTest.parseS64() == CONST_S64(42000000000), "parseS64 a");
     parseTest = "-43000000000";
     this->test(parseTest.parseS64() == CONST_S64(-43000000000), "parseS64 b");
-    parseTest.format("%llu", CONST_U64(0x8000000000001111));
+    parseTest.format(VSTRING_FORMATTER_U64, CONST_U64(0x8000000000001111));
     this->test(parseTest.parseU64() == CONST_U64(0x8000000000001111), "parseU64 a");
     parseTest = "1.23456";
     this->test(parseTest.parseDouble() == 1.23456, "parseDouble a");

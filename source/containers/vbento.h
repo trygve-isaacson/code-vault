@@ -280,24 +280,24 @@ class VBentoNode
         void addBinary(const VString& name, const Vu8* data, Vs64 length);///< Adds the specified attribute to the node by copying the supplied data. @param name the attribute name @param data the data buffer to add @param length the length of data to add
         void addBinary(const VString& name, Vu8* data, VMemoryStream::BufferAllocationType allocationType, bool adoptBuffer, Vs64 suppliedBufferSize, Vs64 suppliedEOFOffset);///< Adds the specified attribute to the node, using VMemoryStream::adoptBuffer() semantics. @param name the attribute name
 
-        VBentoS8Array* addS8Array(const VString& name);                           ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoS8Array* addS8Array(const VString& name, const Vs8Array& value);    ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoS16Array* addS16Array(const VString& name);                           ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoS16Array* addS16Array(const VString& name, const Vs16Array& value);    ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoS32Array* addS32Array(const VString& name);                           ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoS32Array* addS32Array(const VString& name, const Vs32Array& value);    ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoS64Array* addS64Array(const VString& name);                           ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoS64Array* addS64Array(const VString& name, const Vs64Array& value);    ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoStringArray* addStringArray(const VString& name);                           ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoStringArray* addStringArray(const VString& name, const VStringVector& value);    ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoBoolArray* addBoolArray(const VString& name);                           ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoBoolArray* addBoolArray(const VString& name, const VBoolArray& value);    ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoDoubleArray* addDoubleArray(const VString& name);                           ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoDoubleArray* addDoubleArray(const VString& name, const VDoubleArray& value);    ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoDurationArray* addDurationArray(const VString& name);                           ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoDurationArray* addDurationArray(const VString& name, const VDurationVector& value);    ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoInstantArray* addInstantArray(const VString& name);                           ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        VBentoInstantArray* addInstantArray(const VString& name, const VInstantVector& value);    ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
+        VBentoS8Array* addS8Array(const VString& name);                                             ///< Adds the specified attribute to the node. @param name the attribute name @return the newly added attribute
+        VBentoS8Array* addS8Array(const VString& name, const Vs8Array& value);                      ///< Adds the specified attribute with array data to the node. @param name the attribute name @param value the attribute value @return the newly added attribute
+        VBentoS16Array* addS16Array(const VString& name);                                           ///< Adds the specified attribute to the node. @param name the attribute name @return the newly added attribute
+        VBentoS16Array* addS16Array(const VString& name, const Vs16Array& value);                   ///< Adds the specified attribute with array data to the node. @param name the attribute name @param value the attribute value @return the newly added attribute
+        VBentoS32Array* addS32Array(const VString& name);                                           ///< Adds the specified attribute to the node. @param name the attribute name @return the newly added attribute
+        VBentoS32Array* addS32Array(const VString& name, const Vs32Array& value);                   ///< Adds the specified attribute with array data to the node. @param name the attribute name @param value the attribute value @return the newly added attribute
+        VBentoS64Array* addS64Array(const VString& name);                                           ///< Adds the specified attribute to the node. @param name the attribute name @return the newly added attribute
+        VBentoS64Array* addS64Array(const VString& name, const Vs64Array& value);                   ///< Adds the specified attribute with array data to the node. @param name the attribute name @param value the attribute value @return the newly added attribute
+        VBentoStringArray* addStringArray(const VString& name);                                     ///< Adds the specified attribute to the node. @param name the attribute name @return the newly added attribute
+        VBentoStringArray* addStringArray(const VString& name, const VStringVector& value);         ///< Adds the specified attribute with array data to the node. @param name the attribute name @param value the attribute value @return the newly added attribute
+        VBentoBoolArray* addBoolArray(const VString& name);                                         ///< Adds the specified attribute to the node. @param name the attribute name @return the newly added attribute
+        VBentoBoolArray* addBoolArray(const VString& name, const VBoolArray& value);                ///< Adds the specified attribute with array data to the node. @param name the attribute name @param value the attribute value @return the newly added attribute
+        VBentoDoubleArray* addDoubleArray(const VString& name);                                     ///< Adds the specified attribute to the node. @param name the attribute name @return the newly added attribute
+        VBentoDoubleArray* addDoubleArray(const VString& name, const VDoubleArray& value);          ///< Adds the specified attribute with array data to the node. @param name the attribute name @param value the attribute value @return the newly added attribute
+        VBentoDurationArray* addDurationArray(const VString& name);                                 ///< Adds the specified attribute to the node. @param name the attribute name @return the newly added attribute
+        VBentoDurationArray* addDurationArray(const VString& name, const VDurationVector& value);   ///< Adds the specified attribute with array data to the node. @param name the attribute name @param value the attribute value @return the newly added attribute
+        VBentoInstantArray* addInstantArray(const VString& name);                                   ///< Adds the specified attribute to the node. @param name the attribute name @return the newly added attribute
+        VBentoInstantArray* addInstantArray(const VString& name, const VInstantVector& value);      ///< Adds the specified attribute with array data to the node. @param name the attribute name @param value the attribute value @return the newly added attribute
 
        /**
         Writes the object, including its attributes and contained child
@@ -319,8 +319,9 @@ class VBentoNode
         writeToBentoTextStream, since the entire hierarchy must be collected into a single
         string here.
         @param    s    the string to write to
+        @param    lineWrap  true if each bento node should start on its own indented line
         */
-        void writeToBentoTextString(VString& s) const;
+        void writeToBentoTextString(VString& s, bool lineWrap=false) const;
 
         // Methods for de-serializing and reading a data hierarchy -----------
 
@@ -687,10 +688,10 @@ class VBentoNode
         void operator=(const VBentoNode&);
 
         // Comparison operators allow Bento nodes to be sorted by name.
-        friend inline bool operator>=(const VBentoNode& n1, const VBentoNode& n2);    ///< Compares n1 and n2 using their name strings.
-        friend inline bool operator<=(const VBentoNode& n1, const VBentoNode& n2);    ///< Compares n1 and n2 using their name strings.
-        friend inline bool operator>(const VBentoNode& n1, const VBentoNode& n2);     ///< Compares n1 and n2 using their name strings.
-        friend inline bool operator<(const VBentoNode& n1, const VBentoNode& n2);     ///< Compares n1 and n2 using their name strings.
+        friend inline bool operator< (const VBentoNode& lhs, const VBentoNode& rhs);    ///< Compares nodes using their name strings.
+        friend inline bool operator<=(const VBentoNode& lhs, const VBentoNode& rhs);    ///< Compares nodes using their name strings.
+        friend inline bool operator>=(const VBentoNode& lhs, const VBentoNode& rhs);    ///< Compares nodes using their name strings.
+        friend inline bool operator> (const VBentoNode& lhs, const VBentoNode& rhs);    ///< Compares nodes using their name strings.
 
         // These related classes use some of our private static utility functions.
         friend class VBentoAttribute;
@@ -702,10 +703,10 @@ class VBentoNode
         friend class VBentoStringArray;
     };
 
-inline bool operator>=(const VBentoNode& n1, const VBentoNode& n2) { return n1.getName() >= n2.getName(); }
-inline bool operator<=(const VBentoNode& n1, const VBentoNode& n2) { return n1.getName() <= n2.getName(); }
-inline bool operator>(const VBentoNode& n1, const VBentoNode& n2) { return n1.getName() > n2.getName(); }
-inline bool operator<(const VBentoNode& n1, const VBentoNode& n2) { return n1.getName() < n2.getName(); }
+inline bool operator< (const VBentoNode& lhs, const VBentoNode& rhs) { return lhs.getName() < rhs.getName(); } ///< Compares nodes using their name strings.
+inline bool operator<=(const VBentoNode& lhs, const VBentoNode& rhs) { return !operator>(lhs, rhs); }
+inline bool operator>=(const VBentoNode& lhs, const VBentoNode& rhs) { return !operator<(lhs, rhs); }
+inline bool operator> (const VBentoNode& lhs, const VBentoNode& rhs) { return  operator<(rhs, lhs); }
 
 /**
 VBentoCallbackParser is provided for you to subclass if you need to read a bento object
@@ -1943,7 +1944,7 @@ class VBentoArray : public VBentoAttribute
     public:
 
         VBentoArray() : VBentoAttribute() {} ///< Constructs with uninitialized name and value.
-        VBentoArray(VBinaryIOStream& stream, const VString& dataType) : VBentoAttribute(stream, dataType) {} ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoArray(VBinaryIOStream& stream, const VString& dataType) : VBentoAttribute(stream, dataType) {} ///< Constructs by reading from stream. @param stream the stream to read @param dataType the data type of the concrete subclass
         VBentoArray(const VString& name, const VString& dataType) : VBentoAttribute(name, dataType) {} ///< Constructs from supplied name and value.
         virtual ~VBentoArray() {} ///< Destructor.
 
@@ -1988,7 +1989,7 @@ class VBentoS8Array : public VBentoArray
 
         inline const Vs8Array& getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(const Vs8Array& elements) { mValue = elements; } ///< Sets the attribute's value. @param elements the vector of elements
-        inline void appendValue(Vs8 element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
+        inline void appendValue(Vs8 element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param element the element to append
         inline void appendValues(const Vs8Array& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
         virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
@@ -2028,7 +2029,7 @@ class VBentoS16Array : public VBentoArray
 
         inline const Vs16Array& getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(const Vs16Array& elements) { mValue = elements; } ///< Sets the attribute's value. @param elements the vector of elements
-        inline void appendValue(Vs16 element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
+        inline void appendValue(Vs16 element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param element the element to append
         inline void appendValues(const Vs16Array& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
         virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
@@ -2068,7 +2069,7 @@ class VBentoS32Array : public VBentoArray
 
         inline const Vs32Array& getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(const Vs32Array& elements) { mValue = elements; } ///< Sets the attribute's value. @param elements the vector of elements
-        inline void appendValue(Vs32 element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
+        inline void appendValue(Vs32 element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param element the element to append
         inline void appendValues(const Vs32Array& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
         virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
@@ -2108,7 +2109,7 @@ class VBentoS64Array : public VBentoArray
 
         inline const Vs64Array& getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(const Vs64Array& elements) { mValue = elements; } ///< Sets the attribute's value. @param elements the vector of elements
-        inline void appendValue(Vs64 element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
+        inline void appendValue(Vs64 element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param element the element to append
         inline void appendValues(const Vs64Array& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
         virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
@@ -2148,7 +2149,7 @@ class VBentoStringArray : public VBentoArray
 
         inline const VStringVector& getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(const VStringVector& elements) { mValue = elements; } ///< Sets the attribute's value. @param elements the vector of elements
-        inline void appendValue(const VString& element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
+        inline void appendValue(const VString& element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param element the element to append
         inline void appendValues(const VStringVector& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
         virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
@@ -2188,7 +2189,7 @@ class VBentoBoolArray : public VBentoArray
 
         inline const VBoolArray& getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(const VBoolArray& elements) { mValue = elements; } ///< Sets the attribute's value. @param elements the vector of elements
-        inline void appendValue(bool element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
+        inline void appendValue(bool element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param element the element to append
         inline void appendValues(const VBoolArray& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
         virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
@@ -2228,7 +2229,7 @@ class VBentoDoubleArray : public VBentoArray
 
         inline const VDoubleArray& getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(const VDoubleArray& elements) { mValue = elements; } ///< Sets the attribute's value. @param elements the vector of elements
-        inline void appendValue(VDouble element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
+        inline void appendValue(VDouble element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param element the element to append
         inline void appendValues(const VDoubleArray& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
         virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
@@ -2268,7 +2269,7 @@ class VBentoDurationArray : public VBentoArray
 
         inline const VDurationVector& getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(const VDurationVector& elements) { mValue = elements; } ///< Sets the attribute's value. @param elements the vector of elements
-        inline void appendValue(const VDuration& element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
+        inline void appendValue(const VDuration& element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param element the element to append
         inline void appendValues(const VDurationVector& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
         virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.
@@ -2308,7 +2309,7 @@ class VBentoInstantArray : public VBentoArray
 
         inline const VInstantVector& getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
         inline void setValue(const VInstantVector& elements) { mValue = elements; } ///< Sets the attribute's value. @param elements the vector of elements
-        inline void appendValue(const VInstant& element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param elements the vector of elements
+        inline void appendValue(const VInstant& element) { mValue.push_back(element); } ///< Appends to the attribute's value. @param element the element to append
         inline void appendValues(const VInstantVector& elements) { mValue.insert(mValue.end(), elements.begin(), elements.end()); } ///< Appends to the attribute's value. @param elements the vector of elements
 
         virtual void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, int depth) const; ///< Override to form this complex attribute as a child tag with its own attributes.

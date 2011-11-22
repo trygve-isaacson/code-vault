@@ -70,9 +70,9 @@ class VNetworkInterfaceInfo
     public:
         VNetworkInterfaceInfo() : mFamily(0), mName(), mAddress() {}
         ~VNetworkInterfaceInfo() {}
-        int mFamily;
-        VString mName;
-        VString mAddress;
+        int mFamily;        ///< Indicator of the type of interface.
+        VString mName;      ///< Interface name.
+        VString mAddress;   ///< IP address of the interface.
     };
 typedef std::vector<VNetworkInterfaceInfo> VNetworkInterfaceList;
 

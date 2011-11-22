@@ -79,7 +79,14 @@ Finally, proceed with everything else.
 */
 
 // Boost seems to require being included first.
+// If using shared_ptr, must include before our vtypes.h redefines new.
 #ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
+    #define V_INCLUDE_BOOST_CORE
+#endif
+#ifdef VAULT_BOOST_SHARED_PTR_INCLUDE
+    #define V_INCLUDE_BOOST_CORE
+#endif
+#ifdef V_INCLUDE_BOOST_CORE
     // Prevent spurious VC8 warnings about "deprecated"/"unsafe" boost std c++ lib use.
     #if _MSC_VER >= 1400
         #pragma warning(push)
@@ -87,6 +94,7 @@ Finally, proceed with everything else.
     #endif
 
     #include <boost/format.hpp>
+    #include <boost/shared_ptr.hpp>
 
     #if _MSC_VER >= 1400
         #pragma warning(pop)

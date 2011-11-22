@@ -63,10 +63,26 @@ class VMutex;
 // The following macros define the proper formatting directives for the basic POD types,
 // and VString constructors for converting those types to strings. For convenience, we
 // also define a boolean string constructor.
+// My advice and practice in Vault code:
+// - %s (char*), and %c (char) are pervasively well-understood and should be used as is. Often %d as well.
+// - The other formatters are provided here and should usually be used by name for clarity, except where
+//   their presence makes code less understandable because of verbosity.
+// For example:
+// VSTRING_FORMAT("Hello, %s.", p->getName().chars());                          <-- No need to avoid using %s for (char*) values.
+// VSTRING_FORMAT("Answer is %d.", 42);                                         <-- No need to avoid using %d for int values.
+// VSTRING_FORMAT("Vector size is " VSTRING_FORMATTER_SIZE, vec.size());        <-- Useful because size_t formatting is sketchy.
+// VSTRING_FORMAT("Jumbo 64-bit size is " VSTRING_FORMATTER_S64, myVs64Value);  <-- Useful because 64-bit int formatter is obscure compared to %d.
+// VSTRING_FORMAT("Result dimensions: %lld*%lld*%lld", x, y, z);                <-- Code would be less readable if VSTRING_FORMATTER_S64 were used 3x here.
+
 #define VSTRING_FORMATTER_INT       "%d"
 #define VSTRING_FORMATTER_UINT      "%ud"
-#define VSTRING_FORMATTER_S8        "%hhd"
-#define VSTRING_FORMATTER_U8        "%hhu"
+#ifdef VCOMPILER_MSVC
+    #define VSTRING_FORMATTER_SIZE  "%Iu"   // VC++ libraries do not conform to IEEE1003.1 here.
+#else
+    #define VSTRING_FORMATTER_SIZE  "%zu"
+#endif
+#define VSTRING_FORMATTER_S8        "%hhd"  // Note: %hhd is not universally supported; converting value to other type may be better.
+#define VSTRING_FORMATTER_U8        "%hhu"  // Note: %hhu is not universally supported; converting value to other type may be better.
 #define VSTRING_FORMATTER_S16       "%hd"
 #define VSTRING_FORMATTER_U16       "%hu"
 #define VSTRING_FORMATTER_S32       "%ld"
@@ -77,20 +93,23 @@ class VMutex;
 #define VSTRING_FORMATTER_DOUBLE    "%lf"
 #define VSTRING_FORMATTER_PTR       "%p"
 
-#define VSTRING_INT(n)      VSTRING_FORMAT(VSTRING_FORMATTER_INT, n)
-#define VSTRING_UINT(n)     VSTRING_FORMAT(VSTRING_FORMATTER_UINT, n)
-#define VSTRING_S8(n)       VSTRING_FORMAT(VSTRING_FORMATTER_S8, n)
-#define VSTRING_U8(n)       VSTRING_FORMAT(VSTRING_FORMATTER_U8, n)
-#define VSTRING_S16(n)      VSTRING_FORMAT(VSTRING_FORMATTER_S16, n)
-#define VSTRING_U16(n)      VSTRING_FORMAT(VSTRING_FORMATTER_U16, n)
-#define VSTRING_S32(n)      VSTRING_FORMAT(VSTRING_FORMATTER_S32, n)
-#define VSTRING_U32(n)      VSTRING_FORMAT(VSTRING_FORMATTER_U32, n)
-#define VSTRING_S64(n)      VSTRING_FORMAT(VSTRING_FORMATTER_S64, n)
-#define VSTRING_U64(n)      VSTRING_FORMAT(VSTRING_FORMATTER_U64, n)
-#define VSTRING_FLOAT(n)    VSTRING_FORMAT(VSTRING_FORMATTER_FLOAT, n)
-#define VSTRING_DOUBLE(n)   VSTRING_FORMAT(VSTRING_FORMATTER_DOUBLE, n)
-#define VSTRING_PTR(p)      VSTRING_FORMAT(VSTRING_FORMATTER_PTR, p)
-#define VSTRING_BOOL(b)     VString(b?"true":"false")
+// Consider these macros a public API for declaring strings that are built by converting integers
+// of various sizes, etc. This is preferable to specifying the proper formatting directives manually.
+#define VSTRING_INT(n)      VSTRING_FORMAT(VSTRING_FORMATTER_INT, n)    ///< Creates a string by formatting an int value.
+#define VSTRING_UINT(n)     VSTRING_FORMAT(VSTRING_FORMATTER_UINT, n)   ///< Creates a string by formatting an unsigned int value.
+#define VSTRING_SIZE(z)     VSTRING_FORMAT(VSTRING_FORMATTER_SIZE, z)   ///< Creates a string by formatting a size_t value.
+#define VSTRING_S8(n)       VSTRING_FORMAT(VSTRING_FORMATTER_S8, n)     ///< Creates a string by formatting an 8-bit int value.
+#define VSTRING_U8(n)       VSTRING_FORMAT(VSTRING_FORMATTER_U8, n)     ///< Creates a string by formatting an unsigned 8-bit int value.
+#define VSTRING_S16(n)      VSTRING_FORMAT(VSTRING_FORMATTER_S16, n)    ///< Creates a string by formatting a 16-bit int value.
+#define VSTRING_U16(n)      VSTRING_FORMAT(VSTRING_FORMATTER_U16, n)    ///< Creates a string by formatting an unsigned 16-bit int value.
+#define VSTRING_S32(n)      VSTRING_FORMAT(VSTRING_FORMATTER_S32, n)    ///< Creates a string by formatting a 32-bit int value.
+#define VSTRING_U32(n)      VSTRING_FORMAT(VSTRING_FORMATTER_U32, n)    ///< Creates a string by formatting an unsigned 32-bit int value.
+#define VSTRING_S64(n)      VSTRING_FORMAT(VSTRING_FORMATTER_S64, n)    ///< Creates a string by formatting a 64-bit int value.
+#define VSTRING_U64(n)      VSTRING_FORMAT(VSTRING_FORMATTER_U64, n)    ///< Creates a string by formatting an unsigned 64-bit int value.
+#define VSTRING_FLOAT(n)    VSTRING_FORMAT(VSTRING_FORMATTER_FLOAT, n)  ///< Creates a string by formatting a float value.
+#define VSTRING_DOUBLE(n)   VSTRING_FORMAT(VSTRING_FORMATTER_DOUBLE, n) ///< Creates a string by formatting a double value.
+#define VSTRING_PTR(p)      VSTRING_FORMAT(VSTRING_FORMATTER_PTR, p)    ///< Creates a string by formatting a pointer as hexadecimal preceded by 0x.
+#define VSTRING_BOOL(b)     VString(b ? "true" : "false")               ///< Creates a string from a boolean as the text "true" or "false".
 
 /**
 VString is a string container class that should help to eliminate almost all
@@ -835,7 +854,7 @@ class VString
         @param  stripTrailingEmpties if true, any empty strings at the end of the resulting
                                 list are discarded (this is the Java String.split() behavior)
         */
-        void split(VStringVector& result, const VChar& delimiter, int limit=0, bool stripTrailingEmpties=true);
+        void split(VStringVector& result, const VChar& delimiter, int limit=0, bool stripTrailingEmpties=true) const;
         /**
         Convenience version of split() that returns the vector. Will likely incur copy overhead
         compared to the non-returning version, so use the other version in time-critical code.
@@ -847,7 +866,7 @@ class VString
                                 list are discarded (this is the Java String.split() behavior)
         @return a vector of split result strings
         */
-        VStringVector split(const VChar& delimiter, int limit=0, bool stripTrailingEmpties=true);
+        VStringVector split(const VChar& delimiter, int limit=0, bool stripTrailingEmpties=true) const;
         /**
         Strips leading and trailing whitespace from the string.
         Whitespace as implemented here is defined as ASCII byte
@@ -981,22 +1000,22 @@ class VString
         friend inline bool operator!=(const char* s1, const VString& s2);
         friend inline bool operator!=(const VString& s, char c);
     
-        friend inline bool operator>=(const VString& s1, const VString& s2);
-        friend inline bool operator>=(const VString& s1, const char* s2);
-        friend inline bool operator>=(const char* s1, const VString& s2);
-    
+        friend inline bool operator<(const VString& s1, const VString& s2);
+        friend inline bool operator<(const VString& s1, const char* s2);
+        friend inline bool operator<(const char* s1, const VString& s2);
+        
         friend inline bool operator<=(const VString& s1, const VString& s2);
         friend inline bool operator<=(const VString& s1, const char* s2);
         friend inline bool operator<=(const char* s1, const VString& s2);
+    
+        friend inline bool operator>=(const VString& s1, const VString& s2);
+        friend inline bool operator>=(const VString& s1, const char* s2);
+        friend inline bool operator>=(const char* s1, const VString& s2);
     
         friend inline bool operator>(const VString& s1, const VString& s2);
         friend inline bool operator>(const VString& s1, const char* s2);
         friend inline bool operator>(const char* s1, const VString& s2);
     
-        friend inline bool operator<(const VString& s1, const VString& s2);
-        friend inline bool operator<(const VString& s1, const char* s2);
-        friend inline bool operator<(const char* s1, const VString& s2);
-        
     private:
 
         void _setLength(int stringLength);
@@ -1042,46 +1061,46 @@ the only platform that needs this workaround.
 
     };
 
-inline bool operator==(const VString& s1, const VString& s2) { return ::strcmp(s1, s2) == 0; }    ///< Compares s1 and s2 for equality. @param    s1    a string @param    s2    a string @return true if s1 and s2 are equal according to strcmp()
-inline bool operator==(const VString& s1, const char* s2) { return ::strcmp(s1, s2) == 0; }        ///< Compares s1 and s2 for equality. @param    s1    a string @param    s2    a C string @return true if s1 and s2 are equal according to strcmp()
-inline bool operator==(const char* s1, const VString& s2) { return ::strcmp(s1, s2) == 0; }        ///< Compares s1 and s2 for equality. @param    s1    a C string @param    s2    a string @return true if s1 and s2 are equal according to strcmp()
+inline bool operator==(const VString& lhs, const VString& rhs) { return ::strcmp(lhs, rhs) == 0; }      ///< Compares lhs and rhs for equality. @param    lhs    a string @param    rhs    a string @return true if lhs and rhs are equal according to strcmp()
+inline bool operator==(const VString& lhs, const char* rhs) { return ::strcmp(lhs, rhs) == 0; }         ///< Compares lhs and rhs for equality. @param    lhs    a string @param    rhs    a C string @return true if lhs and rhs are equal according to strcmp()
+inline bool operator==(const char* lhs, const VString& rhs) { return ::strcmp(lhs, rhs) == 0; }         ///< Compares lhs and rhs for equality. @param    lhs    a C string @param    rhs    a string @return true if lhs and rhs are equal according to strcmp()
 inline bool operator==(const VString& s, char c) { return (s.length() == 1) && (s.charAt(0) == c); }    ///< Compares s and c for equality. @param    s    a string @param    c    a char @return true if s is one character in length, the character being c
 
-inline bool operator!=(const VString& s1, const VString& s2) { return ::strcmp(s1, s2) != 0; }    ///< Compares s1 and s2 for inequality. @param    s1    a string @param    s2    a string @return true if s1 and s2 are not equal according to strcmp()
-inline bool operator!=(const VString& s1, const char* s2) { return ::strcmp(s1, s2) != 0; }        ///< Compares s1 and s2 for inequality. @param    s1    a string @param    s2    a C string @return true if s1 and s2 are not equal according to strcmp()
-inline bool operator!=(const char* s1, const VString& s2) { return ::strcmp(s1, s2) != 0; }        ///< Compares s1 and s2 for inequality. @param    s1    a C string @param    s2    a string @return true if s1 and s2 are not equal according to strcmp()
-inline bool operator!=(const VString& s, char c) { return (s.length() != 1) || (s.charAt(0) != c); }    ///< Compares s and c for inequality. @param    s    a string @param    c    a char @return true if s is NOT one character in length, or if it's sole character is not c
+inline bool operator!=(const VString& lhs, const VString& rhs) { return !operator==(lhs, rhs); }    ///< Compares lhs and rhs for inequality. @param    lhs    a string @param    rhs    a string @return true if lhs and rhs are not equal according to strcmp()
+inline bool operator!=(const VString& lhs, const char* rhs) { return !operator==(lhs, rhs); }       ///< Compares lhs and rhs for inequality. @param    lhs    a string @param    rhs    a C string @return true if lhs and rhs are not equal according to strcmp()
+inline bool operator!=(const char* lhs, const VString& rhs) { return !operator==(lhs, rhs); }       ///< Compares lhs and rhs for inequality. @param    lhs    a C string @param    rhs    a string @return true if lhs and rhs are not equal according to strcmp()
+inline bool operator!=(const VString& lhs, char rhs) { return !operator==(lhs, rhs); }              ///< Compares lhs and rhs for inequality. @param    lhs    a string @param    rhs    a char @return true if lhs is NOT one character in length, or if its sole character is not rhs
 
-inline bool operator>=(const VString& s1, const VString& s2) { return ::strcmp(s1, s2) >= 0; }    ///< Compares s1 and s2. @param    s1    a string @param    s2    a string @return true if s1 >= s2 according to strcmp()
-inline bool operator>=(const VString& s1, const char* s2) { return ::strcmp(s1, s2) >= 0; }        ///< Compares s1 and s2. @param    s1    a string @param    s2    a C string @return true if s1 >= s2 according to strcmp()
-inline bool operator>=(const char* s1, const VString& s2) { return ::strcmp(s1, s2) >= 0; }        ///< Compares s1 and s2. @param    s1    a C string @param    s2    a string @return true if s1 >= s2 according to strcmp()
+inline bool operator<(const VString& lhs, const VString& rhs) { return ::strcmp(lhs, rhs) < 0; }    ///< Compares lhs and rhs. @param    lhs    a string @param    rhs    a string @return true if lhs < rhs according to strcmp()
+inline bool operator<(const VString& lhs, const char* rhs) { return ::strcmp(lhs, rhs) < 0; }       ///< Compares lhs and rhs. @param    lhs    a string @param    rhs    a C string @return true if lhs < rhs according to strcmp()
+inline bool operator<(const char* lhs, const VString& rhs) { return ::strcmp(lhs, rhs) < 0; }       ///< Compares lhs and rhs. @param    lhs    a C string @param    rhs    a string @return true if lhs < rhs according to strcmp()
 
-inline bool operator<=(const VString& s1, const VString& s2) { return ::strcmp(s1, s2) <= 0; }    ///< Compares s1 and s2. @param    s1    a string @param    s2    a string @return true if s1 <= s2 according to strcmp()
-inline bool operator<=(const VString& s1, const char* s2) { return ::strcmp(s1, s2) <= 0; }        ///< Compares s1 and s2. @param    s1    a string @param    s2    a C string @return true if s1 <= s2 according to strcmp()
-inline bool operator<=(const char* s1, const VString& s2) { return ::strcmp(s1, s2) <= 0; }        ///< Compares s1 and s2. @param    s1    a C string @param    s2    a string @return true if s1 <= s2 according to strcmp()
+inline bool operator<=(const VString& lhs, const VString& rhs) { return !operator>(lhs, rhs); } ///< Compares lhs and rhs. @param    lhs    a string @param    rhs    a string @return true if lhs <= rhs according to strcmp()
+inline bool operator<=(const VString& lhs, const char* rhs) { return !operator>(lhs, rhs); }    ///< Compares lhs and rhs. @param    lhs    a string @param    rhs    a C string @return true if lhs <= rhs according to strcmp()
+inline bool operator<=(const char* lhs, const VString& rhs) { return !operator>(lhs, rhs); }    ///< Compares lhs and rhs. @param    lhs    a C string @param    rhs    a string @return true if lhs <= rhs according to strcmp()
 
-inline bool operator>(const VString& s1, const VString& s2) { return ::strcmp(s1, s2) > 0; }    ///< Compares s1 and s2. @param    s1    a string @param    s2    a string @return true if s1 > s2 according to strcmp()
-inline bool operator>(const VString& s1, const char* s2) { return ::strcmp(s1, s2) > 0; }        ///< Compares s1 and s2. @param    s1    a string @param    s2    a C string @return true if s1 > s2 according to strcmp()
-inline bool operator>(const char* s1, const VString& s2) { return ::strcmp(s1, s2) > 0; }        ///< Compares s1 and s2. @param    s1    a C string @param    s2    a string @return true if s1 > s2 according to strcmp()
+inline bool operator>=(const VString& lhs, const VString& rhs) { return !operator<(lhs, rhs); } ///< Compares lhs and rhs. @param    lhs    a string @param    rhs    a string @return true if lhs >= rhs according to strcmp()
+inline bool operator>=(const VString& lhs, const char* rhs) { return !operator<(lhs, rhs); }    ///< Compares lhs and rhs. @param    lhs    a string @param    rhs    a C string @return true if lhs >= rhs according to strcmp()
+inline bool operator>=(const char* lhs, const VString& rhs) { return !operator<(lhs, rhs); }    ///< Compares lhs and rhs. @param    lhs    a C string @param    rhs    a string @return true if lhs >= rhs according to strcmp()
 
-inline bool operator<(const VString& s1, const VString& s2) { return ::strcmp(s1, s2) < 0; }    ///< Compares s1 and s2. @param    s1    a string @param    s2    a string @return true if s1 < s2 according to strcmp()
-inline bool operator<(const VString& s1, const char* s2) { return ::strcmp(s1, s2) < 0; }        ///< Compares s1 and s2. @param    s1    a string @param    s2    a C string @return true if s1 < s2 according to strcmp()
-inline bool operator<(const char* s1, const VString& s2) { return ::strcmp(s1, s2) < 0; }        ///< Compares s1 and s2. @param    s1    a C string @param    s2    a string @return true if s1 < s2 according to strcmp()
+inline bool operator>(const VString& lhs, const VString& rhs) { return operator<(rhs, lhs); }   ///< Compares lhs and rhs. @param    lhs    a string @param    rhs    a string @return true if lhs > rhs according to strcmp()
+inline bool operator>(const VString& lhs, const char* rhs) { return operator<(rhs, lhs); }      ///< Compares lhs and rhs. @param    lhs    a string @param    rhs    a C string @return true if lhs > rhs according to strcmp()
+inline bool operator>(const char* lhs, const VString& rhs) { return operator<(rhs, lhs); }      ///< Compares lhs and rhs. @param    lhs    a C string @param    rhs    a string @return true if lhs > rhs according to strcmp()
 
-std::istream& operator>>(std::istream& in, VString& s);                                            ///< Creates the string by reading an istream. @param    in    the input stream @param    s    the string @return the input stream
-inline std::ostream& operator<<(std::ostream& out, const VString& s) { return out << s.chars(); }    ///< Writes the string to an ostream. @param    out    the output stream @param s    the string @return the output stream
-inline VString& operator<<(VString& s, std::istream& in) { s.appendFromIStream(in); return s; }    ///< Appends to the string by reading an istream. @param    s    the string @param    in    the input stream @return the string
+std::istream& operator>>(std::istream& in, VString& s);                                             ///< Creates the string by reading an istream. @param    in    the input stream @param    s    the string @return the input stream
+inline std::ostream& operator<<(std::ostream& out, const VString& s) { return out << s.chars(); }   ///< Writes the string to an ostream. @param    out    the output stream @param s    the string @return the output stream
+inline VString& operator<<(VString& s, std::istream& in) { s.appendFromIStream(in); return s; }     ///< Appends to the string by reading an istream. @param    s    the string @param    in    the input stream @return the string
 
-inline VString& operator<<(VString& s, const char* in) { s += in; return s; }    ///< Appends to the string by copying a C string. @param    s    the string @param    in    the input C string buffer @return the string
-inline VString& operator<<(VString& s, int i) { s += i; return s; }        ///< Appends to the string by copying an int as string. @param    s    the string @param    i    the int to append @return the string
-inline VString& operator<<(VString& s, Vu8 i) { s += i; return s; }        ///< Appends to the string by copying a Vu8 as string. @param    s    the string @param    i    the Vu8 to append @return the string
-inline VString& operator<<(VString& s, Vs8 i) { s += i; return s; }        ///< Appends to the string by copying a Vs8 as string. @param    s    the string @param    i    the Vs8 to append @return the string
+inline VString& operator<<(VString& s, const char* in) { s += in; return s; }   ///< Appends to the string by copying a C string. @param    s    the string @param    in    the input C string buffer @return the string
+inline VString& operator<<(VString& s, int i) { s += i; return s; }     ///< Appends to the string by copying an int as string. @param    s    the string @param    i    the int to append @return the string
+inline VString& operator<<(VString& s, Vu8 i) { s += i; return s; }     ///< Appends to the string by copying a Vu8 as string. @param    s    the string @param    i    the Vu8 to append @return the string
+inline VString& operator<<(VString& s, Vs8 i) { s += i; return s; }     ///< Appends to the string by copying a Vs8 as string. @param    s    the string @param    i    the Vs8 to append @return the string
 inline VString& operator<<(VString& s, Vu16 i) { s += i; return s; }    ///< Appends to the string by copying a Vu16 as string. @param    s    the string @param    i    the Vu16 to append @return the string
 inline VString& operator<<(VString& s, Vs16 i) { s += i; return s; }    ///< Appends to the string by copying a Vs16 as string. @param    s    the string @param    i    the Vs16 to append @return the string
 inline VString& operator<<(VString& s, Vu32 i) { s += i; return s; }    ///< Appends to the string by copying a Vu32 as string. @param    s    the string @param    i    the Vu32 to append @return the string
 inline VString& operator<<(VString& s, Vs32 i) { s += i; return s; }    ///< Appends to the string by copying a Vs32 as string. @param    s    the string @param    i    the Vs32 to append @return the string
 inline VString& operator<<(VString& s, Vu64 i) { s += i; return s; }    ///< Appends to the string by copying a Vu64 as string. @param    s    the string @param    i    the Vu64 to append @return the string
 inline VString& operator<<(VString& s, Vs64 i) { s += i; return s; }    ///< Appends to the string by copying a Vs64 as string. @param    s    the string @param    i    the Vs64 to append @return the string
-inline VString& operator<<(VString& s, VDouble f) { s += f; return s; }    ///< Appends to the string by copying a VDouble as string. @param    s    the string @param    f    the VDouble to append @return the string
+inline VString& operator<<(VString& s, VDouble f) { s += f; return s; } ///< Appends to the string by copying a VDouble as string. @param    s    the string @param    f    the VDouble to append @return the string
 
 #endif /* vstring_h */

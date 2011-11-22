@@ -142,7 +142,7 @@ bool VMessageOutputThread::postOutputMessage(VMessage* message, bool respectQueu
                 {
                 if (this->isRunning()) // Only stop() once; we may land here repeatedly under fast queueing, before stop completes.
                     {
-                    VLOGGER_ERROR(VSTRING_FORMAT("[%s] VMessageOutputThread::postOutputMessage: Closing socket to shut down session because output queue size of %d messages and %lld bytes is over limit.",
+                    VLOGGER_ERROR(VSTRING_FORMAT("[%s] VMessageOutputThread::postOutputMessage: Closing socket to shut down session because output queue size of %d messages and " VSTRING_FORMATTER_S64 " bytes is over limit.",
                         mName.chars(), currentQueueSize, currentQueueDataSize));
 
                     this->stop();
@@ -156,7 +156,7 @@ bool VMessageOutputThread::postOutputMessage(VMessage* message, bool respectQueu
                     {
                     mWhenMaxQueueSizeWarned = now;
                     VDuration gracePeriodRemaining = (mWhenWentOverLimit + mMaxQueueGracePeriod) - now;
-                    VLOGGER_WARN(VSTRING_FORMAT("[%s] VMessageOutputThread::postOutputMessage: Posting to queue with excess size of %d messages and %lld bytes. Remaining grace period %d seconds.",
+                    VLOGGER_WARN(VSTRING_FORMAT("[%s] VMessageOutputThread::postOutputMessage: Posting to queue with excess size of %d messages and " VSTRING_FORMATTER_S64 " bytes. Remaining grace period %d seconds.",
                         mName.chars(), currentQueueSize, currentQueueDataSize, gracePeriodRemaining.getDurationSeconds()));
                     }
                 }

@@ -438,8 +438,8 @@ static void* _allocateMemory(size_t size, const char* file, int line, bool isArr
             const char* stackCrawlInfo = NULL;
             if (_isCodeLocationCrawlEnabled(file, line))
                 {
-                VStringLogger logger(VLogger::kTrace, VString::EMPTY(), VString::EMPTY());
-                VThread::logStackCrawl(VString::EMPTY(), &logger, false);
+                VStringLogger logger(VString::EMPTY(), VLoggerLevel::TRACE);
+                VThread::logStackCrawl(VString::EMPTY(), VNamedLoggerPtr(&logger), false);
                 stackCrawlInfo = logger.orphanLines();
                 }
             const AllocationRecord* r = new AllocationRecord(p, isArray, size, file, line, stackCrawlInfo);
@@ -486,7 +486,7 @@ void operator delete(void* p, const char* /*file*/, int /*line*/)
     _freeMemory(p, false);
     }
 
-void operator delete(void* p)
+void operator delete(void* p) throw()
     {
     if (p == NULL)
         return;
@@ -507,7 +507,7 @@ void operator delete[](void* p, const char* /*file*/, int /*line*/)
     _freeMemory(p, true);
     }
 
-void operator delete[](void* p)
+void operator delete[](void* p) throw()
     {
     if (p == NULL)
         return;
@@ -578,7 +578,7 @@ void VMemoryTracker::reportMemoryTracking(const VString& label, bool toLogger, b
                         {
                         VString timeString;
                         r->fWhen.getLocalString(timeString);
-                        VString summary(VSTRING_ARGS(" [%lld] [%s] 0x%08X %ld bytes @%s:%d", r->fAllocationNumber, timeString.chars(), r->fPointer, r->fSize, fileName.chars(), r->fLine));
+                        VString summary(VSTRING_ARGS(" [" VSTRING_FORMATTER_S64 "] [%s] 0x%08X " VSTRING_FORMATTER_SIZE " bytes @%s:%d", r->fAllocationNumber, timeString.chars(), r->fPointer, r->fSize, fileName.chars(), r->fLine));
 
                         if (r->fStackCrawlInfo != NULL)
                             {
@@ -588,7 +588,7 @@ void VMemoryTracker::reportMemoryTracking(const VString& label, bool toLogger, b
 
                         if (toLogger)
                             {
-                            VLOGGER_HEXDUMP(VLogger::kInfo, summary, dataPtr, hexDumpLength);
+                            VLOGGER_HEXDUMP(VLoggerLevel::INFO, summary, dataPtr, hexDumpLength);
                             }
 
                         if (toConsole)
@@ -613,7 +613,7 @@ void VMemoryTracker::reportMemoryTracking(const VString& label, bool toLogger, b
                             VHex::bufferToHexString(dataPtr, hexDumpLength, hexString, false);
                             VHex::bufferToPrintableASCIIString(dataPtr, hexDumpLength, asciiChars);
                         }
-                        VString summary(VSTRING_ARGS(" [%lld] 0x%08X %ld bytes @%s:%d %s %s", r->fAllocationNumber, r->fPointer, r->fSize, fileName.chars(), r->fLine, asciiChars.chars(), hexString.chars()));
+                        VString summary(VSTRING_ARGS(" [" VSTRING_FORMATTER_S64 "] 0x%08X " VSTRING_FORMATTER_SIZE " bytes @%s:%d %s %s", r->fAllocationNumber, r->fPointer, r->fSize, fileName.chars(), r->fLine, asciiChars.chars(), hexString.chars()));
 
                         if (r->fStackCrawlInfo != NULL)
                             {
@@ -627,7 +627,7 @@ void VMemoryTracker::reportMemoryTracking(const VString& label, bool toLogger, b
                     }
                 catch (...) 
                     {
-                    VString summary(VSTRING_ARGS(" [%lld] 0x%08X %ld bytes @%s:%d **EXCEPTION GETTING DETAILS**", r->fAllocationNumber, r->fPointer, r->fSize, fileName.chars(), r->fLine));
+                    VString summary(VSTRING_ARGS(" [" VSTRING_FORMATTER_S64 "] 0x%08X " VSTRING_FORMATTER_SIZE " bytes @%s:%d **EXCEPTION GETTING DETAILS**", r->fAllocationNumber, r->fPointer, r->fSize, fileName.chars(), r->fLine));
                     _reportText(summary, toLogger, toConsole, toStream);
                     }
                 }
@@ -637,7 +637,7 @@ void VMemoryTracker::reportMemoryTracking(const VString& label, bool toLogger, b
         duration = end - start;
         } // end of artificial scope ensuring "records" vector is cleaned up early
 
-    _reportText(VSTRING_FORMAT(" Total objects found: %lld objects, %ld bytes. %lldms", numObjects, numBytes, duration.getDurationMilliseconds()), toLogger, toConsole, toStream);
+    _reportText(VSTRING_FORMAT(" Total objects found: " VSTRING_FORMATTER_S64 " objects, " VSTRING_FORMATTER_SIZE " bytes. %s", numObjects, numBytes, duration.getDurationString().chars()), toLogger, toConsole, toStream);
 
     if (!wasTracking && (numObjects > 0)) // Remind user that we still need to monitor deletes while our map has records.
         _reportText("WARNING: There is still some performance overhead until you 'reset' the tracked memory.", false/*only scare interactive user, not log readers*/, toConsole, toStream);

@@ -610,10 +610,10 @@ The feature is compiled in, or not, based on this defined preprocessor symbol.
 
 void* operator new(size_t size, const char* file, int line);
 void operator delete(void* p, const char* file, int line);
-void operator delete(void* p);
+void operator delete(void* p) throw();
 void* operator new[](size_t size, const char* file, int line);
 void operator delete[](void* p, const char* file, int line);
-void operator delete[](void* p);
+void operator delete[](void* p) throw();
 #define V_NEW new(__FILE__, __LINE__)
 #define new V_NEW
 

@@ -401,7 +401,7 @@ static cast_to_type VcheckedDynamicCast(an_object_ptr& obj, const char* file, in
                 if (logStackCrawl)
                     VThread::logStackCrawl(message, VLogger::getDefaultLogger(), false);
 
-                VLogger::getDefaultLogger()->log(VLogger::kError, file, line, message);
+                VLogger::getDefaultLogger()->log(VLoggerLevel::ERROR, file, line, message);
                 }
 
             if (rethrowException)

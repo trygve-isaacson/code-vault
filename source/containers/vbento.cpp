@@ -23,7 +23,7 @@ class VBentoTextNodeParser
     public:
 
         VBentoTextNodeParser();
-        virtual ~VBentoTextNodeParser() {}
+        ~VBentoTextNodeParser() {}
 
         void parse(VTextIOStream& stream, VBentoNode& buildNode);
         void parse(const VString& s, VBentoNode& buildNode);
@@ -735,13 +735,13 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
         else if (attributeType == VBentoFloat::DATA_TYPE_ID())
             {
             VDouble d;
-            ::sscanf(actualValue, VSTRING_FORMATTER_DOUBLE, &d);
+            (void) ::sscanf(actualValue, VSTRING_FORMATTER_DOUBLE, &d);
             result = new VBentoFloat(attributeName, static_cast<VFloat>(d));
             }
         else if (attributeType == VBentoDouble::DATA_TYPE_ID())
             {
             VDouble d;
-            ::sscanf(actualValue, VSTRING_FORMATTER_DOUBLE, &d);
+            (void) ::sscanf(actualValue, VSTRING_FORMATTER_DOUBLE, &d);
             result = new VBentoDouble(attributeName, d);
             }
         else if (attributeType == VBentoDuration::DATA_TYPE_ID())
@@ -762,28 +762,28 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
             {
             VDouble width;
             VDouble height;
-            ::sscanf(actualValue, "%lf,%lf", &width, &height);
+            (void) ::sscanf(actualValue, "%lf,%lf", &width, &height);
             result = new VBentoSize(attributeName, VSize(width, height));
             }
         else if (attributeType == VBentoISize::DATA_TYPE_ID())
             {
             int width;
             int height;
-            ::sscanf(actualValue, "%d,%d", &width, &height);
+            (void) ::sscanf(actualValue, "%d,%d", &width, &height);
             result = new VBentoISize(attributeName, VISize(width, height));
             }
         else if (attributeType == VBentoPoint::DATA_TYPE_ID())
             {
             VDouble x;
             VDouble y;
-            ::sscanf(actualValue, "%lf,%lf", &x, &y);
+            (void) ::sscanf(actualValue, "%lf,%lf", &x, &y);
             result = new VBentoPoint(attributeName, VPoint(x, y));
             }
         else if (attributeType == VBentoIPoint::DATA_TYPE_ID())
             {
             int x;
             int y;
-            ::sscanf(actualValue, "%d,%d", &x, &y);
+            (void) ::sscanf(actualValue, "%d,%d", &x, &y);
             result = new VBentoIPoint(attributeName, VIPoint(x, y));
             }
         else if (attributeType == VBentoPoint3D::DATA_TYPE_ID())
@@ -791,7 +791,7 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
             VDouble x;
             VDouble y;
             VDouble z;
-            ::sscanf(actualValue, "%lf,%lf,%lf", &x, &y, &z);
+            (void) ::sscanf(actualValue, "%lf,%lf,%lf", &x, &y, &z);
             result = new VBentoPoint3D(attributeName, VPoint3D(x, y, z));
             }
         else if (attributeType == VBentoIPoint3D::DATA_TYPE_ID())
@@ -799,7 +799,7 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
             int x;
             int y;
             int z;
-            ::sscanf(actualValue, "%d,%d,%d", &x, &y, &z);
+            (void) ::sscanf(actualValue, "%d,%d,%d", &x, &y, &z);
             result = new VBentoIPoint3D(attributeName, VIPoint3D(x, y, z));
             }
         else if (attributeType == VBentoLine::DATA_TYPE_ID())
@@ -808,7 +808,7 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
             VDouble y1;
             VDouble x2;
             VDouble y2;
-            ::sscanf(actualValue, "%lf,%lf:%lf,%lf", &x1, &y1, &x2, &y2);
+            (void) ::sscanf(actualValue, "%lf,%lf:%lf,%lf", &x1, &y1, &x2, &y2);
             result = new VBentoLine(attributeName, VLine(VPoint(x1, y1), VPoint(x2, y2)));
             }
         else if (attributeType == VBentoILine::DATA_TYPE_ID())
@@ -817,7 +817,7 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
             int y1;
             int x2;
             int y2;
-            ::sscanf(actualValue, "%d,%d:%d,%d", &x1, &y1, &x2, &y2);
+            (void) ::sscanf(actualValue, "%d,%d:%d,%d", &x1, &y1, &x2, &y2);
             result = new VBentoILine(attributeName, VILine(VIPoint(x1, y1), VIPoint(x2, y2)));
             }
         else if (attributeType == VBentoRect::DATA_TYPE_ID())
@@ -826,7 +826,7 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
             VDouble y;
             VDouble width;
             VDouble height;
-            ::sscanf(actualValue, "%lf,%lf:%lf*%lf", &x, &y, &width, &height);
+            (void) ::sscanf(actualValue, "%lf,%lf:%lf*%lf", &x, &y, &width, &height);
             result = new VBentoRect(attributeName, VRect(VPoint(x, y), VSize(width, height)));
             }
         else if (attributeType == VBentoIRect::DATA_TYPE_ID())
@@ -835,7 +835,7 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
             int y;
             int width;
             int height;
-            ::sscanf(actualValue, "%d,%d:%d*%d", &x, &y, &width, &height);
+            (void) ::sscanf(actualValue, "%d,%d:%d*%d", &x, &y, &width, &height);
             result = new VBentoIRect(attributeName, VIRect(VIPoint(x, y), VISize(width, height)));
             }
         else if (attributeType == VBentoPolygon::DATA_TYPE_ID())
@@ -856,7 +856,7 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
             int g;
             int b;
             int alpha;
-            ::sscanf(actualValue, "%d,%d,%d,%d", &r, &g, &b, &alpha);
+            (void) ::sscanf(actualValue, "%d,%d,%d,%d", &r, &g, &b, &alpha);
             result = new VBentoColor(attributeName, VColor(r, g, b, alpha));
             }
         else if (attributeType == VBentoBinary::DATA_TYPE_ID())
@@ -1085,7 +1085,7 @@ void VBentoPolygon::readPolygonFromBentoTextString(const VString& s, VPolygon& p
         s.getSubstring(nextPointText, openParenIndex+1, closeParenIndex);
         VDouble x;
         VDouble y;
-        ::sscanf(nextPointText, "%lf,%lf", &x, &y);
+        (void) ::sscanf(nextPointText, "%lf,%lf", &x, &y);
         p.add(VPoint(x, y));
         
         openParenIndex = s.indexOf('(', closeParenIndex);
@@ -1131,7 +1131,7 @@ void VBentoIPolygon::readPolygonFromBentoTextString(const VString& s, VIPolygon&
         s.getSubstring(nextPointText, openParenIndex+1, closeParenIndex);
         int x;
         int y;
-        ::sscanf(nextPointText, "%d,%d", &x, &y);
+        (void) ::sscanf(nextPointText, "%d,%d", &x, &y);
         p.add(VIPoint(x, y));
         
         openParenIndex = s.indexOf('(', closeParenIndex);
@@ -1197,7 +1197,7 @@ VBentoS8Array* VBentoS8Array::newFromBentoTextString(const VString& name, const 
         {
         s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
         int value;
-        ::sscanf(nextElementText, VSTRING_FORMATTER_INT, &value); // Note: %hhd for Vs8 not universally supported; using plain old int conversion instead.
+        (void) ::sscanf(nextElementText, VSTRING_FORMATTER_INT, &value); // Note: %hhd for Vs8 not universally supported; using plain old int conversion instead.
         result->appendValue(static_cast<Vs8>(value));
         
         previousSeparatorIndex = nextSeparatorIndex;
@@ -1232,7 +1232,7 @@ VBentoS16Array* VBentoS16Array::newFromBentoTextString(const VString& name, cons
         {
         s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
         Vs16 value;
-        ::sscanf(nextElementText, VSTRING_FORMATTER_S16, &value);
+        (void) ::sscanf(nextElementText, VSTRING_FORMATTER_S16, &value);
         result->appendValue(value);
         
         previousSeparatorIndex = nextSeparatorIndex;
@@ -1247,7 +1247,7 @@ void VBentoS16Array::writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, 
     _writeLineItemToStream(stream, lineWrap, indentDepth, VSTRING_FORMAT("<%s>", this->getName().chars()));
 
     for (Vs16Array::const_iterator i = mValue.begin(); i != mValue.end(); ++i)
-        _writeLineItemToStream(stream, lineWrap, indentDepth + 1, VSTRING_FORMAT("<item value=\"%hd\"/>", (*i)));
+        _writeLineItemToStream(stream, lineWrap, indentDepth + 1, VSTRING_FORMAT("<item value=\"" VSTRING_FORMATTER_S16 "\"/>", (*i)));
 
     _writeLineItemToStream(stream, lineWrap, indentDepth, VSTRING_FORMAT("</%s>", this->getName().chars()));
     }
@@ -1267,7 +1267,7 @@ VBentoS32Array* VBentoS32Array::newFromBentoTextString(const VString& name, cons
         {
         s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
         Vs32 value;
-        ::sscanf(nextElementText, VSTRING_FORMATTER_S32, &value);
+        (void) ::sscanf(nextElementText, VSTRING_FORMATTER_S32, &value);
         result->appendValue(value);
         
         previousSeparatorIndex = nextSeparatorIndex;
@@ -1282,7 +1282,7 @@ void VBentoS32Array::writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, 
     _writeLineItemToStream(stream, lineWrap, indentDepth, VSTRING_FORMAT("<%s>", this->getName().chars()));
 
     for (Vs32Array::const_iterator i = mValue.begin(); i != mValue.end(); ++i)
-        _writeLineItemToStream(stream, lineWrap, indentDepth + 1, VSTRING_FORMAT("<item value=\"%ld\"/>", (*i)));
+        _writeLineItemToStream(stream, lineWrap, indentDepth + 1, VSTRING_FORMAT("<item value=\"" VSTRING_FORMATTER_S32 "\"/>", (*i)));
 
     _writeLineItemToStream(stream, lineWrap, indentDepth, VSTRING_FORMAT("</%s>", this->getName().chars()));
     }
@@ -1302,7 +1302,7 @@ VBentoS64Array* VBentoS64Array::newFromBentoTextString(const VString& name, cons
         {
         s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
         Vs64 value;
-        ::sscanf(nextElementText, VSTRING_FORMATTER_S64, &value);
+        (void) ::sscanf(nextElementText, VSTRING_FORMATTER_S64, &value);
         result->appendValue(value);
         
         previousSeparatorIndex = nextSeparatorIndex;
@@ -1317,7 +1317,7 @@ void VBentoS64Array::writeToXMLTextStream(VTextIOStream& stream, bool lineWrap, 
     _writeLineItemToStream(stream, lineWrap, indentDepth, VSTRING_FORMAT("<%s>", this->getName().chars()));
 
     for (Vs64Array::const_iterator i = mValue.begin(); i != mValue.end(); ++i)
-        _writeLineItemToStream(stream, lineWrap, indentDepth + 1, VSTRING_FORMAT("<item value=\"%lld\"/>", (*i)));
+        _writeLineItemToStream(stream, lineWrap, indentDepth + 1, VSTRING_FORMAT("<item value=\"" VSTRING_FORMATTER_S64 "\"/>", (*i)));
 
     _writeLineItemToStream(stream, lineWrap, indentDepth, VSTRING_FORMAT("</%s>", this->getName().chars()));
     }
@@ -1357,14 +1357,15 @@ void VBentoBoolArray::writeToXMLTextStream(VTextIOStream& stream, bool lineWrap,
 
 // VBentoStringArray --------------------------------------------------------------
 
+/** Internal string array data parser state. */
 typedef enum
     {
-    kStringArrayParseState_Init,            // " -> InArray; else error
-    kStringArrayParseState_InArray,         // " -> InElement; else error
-    kStringArrayParseState_InElement,       // " add pending string then -> ElementEnded; \ -> EscapePending; else append character
-    kStringArrayParseState_ElementEnded,    // , -> InArray; " -> Done; whitespace -> ignore; else error
-    kStringArrayParseState_EscapePending,   // append character then -> InElement
-    kStringArrayParseState_Done             // whitespace -> ignore; else error
+    kStringArrayParseState_Init,            ///< " -> InArray; else error
+    kStringArrayParseState_InArray,         ///< " -> InElement; else error
+    kStringArrayParseState_InElement,       ///< " add pending string then -> ElementEnded; \ -> EscapePending; else append character
+    kStringArrayParseState_ElementEnded,    ///< , -> InArray; " -> Done; whitespace -> ignore; else error
+    kStringArrayParseState_EscapePending,   ///< append character then -> InElement
+    kStringArrayParseState_Done             ///< whitespace -> ignore; else error
     } StringArrayParseState;
 
 // static
@@ -1469,7 +1470,7 @@ VBentoDoubleArray* VBentoDoubleArray::newFromBentoTextString(const VString& name
         {
         s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
         VDouble value;
-        ::sscanf(nextElementText, VSTRING_FORMATTER_DOUBLE, &value);
+        (void) ::sscanf(nextElementText, VSTRING_FORMATTER_DOUBLE, &value);
         result->appendValue(value);
         
         previousSeparatorIndex = nextSeparatorIndex;
@@ -1504,7 +1505,7 @@ VBentoDurationArray* VBentoDurationArray::newFromBentoTextString(const VString& 
         {
         s.getSubstring(nextElementText, previousSeparatorIndex+1, nextSeparatorIndex);
         Vs64 value;
-        ::sscanf(nextElementText, VSTRING_FORMATTER_S64 "ms", &value);
+        (void) ::sscanf(nextElementText, VSTRING_FORMATTER_S64 "ms", &value);
         result->appendValue(VDuration::MILLISECOND() * value);
         
         previousSeparatorIndex = nextSeparatorIndex;
@@ -1854,14 +1855,14 @@ void VBentoNode::writeToBentoTextStream(VTextIOStream& stream, bool lineWrap, in
     stream.writeString("}");
     }
 
-void VBentoNode::writeToBentoTextString(VString& s) const
+void VBentoNode::writeToBentoTextString(VString& s, bool lineWrap) const
     {
     VMemoryStream buffer;
     VTextIOStream stream(buffer);
-    this->writeToBentoTextStream(stream);
+    this->writeToBentoTextStream(stream, lineWrap);
     stream.writeLineEnd();
     stream.seek0();
-    stream.readLine(s);
+    stream.readAll(s);
     }
 
 void VBentoNode::readFromStream(VBinaryIOStream& stream)

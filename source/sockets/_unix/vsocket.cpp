@@ -74,7 +74,7 @@ VNetworkInterfaceList VSocketBase::enumerateNetworkInterfaces()
                 info.mAddress.preflight(255);
                 char* buffer = info.mAddress.buffer();
                 ::inet_ntop(intfPtr->ifa_addr->sa_family, &((struct sockaddr_in *) intfPtr->ifa_addr)->sin_addr, buffer, 255);
-                info.mAddress.postflight(::strlen(buffer));
+                info.mAddress.postflight((int) ::strlen(buffer));
 
                 // Check for "lo0" above should filter out 127.x.x.x (loopback addresses), but in case it doesn't, check it.
                 if (! info.mAddress.startsWith("127."))
@@ -166,7 +166,7 @@ int VSocket::read(Vu8* buffer, int numBytesToRead)
 
             }
 
-        theNumBytesRead = ::recv(mSocketID, (char*) nextBufferPositionPtr, (VSizeType) bytesRemainingToRead, VSOCKET_DEFAULT_RECV_FLAGS);
+        theNumBytesRead = (int) ::recv(mSocketID, (char*) nextBufferPositionPtr, (VSizeType) bytesRemainingToRead, VSOCKET_DEFAULT_RECV_FLAGS);
 
         if (theNumBytesRead < 0)
             {
@@ -246,7 +246,7 @@ int VSocket::write(const Vu8* buffer, int numBytesToWrite)
 
             }
 
-        theNumBytesWritten = ::send(mSocketID, nextBufferPositionPtr, (VSizeType) bytesRemainingToWrite, VSOCKET_DEFAULT_SEND_FLAGS);
+        theNumBytesWritten = (int) ::send(mSocketID, nextBufferPositionPtr, (VSizeType) bytesRemainingToWrite, VSOCKET_DEFAULT_SEND_FLAGS);
 
         if (theNumBytesWritten <= 0)
             {

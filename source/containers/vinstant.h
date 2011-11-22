@@ -13,6 +13,7 @@ http://www.bombaydigital.com/
 
 class VChar;
 class VString;
+class VInstant;
 class VDate;
 class VTimeOfDay;
 class VDateAndTime;
@@ -44,8 +45,8 @@ The only unusual behavior within VDuration is the existence of the UNSPECIFIED
 duration constant. This is provided for cases where, due to backward compatibility,
 you need to initialize a duration to a special value that a normal value will
 never equal. It's a much better practice to let durations initialize to ZERO by
-default. Behavior is undefined if you perform operations on an UNSPECIFIED duration.
-You should only test them for equality.
+default. Some behavior is not meaningful if you perform operations on an UNSPECIFIED
+duration. You should only test them for equality.
 
 Negative durations are perfectly OK. They behave just as you'd expect; for example,
 if you subtract a later VInstant from an earlier VInstant, the resulting VDuration
@@ -55,6 +56,11 @@ The NEGATIVE_INFINITY and POSITIVE_INFINITY constants are provided primarily so
 that the VInstant math operations can provide reasonable results when the instant
 values are INFINITE_PAST or INFINITE_FUTURE. In addition, VDuration's own math
 operations provide logical results when using these infinity values.
+
+Strict Weak Ordering:
+Sorting functions require a strict weak ordering to be defined. This is implemented
+by the comparision operators. It is defined as follows:
+  NEGATIVE_INFINITY < negative durations < ZERO < positive durations < POSITIVE_INFINITY < UNSPECIFIED
 */
 class VDuration
     {
@@ -75,6 +81,8 @@ class VDuration
         VDuration() : mDurationMilliseconds(0) {}
         /** Copy constructor. @param d a duration to copy. */
         VDuration(const VDuration& d) : mDurationMilliseconds(d.mDurationMilliseconds) {}
+        /** Constructs a duration that is the difference from the specified instant to now. @param sinceWhen the start time to measure from */
+        VDuration(const VInstant& sinceWhen);
         /** Non-virtual destructor. This class is not intended to be subclassed. */
         ~VDuration() {}
 
@@ -132,7 +140,7 @@ class VDuration
         /**
         Sets the duration via a simple human-readable format that indicates value and magnitude.
         Please note that because this requires string parsing, it is less efficient than using
-        VDuration constants and mulitplication.
+        VDuration constants and multiplication.
         If present, the suffix of s must be one of: ms | s | m | h | d
         The prefix is an integer (leading minus sign allowed).
         If the suffix is omitted the string must be in the form s.mmm just like what
@@ -163,12 +171,12 @@ class VDuration
         */
         void setDurationString(const VString& s);
         
-        friend inline bool operator==(const VDuration& d1, const VDuration& d2);    ///< Compares d1 and d2 for equality in milliseconds using ==.
-        friend inline bool operator!=(const VDuration& d1, const VDuration& d2);    ///< Compares d1 and d2 for equality in milliseconds using !=.
-        friend inline bool operator>=(const VDuration& d1, const VDuration& d2);    ///< Compares d1 and d2 for equality in milliseconds using >=.
-        friend inline bool operator<=(const VDuration& d1, const VDuration& d2);    ///< Compares d1 and d2 for equality in milliseconds using <=.
-        friend inline bool operator>(const VDuration& d1, const VDuration& d2);     ///< Compares d1 and d2 for equality in milliseconds using >.
-        friend inline bool operator<(const VDuration& d1, const VDuration& d2);     ///< Compares d1 and d2 for equality in milliseconds using <.
+        friend inline bool operator==(const VDuration& lhs, const VDuration& rhs);  ///< Compares durations for equality in milliseconds using ==.
+        friend inline bool operator!=(const VDuration& lhs, const VDuration& rhs);  ///< Compares durations for equality in milliseconds using !=.
+        friend inline bool operator< (const VDuration& lhs, const VDuration& rhs);  ///< Compares durations for equality in milliseconds using <.
+        friend inline bool operator<=(const VDuration& lhs, const VDuration& rhs);  ///< Compares durations for equality in milliseconds using <=.
+        friend inline bool operator>=(const VDuration& lhs, const VDuration& rhs);  ///< Compares durations for equality in milliseconds using >=.
+        friend inline bool operator> (const VDuration& lhs, const VDuration& rhs);  ///< Compares durations for equality in milliseconds using >.
         friend inline VDuration operator+(const VDuration& d1, const VDuration& d2);///< Adds d1 + d2 and returns their total duration.
         friend inline VDuration operator-(const VDuration& d1, const VDuration& d2);///< Subtracts d2 from d1 and returns the difference in duration.
         friend inline VDuration operator*(Vs64 multiplier, const VDuration& d1);    ///< Multiplies d1 by a number and returns the resulting duration; uses Vs64 for VInstant delta compatibility.
@@ -196,15 +204,11 @@ class VDuration
         In other words, both d1 and d2 have specific values. It's false if either
         one is not specific.
         */
-        static bool canCompareValues(const VDuration& d1, const VDuration& d2) { return d1.isSpecific() && d2.isSpecific(); }
+        static bool areValuesSpecific(const VDuration& d1, const VDuration& d2) { return d1.isSpecific() && d2.isSpecific(); }
 
     private:
 
         // These are called by the friend inline comparison operators for comparing non-simple durations.
-        static bool _complexGT(const VDuration& d1, const VDuration& d2);
-        static bool _complexGTE(const VDuration& d1, const VDuration& d2);
-        static bool _complexLT(const VDuration& d1, const VDuration& d2);
-        static bool _complexLTE(const VDuration& d1, const VDuration& d2);
         static VDuration _complexAdd(const VDuration& d1, const VDuration& d2);
         static VDuration _complexSubtract(const VDuration& d1, const VDuration& d2);
         static VDuration _complexMultiply(const VDuration& d, Vs64 multiplier);
@@ -225,20 +229,20 @@ class VDuration
     };
 
 // Inline implementations of some of the above VDuration operators.
-// The purpose is to make simple operations quick, and divert the complex versions
-// to the separate functions.
-inline bool operator==(const VDuration& d1, const VDuration& d2) { return d1.mDurationMilliseconds == d2.mDurationMilliseconds; }
-inline bool operator!=(const VDuration& d1, const VDuration& d2) { return d1.mDurationMilliseconds != d2.mDurationMilliseconds; }
-inline bool operator>=(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return d1.mDurationMilliseconds >= d2.mDurationMilliseconds; else return VDuration::_complexGTE(d1, d2); }
-inline bool operator<=(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return d1.mDurationMilliseconds <= d2.mDurationMilliseconds; else return VDuration::_complexLTE(d1, d2); }
-inline bool operator>(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return d1.mDurationMilliseconds > d2.mDurationMilliseconds; else return VDuration::_complexGT(d1, d2); }
-inline bool operator<(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return d1.mDurationMilliseconds < d2.mDurationMilliseconds; else return VDuration::_complexLT(d1, d2); }
-inline VDuration operator+(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return VDuration(d1.mDurationMilliseconds + d2.mDurationMilliseconds); else return VDuration::_complexAdd(d1, d2); }
-inline VDuration operator-(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return VDuration(d1.mDurationMilliseconds - d2.mDurationMilliseconds); else return VDuration::_complexSubtract(d1, d2); }
+// For non-specific values, some operators need to call more complicated functions to provide
+// sensible values.
+inline bool operator==(const VDuration& lhs, const VDuration& rhs) { return lhs.mDurationMilliseconds == rhs.mDurationMilliseconds; }
+inline bool operator!=(const VDuration& lhs, const VDuration& rhs) { return !operator==(lhs, rhs); }
+inline bool operator< (const VDuration& lhs, const VDuration& rhs) { return lhs.mDurationMilliseconds < rhs.mDurationMilliseconds; }
+inline bool operator<=(const VDuration& lhs, const VDuration& rhs) { return !operator>(lhs, rhs); }
+inline bool operator>=(const VDuration& lhs, const VDuration& rhs) { return !operator<(lhs, rhs); }
+inline bool operator> (const VDuration& lhs, const VDuration& rhs) { return  operator<(rhs, lhs); }
+inline VDuration operator+(const VDuration& d1, const VDuration& d2) { if (VDuration::areValuesSpecific(d1, d2)) return VDuration(d1.mDurationMilliseconds + d2.mDurationMilliseconds); else return VDuration::_complexAdd(d1, d2); }
+inline VDuration operator-(const VDuration& d1, const VDuration& d2) { if (VDuration::areValuesSpecific(d1, d2)) return VDuration(d1.mDurationMilliseconds - d2.mDurationMilliseconds); else return VDuration::_complexSubtract(d1, d2); }
 inline VDuration operator*(Vs64 multiplier, const VDuration& d) { if (d.isSpecific()) return VDuration(d.mDurationMilliseconds * multiplier); else return VDuration::_complexMultiply(d, multiplier); }
 inline VDuration operator*(const VDuration& d, Vs64 multiplier) { if (d.isSpecific()) return VDuration(d.mDurationMilliseconds * multiplier); else return VDuration::_complexMultiply(d, multiplier); }
-inline VDuration VDuration::min(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return (d1 < d2) ? d1 : d2; else return VDuration::_complexMin(d1, d2); }
-inline VDuration VDuration::max(const VDuration& d1, const VDuration& d2) { if (VDuration::canCompareValues(d1, d2)) return (d1 > d2) ? d1 : d2; else return VDuration::_complexMax(d1, d2); }
+inline VDuration VDuration::min(const VDuration& d1, const VDuration& d2) { if (VDuration::areValuesSpecific(d1, d2)) return (d1 < d2) ? d1 : d2; else return VDuration::_complexMin(d1, d2); }
+inline VDuration VDuration::max(const VDuration& d1, const VDuration& d2) { if (VDuration::areValuesSpecific(d1, d2)) return (d1 > d2) ? d1 : d2; else return VDuration::_complexMax(d1, d2); }
 inline VDuration VDuration::abs(const VDuration& d) { if (d.isSpecific()) return (d.mDurationMilliseconds < CONST_S64(0)) ? -d : d; else return VDuration::_complexAbs(d); }
 
 /**
@@ -598,13 +602,13 @@ class VInstant
         */
         Vs64 getLocalOffsetMilliseconds() const;
 
-        friend inline bool operator==(const VInstant& i1, const VInstant& i2);    ///< Compares i1 and i2 for equality. @param i1    an instant @param i2 an instant @return true if i1 == i2
-        friend inline bool operator!=(const VInstant& i1, const VInstant& i2);    ///< Compares i1 and i2 for equality. @param i1    an instant @param i2 an instant @return true if i1 != i2
-        friend inline bool operator>=(const VInstant& i1, const VInstant& i2);    ///< Compares i1 and i2 for equality. @param i1    an instant @param i2 an instant @return true if i1 >= i2
-        friend inline bool operator<=(const VInstant& i1, const VInstant& i2);    ///< Compares i1 and i2 for equality. @param i1    an instant @param i2 an instant @return true if i1 <= i2
-        friend inline bool operator>(const VInstant& i1, const VInstant& i2);    ///< Compares i1 and i2 for equality. @param i1    an instant @param i2 an instant @return true if i1 > i2
-        friend inline bool operator<(const VInstant& i1, const VInstant& i2);    ///< Compares i1 and i2 for equality. @param i1    an instant @param i2 an instant @return true if i1 < i2
-        friend inline VDuration operator-(const VInstant& i1, const VInstant& i2);    ///< Returns the time duration between i1 and i2. @param i1 an instant @param i2 an instant @return i1 - i2 as a VDuration
+        friend inline bool operator==(const VInstant& lhs, const VInstant& rhs);    ///< Compares two instants.
+        friend inline bool operator!=(const VInstant& lhs, const VInstant& rhs);    ///< Compares two instants.
+        friend inline bool operator< (const VInstant& lhs, const VInstant& rhs);    ///< Compares two instants.
+        friend inline bool operator<=(const VInstant& lhs, const VInstant& rhs);    ///< Compares two instants.
+        friend inline bool operator>=(const VInstant& lhs, const VInstant& rhs);    ///< Compares two instants.
+        friend inline bool operator> (const VInstant& lhs, const VInstant& rhs);    ///< Compares two instants.
+        friend inline VDuration operator-(const VInstant& i1, const VInstant& i2);  ///< Returns the time duration between i1 and i2. @param i1 an instant @param i2 an instant @return i1 - i2 as a VDuration
         friend inline VInstant operator+(const VInstant& i1, const VDuration& forwardDuration);    ///< Returns an instant incremented by a delta. @param i1 an instant @param forwardDuration the duration to add @return the result of i1+forwardDuration
         friend inline VInstant operator-(const VInstant& i1, const VDuration& backwardDuration);///< Returns an instant decremented by a delta. @param i1 an instant @param backwardDuration the duration to subtract to add @return the result of i1-backwardDuration
 
@@ -846,12 +850,12 @@ class VInstant
     };
 
 // Inline implementations of some of the above VInstant operators.
-inline bool operator==(const VInstant& i1, const VInstant& i2) { return i1.mValue == i2.mValue; }
-inline bool operator!=(const VInstant& i1, const VInstant& i2) { return i1.mValue != i2.mValue; }
-inline bool operator>=(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return i1.mValue >= i2.mValue; else return VInstant::_complexGTE(i1, i2); }
-inline bool operator<=(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return i1.mValue <= i2.mValue; else return VInstant::_complexLTE(i1, i2); }
-inline bool operator>(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return i1.mValue > i2.mValue; else return VInstant::_complexGT(i1, i2); }
-inline bool operator<(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return i1.mValue < i2.mValue; else return VInstant::_complexLT(i1, i2); }
+inline bool operator==(const VInstant& lhs, const VInstant& rhs) { return lhs.mValue == rhs.mValue; }
+inline bool operator!=(const VInstant& lhs, const VInstant& rhs) { return !operator==(lhs, rhs); }
+inline bool operator< (const VInstant& lhs, const VInstant& rhs) { if (VInstant::canCompareValues(lhs, rhs)) return lhs.mValue < rhs.mValue; else return VInstant::_complexLT(lhs, rhs); }
+inline bool operator<=(const VInstant& lhs, const VInstant& rhs) { if (VInstant::canCompareValues(lhs, rhs)) return lhs.mValue <= rhs.mValue; else return VInstant::_complexLTE(lhs, rhs); }
+inline bool operator>=(const VInstant& lhs, const VInstant& rhs) { if (VInstant::canCompareValues(lhs, rhs)) return lhs.mValue >= rhs.mValue; else return VInstant::_complexGTE(lhs, rhs); }
+inline bool operator> (const VInstant& lhs, const VInstant& rhs) { if (VInstant::canCompareValues(lhs, rhs)) return lhs.mValue > rhs.mValue; else return VInstant::_complexGT(lhs, rhs); }
 inline VDuration operator-(const VInstant& i1, const VInstant& i2) { if (VInstant::canCompareValues(i1, i2)) return VDuration::MILLISECOND() * (i1.mValue - i2.mValue); else return VDuration(); }
 inline VInstant operator+(const VInstant& i1, const VDuration& forwardDuration) { VInstant result = i1; result += forwardDuration; return result; }
 inline VInstant operator-(const VInstant& i1, const VDuration& backwardDuration) { VInstant result = i1; result -= backwardDuration; return result; }

@@ -17,6 +17,10 @@ http://www.bombaydigital.com/
 #define WRITE_CREATE_MODE       (O_WRONLY | O_CREAT | O_TRUNC | O_BINARY) // Added O_TRUNC which should zero the file upon creation/opening
 #define OPEN_CREATE_PERMISSIONS (S_IRWXO | S_IRWXG | S_IRWXU)
 
+/**
+This helper class is used internally to wrap POSIX file APIs needed by our low-level
+implementation, while handling thread interruption errors and retrying.
+*/
 class VFileSystemAPI
     {
     public:

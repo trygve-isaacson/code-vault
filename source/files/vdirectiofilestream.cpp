@@ -166,7 +166,7 @@ Vs64 VDirectIOFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite)
         VString    path;
         mNode.getPath(path);
 
-        throw VException(errno, VSTRING_FORMAT("VDirectIOFileStream::write to '%s' only wrote %lld of %lld requested bytes.", path.chars(), numBytesWritten, numBytesToWrite));
+        throw VException(errno, VSTRING_FORMAT("VDirectIOFileStream::write to '%s' only wrote " VSTRING_FORMATTER_S64 " of " VSTRING_FORMATTER_S64 " requested bytes.", path.chars(), numBytesWritten, numBytesToWrite));
         }
 
     return numBytesWritten;

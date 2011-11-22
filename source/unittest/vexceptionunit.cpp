@@ -14,18 +14,21 @@ class VExceptionUnit_ExampleBase
     {
     public:
         VExceptionUnit_ExampleBase() {}
+        virtual ~VExceptionUnit_ExampleBase() {}
         virtual void hello() { std::cout << "hello(ExampleBase)" << std::endl; }
     };
 class VExceptionUnit_SubclassBranchA : public VExceptionUnit_ExampleBase
     {
     public:
         VExceptionUnit_SubclassBranchA() : VExceptionUnit_ExampleBase() {}
+        virtual ~VExceptionUnit_SubclassBranchA() {}
         virtual void hello() { std::cout << "hello(SubclassBranchA)" << std::endl; }
     };
 class VExceptionUnit_SubclassBranchB : public VExceptionUnit_ExampleBase
     {
     public:
         VExceptionUnit_SubclassBranchB() : VExceptionUnit_ExampleBase() {}
+        virtual ~VExceptionUnit_SubclassBranchB() {}
         virtual void hello() { std::cout << "hello(SubclassBranchB)" << std::endl; }
     };
 
@@ -199,7 +202,9 @@ void VExceptionUnit::_testCheckedDynamicCast()
     this->test(V_CHECKED_DYNAMIC_CAST(VExceptionUnit_SubclassBranchA*, base) == NULL, "V_CHECKED_DYNAMIC_CAST base -> subclass => null");
     this->test(V_CHECKED_DYNAMIC_CAST(VExceptionUnit_SubclassBranchA*, branchB) == NULL, "V_CHECKED_DYNAMIC_CAST subclass A -> subclass B => null");
     this->test(V_CHECKED_DYNAMIC_CAST(VExceptionUnit_ExampleBase*, nullPtr) == NULL, "V_CHECKED_DYNAMIC_CAST null => null");
-    this->test(V_CHECKED_DYNAMIC_CAST(VExceptionUnit_ExampleBase*, this) == NULL, "V_CHECKED_DYNAMIC_CAST other hierarchy => null");
+#ifndef VPLATFORM_MAC /* The following junk can't sneak past the compiler on Mac GCC. */
+    this->test(V_CHECKED_DYNAMIC_CAST(VExceptionUnit_ExampleBase*, (VExceptionUnit*)this) == NULL, "V_CHECKED_DYNAMIC_CAST other hierarchy => null");
+#endif
 
     // Make sure the function is callable directly without the macro.
     VExceptionUnit_SubclassBranchA* nullResult = VcheckedDynamicCast<VExceptionUnit_SubclassBranchA*>(branchB_asBase, __FILE__, __LINE__, true, true, true);

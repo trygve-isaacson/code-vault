@@ -131,7 +131,7 @@ class VMessageHandler
         @param    logger    the logger to write to, or NULL to force the function to
                         look up the logger
         */
-        void logMessageContentRecord(const VString& details, VLogger* logger=NULL) const;
+        void logMessageContentRecord(const VString& details, VNamedLoggerPtr logger=VNamedLoggerPtr()) const;
         /**
         Logs (at the appropriate log level) the supplied information about the
         message being handled. A message handler should call this to log the
@@ -150,11 +150,11 @@ class VMessageHandler
         @param    logger    the logger to write to, or NULL to force the function to
                         look up the logger
         */
-        void logMessageContentFields(const VString& details, VLogger* logger=NULL) const;
+        void logMessageContentFields(const VString& details, VNamedLoggerPtr logger=VNamedLoggerPtr()) const;
         /**
         Similar to logMessageContentFields, but for a lower level of messaging.
         */
-        void logMessageDetailsFields(const VString& details, VLogger* logger=NULL) const;
+        void logMessageDetailsFields(const VString& details, VNamedLoggerPtr logger=VNamedLoggerPtr()) const;
         /**
         Logs (at the appropriate log level) the message handler name to
         indicate that the handler has been invoked or has ended.
@@ -181,7 +181,7 @@ class VMessageHandler
         @param    contentInfo    the info to be logged
         */
         void _logMessageContentRecord(const VString& contentInfo) const;
-        VLogger* _getMessageContentRecordLogger() const; ///< Returns the logger for message content, or NULL if that level is not enabled.
+        VNamedLoggerPtr _getMessageContentRecordLogger() const; ///< Returns the logger for message content, or NULL if that level is not enabled.
         /**
         Logs (at the appropriate log level) simple content info for a message
         that has been received or will be sent. You should only supply a
@@ -189,7 +189,7 @@ class VMessageHandler
         @param    contentInfo    the info to be logged
         */
         void _logMessageContentFields(const VString& contentInfo) const;
-        VLogger* _getMessageContentFieldsLogger() const; ///< Returns the logger for message fields, or NULL if that level is not enabled.
+        VNamedLoggerPtr _getMessageContentFieldsLogger() const; ///< Returns the logger for message fields, or NULL if that level is not enabled.
         /**
         Logs (at the appropriate log level) full hex dump content info for a message
         that has been received or will be sent..
@@ -241,7 +241,6 @@ class VMessageHandlerFactory
         @param    server    the serer to be passed thru to the handler constructor
         @param    session    the session to be passed thru to the handler constructor
         @param    thread    the thread to be passed thru to the handler constructor
-        @param  mutex   the mutex to be passed thru to the handler constructor
         */
         virtual VMessageHandler* createHandler(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread) = 0;
     };
@@ -252,7 +251,7 @@ class factoryclassname : public VMessageHandlerFactory \
     { \
     public: \
     \
-        factoryclassname() : VMessageHandlerFactory(), mName("%s (%s)",#handlerclassname,descriptivename) { VMessageHandler::registerHandlerFactory(messageid, this); } \
+        factoryclassname() : VMessageHandlerFactory(), mName(VSTRING_ARGS("%s (%s)",#handlerclassname,descriptivename)) { VMessageHandler::registerHandlerFactory(messageid, this); } \
         virtual ~factoryclassname() {} \
         \
         virtual VMessageHandler* createHandler(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread) \

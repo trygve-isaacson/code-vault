@@ -504,10 +504,10 @@ class VFSNode
         // The purpose here is to allow a sorting a directory listing by name,
         // after calling VFSNode::list(). This is reasonable for many cases, but
         // note that the comparision is ultimately performed by strcmp().
-        friend inline bool operator>(const VFSNode& n1, const VFSNode& n2);
-        friend inline bool operator>=(const VFSNode& n1, const VFSNode& n2);
-        friend inline bool operator<(const VFSNode& n1, const VFSNode& n2);
-        friend inline bool operator<=(const VFSNode& n1, const VFSNode& n2);
+        friend inline bool operator< (const VFSNode& lhs, const VFSNode& rhs);
+        friend inline bool operator<=(const VFSNode& lhs, const VFSNode& rhs);
+        friend inline bool operator>=(const VFSNode& lhs, const VFSNode& rhs);
+        friend inline bool operator> (const VFSNode& lhs, const VFSNode& rhs);
         
     private:
     
@@ -596,10 +596,10 @@ class VFSNode
 
     };
 
-inline bool operator>(const VFSNode& n1, const VFSNode& n2) { return n1.mPath > n2.mPath; }
-inline bool operator>=(const VFSNode& n1, const VFSNode& n2) { return n1.mPath >= n2.mPath; }
-inline bool operator<(const VFSNode& n1, const VFSNode& n2) { return n1.mPath < n2.mPath; }
-inline bool operator<=(const VFSNode& n1, const VFSNode& n2) { return n1.mPath <= n2.mPath; }
+inline bool operator< (const VFSNode& lhs, const VFSNode& rhs) { return lhs.mPath < rhs.mPath; }
+inline bool operator<=(const VFSNode& lhs, const VFSNode& rhs) { return !operator>(lhs, rhs); }
+inline bool operator>=(const VFSNode& lhs, const VFSNode& rhs) { return !operator<(lhs, rhs); }
+inline bool operator> (const VFSNode& lhs, const VFSNode& rhs) { return  operator<(rhs, lhs); }
 
 #endif /* vfsnode_h */
 

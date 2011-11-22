@@ -89,7 +89,7 @@ VMessage* VMessageHandler::getMessage(VMessageID messageID)
     return message;
     }
 
-void VMessageHandler::logMessageContentRecord(const VString& details, VLogger* logger) const
+void VMessageHandler::logMessageContentRecord(const VString& details, VNamedLoggerPtr logger) const
     {
     if (logger == NULL)
         logger = this->_getMessageContentRecordLogger();
@@ -98,7 +98,7 @@ void VMessageHandler::logMessageContentRecord(const VString& details, VLogger* l
         logger->log(VMessage::kMessageContentRecordingLevel, NULL, 0, VSTRING_FORMAT("[%s] %s", mSessionName.chars(), details.chars()));
     }
 
-void VMessageHandler::logMessageContentFields(const VString& details, VLogger* logger) const
+void VMessageHandler::logMessageContentFields(const VString& details, VNamedLoggerPtr logger) const
     {
     if (logger == NULL)
         logger = this->_getMessageContentFieldsLogger();
@@ -107,15 +107,10 @@ void VMessageHandler::logMessageContentFields(const VString& details, VLogger* l
         logger->log(VMessage::kMessageContentFieldsLevel, NULL, 0, VSTRING_FORMAT("[%s] %s", mSessionName.chars(), details.chars()));
     }
 
-void VMessageHandler::logMessageDetailsFields(const VString& details, VLogger* logger) const
+void VMessageHandler::logMessageDetailsFields(const VString& details, VNamedLoggerPtr logger) const
     {
     if (logger == NULL)
-        {
-        logger = VLogger::getLogger(VMessage::kMessageLoggerName);
-
-        if (!logger->isEnabledFor(VMessage::kMessageTrafficDetailsLevel))
-            logger = NULL;
-        }
+        logger = VLogger::findNamedLoggerForLevel(VMessage::kMessageLoggerName, VMessage::kMessageTrafficDetailsLevel);
     
     if (logger != NULL)
         logger->log(VMessage::kMessageTrafficDetailsLevel, NULL, 0, VSTRING_FORMAT("[%s] %s", mSessionName.chars(), details.chars()));
@@ -131,15 +126,15 @@ void VMessageHandler::logProcessMessageEnd() const
     VDuration elapsed = VInstant(/*now*/) - mStartTime;
     if (mUnblockTime == mStartTime)
         {
-        VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerDispatchLevel, VSTRING_FORMAT("[%s] %s end. (Elapsed time: %lldms)", mSessionName.chars(), mName.chars(), elapsed.getDurationMilliseconds()));
+        VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerDispatchLevel, VSTRING_FORMAT("[%s] %s end. (Elapsed time: %s)", mSessionName.chars(), mName.chars(), elapsed.getDurationString().chars()));
         }
     else
         {
         // We were evidently blocked for at least 1ms during construction, waiting for the mutex to be released.
         // If the duration of blocked time exceeded a certain amount, emit this at info level so it is even more visible.
         VDuration blockedTime = mUnblockTime - mStartTime;
-        VLOGGER_MESSAGE_LEVEL((blockedTime > 25 * VDuration::MILLISECOND()) ? VLogger::kInfo : (int)VMessage::kMessageHandlerDispatchLevel, // strangely, gcc gave linker error w/o int cast
-            VSTRING_FORMAT("[%s] %s end. (Elapsed time: %lldms. Blocked for: %lldms.)", mSessionName.chars(), mName.chars(), elapsed.getDurationMilliseconds(), blockedTime.getDurationMilliseconds()));
+        VLOGGER_MESSAGE_LEVEL((blockedTime > 25 * VDuration::MILLISECOND()) ? VLoggerLevel::INFO : (int)VMessage::kMessageHandlerDispatchLevel, // strangely, gcc gave linker error w/o int cast
+            VSTRING_FORMAT("[%s] %s end. (Elapsed time: %s. Blocked for: %s.)", mSessionName.chars(), mName.chars(), elapsed.getDurationString().chars(), blockedTime.getDurationString().chars()));
         }
     }
 
@@ -163,23 +158,13 @@ void VMessageHandler::_logMessageContentHexDump(const VString& info, const Vu8* 
     VLOGGER_MESSAGE_HEXDUMP(VSTRING_FORMAT("[%s] %s", mSessionName.chars(), info.chars()), buffer, length);
     }
 
-VLogger* VMessageHandler::_getMessageContentRecordLogger() const
+VNamedLoggerPtr VMessageHandler::_getMessageContentRecordLogger() const
     {
-    VLogger* logger = VLogger::getLogger(VMessage::kMessageLoggerName);
-    
-    if (logger->isEnabledFor(VMessage::kMessageContentRecordingLevel))
-        return logger;
-    else
-        return NULL;
+    return VLogger::findNamedLoggerForLevel(VMessage::kMessageLoggerName, VMessage::kMessageContentRecordingLevel);
     }
 
-VLogger* VMessageHandler::_getMessageContentFieldsLogger() const
+VNamedLoggerPtr VMessageHandler::_getMessageContentFieldsLogger() const
     {
-    VLogger* logger = VLogger::getLogger(VMessage::kMessageLoggerName);
-    
-    if (logger->isEnabledFor(VMessage::kMessageContentFieldsLevel))
-        return logger;
-    else
-        return NULL;
+    return VLogger::findNamedLoggerForLevel(VMessage::kMessageLoggerName, VMessage::kMessageContentFieldsLevel);
     }
 

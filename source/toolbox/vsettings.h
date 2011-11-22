@@ -27,12 +27,23 @@ typedef std::vector<VSettingsAttribute*> VSettingsAttributePtrVector;
 class VSettingsTag;
 
 /**
-VSettings provides a facility for storing and retrieving settings in an
-XML text format (with some restrictions on the actual format for simplicity).
 
-A VSettings object represents the settings file itself, or a particular
-node in the file. It is derived from VSettingsNode, which is used internally
-for parsing and managing the settings data structures.
+    @defgroup settings Vault Settings
+
+    <h3>Vault Streams Architecture</h3>
+
+    VSettings provides a facility for storing and retrieving settings in an
+    XML text format (with some restrictions on the actual format for simplicity).
+
+    A VSettings object represents the settings file itself, or a particular
+    node in the file. It is derived from VSettingsNode, which is used internally
+    for parsing and managing the settings data structures.
+*/
+
+/**
+VSettingsNode is the abstract class used to describe any node in the settings hierarchy.
+It may be the top level VSettings object, an arbitrary tag node, an attribute/value node,
+or a CDATA node.
 */
 class VSettingsNode
     {
@@ -142,6 +153,10 @@ class VSettingsNode
         VString         mName;
     };
 
+/**
+VSettings is the top level object you use to read and write a settings hierarchy. It is derived
+from the generic node class.
+*/
 class VSettings : public VSettingsNode
     {
     public:
@@ -195,6 +210,9 @@ class VSettings : public VSettingsNode
         
     };
 
+/**
+A VSettingsTag node is one that has optional attribute/value pairs and optional child nodes.
+*/
 class VSettingsTag : public VSettingsNode
     {
     public:
@@ -241,6 +259,12 @@ class VSettingsTag : public VSettingsNode
     
     };
 
+/**
+A VSettingsAttribute is a node that has a name and value. Because all data originates as text
+from XML, you can attempt to get the value as the desired type, and if it can be converted it
+will be. An exception is thrown if the type is incompatible, for example if you getIntValue()
+for the string "this is not an integer".
+*/
 class VSettingsAttribute : public VSettingsNode
     {
     public:
@@ -273,6 +297,13 @@ class VSettingsAttribute : public VSettingsNode
         VString mValue;
     };
 
+/**
+VSettingsCDATA is a node that represents text inside the tag hierarchy; what it really means
+is an attribute value whose name (as in name/value) is the tag name of its parent. For example,
+if you have "<tag1><tag2>hello</tag2></tag1>" then tag2 is represented by a VSettingsTag that
+has a VSettingsCDATA child whose CDATA value is "hello". It could retrieved from the root node
+via ->getString("tag1/tag2");
+*/
 class VSettingsCDATA : public VSettingsNode
     {
     public:
@@ -301,6 +332,9 @@ class VSettingsCDATA : public VSettingsNode
         VString mCDATA;
     };
 
+/**
+This is the class that contains the logic for parsing XML text into VSettings objects.
+*/
 class VSettingsXMLParser
     {
     public:

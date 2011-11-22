@@ -84,6 +84,11 @@ const VDuration& VDuration::POSITIVE_INFINITY()
     return kPOSITIVE_INFINITY;
     }
 
+VDuration::VDuration(const VInstant& sinceWhen) :
+mDurationMilliseconds(VDuration(VInstant() - sinceWhen).getDurationMilliseconds())
+    {
+    }
+
 // static
 VDuration VDuration::createFromDurationString(const VString& s)
     {
@@ -327,66 +332,6 @@ void VDuration::setDurationString(const VString& s)
     }
 
 // static
-bool VDuration::_complexGT(const VDuration& d1, const VDuration& d2)
-    {
-    if (VDuration::canCompareValues(d1, d2))
-        return d1.mDurationMilliseconds > d2.mDurationMilliseconds;
-
-    if (d1 == VDuration::POSITIVE_INFINITY())
-        return true;
-
-    if ((d2 == VDuration::NEGATIVE_INFINITY()) && (d1 != VDuration::UNSPECIFIED()))
-        return true;
-
-    return false;
-    }
-
-// static
-bool VDuration::_complexGTE(const VDuration& d1, const VDuration& d2)
-    {
-    if (VDuration::canCompareValues(d1, d2))
-        return d1.mDurationMilliseconds >= d2.mDurationMilliseconds;
-
-    if (d1 == VDuration::POSITIVE_INFINITY())
-        return d2 != VDuration::POSITIVE_INFINITY();
-
-    if ((d2 == VDuration::NEGATIVE_INFINITY()) && (d1 != VDuration::UNSPECIFIED()))
-        return true;
-
-    return false;
-    }
-
-// static
-bool VDuration::_complexLT(const VDuration& d1, const VDuration& d2)
-    {
-    if (VDuration::canCompareValues(d1, d2))
-        return d1.mDurationMilliseconds < d2.mDurationMilliseconds;
-
-    if (d1 == VDuration::NEGATIVE_INFINITY())
-        return true;
-
-    if ((d2 == VDuration::POSITIVE_INFINITY()) && (d1 != VDuration::UNSPECIFIED()))
-        return true;
-
-    return false;
-    }
-
-// static
-bool VDuration::_complexLTE(const VDuration& d1, const VDuration& d2)
-    {
-    if (VDuration::canCompareValues(d1, d2))
-        return d1.mDurationMilliseconds <= d2.mDurationMilliseconds;
-
-    if (d1 == VDuration::NEGATIVE_INFINITY())
-        return d2 != VDuration::NEGATIVE_INFINITY();
-
-    if ((d2 == VDuration::POSITIVE_INFINITY()) && (d1 != VDuration::UNSPECIFIED()))
-        return true;
-
-    return false;
-    }
-
-// static
 VDuration VDuration::_complexAdd(const VDuration& d1, const VDuration& d2)
     {
     // Re-use in-place addition code.
@@ -416,7 +361,7 @@ VDuration VDuration::_complexMultiply(const VDuration& d, Vs64 multiplier)
 // static
 VDuration VDuration::_complexMin(const VDuration& d1, const VDuration& d2)
     {
-    if (VDuration::canCompareValues(d1, d2))
+    if (VDuration::areValuesSpecific(d1, d2))
         return (d1 < d2) ? d1 : d2;
 
     // If either value is UNSPECIFIED, min is UNSPECIFIED
@@ -437,7 +382,7 @@ VDuration VDuration::_complexMin(const VDuration& d1, const VDuration& d2)
 // static
 VDuration VDuration::_complexMax(const VDuration& d1, const VDuration& d2)
     {
-    if (VDuration::canCompareValues(d1, d2))
+    if (VDuration::areValuesSpecific(d1, d2))
         return (d1 > d2) ? d1 : d2;
 
     // If either value is UNSPECIFIED, min is UNSPECIFIED
@@ -667,7 +612,7 @@ void VInstant::setUTCString(const VString& s)
         VInstantStruct when;
         when.mDayOfWeek = 0;
 
-        ::sscanf(s, FORMAT_UTC_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
+        (void) ::sscanf(s, FORMAT_UTC_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
 
         mValue = VInstant::_platform_offsetFromUTCStruct(when);
         }
@@ -711,7 +656,7 @@ void VInstant::setLocalString(const VString& s)
         VInstantStruct when;
         when.mDayOfWeek = 0;
 
-        ::sscanf(s, FORMAT_LOCAL_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
+        (void) ::sscanf(s, FORMAT_LOCAL_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
 
         mValue = VInstant::_platform_offsetFromLocalStruct(when);
         }
@@ -899,7 +844,7 @@ void VInstant::threadsafe_localtime(const time_t epochOffset, struct tm* resultS
 #endif
 
     if (result == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("VInstant::threadsafe_localtime: input time value %d is out of range.", (int) offset));
+        throw VStackTraceException(VSTRING_FORMAT("VInstant::threadsafe_localtime: input time value " VSTRING_FORMATTER_INT " is out of range.", (int) offset));
 
 // Only copy result if we're NOT using reentrant version that already wrote result.
 #ifndef V_HAVE_REENTRANT_TIME
@@ -919,7 +864,7 @@ void VInstant::threadsafe_gmtime(const time_t epochOffset, struct tm* resultStor
 #endif
 
     if (result == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("VInstant::threadsafe_gmtime: input time value %d is out of range.", (int) epochOffset));
+        throw VStackTraceException(VSTRING_FORMAT("VInstant::threadsafe_gmtime: input time value " VSTRING_FORMATTER_INT " is out of range.", (int) epochOffset));
 
 // Only copy result if we're NOT using reentrant version that already wrote result.
 #ifndef V_HAVE_REENTRANT_TIME
@@ -1311,7 +1256,7 @@ void VTimeOfDay::setHour(int hour)
     ASSERT_INVARIANT();
 
     if ((hour < 0) || (hour > 23))
-        throw VRangeException(VSTRING_FORMAT("VTimeOfDay::set/setHour: %d is an invalid value.", hour));
+        throw VRangeException(VSTRING_FORMAT("VTimeOfDay::set/setHour: " VSTRING_FORMATTER_INT " is an invalid value.", hour));
 
     mHour = hour;
 
@@ -1323,7 +1268,7 @@ void VTimeOfDay::setMinute(int minute)
     ASSERT_INVARIANT();
 
     if ((minute < 0) || (minute > 59))
-        throw VRangeException(VSTRING_FORMAT("VTimeOfDay::set/setMinute: %d is an invalid value.", minute));
+        throw VRangeException(VSTRING_FORMAT("VTimeOfDay::set/setMinute: " VSTRING_FORMATTER_INT " is an invalid value.", minute));
 
     mMinute = minute;
 
@@ -1335,7 +1280,7 @@ void VTimeOfDay::setSecond(int second)
     ASSERT_INVARIANT();
 
     if ((second < 0) || (second > 59))
-        throw VRangeException(VSTRING_FORMAT("VTimeOfDay::set/setSecond: %d is an invalid value.", second));
+        throw VRangeException(VSTRING_FORMAT("VTimeOfDay::set/setSecond: " VSTRING_FORMATTER_INT " is an invalid value.", second));
 
     mSecond = second;
 
@@ -1347,7 +1292,7 @@ void VTimeOfDay::setMillisecond(int millisecond)
     ASSERT_INVARIANT();
 
     if ((millisecond < 0) || (millisecond > 999))
-        throw VRangeException(VSTRING_FORMAT("VTimeOfDay::set/setMillisecond: %d is an invalid value.", millisecond));
+        throw VRangeException(VSTRING_FORMAT("VTimeOfDay::set/setMillisecond: " VSTRING_FORMATTER_INT " is an invalid value.", millisecond));
 
     mMillisecond = millisecond;
 

@@ -36,8 +36,8 @@ class VLoggerUnit : public VUnit
 
     private:
     
+        void _testNewInfrastructure();
         void _testMacros();
-        void _testLogOutput();
         void _testStringLoggers();
         void _testMaxActiveLogLevel();
         void _testLoggerPathNames();

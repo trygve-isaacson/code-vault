@@ -182,10 +182,11 @@ void VException::_recordStackTrace()
         mErrorMessage = NULL;
         }
 
-    VStringLogger logger(VLogger::kTrace, VString::EMPTY(), VString::EMPTY());
-    VThread::logStackCrawl("Stack:", &logger, false);
+    // Use a VStringLogger so we can log directly to it and then capture its lines and add them to the exception.
+    boost::shared_ptr<VStringLogger> logger(new VStringLogger(VString::EMPTY(), VLoggerLevel::TRACE));
+    VThread::logStackCrawl("Stack:", logger, false);
     mErrorString += VString::NATIVE_LINE_ENDING();
-    mErrorString += logger.getLines();
+    mErrorString += logger->getLines();
 #endif
     }
 
@@ -248,7 +249,7 @@ static void _win32SEHandler(unsigned code, EXCEPTION_POINTERS* ep)
         }
     else
         {
-        VStringLogger logger(VLogger::kTrace, VString::EMPTY(), VString::EMPTY());
+        VStringLogger logger(VLoggerLevel::TRACE, VString::EMPTY(), VString::EMPTY());
         VThread::logStackCrawl(_getExceptionLabel(*(ep->ExceptionRecord)), &logger, false);
         throw VException((int) code, logger.getLines());
         }
