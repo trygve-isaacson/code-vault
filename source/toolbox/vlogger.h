@@ -173,8 +173,8 @@ class VBentoNode;
 #define VLOGGER_LEVEL_FILELINE(level, message, file, line) do { if (!VLogger::isDefaultLogLevelActive(level)) break; VLogger::getDefaultLogger()->log(level, file, line, message); } while (false)
 #define VLOGGER_LINE(level, message) VLOGGER_LEVEL_FILELINE(level, message, __FILE__, __LINE__)
 #define VLOGGER_FATAL_AND_THROW(message) do { VLogger::getDefaultLogger()->log(VLoggerLevel::FATAL, __FILE__, __LINE__, message); throw VStackTraceException(message); } while (false)
-#define VLOGGER_FATAL(message) VLOGGER_LEVEL(VLoggerLevel::FATAL, message)
-#define VLOGGER_ERROR(message) VLOGGER_LEVEL(VLoggerLevel::ERROR, message)
+#define VLOGGER_FATAL(message) VLOGGER_LEVEL_FILELINE(VLoggerLevel::FATAL, message, __FILE__, __LINE__)
+#define VLOGGER_ERROR(message) VLOGGER_LEVEL_FILELINE(VLoggerLevel::ERROR, message, __FILE__, __LINE__)
 #define VLOGGER_WARN(message) VLOGGER_LEVEL(VLoggerLevel::WARN, message)
 #define VLOGGER_INFO(message) VLOGGER_LEVEL(VLoggerLevel::INFO, message)
 #define VLOGGER_DEBUG(message) VLOGGER_LEVEL(VLoggerLevel::DEBUG, message)
@@ -186,8 +186,8 @@ class VBentoNode;
 #define VLOGGER_NAMED_LEVEL(loggername, level, message) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != NULL) nl->log(level, NULL, 0, message); } while (false)
 #define VLOGGER_NAMED_LEVEL_FILELINE(loggername, level, message, file, line) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != NULL) nl->log(level, file, line, message); } while (false)
 #define VLOGGER_NAMED_LINE(loggername, level, message) VLOGGER_NAMED_LEVEL_FILELINE(loggername, level, message, __FILE__, __LINE__)
-#define VLOGGER_NAMED_FATAL(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLoggerLevel::FATAL, message)
-#define VLOGGER_NAMED_ERROR(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLoggerLevel::ERROR, message)
+#define VLOGGER_NAMED_FATAL(loggername, message) VLOGGER_NAMED_LEVEL_FILELINE(loggername, VLoggerLevel::FATAL, message, __FILE__, __LINE__)
+#define VLOGGER_NAMED_ERROR(loggername, message) VLOGGER_NAMED_LEVEL_FILELINE(loggername, VLoggerLevel::ERROR, message, __FILE__, __LINE__)
 #define VLOGGER_NAMED_WARN(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLoggerLevel::WARN, message)
 #define VLOGGER_NAMED_INFO(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLoggerLevel::INFO, message)
 #define VLOGGER_NAMED_DEBUG(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLoggerLevel::DEBUG, message)
@@ -195,7 +195,8 @@ class VBentoNode;
 #define VLOGGER_NAMED_HEXDUMP(loggername, level, message, buffer, length) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != NULL) nl->logHexDump(level, message, buffer, length); } while (false)
 #define VLOGGER_NAMED_WOULD_LOG(loggername, level) (VLogger::isLogLevelActive(level) && (VLogger::findNamedLoggerForLevel(loggername, level) != NULL))
 
-#define VLOGGER_APPENDER_EMIT(appender, level, message) do { (appender).emit(level, __FILE__, __LINE__, true, message, false, VString::EMPTY()); } while (false)
+#define VLOGGER_APPENDER_EMIT(appender, level, message) do { (appender).emit(level, (level <= VLoggerLevel::ERROR) ? __FILE__ : NULL, (level <= VLoggerLevel::ERROR) ? __LINE__ : 0, true, message, false, VString::EMPTY()); } while (false)
+#define VLOGGER_APPENDER_EMIT_FILELINE(appender, level, message, file, line) do { (appender).emit(level, file, line, true, message, false, VString::EMPTY()); } while (false)
 
 /**
 VLogAppender is an abstract base class that defines the API for writing output to a destination.
