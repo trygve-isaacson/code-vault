@@ -3,10 +3,6 @@ CODE VAULT RELEASE NOTES
 ---------- VERSION 3.3 ----------
 Trygve Isaacson, November 2011
 
-* Doxygen
-- Updated doc comments to add missing items and better formatted output.
-- Generated Doxygen HTML output.
-
 * VLogger
 Restructured logging infrastructure:
 - Macro APIs for logging are unchanged.
@@ -27,6 +23,10 @@ Restructured logging infrastructure:
 Removed obsolete/deprecated APIs and features:
 - As of 3.2, VThread keeps track of threads; removed thread counter statistics.
 - Removed unused VThreadActionListener interface used for keeping statistics.
+
+* Doxygen
+- Updated doc comments to add missing items and better formatted output.
+- Generated Doxygen HTML output.
 
 * General
 - Corrected VString::split() API to be const.
