@@ -5,7 +5,7 @@ Trygve Isaacson, November 2011
 
 * VLogger
 Restructured logging infrastructure:
-- Macro APIs for logging are unchanged.
+- Existing macro APIs for logging work as before.
 - VLogger is now mostly a helper class through which most logger management is performed.
 - VNamedLogger defines a log target with name and level. Existing macro APIs log to these.
 - VLogAppender-derived classes define concrete output implementation (file, console, etc.).
