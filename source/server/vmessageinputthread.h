@@ -26,8 +26,7 @@ of VMessage objects (finding and calling a VMessageHandler) from its
 i/o stream. You can also write to its i/o stream, but if you are
 doing asynchronous i/o you'll instead post messages to a VMessageOutputThread.
 */
-class VMessageInputThread : public VSocketThread
-    {
+class VMessageInputThread : public VSocketThread {
     public:
 
         /**
@@ -60,7 +59,7 @@ class VMessageInputThread : public VSocketThread
         @param  session the session on whose behalf we are running
         */
         void attachSession(VClientSession* session);
-        
+
         /**
         Sets or clears the mHasOutputThread that controls whether this input thread must
         wait before returning from run(). This is used when separate in/out threads are
@@ -122,15 +121,14 @@ class VMessageInputThread : public VSocketThread
 
         VMessageInputThread(const VMessageInputThread&); // not copyable
         VMessageInputThread& operator=(const VMessageInputThread&); // not assignable
-    };
+};
 
 /**
 VBentoMessageInputThread is a VMessageInputThread that can automatically
 handle no-such-handler or uncaught message dispatch exceptions, and in
 response send a Bento-based error reply back to the sender.
 */
-class VBentoMessageInputThread : public VMessageInputThread
-    {
+class VBentoMessageInputThread : public VMessageInputThread {
     public:
 
         VBentoMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory);
@@ -141,6 +139,6 @@ class VBentoMessageInputThread : public VMessageInputThread
         virtual void _handleNoMessageHandler(VMessage* message);
         virtual void _callProcessMessage(VMessageHandler* handler);
 
-    };
+};
 
 #endif /* vmessageinputthread_h */

@@ -26,8 +26,7 @@ VMessageOutputThread understands how to maintain and monitor a message
 output queue, waking up when a new message has been posted to the queue,
 and writing it to the output stream.
 */
-class VMessageOutputThread : public VSocketThread
-    {
+class VMessageOutputThread : public VSocketThread {
     public:
 
         /**
@@ -51,7 +50,7 @@ class VMessageOutputThread : public VSocketThread
         @param maxQueueGracePeriod how long the maxQueueSize and maxQueueDataSize limits may be exceeded
                             before the socket is closed upon next posted message
         */
-        VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSession* session, VMessageInputThread* dependentInputThread, int maxQueueSize=0, Vs64 maxQueueDataSize=0, const VDuration& maxQueueGracePeriod=VDuration::ZERO());
+        VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSession* session, VMessageInputThread* dependentInputThread, int maxQueueSize = 0, Vs64 maxQueueDataSize = 0, const VDuration& maxQueueGracePeriod = VDuration::ZERO());
         /**
         Virtual destructor.
         */
@@ -88,7 +87,7 @@ class VMessageOutputThread : public VSocketThread
         @return true if the message was successfully posted; false means it was not, so
                 caller needs to free the message
         */
-        bool postOutputMessage(VMessage* message, bool respectQueueLimits=true);
+        bool postOutputMessage(VMessage* message, bool respectQueueLimits = true);
 
         /**
         Releases/destroys all queued messages. This is called when
@@ -135,6 +134,6 @@ class VMessageOutputThread : public VSocketThread
         // These are the transient flags we use to enforce and monitor the queue limits.
         bool        mWasOverLimit;      ///< True if the last postOutputMessage() call left us over the limit.
         VInstant    mWhenWentOverLimit; ///< When did we last transition from under-limit to over-limit.
-    };
+};
 
 #endif /* vmessageoutputthread_h */

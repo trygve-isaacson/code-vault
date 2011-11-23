@@ -35,19 +35,18 @@ a VIOStream-derived object for i/o, and construct it with the VWriteBufferedStre
 @see    VDirectIOFileStream
 @see    VSocketStream
 */
-class VWriteBufferedStream : public VMemoryStream
-    {
+class VWriteBufferedStream : public VMemoryStream {
     public:
-    
+
         /**
         Constructor.
         */
-        VWriteBufferedStream(VStream& rawStream, Vs64 initialBufferSize=VMemoryStream::kDefaultBufferSize, Vs64 resizeIncrement=VMemoryStream::kIncrement2x);
+        VWriteBufferedStream(VStream& rawStream, Vs64 initialBufferSize = VMemoryStream::kDefaultBufferSize, Vs64 resizeIncrement = VMemoryStream::kIncrement2x);
         /**
         Destructor.
         */
         virtual ~VWriteBufferedStream() {}
-        
+
         /**
         Overrides VMemoryStream::read; throws a VException.
         @param    targetBuffer    the buffer to read into
@@ -55,31 +54,31 @@ class VWriteBufferedStream : public VMemoryStream
         @return    the actual number of bytes that could be read
         */
         virtual Vs64 read(Vu8* targetBuffer, Vs64 numBytesToRead);
-        
+
         /**
         Overrides VMemoryStream::flush in order to copy the buffered data
         to the raw stream.
         */
         virtual void flush();
-        
+
         /**
         Overrides VMemoryStream::skip; throws a VException.
         @param    numBytesToSkip    the number of bytes to skip
         */
         virtual bool skip(Vs64 numBytesToSkip);
-        
+
         // FIXME: need to define the semantics of tell() and seek() for
         // this subclass. For the moment, we'll do like seek/skip and
         // call through to the raw stream, though I'm not sure it should
         // really be like that.
-        
+
     private:
 
         // Prevent copy construction and assignment since there is no provision for sharing the raw stream.
         VWriteBufferedStream(const VWriteBufferedStream& other);
         VWriteBufferedStream& operator=(const VWriteBufferedStream& other);
-        
+
         VStream& mRawStream; ///< The raw stream we eventually flush to.
-    };
+};
 
 #endif /* vwritebufferedstream_h */

@@ -24,13 +24,12 @@ This abstract base class defines the interface that must be provided by a concre
 server class in order to facilitate interaction with the classes that manage
 listeners, i/o threads, and messaging.
 */
-class VServer
-    {
+class VServer {
     public:
-    
+
         VServer();
         virtual ~VServer() {}
-        
+
         /**
         Notifies the server that it should keep track of the specified
         session, for example it will need to post a message to it and
@@ -74,15 +73,15 @@ class VServer
         bool hasUncollectedTerminatedSessions() const;
 
     private:
-    
+
         /**
         Deletes any of the terminated sessions that no longer have any references
         to them.
         */
         void _garbageCollectTerminatedSessions();
-    
+
         VClientSessionList mTerminatedSessions; ///< Sessions to be garbage collected (deleted once no longer referenced).
         mutable VMutex mTerminatedSessionsMutex;///< Mutex to protect operations on mTerminatedSessions
-    };
+};
 
 #endif /* vserver_h */

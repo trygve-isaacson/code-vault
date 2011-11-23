@@ -24,10 +24,9 @@ override the createThread method. You will typically pass such an
 object to a VListenerThread so that it can create your kind of
 socket thread to manage an incoming connection.
 */
-class VSocketThreadFactory
-    {
+class VSocketThreadFactory {
     public:
-    
+
         VSocketThreadFactory() : mManager(NULL) {}
         /**
         Constructs the factory with the optional management interface that will
@@ -38,14 +37,14 @@ class VSocketThreadFactory
         Destructor, declared for completeness.
         */
         virtual ~VSocketThreadFactory() {}
-        
+
         /**
         Sets the management interface to receive notifications. May be NULL if
         no notifications are to be given.
         @param  manager the manager to notify, or NULL
         */
         void setManager(VManagementInterface* manager) { mManager = manager; }
-        
+
         /**
         Creates a VSocketThread object to communicate on the specified socket.
         @param    socket        the socket to initialize the VSocketThread with
@@ -55,13 +54,13 @@ class VSocketThreadFactory
         virtual VSocketThread* createThread(VSocket* socket, VListenerThread* ownerThread) = 0;
 
     protected:
-    
+
         VManagementInterface* mManager; ///< The management interface supplied to each thread.
 
     private:
 
         VSocketThreadFactory(const VSocketThreadFactory&); // not copyable
         VSocketThreadFactory& operator=(const VSocketThreadFactory&); // not assignable
-    };
+};
 
 #endif /* vsocketthreadfactory_h */

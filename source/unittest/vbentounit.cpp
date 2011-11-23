@@ -12,9 +12,8 @@ http://www.bombaydigital.com/
 #include "vchar.h"
 
 VBentoUnit::VBentoUnit(bool logOnSuccess, bool throwOnError) :
-VUnit("VBentoUnit", logOnSuccess, throwOnError)
-    {
-    }
+    VUnit("VBentoUnit", logOnSuccess, throwOnError) {
+}
 
 #define ATTRIBUTE_NAME_S8 "signed-8bit-attribute"
 #define ATTRIBUTE_NAME_U8 "unsigned-8bit-attribute"
@@ -129,8 +128,7 @@ static VInstant gInstantNoon2005June1UTC;
 #define NODE_NAME_ASSIGNED_ARRAYS "assigned_arrays"
 #define NODE_NAME_APPENDED_ARRAYS "appended_arrays"
 
-void VBentoUnit::run()
-    {
+void VBentoUnit::run() {
     this->_verifyDynamicLengths();
 
     // We'll just populate a Bento container with every type, and then
@@ -158,7 +156,7 @@ void VBentoUnit::run()
     rootFromText.readFromBentoTextString(rootText);
 
     this->_verifyContents(rootFromText, "text");
-    
+
     // Test comparison operators, which should compare the node name.
     // This allows a list of named nodes to be sorted by STL with no extra work.
     VBentoNode a("a");
@@ -169,7 +167,7 @@ void VBentoUnit::run()
     this->test(b >= a, "b >= a");
     this->test(a >= a, "a >= a");
     this->test(b <= b, "b <= b");
-    
+
     // Test assignment operator behavior. Verify that base class and subclass data are assigned.
     VBentoString source("source.name", "source.value", VString::EMPTY());
     VBentoString s2("s2.name", "s2.value", VString::EMPTY());
@@ -184,17 +182,16 @@ void VBentoUnit::run()
     VUNIT_ASSERT_EQUAL(s3.getName(), "source.name");
     VUNIT_ASSERT_EQUAL(s3.getValue(), source.getValue());
     VUNIT_ASSERT_EQUAL(s3.getValue(), "source.value");
-    }
+}
 
-void VBentoUnit::_verifyDynamicLengths()
-    {
+void VBentoUnit::_verifyDynamicLengths() {
     Vs64 aOneByteLength = CONST_S64(251);
     VUNIT_ASSERT_EQUAL(CONST_S64(1), VBentoNode::_getLengthOfLength(aOneByteLength));
 
     Vs64 biggestOneByteLength =  CONST_S64(252);
     VUNIT_ASSERT_EQUAL(CONST_S64(1), VBentoNode::_getLengthOfLength(biggestOneByteLength));
 
-    for (Vs64 aThreeByteLength = biggestOneByteLength+1; aThreeByteLength < biggestOneByteLength+10; ++aThreeByteLength) {
+    for (Vs64 aThreeByteLength = biggestOneByteLength + 1; aThreeByteLength < biggestOneByteLength + 10; ++aThreeByteLength) {
         VUNIT_ASSERT_EQUAL_LABELED(CONST_S64(3), VBentoNode::_getLengthOfLength(aThreeByteLength), VSTRING_S64(aThreeByteLength));
     }
 
@@ -211,24 +208,23 @@ void VBentoUnit::_verifyDynamicLengths()
     for (Vs64 aNineByteLength = biggestFiveByteLength + 1; aNineByteLength < biggestFiveByteLength + 10; ++aNineByteLength) {
         VUNIT_ASSERT_EQUAL_LABELED(CONST_S64(9), VBentoNode::_getLengthOfLength(aNineByteLength), VSTRING_S64(aNineByteLength));
     }
-    }
+}
 
-void VBentoUnit::_buildTestData(VBentoNode& root)
-    {
+void VBentoUnit::_buildTestData(VBentoNode& root) {
     gTestInstantValue.setDateAndTime(kTestDateAndTimeValue, VInstant::UTC_TIME_ZONE_ID());
-    gTestPolygonValue.add(VPoint(1.1,2.2));
-    gTestPolygonValue.add(VPoint(3.3,-4.4));
-    gTestPolygonValue.add(VPoint(-5.5,-6.6));
-    gTestPolygonValue.add(VPoint(-7.7,8.8));
-    gTestIPolygonValue.add(VIPoint(9,10));
-    gTestIPolygonValue.add(VIPoint(11,-12));
-    gTestIPolygonValue.add(VIPoint(-13,-14));
-    gTestIPolygonValue.add(VIPoint(-15,16));
+    gTestPolygonValue.add(VPoint(1.1, 2.2));
+    gTestPolygonValue.add(VPoint(3.3, -4.4));
+    gTestPolygonValue.add(VPoint(-5.5, -6.6));
+    gTestPolygonValue.add(VPoint(-7.7, 8.8));
+    gTestIPolygonValue.add(VIPoint(9, 10));
+    gTestIPolygonValue.add(VIPoint(11, -12));
+    gTestIPolygonValue.add(VIPoint(-13, -14));
+    gTestIPolygonValue.add(VIPoint(-15, 16));
     VBinaryIOStream binary1(gTestBinaryData1);
     binary1.writeString(ATTRIBUTE_VALUE_BINARY_1_TEXT);
     VBinaryIOStream binary2(gTestBinaryData2);
     binary2.writeString(ATTRIBUTE_VALUE_BINARY_2_TEXT);
-    const VDateAndTime kDateAndTimeNoon2005June1(2005,6,1,12,0,0,0);
+    const VDateAndTime kDateAndTimeNoon2005June1(2005, 6, 1, 12, 0, 0, 0);
     gInstantNoon2005June1UTC.setDateAndTime(kDateAndTimeNoon2005June1, VInstant::UTC_TIME_ZONE_ID());
 
     root.addS8(ATTRIBUTE_NAME_S8, ATTRIBUTE_VALUE_S8);
@@ -273,11 +269,10 @@ void VBentoUnit::_buildTestData(VBentoNode& root)
 
     // Construct an array of integers at root/intarray/value[]
     VBentoNode* intarray = root.addNewChildNode(NODE_NAME_INT_ARRAY); // exercise the addNewChildNode method of adding
-    for (int i = 0; i < 10; ++i)
-        {
+    for (int i = 0; i < 10; ++i) {
         VBentoNode* arrayElement = intarray->addNewChildNode(NODE_NAME_INT_ARRAY_ELEMENT);
         arrayElement->addS32(ATTRIBUTE_NAME_ARRAY_INT, i);
-        }
+    }
 
     /*
     TESTS FOR ARRAY ATTRIBUTE TYPES.
@@ -287,7 +282,7 @@ void VBentoUnit::_buildTestData(VBentoNode& root)
     VBentoNode* appendedArrays = root.addNewChildNode(NODE_NAME_APPENDED_ARRAYS);
 
     // VBentoS8Array data.
-        {
+    {
         Vs8Array vectorOfS8;
         vectorOfS8.push_back(0);
         vectorOfS8.push_back(1);
@@ -301,10 +296,10 @@ void VBentoUnit::_buildTestData(VBentoNode& root)
 
         s8Array = appendedArrays->addS8Array(ATTRIBUTE_NAME_S8_ARRAY, vectorOfS8);
         s8Array->appendValues(vectorOfS8);
-        }
+    }
 
     // VBentoS16Array data.
-        {
+    {
         Vs16Array vectorOfS16;
         vectorOfS16.push_back(10);
         vectorOfS16.push_back(20);
@@ -318,10 +313,10 @@ void VBentoUnit::_buildTestData(VBentoNode& root)
 
         s16Array = appendedArrays->addS16Array(ATTRIBUTE_NAME_S16_ARRAY, vectorOfS16);
         s16Array->appendValues(vectorOfS16);
-        }
+    }
 
     // VBentoS32Array data.
-        {
+    {
         Vs32Array vectorOfS32;
         vectorOfS32.push_back(100);
         vectorOfS32.push_back(200);
@@ -335,10 +330,10 @@ void VBentoUnit::_buildTestData(VBentoNode& root)
 
         s32Array = appendedArrays->addS32Array(ATTRIBUTE_NAME_S32_ARRAY, vectorOfS32);
         s32Array->appendValues(vectorOfS32);
-        }
+    }
 
     // VBentoS64Array data.
-        {
+    {
         Vs64Array vectorOfS64;
         vectorOfS64.push_back(CONST_S64(1000));
         vectorOfS64.push_back(CONST_S64(2000));
@@ -352,10 +347,10 @@ void VBentoUnit::_buildTestData(VBentoNode& root)
 
         s64Array = appendedArrays->addS64Array(ATTRIBUTE_NAME_S64_ARRAY, vectorOfS64);
         s64Array->appendValues(vectorOfS64);
-        }
+    }
 
     // VBentoStringArray data.
-        {
+    {
         VStringVector vectorOfString;
         vectorOfString.push_back(ATTRIBUTE_VALUE_STRING_ARRAY_TEXT0);
         vectorOfString.push_back(ATTRIBUTE_VALUE_STRING_ARRAY_TEXT1);
@@ -369,10 +364,10 @@ void VBentoUnit::_buildTestData(VBentoNode& root)
 
         stringArray = appendedArrays->addStringArray(ATTRIBUTE_NAME_STRING_ARRAY, vectorOfString);
         stringArray->appendValues(vectorOfString);
-        }
+    }
 
     // VBentoBoolArray data.
-        {
+    {
         VBoolArray vectorOfBool;
         vectorOfBool.push_back(true);
         vectorOfBool.push_back(false);
@@ -386,10 +381,10 @@ void VBentoUnit::_buildTestData(VBentoNode& root)
 
         boolArray = appendedArrays->addBoolArray(ATTRIBUTE_NAME_BOOL_ARRAY, vectorOfBool);
         boolArray->appendValues(vectorOfBool);
-        }
+    }
 
     // VBentoDoubleArray data.
-        {
+    {
         VDoubleArray vectorOfDouble;
         vectorOfDouble.push_back(123.456);
         vectorOfDouble.push_back(456.789);
@@ -403,10 +398,10 @@ void VBentoUnit::_buildTestData(VBentoNode& root)
 
         doubleArray = appendedArrays->addDoubleArray(ATTRIBUTE_NAME_DOUBLE_ARRAY, vectorOfDouble);
         doubleArray->appendValues(vectorOfDouble);
-        }
+    }
 
     // VBentoDurationArray data.
-        {
+    {
         VDurationVector vectorOfDuration;
         vectorOfDuration.push_back(VDuration::MILLISECOND() * 55);
         vectorOfDuration.push_back(VDuration::SECOND() * 66);
@@ -420,10 +415,10 @@ void VBentoUnit::_buildTestData(VBentoNode& root)
 
         durationArray = appendedArrays->addDurationArray(ATTRIBUTE_NAME_DURATION_ARRAY, vectorOfDuration);
         durationArray->appendValues(vectorOfDuration);
-        }
+    }
 
     // VBentoInstantArray data.
-        {
+    {
         VInstantVector vectorOfInstant;
         vectorOfInstant.push_back(VInstant::NEVER_OCCURRED());
         vectorOfInstant.push_back(VInstant::INFINITE_PAST());
@@ -437,15 +432,13 @@ void VBentoUnit::_buildTestData(VBentoNode& root)
 
         instantArray = appendedArrays->addInstantArray(ATTRIBUTE_NAME_INSTANT_ARRAY, vectorOfInstant);
         instantArray->appendValues(vectorOfInstant);
-        }
     }
+}
 
-void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPrefix)
-    {
+void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPrefix) {
     // We'll call the throwing getters. We test for the correct result,
     // but also know that if the value is not found, it'll throw.
-    try
-        {
+    try {
         VUNIT_ASSERT_EQUAL_LABELED(node.getName(), NODE_NAME_ROOT, labelPrefix);
         VUNIT_ASSERT_EQUAL_LABELED(node.getS8(ATTRIBUTE_NAME_S8), ATTRIBUTE_VALUE_S8, labelPrefix);
         VUNIT_ASSERT_EQUAL_LABELED(node.getU8(ATTRIBUTE_NAME_U8), ATTRIBUTE_VALUE_U8, labelPrefix);
@@ -490,7 +483,7 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         this->test(node.getIPolygon(ATTRIBUTE_NAME_IPOLYGON) == ATTRIBUTE_VALUE_IPOLYGON, VSTRING_FORMAT("%s ipolygon", labelPrefix.chars()));
         this->test(node.getColor(ATTRIBUTE_NAME_COLOR) == ATTRIBUTE_VALUE_COLOR, VSTRING_FORMAT("%s color", labelPrefix.chars()));
         VUNIT_ASSERT_EQUAL_LABELED(node.getInt(ATTRIBUTE_NAME_SETTER_INT), ATTRIBUTE_VALUE_SETTER_INT, labelPrefix);
-        
+
         // Test case-insensitivity on node and attribute names.
         VString caseInsensitiveCheckName(ATTRIBUTE_NAME_S8);
         caseInsensitiveCheckName.toUpperCase();
@@ -504,7 +497,7 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         VUNIT_ASSERT_TRUE_LABELED(node.findNode(caseInsensitiveCheckName) != NULL, labelPrefix);
 
         this->test(node.getParentNode() == NULL, VSTRING_FORMAT("%s parent of root is null", labelPrefix.chars()));
-        
+
         VReadOnlyMemoryStream binary1Reader = node.getBinary(ATTRIBUTE_NAME_BINARY_1);
         this->test(binary1Reader == gTestBinaryData1, VSTRING_FORMAT("%s binary 1 data equality", labelPrefix.chars()));
         // We built gTestBinaryData1 using copy semantics, so the reader's buffer must be a different one.
@@ -528,191 +521,189 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         this->test(child != NULL, VSTRING_FORMAT("%s child", labelPrefix.chars()));
         if (child != NULL)    // in case we aren't aborting on earlier failures
             this->test(child->getS32(ATTRIBUTE_NAME_CHILD_INT) == ATTRIBUTE_VALUE_CHILD_INT, VSTRING_FORMAT("%s ch32", labelPrefix.chars()));
-            
+
         this->test(child->getParentNode() == &node, VSTRING_FORMAT("%s child has correct parent", labelPrefix.chars()));
 
         const VBentoNode* intarray = node.findNode(NODE_NAME_INT_ARRAY);
         this->test(intarray != NULL, VSTRING_FORMAT("%s intarray", labelPrefix.chars()));
-        if (intarray != NULL)
-            {
+        if (intarray != NULL) {
             this->test(intarray->getNodes().size() == 10, VSTRING_FORMAT("%s intarray length", labelPrefix.chars()));
             int arrayIndex = 0;
-            for (VBentoNodePtrVector::const_iterator i = intarray->getNodes().begin(); i != intarray->getNodes().end(); ++i)
-                {
+            for (VBentoNodePtrVector::const_iterator i = intarray->getNodes().begin(); i != intarray->getNodes().end(); ++i) {
                 this->test((*i)->getName() == NODE_NAME_INT_ARRAY_ELEMENT, VSTRING_FORMAT("%s intarray element name", labelPrefix.chars()));
                 this->test((*i)->getS32(ATTRIBUTE_NAME_ARRAY_INT) == arrayIndex, VSTRING_FORMAT("%s intarray element %d", labelPrefix.chars(), arrayIndex));
                 ++arrayIndex;
-                }
             }
-        
+        }
+
         const VBentoNode* initializedArrays = node.findNode(NODE_NAME_INITIALIZED_ARRAYS);
         const VBentoNode* assignedArrays = node.findNode(NODE_NAME_ASSIGNED_ARRAYS);
         const VBentoNode* appendedArrays = node.findNode(NODE_NAME_APPENDED_ARRAYS);
-        
+
         // VBentoS8Array tests.
-            {
+        {
             const Vs8Array& s8Array = initializedArrays->getS8Array(ATTRIBUTE_NAME_S8_ARRAY);
             this->test(s8Array.size() == 3, VSTRING_FORMAT("%s initialized s8Array size", labelPrefix.chars()));
             this->test(s8Array[0] == 0 && s8Array[1] == 1 && s8Array[2] == 2, VSTRING_FORMAT("%s initialized s8Array values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const Vs8Array& s8Array = assignedArrays->getS8Array(ATTRIBUTE_NAME_S8_ARRAY);
             this->test(s8Array.size() == 3, VSTRING_FORMAT("%s assigned s8Array size", labelPrefix.chars()));
             this->test(s8Array[0] == 0 && s8Array[1] == 1 && s8Array[2] == 2, VSTRING_FORMAT("%s assigned s8Array values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const Vs8Array& s8Array = appendedArrays->getS8Array(ATTRIBUTE_NAME_S8_ARRAY);
             this->test(s8Array.size() == 6, VSTRING_FORMAT("%s appended s8Array size", labelPrefix.chars()));
             this->test(s8Array[0] == 0 && s8Array[1] == 1 && s8Array[2] == 2 &&
                        s8Array[3] == 0 && s8Array[4] == 1 && s8Array[5] == 2, VSTRING_FORMAT("%s appended s8Array values", labelPrefix.chars()));
-            }
+        }
 
         // VBentoS16Array tests.
-            {
+        {
             const Vs16Array& s16Array = initializedArrays->getS16Array(ATTRIBUTE_NAME_S16_ARRAY);
             this->test(s16Array.size() == 3, VSTRING_FORMAT("%s initialized s16Array size", labelPrefix.chars()));
             this->test(s16Array[0] == 10 && s16Array[1] == 20 && s16Array[2] == 30, VSTRING_FORMAT("%s initialized s16Array values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const Vs16Array& s16Array = assignedArrays->getS16Array(ATTRIBUTE_NAME_S16_ARRAY);
             this->test(s16Array.size() == 3, VSTRING_FORMAT("%s assigned s16Array size", labelPrefix.chars()));
             this->test(s16Array[0] == 10 && s16Array[1] == 20 && s16Array[2] == 30, VSTRING_FORMAT("%s assigned s16Array values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const Vs16Array& s16Array = appendedArrays->getS16Array(ATTRIBUTE_NAME_S16_ARRAY);
             this->test(s16Array.size() == 6, VSTRING_FORMAT("%s appended s16Array size", labelPrefix.chars()));
             this->test(s16Array[0] == 10 && s16Array[1] == 20 && s16Array[2] == 30 &&
                        s16Array[3] == 10 && s16Array[4] == 20 && s16Array[5] == 30, VSTRING_FORMAT("%s appended s16Array values", labelPrefix.chars()));
-            }
+        }
 
         // VBentoS32Array tests.
-            {
+        {
             const Vs32Array& s32Array = initializedArrays->getS32Array(ATTRIBUTE_NAME_S32_ARRAY);
             this->test(s32Array.size() == 3, VSTRING_FORMAT("%s initialized s32Array size", labelPrefix.chars()));
             this->test(s32Array[0] == 100 && s32Array[1] == 200 && s32Array[2] == 300, VSTRING_FORMAT("%s initialized s32Array values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const Vs32Array& s32Array = assignedArrays->getS32Array(ATTRIBUTE_NAME_S32_ARRAY);
             this->test(s32Array.size() == 3, VSTRING_FORMAT("%s assigned s32Array size", labelPrefix.chars()));
             this->test(s32Array[0] == 100 && s32Array[1] == 200 && s32Array[2] == 300, VSTRING_FORMAT("%s assigned s32Array values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const Vs32Array& s32Array = appendedArrays->getS32Array(ATTRIBUTE_NAME_S32_ARRAY);
             this->test(s32Array.size() == 6, VSTRING_FORMAT("%s appended s32Array size", labelPrefix.chars()));
             this->test(s32Array[0] == 100 && s32Array[1] == 200 && s32Array[2] == 300 &&
                        s32Array[3] == 100 && s32Array[4] == 200 && s32Array[5] == 300, VSTRING_FORMAT("%s appended s32Array values", labelPrefix.chars()));
-            }
+        }
 
         // VBentoS64Array tests.
-            {
+        {
             const Vs64Array& s64Array = initializedArrays->getS64Array(ATTRIBUTE_NAME_S64_ARRAY);
             this->test(s64Array.size() == 3, VSTRING_FORMAT("%s initialized s64Array size", labelPrefix.chars()));
             this->test(s64Array[0] == CONST_S64(1000) && s64Array[1] == CONST_S64(2000) && s64Array[2] == CONST_S64(3000), VSTRING_FORMAT("%s initialized s64Array values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const Vs64Array& s64Array = assignedArrays->getS64Array(ATTRIBUTE_NAME_S64_ARRAY);
             this->test(s64Array.size() == 3, VSTRING_FORMAT("%s assigned s64Array size", labelPrefix.chars()));
             this->test(s64Array[0] == CONST_S64(1000) && s64Array[1] == CONST_S64(2000) && s64Array[2] == CONST_S64(3000), VSTRING_FORMAT("%s assigned s64Array values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const Vs64Array& s64Array = appendedArrays->getS64Array(ATTRIBUTE_NAME_S64_ARRAY);
             this->test(s64Array.size() == 6, VSTRING_FORMAT("%s appended s64Array size", labelPrefix.chars()));
             this->test(s64Array[0] == CONST_S64(1000) && s64Array[1] == CONST_S64(2000) && s64Array[2] == CONST_S64(3000) &&
                        s64Array[3] == CONST_S64(1000) && s64Array[4] == CONST_S64(2000) && s64Array[5] == CONST_S64(3000), VSTRING_FORMAT("%s appended s64Array values", labelPrefix.chars()));
-            }
+        }
 
         // VBentoStringArray tests.
-            {
+        {
             const VStringVector& stringArray = initializedArrays->getStringArray(ATTRIBUTE_NAME_STRING_ARRAY);
             this->test(stringArray.size() == 3, VSTRING_FORMAT("%s initialized stringArray size", labelPrefix.chars()));
             this->test(stringArray[0] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT0 && stringArray[1] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT1 && stringArray[2] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT2, VSTRING_FORMAT("%s initialized stringArray values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const VStringVector& stringArray = assignedArrays->getStringArray(ATTRIBUTE_NAME_STRING_ARRAY);
             this->test(stringArray.size() == 3, VSTRING_FORMAT("%s assigned stringArray size", labelPrefix.chars()));
             this->test(stringArray[0] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT0 && stringArray[1] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT1 && stringArray[2] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT2, VSTRING_FORMAT("%s assigned stringArray values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const VStringVector& stringArray = appendedArrays->getStringArray(ATTRIBUTE_NAME_STRING_ARRAY);
             this->test(stringArray.size() == 6, VSTRING_FORMAT("%s appended stringArray size", labelPrefix.chars()));
             this->test(stringArray[0] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT0 && stringArray[1] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT1 && stringArray[2] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT2 &&
                        stringArray[3] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT0 && stringArray[4] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT1 && stringArray[5] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT2, VSTRING_FORMAT("%s appended stringArray values", labelPrefix.chars()));
-            }
+        }
 
         // VBentoBoolArray tests.
-            {
+        {
             const VBoolArray& boolArray = initializedArrays->getBoolArray(ATTRIBUTE_NAME_BOOL_ARRAY);
             this->test(boolArray.size() == 3, VSTRING_FORMAT("%s initialized boolArray size", labelPrefix.chars()));
             this->test(boolArray[0] == true && boolArray[1] == false && boolArray[2] == true, VSTRING_FORMAT("%s initialized boolArray values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const VBoolArray& boolArray = assignedArrays->getBoolArray(ATTRIBUTE_NAME_BOOL_ARRAY);
             this->test(boolArray.size() == 3, VSTRING_FORMAT("%s assigned boolArray size", labelPrefix.chars()));
             this->test(boolArray[0] == true && boolArray[1] == false && boolArray[2] == true, VSTRING_FORMAT("%s assigned boolArray values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const VBoolArray& boolArray = appendedArrays->getBoolArray(ATTRIBUTE_NAME_BOOL_ARRAY);
             this->test(boolArray.size() == 6, VSTRING_FORMAT("%s appended boolArray size", labelPrefix.chars()));
             this->test(boolArray[0] == true && boolArray[1] == false && boolArray[2] == true &&
                        boolArray[3] == true && boolArray[4] == false && boolArray[5] == true, VSTRING_FORMAT("%s appended boolArray values", labelPrefix.chars()));
-            }
+        }
 
         // VBentoDoubleArray tests.
-            {
+        {
             const VDoubleArray& doubleArray = initializedArrays->getDoubleArray(ATTRIBUTE_NAME_DOUBLE_ARRAY);
             this->test(doubleArray.size() == 3, VSTRING_FORMAT("%s initialized doubleArray size", labelPrefix.chars()));
             this->test(doubleArray[0] == 123.456 && doubleArray[1] == 456.789 && doubleArray[2] == 246.135, VSTRING_FORMAT("%s initialized doubleArray values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const VDoubleArray& doubleArray = assignedArrays->getDoubleArray(ATTRIBUTE_NAME_DOUBLE_ARRAY);
             this->test(doubleArray.size() == 3, VSTRING_FORMAT("%s assigned doubleArray size", labelPrefix.chars()));
             this->test(doubleArray[0] == 123.456 && doubleArray[1] == 456.789 && doubleArray[2] == 246.135, VSTRING_FORMAT("%s assigned doubleArray values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const VDoubleArray& doubleArray = appendedArrays->getDoubleArray(ATTRIBUTE_NAME_DOUBLE_ARRAY);
             this->test(doubleArray.size() == 6, VSTRING_FORMAT("%s appended doubleArray size", labelPrefix.chars()));
             this->test(doubleArray[0] == 123.456 && doubleArray[1] == 456.789 && doubleArray[2] == 246.135 &&
                        doubleArray[3] == 123.456 && doubleArray[4] == 456.789 && doubleArray[5] == 246.135, VSTRING_FORMAT("%s appended doubleArray values", labelPrefix.chars()));
-            }
+        }
 
         // VBentoDurationArray tests.
         const VDuration kDuration0 = VDuration::MILLISECOND() * 55;
         const VDuration kDuration1 = VDuration::SECOND() * 66;
         const VDuration kDuration2 = VDuration::HOUR() * 77;
-            {
+        {
             const VDurationVector& durationArray = initializedArrays->getDurationArray(ATTRIBUTE_NAME_DURATION_ARRAY);
             this->test(durationArray.size() == 3, VSTRING_FORMAT("%s initialized durationArray size", labelPrefix.chars()));
             this->test(durationArray[0] == kDuration0 && durationArray[1] == kDuration1 && durationArray[2] == kDuration2, VSTRING_FORMAT("%s initialized durationArray values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const VDurationVector& durationArray = assignedArrays->getDurationArray(ATTRIBUTE_NAME_DURATION_ARRAY);
             this->test(durationArray.size() == 3, VSTRING_FORMAT("%s assigned durationArray size", labelPrefix.chars()));
             this->test(durationArray[0] == kDuration0 && durationArray[1] == kDuration1 && durationArray[2] == kDuration2, VSTRING_FORMAT("%s assigned durationArray values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const VDurationVector& durationArray = appendedArrays->getDurationArray(ATTRIBUTE_NAME_DURATION_ARRAY);
             this->test(durationArray.size() == 6, VSTRING_FORMAT("%s appended durationArray size", labelPrefix.chars()));
             this->test(durationArray[0] == kDuration0 && durationArray[1] == kDuration1 && durationArray[2] == kDuration2 &&
                        durationArray[3] == kDuration0 && durationArray[4] == kDuration1 && durationArray[5] == kDuration2, VSTRING_FORMAT("%s appended durationArray values", labelPrefix.chars()));
-            }
+        }
 
         // VBentoInstantArray tests.
-            {
+        {
             const VInstantVector& instantArray = initializedArrays->getInstantArray(ATTRIBUTE_NAME_INSTANT_ARRAY);
             this->test(instantArray.size() == 3, VSTRING_FORMAT("%s initialized instantArray size", labelPrefix.chars()));
             this->test(instantArray[0] == VInstant::NEVER_OCCURRED() && instantArray[1] == VInstant::INFINITE_PAST() && instantArray[2] == gInstantNoon2005June1UTC, VSTRING_FORMAT("%s initialized instantArray values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const VInstantVector& instantArray = assignedArrays->getInstantArray(ATTRIBUTE_NAME_INSTANT_ARRAY);
             this->test(instantArray.size() == 3, VSTRING_FORMAT("%s assigned instantArray size", labelPrefix.chars()));
             this->test(instantArray[0] == VInstant::NEVER_OCCURRED() && instantArray[1] == VInstant::INFINITE_PAST() && instantArray[2] == gInstantNoon2005June1UTC, VSTRING_FORMAT("%s assigned instantArray values", labelPrefix.chars()));
-            }
-            {
+        }
+        {
             const VInstantVector& instantArray = appendedArrays->getInstantArray(ATTRIBUTE_NAME_INSTANT_ARRAY);
             this->test(instantArray.size() == 6, VSTRING_FORMAT("%s appended instantArray size", labelPrefix.chars()));
             this->test(instantArray[0] == VInstant::NEVER_OCCURRED() && instantArray[1] == VInstant::INFINITE_PAST() && instantArray[2] == gInstantNoon2005June1UTC &&
                        instantArray[3] == VInstant::NEVER_OCCURRED() && instantArray[4] == VInstant::INFINITE_PAST() && instantArray[5] == gInstantNoon2005June1UTC, VSTRING_FORMAT("%s appended instantArray values", labelPrefix.chars()));
-            }
+        }
 
         // Test non-throwing missing value handling.
         this->test(node.getS8("non-existent", -42) == -42, VSTRING_FORMAT("%s default s8", labelPrefix.chars())); // <0 to verify correct sign handling
@@ -735,19 +726,19 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         defaultInstant.setDateAndTime(VDateAndTime(2007, 3, 4, 5, 6, 7, 8), VInstant::UTC_TIME_ZONE_ID());
         this->test(node.getInstant("non-existent", defaultInstant) == defaultInstant, VSTRING_FORMAT("%s default instant", labelPrefix.chars()));
 
-        this->test(node.getSize("non-existent", VSize(1.1,2.2)) == VSize(1.1,2.2), VSTRING_FORMAT("%s default size", labelPrefix.chars()));
-        this->test(node.getISize("non-existent", VISize(3,4)) == VISize(3,4), VSTRING_FORMAT("%s default isize", labelPrefix.chars()));
-        this->test(node.getPoint("non-existent", VPoint(1.1,2.2)) == VPoint(1.1,2.2), VSTRING_FORMAT("%s default point", labelPrefix.chars()));
-        this->test(node.getIPoint("non-existent", VIPoint(3,4)) == VIPoint(3,4), VSTRING_FORMAT("%s default ipoint", labelPrefix.chars()));
-        this->test(node.getLine("non-existent", VLine(1.1,2.2,3.3,4.4)) == VLine(1.1,2.2,3.3,4.4), VSTRING_FORMAT("%s default line", labelPrefix.chars()));
-        this->test(node.getILine("non-existent", VILine(5,6,7,8)) == VILine(5,6,7,8), VSTRING_FORMAT("%s default iline", labelPrefix.chars()));
-        this->test(node.getRect("non-existent", VRect(1.1,2.2,3.3,4.4)) == VRect(1.1,2.2,3.3,4.4), VSTRING_FORMAT("%s default rect", labelPrefix.chars()));
-        this->test(node.getIRect("non-existent", VIRect(5,6,7,8)) == VIRect(5,6,7,8), VSTRING_FORMAT("%s default irect", labelPrefix.chars()));
-        VPolygon defaultPolygon; defaultPolygon.add(VPoint(1.1,2.2)); defaultPolygon.add(VPoint(3.3,4.4));
+        this->test(node.getSize("non-existent", VSize(1.1, 2.2)) == VSize(1.1, 2.2), VSTRING_FORMAT("%s default size", labelPrefix.chars()));
+        this->test(node.getISize("non-existent", VISize(3, 4)) == VISize(3, 4), VSTRING_FORMAT("%s default isize", labelPrefix.chars()));
+        this->test(node.getPoint("non-existent", VPoint(1.1, 2.2)) == VPoint(1.1, 2.2), VSTRING_FORMAT("%s default point", labelPrefix.chars()));
+        this->test(node.getIPoint("non-existent", VIPoint(3, 4)) == VIPoint(3, 4), VSTRING_FORMAT("%s default ipoint", labelPrefix.chars()));
+        this->test(node.getLine("non-existent", VLine(1.1, 2.2, 3.3, 4.4)) == VLine(1.1, 2.2, 3.3, 4.4), VSTRING_FORMAT("%s default line", labelPrefix.chars()));
+        this->test(node.getILine("non-existent", VILine(5, 6, 7, 8)) == VILine(5, 6, 7, 8), VSTRING_FORMAT("%s default iline", labelPrefix.chars()));
+        this->test(node.getRect("non-existent", VRect(1.1, 2.2, 3.3, 4.4)) == VRect(1.1, 2.2, 3.3, 4.4), VSTRING_FORMAT("%s default rect", labelPrefix.chars()));
+        this->test(node.getIRect("non-existent", VIRect(5, 6, 7, 8)) == VIRect(5, 6, 7, 8), VSTRING_FORMAT("%s default irect", labelPrefix.chars()));
+        VPolygon defaultPolygon; defaultPolygon.add(VPoint(1.1, 2.2)); defaultPolygon.add(VPoint(3.3, 4.4));
         this->test(node.getPolygon("non-existent", defaultPolygon) == defaultPolygon, VSTRING_FORMAT("%s default polygon", labelPrefix.chars()));
-        VIPolygon defaultIPolygon; defaultIPolygon.add(VIPoint(5,6)); defaultIPolygon.add(VIPoint(7,8));
+        VIPolygon defaultIPolygon; defaultIPolygon.add(VIPoint(5, 6)); defaultIPolygon.add(VIPoint(7, 8));
         this->test(node.getIPolygon("non-existent", defaultIPolygon) == defaultIPolygon, VSTRING_FORMAT("%s default ipolygon", labelPrefix.chars()));
-        this->test(node.getColor("non-existent", VColor(9,10,11,12)) == VColor(9,10,11,12), VSTRING_FORMAT("%s default color", labelPrefix.chars()));
+        this->test(node.getColor("non-existent", VColor(9, 10, 11, 12)) == VColor(9, 10, 11, 12), VSTRING_FORMAT("%s default color", labelPrefix.chars()));
 
         VMemoryStream defaultBinary;
         VBinaryIOStream defaultBinaryIO(defaultBinary);
@@ -756,7 +747,7 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         bool defaultBinaryResult = node.getBinary("non-existent", defaultBinaryReader);
         this->test(!defaultBinaryResult, VSTRING_FORMAT("%s default binary result", labelPrefix.chars()));
         this->test(defaultBinaryReader.getBuffer() == defaultBinary.getBuffer(), VSTRING_FORMAT("%s default binary data", labelPrefix.chars()));
-        
+
         Vs8Array emptyS8Array;
         this->test(initializedArrays->getS8Array("non-existent", emptyS8Array).size() == 0, VSTRING_FORMAT("%s default s8 array", labelPrefix.chars()));
         Vs16Array emptyS16Array;
@@ -780,120 +771,118 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         // Each of these SHOULD throw an exception.
         // If it doesn't throw, is failed.
         try { (void) node.getS8("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s8", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s8", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s8", labelPrefix.chars()));}
 
         try { (void) node.getU8("non-existent"); this->test(false, VSTRING_FORMAT("%s throw u8", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw u8", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw u8", labelPrefix.chars()));}
 
         try { (void) node.getS16("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s16", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s16", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s16", labelPrefix.chars()));}
 
         try { (void) node.getU16("non-existent"); this->test(false, VSTRING_FORMAT("%s throw u16", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw u16", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw u16", labelPrefix.chars()));}
 
         try { (void) node.getS32("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s32", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s32", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s32", labelPrefix.chars()));}
 
         try { (void) node.getU32("non-existent"); this->test(false, VSTRING_FORMAT("%s throw u32", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw u32", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw u32", labelPrefix.chars()));}
 
         try { (void) node.getS64("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s64", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s64", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s64", labelPrefix.chars()));}
 
         try { (void) node.getU64("non-existent"); this->test(false, VSTRING_FORMAT("%s throw u64", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw u64", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw u64", labelPrefix.chars()));}
 
         try { (void) node.getBool("non-existent"); this->test(false, VSTRING_FORMAT("%s throw bool", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw bool", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw bool", labelPrefix.chars()));}
 
         try { (void) node.getString("non-existent"); this->test(false, VSTRING_FORMAT("%s throw string", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw string", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw string", labelPrefix.chars()));}
 
         try { (void) node.getInt("non-existent"); this->test(false, VSTRING_FORMAT("%s throw int", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw int", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw int", labelPrefix.chars()));}
 
         try { (void) node.getFloat("non-existent"); this->test(false, VSTRING_FORMAT("%s throw float", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw float", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw float", labelPrefix.chars()));}
 
         try { (void) node.getDouble("non-existent"); this->test(false, VSTRING_FORMAT("%s throw double", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw double", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw double", labelPrefix.chars()));}
 
         try { (void) node.getChar("non-existent"); this->test(false, VSTRING_FORMAT("%s throw char", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw char", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw char", labelPrefix.chars()));}
 
         try { (void) node.getDuration("non-existent"); this->test(false, VSTRING_FORMAT("%s throw duration", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw duration", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw duration", labelPrefix.chars()));}
 
         try { (void) node.getInstant("non-existent"); this->test(false, VSTRING_FORMAT("%s throw instant", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw instant", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw instant", labelPrefix.chars()));}
 
         try { (void) node.getSize("non-existent"); this->test(false, VSTRING_FORMAT("%s throw size", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw size", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw size", labelPrefix.chars()));}
 
         try { (void) node.getISize("non-existent"); this->test(false, VSTRING_FORMAT("%s throw isize", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw isize", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw isize", labelPrefix.chars()));}
 
         try { (void) node.getPoint("non-existent"); this->test(false, VSTRING_FORMAT("%s throw point", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw point", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw point", labelPrefix.chars()));}
 
         try { (void) node.getIPoint("non-existent"); this->test(false, VSTRING_FORMAT("%s throw ipoint", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw ipoint", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw ipoint", labelPrefix.chars()));}
 
         try { (void) node.getLine("non-existent"); this->test(false, VSTRING_FORMAT("%s throw line", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw line", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw line", labelPrefix.chars()));}
 
         try { (void) node.getILine("non-existent"); this->test(false, VSTRING_FORMAT("%s throw iline", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw iline", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw iline", labelPrefix.chars()));}
 
         try { (void) node.getRect("non-existent"); this->test(false, VSTRING_FORMAT("%s throw rect", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw rect", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw rect", labelPrefix.chars()));}
 
         try { (void) node.getIRect("non-existent"); this->test(false, VSTRING_FORMAT("%s throw irect", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw irect", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw irect", labelPrefix.chars()));}
 
         try { (void) node.getPolygon("non-existent"); this->test(false, VSTRING_FORMAT("%s throw polygon", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw polygon", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw polygon", labelPrefix.chars()));}
 
         try { (void) node.getIPolygon("non-existent"); this->test(false, VSTRING_FORMAT("%s throw ipolygon", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw ipolygon", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw ipolygon", labelPrefix.chars()));}
 
         try { (void) node.getColor("non-existent"); this->test(false, VSTRING_FORMAT("%s throw color", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw color", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw color", labelPrefix.chars()));}
 
         try { (void) node.getBinary("non-existent"); this->test(false, VSTRING_FORMAT("%s throw binary", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw binary", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw binary", labelPrefix.chars()));}
 
         try { (void) node.getS8Array("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s8 array", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s8 array", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s8 array", labelPrefix.chars()));}
 
         try { (void) node.getS16Array("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s16 array", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s16 array", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s16 array", labelPrefix.chars()));}
 
         try { (void) node.getS32Array("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s32 array", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s32 array", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s32 array", labelPrefix.chars()));}
 
         try { (void) node.getS64Array("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s64 array", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s64 array", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s64 array", labelPrefix.chars()));}
 
         try { (void) node.getBoolArray("non-existent"); this->test(false, VSTRING_FORMAT("%s throw bool array", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw bool array", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw bool array", labelPrefix.chars()));}
 
         try { (void) node.getStringArray("non-existent"); this->test(false, VSTRING_FORMAT("%s throw string array", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw string array", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw string array", labelPrefix.chars()));}
 
         try { (void) node.getDoubleArray("non-existent"); this->test(false, VSTRING_FORMAT("%s throw double array", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw double array", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw double array", labelPrefix.chars()));}
 
         try { (void) node.getDurationArray("non-existent"); this->test(false, VSTRING_FORMAT("%s throw duration array", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw duration array", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw duration array", labelPrefix.chars()));}
 
         try { (void) node.getInstantArray("non-existent"); this->test(false, VSTRING_FORMAT("%s throw instant array", labelPrefix.chars())); }
-            catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw instant array", labelPrefix.chars()));}
+        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw instant array", labelPrefix.chars()));}
 
-        }
-    catch (const VException& ex)
-        {
+    } catch (const VException& ex) {
         this->test(false, VSTRING_FORMAT("VBentoUnit %s threw an exception: %s", labelPrefix.chars(), ex.what()));
-        }
     }
+}
 

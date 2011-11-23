@@ -39,9 +39,9 @@ Well, on HP-UX the parameter is defined as an int. The cleanest way of dealing
 with this is to have our own conditionally-defined type here and use it there.
 */
 #ifdef VPLATFORM_UNIX_HPUX
-    typedef int VSocklenT;
+typedef int VSocklenT;
 #else
-    typedef socklen_t VSocklenT;
+typedef socklen_t VSocklenT;
 #endif
 
 /**
@@ -60,10 +60,9 @@ the other platforms.
 
 @see    VSocketBase
 */
-class VSocket : public VSocketBase
-    {
+class VSocket : public VSocketBase {
     public:
-    
+
         /**
         Constructs the object with an already-opened low-level
         socket connection identified by its ID.
@@ -131,7 +130,7 @@ class VSocket : public VSocketBase
         @param    valueLength   the length of the data pointed to by valuePtr
         */
         virtual void setSockOpt(int level, int name, void* valuePtr, int valueLength);
-        
+
     protected:
 
         /**
@@ -157,9 +156,9 @@ class VSocket : public VSocketBase
 
         // These are further BSD-specific methods used in the V_BSD_ENHANCED_SOCKETS
         // versions of connect() and listen().
-        void        _tcpGetAddrInfo(struct addrinfo **res);                                             ///< Calls low-level getaddrinfo()
-        int         _getAddrInfo(struct addrinfo* hints, struct addrinfo** res, bool useHostName=true); ///< Calls low-level _getAddrInfo()
-        VSocketID   _tcpConnectWAddrInfo(struct addrinfo * const resInput);                             ///< Calls low-level socket() and connect()
+        void        _tcpGetAddrInfo(struct addrinfo** res);                                             ///< Calls low-level getaddrinfo()
+        int         _getAddrInfo(struct addrinfo* hints, struct addrinfo** res, bool useHostName = true); ///< Calls low-level _getAddrInfo()
+        VSocketID   _tcpConnectWAddrInfo(struct addrinfo* const resInput);                              ///< Calls low-level socket() and connect()
 
         static VMutex gAddrInfoMutex;   ///< getaddrinfo() is not thread-safe, so we have to protect ourselves.
 
@@ -167,7 +166,7 @@ class VSocket : public VSocketBase
 
         static bool gStaticInited;  ///< Used internally to initialize at startup.
         static bool staticInit();   ///< Used internally to initialize at startup.
-    };
+};
 
 #endif /* vsocketbase_h */
 

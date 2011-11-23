@@ -21,10 +21,9 @@ http://www.bombaydigital.com/
 This helper class is used internally to wrap POSIX file APIs needed by our low-level
 implementation, while handling thread interruption errors and retrying.
 */
-class VFileSystemAPI
-    {
+class VFileSystemAPI {
     public:
-    
+
         // These static functions wrap the raw POSIX functions in order to
         // make them work correctly even if a signal is caught inside the
         // function. These functions can be called from the platform-specific
@@ -40,8 +39,8 @@ class VFileSystemAPI
         static ssize_t  wrap_write(int fd, const void* buffer, size_t numBytes);    ///< Calls POSIX write in a way that is safe even if a signal is caught inside the function.
         static off_t    wrap_lseek(int fd, off_t offset, int whence);               ///< Calls POSIX lseek in a way that is safe even if a signal is caught inside the function.
         static int      wrap_close(int fd);                                         ///< Calls POSIX close in a way that is safe even if a signal is caught inside the function.
-    
-    };
+
+};
 
 #endif /* vtypes_internal_h */
 

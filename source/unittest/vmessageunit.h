@@ -14,10 +14,9 @@ http://www.bombaydigital.com/
 /**
 Unit test class for validating VMessage and related classes.
 */
-class VMessageUnit : public VUnit
-    {
+class VMessageUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -28,12 +27,12 @@ class VMessageUnit : public VUnit
         Destructor.
         */
         virtual ~VMessageUnit() {}
-        
+
         /**
         Executes the unit test.
         */
         virtual void run();
 
-    };
+};
 
 #endif /* vmessageunit_h */

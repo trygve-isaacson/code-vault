@@ -16,10 +16,9 @@ class VBentoNode;
 /**
 Unit test class for validating VBento.
 */
-class VBentoUnit : public VUnit
-    {
+class VBentoUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -30,14 +29,14 @@ class VBentoUnit : public VUnit
         Destructor.
         */
         virtual ~VBentoUnit() {}
-        
+
         /**
         Executes the unit test.
         */
         virtual void run();
 
     protected:
-    
+
         /**
         Verifies bento hierarchy contents as previously constructed.
         */
@@ -50,6 +49,6 @@ class VBentoUnit : public VUnit
         Verifies bento hierarchy contents as previously constructed.
         */
         void _verifyContents(const VBentoNode& node, const VString& labelPrefix);
-    };
+};
 
 #endif /* vbentounit_h */

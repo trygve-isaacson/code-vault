@@ -14,10 +14,9 @@ http://www.bombaydigital.com/
 /**
 Unit test class for validating VString.
 */
-class VStringUnit : public VUnit
-    {
+class VStringUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -28,12 +27,12 @@ class VStringUnit : public VUnit
         Destructor.
         */
         virtual ~VStringUnit() {}
-        
+
         /**
         Executes the unit test.
         */
         virtual void run();
 
-    };
+};
 
 #endif /* vstringunit_h */

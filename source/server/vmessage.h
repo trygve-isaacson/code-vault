@@ -50,10 +50,9 @@ capabilities; the concrete subclass must implement the send() and receive()
 functions, which know how to read and write the particular message protocol
 format (the wire protocol).
 */
-class VMessage : public VBinaryIOStream
-    {
+class VMessage : public VBinaryIOStream {
     public:
-    
+
         /**
         Releases a message. For a non-broadcast message, it simply deletes the message.
         For a broadcast message, it decrements the broadcast target count, and then if
@@ -82,7 +81,7 @@ class VMessage : public VBinaryIOStream
         @param  messageID           the message ID
         @param  initialBufferSize   if specified, the size of data buffer to preallocate
         */
-        VMessage(VMessageID messageID, Vs64 initialBufferSize=1024);
+        VMessage(VMessageID messageID, Vs64 initialBufferSize = 1024);
         /**
         Virtual destructor.
         */
@@ -249,7 +248,7 @@ class VMessage : public VBinaryIOStream
         bool            mIsBeingBroadcast;      ///< True if this message is an outbound broadcast message.
         int             mNumBroadcastTargets;   ///< Number of pending broadcast targets, if for broadcast.
         VMutex          mBroadcastMutex;        ///< Mutex to control multiple threads using this message during broadcasting. This is declared public because the caller is responsible for locking this mutex via a VMutexLocker while posting for broadcast.
-    };
+};
 
 /**
 VMessageFactory is an abstract base class that you must implement for purposes
@@ -257,8 +256,7 @@ of giving an input thread a way to instantiate the correct concrete type of
 message. All you have to do is implement the instantiateNewMessage()
 function to return a new VMessage of the desired subclass type.
 */
-class VMessageFactory
-    {
+class VMessageFactory {
     public:
 
         VMessageFactory() {}
@@ -270,7 +268,7 @@ class VMessageFactory
         @param    messageID    the ID to supply to the message constructor
         @return    pointer to a new message object
         */
-        virtual VMessage* instantiateNewMessage(VMessageID messageID=0) const = 0;
-    };
+        virtual VMessage* instantiateNewMessage(VMessageID messageID = 0) const = 0;
+};
 
 #endif /* vmessage_h */

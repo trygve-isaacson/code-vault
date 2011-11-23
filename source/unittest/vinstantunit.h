@@ -14,10 +14,9 @@ http://www.bombaydigital.com/
 /**
 Unit test class for validating VInstant.
 */
-class VInstantUnit : public VUnit
-    {
+class VInstantUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -28,12 +27,12 @@ class VInstantUnit : public VUnit
         Destructor.
         */
         virtual ~VInstantUnit() {}
-        
+
         /**
         Executes the unit test.
         */
         virtual void run();
 
-    };
+};
 
 #endif /* vinstantunit_h */

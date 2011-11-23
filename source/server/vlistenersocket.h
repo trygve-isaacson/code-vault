@@ -33,8 +33,7 @@ adds the accept() method.
 
 @see    VListenerThread
 */
-class VListenerSocket : public VSocket
-    {
+class VListenerSocket : public VSocket {
     public:
 
         /**
@@ -49,7 +48,7 @@ class VListenerSocket : public VSocket
                             the number of pending incoming connections that
                             can be queued up for acceptance
         */
-        VListenerSocket(int portNumber, const VString& bindAddress, VSocketFactory* factory, int backlog=50);
+        VListenerSocket(int portNumber, const VString& bindAddress, VSocketFactory* factory, int backlog = 50);
         /**
         Destructor.
         */
@@ -86,6 +85,6 @@ class VListenerSocket : public VSocket
         int             mBacklog;       ///< The listen backlog value.
         VSocketFactory* mFactory;       ///< The factory for creating new VSocket objects.
 
-    };
+};
 
 #endif /* vlistenersocket_h */

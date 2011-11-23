@@ -46,8 +46,7 @@ method to create an instance of your VSocketThread subclass.
 
 That's it!
 */
-class VListenerThread : public VThread
-    {
+class VListenerThread : public VThread {
     public:
 
         /**
@@ -77,7 +76,7 @@ class VListenerThread : public VThread
         @param    initiallyListening    true if the thread should be listening when it first starts;
                                         false means it won't listen until you call startListening()
         */
-        VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, const VString& bindAddress, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, VClientSessionFactory* sessionFactory=NULL, bool initiallyListening=true);
+        VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, const VString& bindAddress, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, VClientSessionFactory* sessionFactory = NULL, bool initiallyListening = true);
         /**
         Destructor.
         */
@@ -179,7 +178,7 @@ class VListenerThread : public VThread
         VSocketThreadPtrVector  mSocketThreads;         ///< The VSocketThread objects we have created.
         VMutex                  mSocketThreadsMutex;    ///< Mutex to protect our VSocketThread vector.
 
-    };
+};
 
 /**
 VListenerThreadPtrVector is simply a vector of VListenerThread object pointers.

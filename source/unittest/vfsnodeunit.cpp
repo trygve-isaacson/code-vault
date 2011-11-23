@@ -16,8 +16,7 @@ http://www.bombaydigital.com/
 
 // VFSNodeIterateTestCallback -----------------------------------------------------
 
-class VFSNodeIterateTestCallback : public VDirectoryIterationCallback
-    {
+class VFSNodeIterateTestCallback : public VDirectoryIterationCallback {
     public:
 
         VFSNodeIterateTestCallback() : mNodeNames() {}
@@ -26,26 +25,23 @@ class VFSNodeIterateTestCallback : public VDirectoryIterationCallback
         virtual bool handleNextNode(const VFSNode& node);
 
         VStringVector mNodeNames;
-    };
+};
 
 // VFSNodeUnit -------------------------------------------------------------
 
 VFSNodeUnit::VFSNodeUnit(bool logOnSuccess, bool throwOnError) :
-VUnit("VFSNodeUnit", logOnSuccess, throwOnError)
-    {
+    VUnit("VFSNodeUnit", logOnSuccess, throwOnError) {
     mTextFileLines.push_back("This is line 1.");
     mTextFileLines.push_back("This is the second line.");
     mTextFileLines.push_back("This is the third and final line.");
 
-    for (VStringVector::const_iterator i = mTextFileLines.begin(); i != mTextFileLines.end(); ++i)
-        {
+    for (VStringVector::const_iterator i = mTextFileLines.begin(); i != mTextFileLines.end(); ++i) {
         mTextFileContents += (*i);
         mTextFileContents += VString::NATIVE_LINE_ENDING();
-        }
     }
+}
 
-void VFSNodeUnit::run()
-    {
+void VFSNodeUnit::run() {
     // Note that we also do testing of streams and file i/o here.
 
     this->logStatus(VSTRING_FORMAT("getExecutable: '%s'", VFSNode::getExecutable().getPath().chars()));
@@ -103,7 +99,7 @@ void VFSNodeUnit::run()
     this->test(! testBinaryFileNode.exists(), "unbuffered binary file removed");
 
     this->_testDirectoryIteration(testDirDeeper);
-    
+
     // Next, test all flavors of renaming operations.
     VFSNode copyTest1(tempDir, "vfsnodetest_temp/one/two/test1.txt");
     VBufferedFileStream sourceFileStream(copyTest1);
@@ -119,24 +115,24 @@ void VFSNodeUnit::run()
     copyTest1.renameToName("test2.txt");
     this->test(! copyTest1.exists(), "test1 was renamed");
     this->test(copyTest2.exists(), "test2 exists");
-    
+
     VFSNode copyTest3;
     copyTest2.renameToName("test3.txt", copyTest3);
     this->test(! copyTest2.exists(), "test2 was renamed");
     this->test(copyTest3.getPath() == tempDirPath + "/vfsnodetest_temp/one/two/test3.txt" && copyTest3.exists(), "test3 exists");
-    
+
     VFSNode copyTest4(tempDir, "vfsnodetest_temp/one/two/three/test4.txt");
     copyTest3.renameToNode(copyTest4);
     this->test(! copyTest3.exists(), "test3 was moved and renamed");
     this->test(copyTest4.exists(), "test4 exists");
-    
+
     copyTest4.renameToPath(tempDirPath + "/vfsnodetest_temp/one/two/test5.txt");
     VFSNode copyTest5(tempDir, "vfsnodetest_temp/one/two/test5.txt");
     this->test(! copyTest4.exists(), "test4 was moved and renamed");
     this->test(copyTest5.exists(), "test5 exists");
-    
+
     copyTest5.renameToName("test5.txt"); // should throw
-    
+
     // Clean up our litter.
     (void) copyTest5.rm();
 
@@ -183,31 +179,30 @@ void VFSNodeUnit::run()
     copiedNode = someNode;
     this->test(copiedNode.getPath(), "a/b/c/d", "assignment operator");
 
-/*
-    Uncomment if you want to exercise this code. It's commented out for now because by its nature it
-    will litter several directories with its output. (It tests the APIs that locate the various
-    platform-dependent directories where log files, preference files, etc. should be written.
-    So for now I've chosen not to exercise this code in this unit test.
+    /*
+        Uncomment if you want to exercise this code. It's commented out for now because by its nature it
+        will litter several directories with its output. (It tests the APIs that locate the various
+        platform-dependent directories where log files, preference files, etc. should be written.
+        So for now I've chosen not to exercise this code in this unit test.
 
-    // Test known directory location lookup. Just write a file to each directory;
-    // user will have to visually check that it was put in the right place.
-    this->_writeKnownDirectoryTestFile(VFSNode::USER_HOME_DIRECTORY, "unittest-user");
-    this->_writeKnownDirectoryTestFile(VFSNode::LOG_FILES_DIRECTORY, "unittest-logs");
-    this->_writeKnownDirectoryTestFile(VFSNode::USER_PREFERENCES_DIRECTORY, "unittest-prefs");
-    this->_writeKnownDirectoryTestFile(VFSNode::CACHED_DATA_DIRECTORY, "unittest-cache");
-    this->_writeKnownDirectoryTestFile(VFSNode::APPLICATION_DATA_DIRECTORY, "unittest-appdata");
-    this->_writeKnownDirectoryTestFile(VFSNode::CURRENT_WORKING_DIRECTORY, "unittest-cwd");
-*/
-    }
+        // Test known directory location lookup. Just write a file to each directory;
+        // user will have to visually check that it was put in the right place.
+        this->_writeKnownDirectoryTestFile(VFSNode::USER_HOME_DIRECTORY, "unittest-user");
+        this->_writeKnownDirectoryTestFile(VFSNode::LOG_FILES_DIRECTORY, "unittest-logs");
+        this->_writeKnownDirectoryTestFile(VFSNode::USER_PREFERENCES_DIRECTORY, "unittest-prefs");
+        this->_writeKnownDirectoryTestFile(VFSNode::CACHED_DATA_DIRECTORY, "unittest-cache");
+        this->_writeKnownDirectoryTestFile(VFSNode::APPLICATION_DATA_DIRECTORY, "unittest-appdata");
+        this->_writeKnownDirectoryTestFile(VFSNode::CURRENT_WORKING_DIRECTORY, "unittest-cwd");
+    */
+}
 
-void VFSNodeUnit::_testTextFileIO(const VString& seriesLabel, VFSNode& node, VAbstractFileStream& fileStream)
-    {
+void VFSNodeUnit::_testTextFileIO(const VString& seriesLabel, VFSNode& node, VAbstractFileStream& fileStream) {
     // This output line is just to mark which kind of file i/o we're doing:
     this->logStatus(seriesLabel);
 
     VTextIOStream io(fileStream);
     fileStream.openWrite();
-    
+
     for (VStringVector::const_iterator i = mTextFileLines.begin(); i != mTextFileLines.end(); ++i)
         io.writeLine(*i);
 
@@ -223,52 +218,43 @@ void VFSNodeUnit::_testTextFileIO(const VString& seriesLabel, VFSNode& node, VAb
 
     VString line;
     int lineNumber = 1;
-    for (VStringVector::const_iterator i = mTextFileLines.begin(); i != mTextFileLines.end(); ++i)
-        {
+    for (VStringVector::const_iterator i = mTextFileLines.begin(); i != mTextFileLines.end(); ++i) {
         io.readLine(line);
         VUNIT_ASSERT_EQUAL_LABELED(line, *i, VSTRING_FORMAT("Line %d match", lineNumber));
         ++lineNumber;
-        }
+    }
 
-    try
-        {
+    try {
         // We should not be able to read any more lines.
         io.readLine(line);
         // If we get here, there's junk past the proper end of the file.
         this->test(false, "EOF mark position");
-        }
-    catch (const VEOFException& /*ex*/)
-        {
+    } catch (const VEOFException& /*ex*/) {
         this->test(true, "EOF mark position");
-        }
-    catch (...)
-        {
+    } catch (...) {
         this->test(false, "EOF mark position (unexpected exception type)");
-        }
-
-    fileStream.close();
     }
 
-void VFSNodeUnit::_testTextFileReadAll(VFSNode& node)
-    {
+    fileStream.close();
+}
+
+void VFSNodeUnit::_testTextFileReadAll(VFSNode& node) {
     VString contents;
     node.readAll(contents);
     VUNIT_ASSERT_EQUAL_LABELED(contents, mTextFileContents, "VFSNode::readAll() to VString");
-    
+
     VStringVector lines;
     node.readAll(lines);
     VUNIT_ASSERT_EQUAL_LABELED((int) lines.size(), (int) mTextFileLines.size(), "VFSNode::readAll() to VStringVector, count");
 
     int lineNumber = 1;
-    for (size_t i = 0; i < lines.size(); ++i)
-        {
+    for (size_t i = 0; i < lines.size(); ++i) {
         VUNIT_ASSERT_EQUAL_LABELED(lines[i], mTextFileLines[i], VSTRING_FORMAT("VFSNode::readAll() to VStringVector, line %d match", lineNumber));
         ++lineNumber;
-        }
     }
+}
 
-void VFSNodeUnit::_testBinaryFileIO(const VString& seriesLabel, VFSNode& node, VAbstractFileStream& fileStream)
-    {
+void VFSNodeUnit::_testBinaryFileIO(const VString& seriesLabel, VFSNode& node, VAbstractFileStream& fileStream) {
     // This output line is just to mark which kind of file i/o we're doing:
     this->logStatus(seriesLabel);
 
@@ -310,34 +296,27 @@ void VFSNodeUnit::_testBinaryFileIO(const VString& seriesLabel, VFSNode& node, V
     this->test(io.readDouble() == 3.1415926, "Double match");
     this->test(io.readBool() == true, "Bool match");
     this->test(io.readString() == "hello", "String match");
-    try
-        {
+    try {
         // We should not be able to read any more data.
         (void) io.readU8();
         // If we get here, there's junk past the proper end of the file.
         this->test(false, "EOF mark position");
-        }
-    catch (const VEOFException& /*ex*/)
-        {
+    } catch (const VEOFException& /*ex*/) {
         this->test(true, "EOF mark position");
-        }
-    catch (...)
-        {
+    } catch (...) {
         this->test(false, "EOF mark position (unexpected exception type)");
-        }
-
-    fileStream.close();
     }
 
-void VFSNodeUnit::_testDirectoryIteration(const VFSNode& dir)
-    {
+    fileStream.close();
+}
+
+void VFSNodeUnit::_testDirectoryIteration(const VFSNode& dir) {
     const int NUM_FILES_TO_CREATE = 5;
     const int NUM_FILES_TO_CHECK = NUM_FILES_TO_CREATE + 3; // we'll verify we don't have these extras
 
     // Test directory listing, iteration, find.
     // Create 5 files in the deep directory, then test that we can find them.
-    for (int i = 0; i < NUM_FILES_TO_CREATE; ++i)
-        {
+    for (int i = 0; i < NUM_FILES_TO_CREATE; ++i) {
         VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", i));
         VFSNode testIterFileNode;
         dir.getChildNode(testIterFileName, testIterFileNode);
@@ -345,84 +324,82 @@ void VFSNodeUnit::_testDirectoryIteration(const VFSNode& dir)
         testIterStream.openWrite();
         VTextIOStream out(testIterStream);
         out.writeLine(testIterFileName);
-        }
+    }
 
-    { // find() test
-    VFSNode testIterNode;
-    for (int i = 0; i < NUM_FILES_TO_CHECK; ++i)
-        {
-        VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", i));
-        if (i < NUM_FILES_TO_CREATE)
-            this->test(dir.find(testIterFileName, testIterNode), VSTRING_FORMAT("find() found #%d", i)); // this file should exist
-        else
-            this->test(! dir.find(testIterFileName, testIterNode), VSTRING_FORMAT("find() did not find #%d", i)); // this file should not exist
+    {
+        // find() test
+        VFSNode testIterNode;
+        for (int i = 0; i < NUM_FILES_TO_CHECK; ++i) {
+            VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", i));
+            if (i < NUM_FILES_TO_CREATE)
+                this->test(dir.find(testIterFileName, testIterNode), VSTRING_FORMAT("find() found #%d", i)); // this file should exist
+            else
+                this->test(! dir.find(testIterFileName, testIterNode), VSTRING_FORMAT("find() did not find #%d", i)); // this file should not exist
         }
     }
-    
+
     // There is no guarantee that the list() and iterate() methods will return the directory
     // listing in any particular order. We either need to sort them ourself, or verify without
     // regard to order. Here, we'll sort the returned string list, since we know that our
     // file names are sortable because they are single-digit-number-based strings, e.g. "iter_test_3.txt".
     // Note that the result of sorting is ultimately dependent on strcmp().
 
-    { // list() names test
-    int index = 0;
-    VStringVector fileNames;
-    dir.list(fileNames);
-    std::sort(fileNames.begin(), fileNames.end());
-    this->test(static_cast<int>(fileNames.size()) == NUM_FILES_TO_CREATE, "list names size");
-    for (VStringVector::const_iterator i = fileNames.begin(); i != fileNames.end(); ++i, ++index)
-        {
-        VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", index));
-        this->test(*i == testIterFileName, VSTRING_FORMAT("list names #%d", index));
-        }
-    }
-
-    { // list() nodes test
-    int index = 0;
-    VFSNodeVector fileNodes;
-    dir.list(fileNodes);
-    std::sort(fileNodes.begin(), fileNodes.end());
-    this->test(static_cast<int>(fileNodes.size()) == NUM_FILES_TO_CREATE, "list nodes size");
-    for (VFSNodeVector::const_iterator i = fileNodes.begin(); i != fileNodes.end(); ++i, ++index)
-        {
-        VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", index));
-        VString nodeFileName;
-        i->getName(nodeFileName);
-        this->test(nodeFileName == testIterFileName, VSTRING_FORMAT("list nodes #%d", index));
-        }
-    }
-
-    { // iterate() test
-    int index = 0;
-    VFSNodeIterateTestCallback callback;
-    dir.iterate(callback);
-    std::sort(callback.mNodeNames.begin(), callback.mNodeNames.end());
-    this->test(static_cast<int>(callback.mNodeNames.size()) == NUM_FILES_TO_CREATE, "iterate size");
-    for (VStringVector::const_iterator i = callback.mNodeNames.begin(); i != callback.mNodeNames.end(); ++i, ++index)
-        {
-        VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", index));
-        this->test(*i == testIterFileName, VSTRING_FORMAT("iterate nodes #%d", index));
-        }
-    }
-
-    }
-
-bool VFSNodeIterateTestCallback::handleNextNode(const VFSNode& node)
     {
+        // list() names test
+        int index = 0;
+        VStringVector fileNames;
+        dir.list(fileNames);
+        std::sort(fileNames.begin(), fileNames.end());
+        this->test(static_cast<int>(fileNames.size()) == NUM_FILES_TO_CREATE, "list names size");
+        for (VStringVector::const_iterator i = fileNames.begin(); i != fileNames.end(); ++i, ++index) {
+            VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", index));
+            this->test(*i == testIterFileName, VSTRING_FORMAT("list names #%d", index));
+        }
+    }
+
+    {
+        // list() nodes test
+        int index = 0;
+        VFSNodeVector fileNodes;
+        dir.list(fileNodes);
+        std::sort(fileNodes.begin(), fileNodes.end());
+        this->test(static_cast<int>(fileNodes.size()) == NUM_FILES_TO_CREATE, "list nodes size");
+        for (VFSNodeVector::const_iterator i = fileNodes.begin(); i != fileNodes.end(); ++i, ++index) {
+            VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", index));
+            VString nodeFileName;
+            i->getName(nodeFileName);
+            this->test(nodeFileName == testIterFileName, VSTRING_FORMAT("list nodes #%d", index));
+        }
+    }
+
+    {
+        // iterate() test
+        int index = 0;
+        VFSNodeIterateTestCallback callback;
+        dir.iterate(callback);
+        std::sort(callback.mNodeNames.begin(), callback.mNodeNames.end());
+        this->test(static_cast<int>(callback.mNodeNames.size()) == NUM_FILES_TO_CREATE, "iterate size");
+        for (VStringVector::const_iterator i = callback.mNodeNames.begin(); i != callback.mNodeNames.end(); ++i, ++index) {
+            VString testIterFileName(VSTRING_ARGS("iter_test_%d.txt", index));
+            this->test(*i == testIterFileName, VSTRING_FORMAT("iterate nodes #%d", index));
+        }
+    }
+
+}
+
+bool VFSNodeIterateTestCallback::handleNextNode(const VFSNode& node) {
     VString nodeName;
     node.getName(nodeName);
     mNodeNames.push_back(nodeName);
     return true;
-    }
+}
 
-void VFSNodeUnit::_writeKnownDirectoryTestFile(VFSNode::KnownDirectoryIdentifier id, const VString& fileName)
-    {
+void VFSNodeUnit::_writeKnownDirectoryTestFile(VFSNode::KnownDirectoryIdentifier id, const VString& fileName) {
     VFSNode folder = VFSNode::getKnownDirectoryNode(id, "BombayDigital", "unittest-temp");
 
     VFSNode fileNode;
     folder.getChildNode(fileName, fileNode);
-    
+
     VBufferedFileStream fs(fileNode);
     fs.openWrite();
 
@@ -433,7 +410,7 @@ void VFSNodeUnit::_writeKnownDirectoryTestFile(VFSNode::KnownDirectoryIdentifier
     now.getLocalString(nowString);
     out.writeLine(nowString);
     out.flush();
-    
+
     this->logStatus(VSTRING_FORMAT("Wrote to file '%s'.", fileNode.getPath().chars()));
-    }
+}
 

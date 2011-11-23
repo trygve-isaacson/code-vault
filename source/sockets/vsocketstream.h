@@ -28,10 +28,9 @@ a VSocketStream directly.
 @see    VBinaryIOStream
 @see    VTextIOStream
 */
-class VSocketStream : public VStream
-    {
+class VSocketStream : public VStream {
     public:
-    
+
         /**
         Empty constructor for use with a subsequent call to setSocket().
         @param    name    an arbitrary name given to this stream
@@ -58,7 +57,7 @@ class VSocketStream : public VStream
         call to setSocket() is subsequently made on one of them.
         */
         VSocketStream& operator=(const VSocketStream& other);
-        
+
         /**
         Returns a pointer to the VSocket object used by this VSocketStream.
         @return    the VSocket this stream is doing i/o on
@@ -99,7 +98,7 @@ class VSocketStream : public VStream
         Seeks in the stream; note that VSocketStream only supports seeking
         forward (offset >= 0, whence = SEEK_CUR) and will throw a VException
         if the caller requests an illegal seek operation.
-        
+
         @param  offset  the offset (meaning depends on whence param)
         @param  whence  SEEK_SET, SEEK_CUR, or SEEK_END
         @return true if the seek was successful
@@ -121,11 +120,11 @@ class VSocketStream : public VStream
         @return the number of bytes currently available for reading
         */
         virtual Vs64 available() const;
-    
+
     private:
-    
+
         VSocket* mSocket;   ///< The socket on which this stream does its i/o.
-    };
+};
 
 #endif /* vsocketstream_h */
 

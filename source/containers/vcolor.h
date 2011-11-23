@@ -24,10 +24,9 @@ class VSettingsNode;
 VColor defines a color value in terms of RGB and Alpha. The value of each component is constrained
 to values 0..255, but for ease of use the APIs all use plain old "int" types.
 */
-class VColor
-    {
+class VColor {
     public:
-    
+
         // For clarity and speed, we provide constant accessors for the standard CSS colors.
         // These are the fastest way to use this set of colors, because it can avoid unnecessary
         // construction or copying in some use cases.
@@ -60,7 +59,7 @@ class VColor
         @param  b   the blue component (will be constrained to 0..255)
         @param  alpha   the alpha channel level (0 means fully transparent, 255 means fully opaque) (will be constrained to 0..255)
         */
-        VColor(int r, int g, int b, int alpha=255) : mRed(VColor::_constrain(r)), mGreen(VColor::_constrain(g)), mBlue(VColor::_constrain(b)), mAlpha(VColor::_constrain(alpha)) {}
+        VColor(int r, int g, int b, int alpha = 255) : mRed(VColor::_constrain(r)), mGreen(VColor::_constrain(g)), mBlue(VColor::_constrain(b)), mAlpha(VColor::_constrain(alpha)) {}
         /**
         Constructor for specifying using a CSS-style color string. There are
         four formats for the string:
@@ -104,7 +103,7 @@ class VColor
         Writes the color value to a binary stream. The stream data consists of 4 bytes: r, g, b, and a values.
         */
         void writeToStream(VBinaryIOStream& stream) const { stream.writeU32(this->_getStreamValue()); }
-        
+
         int getRed() const { return static_cast<int>(mRed); }
         int getGreen() const { return static_cast<int>(mGreen); }
         int getBlue() const { return static_cast<int>(mBlue); }
@@ -115,7 +114,7 @@ class VColor
         void setGreen(int val) { mGreen = VColor::_constrain(val); }
         void setBlue(int val) { mBlue = VColor::_constrain(val); }
         void setAlpha(int val) { mAlpha = VColor::_constrain(val); }
-        void setValues(int r, int g, int b, int alpha=255) { this->setRed(r); this->setGreen(g); this->setBlue(b); this->setAlpha(alpha); }
+        void setValues(int r, int g, int b, int alpha = 255) { this->setRed(r); this->setGreen(g); this->setBlue(b); this->setAlpha(alpha); }
         void setCSSColor(const VString& cssColor); ///< See the css color constructor above for details.
 
         friend inline bool operator==(const VColor& lhs, const VColor& rhs);  // exact equality
@@ -131,18 +130,18 @@ class VColor
         void setQColor(const QColor& c) { this->setValues(c.red(), c.blue(), c.green(), c.alpha()); }
         QColor getQColor() const { return QColor(static_cast<int>(mRed), static_cast<int>(mGreen), static_cast<int>(mBlue), static_cast<int>(mAlpha)); }
 #endif
-        
+
     private:
-    
+
         static Vu8 _constrain(int val) { return static_cast<Vu8>(V_CONSTRAIN_MINMAX(val, 0, 255)); }
         void _setStreamValue(Vu32 value) { mRed = (Vu8)((value & 0xFF000000) >> 24); mGreen = (Vu8)((value & 0x00FF0000) >> 16); mBlue = (Vu8)((value & 0x0000FF00) >> 8); mAlpha = (Vu8)(value & 0x000000FF); }
         Vu32 _getStreamValue() const { return (mRed << 24) | (mGreen << 16) | (mBlue << 8) | mAlpha; }
-    
+
         Vu8 mRed;
         Vu8 mGreen;
         Vu8 mBlue;
         Vu8 mAlpha;
-    };
+};
 
 inline bool operator==(const VColor& lhs, const VColor& rhs) { return lhs.mRed == rhs.mRed && lhs.mGreen == rhs.mGreen && lhs.mBlue == rhs.mBlue && lhs.mAlpha == rhs.mAlpha; }
 inline bool operator!=(const VColor& lhs, const VColor& rhs) { return !operator==(lhs, rhs); }
@@ -161,15 +160,14 @@ Also for consistency and brevity, we abbreviate using "bg" and "fg" everywhere.
 For efficiency, thoughout the color palette classes we provide flexible APIs
 that can return a color pair, a particular color, or a fg/bg color as asked for.
 */
-class VColorPair
-    {
+class VColorPair {
     public:
-    
+
         VColorPair();
         VColorPair(const VColor& bg); // fg set to contrast with bg
         VColorPair(const VColor& bg, const VColor& fg);
         ~VColorPair() {} // non-virtual for space efficiency
-        
+
         const VColor& getBg() const { return mBg; }
         const VColor& getFg() const { return mFg; }
         const VColor& getColor(bool isBg) const { return isBg ? mBg : mFg; }
@@ -198,10 +196,10 @@ class VColorPair
         friend inline bool operator!=(const VColorPair& c1, const VColorPair& c2);  // exact inequality
 
     private:
-    
+
         VColor mBg;
         VColor mFg;
-    };
+};
 
 inline bool operator==(const VColorPair& c1, const VColorPair& c2) { return c1.mBg == c2.mBg && c1.mFg == c2.mFg; }
 inline bool operator!=(const VColorPair& c1, const VColorPair& c2) { return c1.mBg != c2.mBg || c1.mFg != c2.mFg; }
@@ -228,15 +226,14 @@ Note: I am using the word "mapper" here primarily to avoid collision/confusion
 with the STL "map" type. It looks weird to have a map of maps. This way, a color
 palette has a map that finds "mappers" from their names.
 */
-class VColorMapper
-    {
+class VColorMapper {
     public:
-    
+
         VColorMapper() : mDefaultColors() {}
         virtual ~VColorMapper() {}
-        
+
         virtual void readColors(const VSettingsNode& mapperNode, VStringVector* errorList);
-        
+
         virtual VColorPair getColors(const VString& stringValue) const = 0;
         virtual VColorPair getColors(int intValue) const = 0;
         virtual VColorPair getColors(Vs64 int64Value) const = 0;
@@ -248,14 +245,14 @@ class VColorMapper
 
         virtual void _readColorElement(const VSettingsNode& colorNode) = 0; // *Should* throw VException if element is invalid.
         VColorPair _readColorPair(const VSettingsNode& colorNode);
-    
+
         VColorPair mDefaultColors;
-    };
+};
 
 // VColorPalette --------------------------------------------------------------
 
 class VSettingsNode;
-typedef std::map<VString,VColorMapper*> VColorPaletteMap;
+typedef std::map<VString, VColorMapper*> VColorPaletteMap;
 
 /**
 VColorPalette is a collection of color mappers keyed by name. Often you will just
@@ -266,17 +263,16 @@ messages; if not null, any code that encounters an error on a single color or ma
 the error strings. This allows the caller to decide what to do with those errors, yet
 proceed with using the valid part of the palette.
 */
-class VColorPalette
-    {
+class VColorPalette {
     public:
-    
+
         VColorPalette();
         VColorPalette(const VSettingsNode& paletteNode, VStringVector* errorList);
         virtual ~VColorPalette();
-        
+
         const VString& getName() const { return mName; }
         void setName(const VString& name) { mName = name; }
-        
+
         void adoptColorMapper(const VString& mapperName, VColorMapper* mapper);
         const VColorMapper* findMapper(const VString& mapperName) const;
 
@@ -290,28 +286,27 @@ class VColorPalette
         void _addMapper(const VSettingsNode& mapperNode, VStringVector* errorList);
         VColorMapper* _readNewMapper(const VString& mapperType, const VSettingsNode& mapperNode, bool usesPrefixMode, VStringVector* errorList);
         void _addMapperNameAliases(VColorMapper* mapper, const VSettingsNode& mapperNode, VStringVector* errorList);
-    
+
         VString          mName;
         VColorPaletteMap mColorMappers;
         VStringVector    mAliases; // Tracks aliases in use in map so destructor can *safely* clean up.
-    };
+};
 
 // VStringColorMapper ---------------------------------------------------------
 
-typedef std::map<VString,VColorPair> VStringColorMap;
+typedef std::map<VString, VColorPair> VStringColorMap;
 
 /**
 VStringColorMapper maps string values to colors.
 */
-class VStringColorMapper : public VColorMapper
-    {
+class VStringColorMapper : public VColorMapper {
     public:
-    
+
         VStringColorMapper();
         virtual ~VStringColorMapper();
 
         virtual void readColors(const VSettingsNode& mapperNode, VStringVector* errorList);
-        
+
         virtual VColorPair getColors(const VString& stringValue) const;
         virtual VColorPair getColors(int intValue) const;
         virtual VColorPair getColors(Vs64 int64Value) const;
@@ -322,16 +317,16 @@ class VStringColorMapper : public VColorMapper
     protected:
 
         virtual void _readColorElement(const VSettingsNode& colorNode);
-    
+
     private:
-    
+
         VStringColorMap mColorMap;
         bool            mCaseSensitive;
-    };
+};
 
 // VIntegerColorMapper --------------------------------------------------------
 
-typedef std::map<Vs64,VColorPair> VIntegerColorMap;
+typedef std::map<Vs64, VColorPair> VIntegerColorMap;
 
 /**
 VIntegerColorMapper maps integer values to colors.
@@ -339,13 +334,12 @@ VIntegerColorMapper maps integer values to colors.
 Note that we use Vs64 so that this class can handle any size integer.
 We don't need separate mapper types for (32-bit) int and Vs64.
 */
-class VIntegerColorMapper : public VColorMapper
-    {
+class VIntegerColorMapper : public VColorMapper {
     public:
-    
+
         VIntegerColorMapper();
         virtual ~VIntegerColorMapper();
-        
+
         virtual VColorPair getColors(const VString& stringValue) const;
         virtual VColorPair getColors(int intValue) const;
         virtual VColorPair getColors(Vs64 int64Value) const;
@@ -356,11 +350,11 @@ class VIntegerColorMapper : public VColorMapper
     protected:
 
         virtual void _readColorElement(const VSettingsNode& colorNode);
-    
+
     private:
-    
+
         VIntegerColorMap    mColorMap;
-    };
+};
 
 // VDoubleColorMapper ---------------------------------------------------------
 
@@ -375,28 +369,27 @@ the math operations that generate them. It does, however come at the cost of
 string conversion. If you want more precision then you probably want to use the
 VDoubleRangeColorMapper and treat the values as boundaries rather than keys.
 */
-class VDoubleColorMapper : public VColorMapper
-    {
+class VDoubleColorMapper : public VColorMapper {
     public:
-    
+
         VDoubleColorMapper();
         virtual ~VDoubleColorMapper();
-        
+
         virtual VColorPair getColors(const VString& stringValue) const;
         virtual VColorPair getColors(int intValue) const;
         virtual VColorPair getColors(Vs64 int64Value) const;
         virtual VColorPair getColors(VDouble doubleValue) const;
 
         void addColors(VDouble doubleValue, const VColorPair& rangeColors);
-        
+
     protected:
 
         virtual void _readColorElement(const VSettingsNode& colorNode);
-    
+
     private:
-    
+
         VStringColorMap mColorMap;
-    };
+};
 
 // VStringRangeColorMapper --------------------------------------------------------
 
@@ -404,20 +397,19 @@ class VDoubleColorMapper : public VColorMapper
 VStringRangeColorElement stores one range element for a VStringRangeColorMapper.
 The range defines the lower bound of the range, and its color pair.
 */
-class VStringRangeColorElement
-    {
+class VStringRangeColorElement {
     public:
-    
+
         VStringRangeColorElement(const VString& rangeMin, const VColorPair& colors) :
             mRangeMin(rangeMin), mColors(colors) {}
         ~VStringRangeColorElement() {}
-        
+
         VString mRangeMin;
         VColorPair mColors;
 
         // Required to allow STL to sort objects of this class:
         friend inline bool operator<(const VString& s1, const VString& s2);
-    };
+};
 
 inline bool operator<(const VStringRangeColorElement& e1, const VStringRangeColorElement& e2) { return e1.mRangeMin < e2.mRangeMin; }
 
@@ -438,36 +430,35 @@ To make this work as most people would expect, we fold the string values to
 lower case internally. Otherwise, the normal sort order would put all upper
 case letters before all lower case letters, which is not what would be expected.
 */
-class VStringRangeColorMapper : public VColorMapper
-    {
+class VStringRangeColorMapper : public VColorMapper {
     public:
-    
+
         VStringRangeColorMapper(bool usesPrefixMode);
         virtual ~VStringRangeColorMapper();
-        
+
         virtual void readColors(const VSettingsNode& mapperNode, VStringVector* errorList);
-        
+
         virtual VColorPair getColors(const VString& stringValue) const;
         virtual VColorPair getColors(int intValue) const;
         virtual VColorPair getColors(Vs64 int64Value) const;
         virtual VColorPair getColors(VDouble doubleValue) const;
-        
+
         void addColors(const VString& rangeMin, const VColorPair& rangeColors);
-        
+
     protected:
 
         virtual void _readColorElement(const VSettingsNode& colorNode);
-    
+
     private:
-    
+
         VColorPair _getColorsWithPrefixModeCheck(const VColorPair& foundColors) const;
-    
+
         VStringRangeVector mColorRanges;
         bool               mCaseSensitive;
         bool               mUsesPrefixMode;
-        
+
         friend class VColorUnit;
-    };
+};
 
 // VIntegerRangeColorMapper --------------------------------------------------------
 
@@ -475,20 +466,19 @@ class VStringRangeColorMapper : public VColorMapper
 VIntegerRangeColorElement stores one range element for a VIntegerRangeColorMapper.
 The range defines the lower bound of the range, and its color pair.
 */
-class VIntegerRangeColorElement
-    {
+class VIntegerRangeColorElement {
     public:
-    
+
         VIntegerRangeColorElement(Vs64 rangeMin, const VColorPair& colors) :
             mRangeMin(rangeMin), mColors(colors) {}
         ~VIntegerRangeColorElement() {}
-        
+
         Vs64 mRangeMin;
         VColorPair mColors;
 
         // Required to allow STL to sort objects of this class:
         friend inline bool operator<(const VString& s1, const VString& s2);
-    };
+};
 
 inline bool operator<(const VIntegerRangeColorElement& e1, const VIntegerRangeColorElement& e2) { return e1.mRangeMin < e2.mRangeMin; }
 
@@ -500,30 +490,29 @@ VIntegerRangeColorMapper maps ranges of integer values to colors.
 Note that we use Vs64 so that this class can handle any size integer.
 We don't need separate mapper types for (32-bit) int and Vs64.
 */
-class VIntegerRangeColorMapper : public VColorMapper
-    {
+class VIntegerRangeColorMapper : public VColorMapper {
     public:
-    
+
         VIntegerRangeColorMapper();
         virtual ~VIntegerRangeColorMapper();
-        
+
         virtual VColorPair getColors(const VString& stringValue) const;
         virtual VColorPair getColors(int intValue) const;
         virtual VColorPair getColors(Vs64 int64Value) const;
         virtual VColorPair getColors(VDouble doubleValue) const;
-        
+
         void addColors(Vs64 rangeMin, const VColorPair& rangeColors);
-        
+
     protected:
 
         virtual void _readColorElement(const VSettingsNode& colorNode);
-    
+
     private:
-    
+
         VIntegerRangeVector mColorRanges;
-        
+
         friend class VColorUnit;
-    };
+};
 
 // VDoubleRangeColorMapper --------------------------------------------------------
 
@@ -531,20 +520,19 @@ class VIntegerRangeColorMapper : public VColorMapper
 VDoubleRangeColorElement stores one range element for a VDoubleRangeColorMapper.
 The range defines the lower bound of the range, and its color pair.
 */
-class VDoubleRangeColorElement
-    {
+class VDoubleRangeColorElement {
     public:
-    
+
         VDoubleRangeColorElement(VDouble rangeMin, const VColorPair& colors) :
             mRangeMin(rangeMin), mColors(colors) {}
         ~VDoubleRangeColorElement() {}
-        
+
         VDouble mRangeMin;
         VColorPair mColors;
 
         // Required to allow STL to sort objects of this class:
         friend inline bool operator<(const VString& s1, const VString& s2);
-    };
+};
 
 inline bool operator<(const VDoubleRangeColorElement& e1, const VDoubleRangeColorElement& e2) { return e1.mRangeMin < e2.mRangeMin; }
 
@@ -553,29 +541,28 @@ typedef std::vector<VDoubleRangeColorElement> VDoubleRangeVector;
 /**
 VDoubleRangeColorMapper maps ranges of double values to colors.
 */
-class VDoubleRangeColorMapper : public VColorMapper
-    {
+class VDoubleRangeColorMapper : public VColorMapper {
     public:
-    
+
         VDoubleRangeColorMapper();
         virtual ~VDoubleRangeColorMapper();
-        
+
         virtual VColorPair getColors(const VString& stringValue) const;
         virtual VColorPair getColors(int intValue) const;
         virtual VColorPair getColors(Vs64 int64Value) const;
         virtual VColorPair getColors(VDouble doubleValue) const;
-        
+
         void addColors(VDouble rangeMin, const VColorPair& rangeColors);
-        
+
     protected:
 
         virtual void _readColorElement(const VSettingsNode& colorNode);
-    
+
     private:
-    
+
         VDoubleRangeVector mColorRanges;
-        
+
         friend class VColorUnit;
-    };
+};
 
 #endif /* vcolor_h */

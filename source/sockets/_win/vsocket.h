@@ -35,8 +35,7 @@ the other platforms.
 
 @see    VSocketBase
 */
-class VSocket : public VSocketBase
-    {
+class VSocket : public VSocketBase {
     public:
 
         /**
@@ -128,7 +127,7 @@ class VSocket : public VSocketBase
 
         static bool gStaticInited;  ///< Used internally to initialize at startup.
         static bool staticInit();   ///< Used internally to initialize at startup.
-    };
+};
 
 #endif /* vsocketbase_h */
 

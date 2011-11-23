@@ -10,43 +10,37 @@ http://www.bombaydigital.com/
 
 #include "vlistenerthread.h"
 
-VSocketThread::VSocketThread(const VString& name, VSocket* socket, VListenerThread* ownerThread) :
-VThread(name, kDeleteSelfAtEnd, kCreateThreadDetached, (ownerThread == NULL) ? NULL : ownerThread->getManagementInterface()),
-mSocket(socket),
-mOwnerThread(ownerThread)
+VSocketThread::VSocketThread(const VString& name, VSocket* socket, VListenerThread* ownerThread)
+    : VThread(name, kDeleteSelfAtEnd, kCreateThreadDetached, (ownerThread == NULL) ? NULL : ownerThread->getManagementInterface())
+    , mSocket(socket)
+    , mOwnerThread(ownerThread)
     {
-    }
+}
 
-VSocketThread::~VSocketThread()
-    {
-    if (mOwnerThread != NULL)
-        {
+VSocketThread::~VSocketThread() {
+    if (mOwnerThread != NULL) {
         // Prevent all exceptions from escaping destructor.
-        try
-            {
+        try {
             mOwnerThread->socketThreadEnded(this);
-            }
-        catch (...) {}
-        }
+        } catch (...) {}
+    }
 
     delete mSocket;    // socket will close itself on deletion
-    }
+}
 
-VSocket* VSocketThread::getSocket() const
-    {
+VSocket* VSocketThread::getSocket() const {
     return mSocket;
-    }
+}
 
-VListenerThread* VSocketThread::getOwnerThread() const
-    {
+VListenerThread* VSocketThread::getOwnerThread() const {
     return mOwnerThread;
-    }
+}
 
-void VSocketThread::closeAndStop()
-    {
-    if (mSocket != NULL)
+void VSocketThread::closeAndStop() {
+    if (mSocket != NULL) {
         mSocket->close();
+    }
 
     this->stop();
-    }
+}
 

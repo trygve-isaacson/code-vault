@@ -23,10 +23,9 @@ You pass an instance of VManagementInterface, or NULL, to each VThread
 that is created by your factories. This specifies the management
 interface object that is notified of that thread's lifecycle.
 */
-class VManagementInterface
-    {
+class VManagementInterface {
     public:
-    
+
         /**
         Constructs the interface object.
         */
@@ -35,7 +34,7 @@ class VManagementInterface
         Destructor.
         */
         virtual ~VManagementInterface() {}
-        
+
         /**
         Notifies the interface of a new thread thread whose run() is about
         to be invoked. The concrete class might typically add the thread
@@ -54,7 +53,7 @@ class VManagementInterface
         @param    listenerThread    the thread to remove from the list
         */
         virtual void threadEnded(VThread* thread) = 0;
-        
+
         /**
         Notifies the interface of a new listener thread whose runListening()
         is underway and is about to start listening. The concrete class
@@ -105,7 +104,7 @@ class VManagementInterface
         */
         virtual void listenerEnded(VListenerThread* listener) = 0;
 
-    };
+};
 
 #endif /* vmanagementinterface_h */
 

@@ -14,10 +14,9 @@ http://www.bombaydigital.com/
 /**
 Unit test class for validating VColor-related classes.
 */
-class VColorUnit : public VUnit
-    {
+class VColorUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -28,14 +27,14 @@ class VColorUnit : public VUnit
         Destructor.
         */
         virtual ~VColorUnit() {}
-        
+
         /**
         Executes the unit test.
         */
         virtual void run();
 
     private:
-    
+
         void _testVColor();
         void _testVStringColorMapper();
         void _testVIntegerColorMapper();
@@ -44,6 +43,6 @@ class VColorUnit : public VUnit
         void _testVIntegerRangeColorMapper();
         void _testVDoubleRangeColorMapper();
         void _testVColorPalette();
-    };
+};
 
 #endif /* vcolorunit_h */

@@ -14,10 +14,9 @@ http://www.bombaydigital.com/
 /**
 Unit test class for validating VBinaryIO.
 */
-class VBinaryIOUnit : public VUnit
-    {
+class VBinaryIOUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -28,12 +27,12 @@ class VBinaryIOUnit : public VUnit
         Destructor.
         */
         virtual ~VBinaryIOUnit() {}
-        
+
         /**
         Executes the unit test.
         */
         virtual void run();
 
-    };
+};
 
 #endif /* vbinaryiounit_h */

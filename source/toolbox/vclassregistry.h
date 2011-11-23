@@ -94,7 +94,7 @@ In the class implementation:
         // We're using the "create on first use" idiom here.
         if (gRegistry == NULL)
             gRegistry = new VClassRegistry();
-        
+
         return gRegistry;
         }
 
@@ -105,15 +105,14 @@ the above example to:
         { ThingThatOwnsMyRegistry::registry()->registerClass(this); }
 
 */
-class VClassRegistry
-    {
+class VClassRegistry {
     public:
-    
+
         /**
         Returns a pointer to the global class registry object.
         */
         static VClassRegistry* registry();
-    
+
         /**
         Constructs the registry.
         */
@@ -122,7 +121,7 @@ class VClassRegistry
         Destructor.
         */
         virtual ~VClassRegistry();
-        
+
         /**
         Instantiates and returns an object of the correct type for the
         specified class ID. Throws an exception if there is no factory
@@ -148,13 +147,13 @@ class VClassRegistry
         @return the factory for the specified class ID
         */
         const VClassFactory* findClassFactory(const VString& classID) const;
-        
+
     private:
-    
+
         VClassFactoryPtrVector mFactories; ///< The factories that have been registered.
-        
+
         static VClassRegistry* gRegistry;  ///< The global registry we maintain.
-    };
+};
 
 /**
 VClassFactory is the abstract base class that you subclass to provide
@@ -164,8 +163,7 @@ However, it is useful to use the example of the FooFactory class
 above as the simplest way to get the factory registered automatically
 with a VClassRegistry at static initialization time.
 */
-class VClassFactory
-    {
+class VClassFactory {
     public:
 
         /**
@@ -177,7 +175,7 @@ class VClassFactory
         Destructor.
         */
         virtual ~VClassFactory() {}
-        
+
         /**
         Pure virtual method (must be overridden) that instantiates and
         returns an object of the appropriate type for this factory.
@@ -198,9 +196,9 @@ class VClassFactory
         void getClassID(VString& classID) const;
 
     private:
-    
+
         VString mClassID;    ///< The class ID this factory is for.
-    };
+};
 
 /**
 @def DEFINE_CLASSFACTORY(classname, factoryname)
@@ -211,22 +209,22 @@ defines it correctly. Typically, you'll say something like:
 - DEFINE_CLASSFACTORY(Foo, FooFactory);
 */
 #define DEFINE_CLASSFACTORY(classname, factoryname) \
-class factoryname : public VClassFactory \
-    { \
+class factoryname : public VClassFactory { \
     public: \
  \
         static factoryname gFactory; \
  \
-        factoryname(const VString& classID) : VClassFactory(classID) \
+        factoryname(const VString& classID) \
+            : VClassFactory(classID) \
             { \
             VClassRegistry::registry()->registerClass(this); \
-            } \
+        } \
  \
         virtual ~factoryname() {} \
  \
         virtual void* instantiateObject() const { return new classname(); } \
  \
-    }
+}
 
 /**
 @def DECLARE_CLASSFACTORY(classname, factoryname)

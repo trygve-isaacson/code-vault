@@ -14,32 +14,31 @@ http://www.bombaydigital.com/
 
 // VMessageInputThread --------------------------------------------------------
 
-VMessageInputThread::VMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory) :
-VSocketThread(name, socket, ownerThread),
-mSocketStream(socket, "VMessageInputThread"),
-mInputStream(mSocketStream),
-mConnected(false),
-mSessionReference(NULL),
-mServer(server),
-mMessageFactory(messageFactory),
-mHasOutputThread(false)
+VMessageInputThread::VMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory)
+    : VSocketThread(name, socket, ownerThread)
+    , mSocketStream(socket, "VMessageInputThread")
+    , mInputStream(mSocketStream)
+    , mConnected(false)
+    , mSessionReference(NULL)
+    , mServer(server)
+    , mMessageFactory(messageFactory)
+    , mHasOutputThread(false)
     {
-    }
+}
 
-VMessageInputThread::~VMessageInputThread()
-    {
+VMessageInputThread::~VMessageInputThread() {
     // If we have a session, it is responsible for deleting the mSocket, not us.
     // This is because a session has input and output threads, the order of whose
     // destruction is unpredictable; so we cannot let our base class delete the mSocket.
-    if (mSessionReference.getSession() != NULL)
+    if (mSessionReference.getSession() != NULL) {
         mSocket = NULL;
+    }
 
     mServer = NULL;
     mMessageFactory = NULL;
-    }
+}
 
-void VMessageInputThread::run()
-    {
+void VMessageInputThread::run() {
     /*
     We process messages until we're "done". Done is flagged by the subclass
     marking the thread done when it sees fit. The subclass must catch any
@@ -52,74 +51,62 @@ void VMessageInputThread::run()
     recognized by the fact that we are no longer in running state.
     */
 
-    try
-        {
-        while (this->isRunning())
+    try {
+        while (this->isRunning()) {
             this->_processNextRequest(); // Blocking read on socket; then message is dispatched.
         }
-    catch (const VEOFException& /*ex*/)
-        {
+    } catch (const VEOFException& /*ex*/) {
         // Usually just means the client has closed the connection.
         VLOGGER_MESSAGE_DEBUG(VSTRING_FORMAT("[%s] VMessageInputThread: Socket has closed (EOF), thread will end.", mName.chars()));
-        }
-    catch (const VSocketClosedException& /*ex*/)
-        {
+    } catch (const VSocketClosedException& /*ex*/) {
         VLOGGER_MESSAGE_DEBUG(VSTRING_FORMAT("[%s] VMessageInputThread: Socket has closed, thread will end.", mName.chars()));
-        }
-    catch (const VException& ex)
-        {
-        if (this->isRunning())
+    } catch (const VException& ex) {
+        if (this->isRunning()) {
             VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread: Exiting due to top level exception #%d '%s'.", mName.chars(), ex.getError(), ex.what()));
         }
-    catch (const std::exception& ex)
-        {
-        if (this->isRunning())
+    } catch (const std::exception& ex) {
+        if (this->isRunning()) {
             VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread: Exiting due to top level exception '%s'.", mName.chars(), ex.what()));
         }
-    catch (...)
-        {
-        if (this->isRunning())
+    } catch (...) {
+        if (this->isRunning()) {
             VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread: Exiting due to top level unknown exception.", mName.chars()));
         }
+    }
 
-    if (mSessionReference.getSession() != NULL)
+    if (mSessionReference.getSession() != NULL) {
         mSessionReference.getSession()->shutdown(this);
+    }
 
     // If we are dependent on an output thread, we must spin here until it clears the flag.
     const VDuration warnLimit = 15 * VDuration::SECOND();
     const VInstant startTime;
     bool warned = false;
-    while (mHasOutputThread)
-        {
+    while (mHasOutputThread) {
         VThread::sleep(50 * VDuration::MILLISECOND());
-        if (!warned)
-            {
+        if (!warned) {
             const VInstant now;
             const VDuration duration = now - startTime;
-            if (duration > warnLimit)
-                {
+            if (duration > warnLimit) {
                 warned = true;
                 VLOGGER_MESSAGE_WARN(VSTRING_FORMAT("[%s] VMessageInputThread: Still waiting for output thread to end after %s. Will warn again when output thread ends.", mName.chars(), duration.getDurationString().chars()));
-                }
             }
         }
+    }
 
-    if (warned)
-        {
+    if (warned) {
         const VInstant now;
         const VDuration duration = now - startTime;
         VLOGGER_MESSAGE_WARN(VSTRING_FORMAT("[%s] VMessageInputThread: Finally saw output thread end after %s.", mName.chars(), duration.getDurationString().chars()));
-        }
     }
+}
 
-void VMessageInputThread::attachSession(VClientSession* session)
-    {
+void VMessageInputThread::attachSession(VClientSession* session) {
     mSessionReference.setSession(session);
-    }
+}
 
 //lint -e429 "Custodial pointer 'message' has not been freed or returned" [OK: try or catch branches guarantee message is released.]
-void VMessageInputThread::_processNextRequest()
-    {
+void VMessageInputThread::_processNextRequest() {
     VMessage* message = mMessageFactory->instantiateNewMessage();
 
     /*
@@ -137,77 +124,60 @@ void VMessageInputThread::_processNextRequest()
         previous message was correctly formatted even if we encountered a
         problem while attempting to handle it.
     */
-    try
-        {
+    try {
         message->receive(mName, mInputStream);
         this->_dispatchMessage(message);
-        }
-    catch (...)
-        {
+    } catch (...) {
         // If an exception reached us, we are responsible for releasing the message.
         VMessage::release(message);
         throw;
-        }
     }
+}
 
-void VMessageInputThread::_dispatchMessage(VMessage* message)
-    {
+void VMessageInputThread::_dispatchMessage(VMessage* message) {
     VMessageHandler* handler = VMessageHandler::get(message, mServer, mSessionReference.getSession(), this);
 
-    if (handler == NULL)
-        {
+    if (handler == NULL) {
         VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: No message hander defined for message %d.", mName.chars(), (int) message->getMessageID()));
         this->_handleNoMessageHandler(message);
         VMessage::release(message);
-        }
-    else
-        {
+    } else {
         VInstant messageHandlerStart;
 
         /*
         PLEASE SEE COMMENTS IN VMessageInputThread::_processNextRequest() FOR THE
         RULES ON EXCEPTION HANDLING DURING REQUEST PROCESSING.
         */
-        try
-            {
+        try {
             this->_beforeProcessMessage(handler, message);
             this->_callProcessMessage(handler);
             this->_afterProcessMessage(handler);
-            }
-        catch (const VException& ex)
-            {
+        } catch (const VException& ex) {
             VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: Caught exception for message %d: #%d %s", mName.chars(), (int) message->getMessageID(), ex.getError(), ex.what()));
-            }
-        catch (const std::exception& e)
-            {
+        } catch (const std::exception& e) {
             VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: Caught exception for message ID %d: %s", mName.chars(), (int) message->getMessageID(), e.what()));
-            }
-        catch (...)
-            {
+        } catch (...) {
             VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: Caught unknown exception for message ID %d.", mName.chars(), (int) message->getMessageID()));
-            }
+        }
 
         handler->releaseMessage();    // handler might not actually release message (processMessage may have re-used it)
         delete handler;
-        }
     }
+}
 
-void VMessageInputThread::_callProcessMessage(VMessageHandler* handler)
-    {
+void VMessageInputThread::_callProcessMessage(VMessageHandler* handler) {
     handler->logProcessMessageStart();
     handler->processMessage();
     handler->logProcessMessageEnd();
-    }
+}
 
 // VBentoMessageInputThread ---------------------------------------------------
 
 VBentoMessageInputThread::VBentoMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory) :
-VMessageInputThread(name, socket, ownerThread, server, messageFactory)
-    {
-    }
+    VMessageInputThread(name, socket, ownerThread, server, messageFactory) {
+}
 
-void VBentoMessageInputThread::_handleNoMessageHandler(VMessage* message)
-    {
+void VBentoMessageInputThread::_handleNoMessageHandler(VMessage* message) {
     VBentoNode responseData("response");
     responseData.addInt("result", -1);
     responseData.addString("error", VSTRING_FORMAT("Invalid message ID %d. No handler defined.", (int) message->getMessageID()));
@@ -221,16 +191,12 @@ void VBentoMessageInputThread::_handleNoMessageHandler(VMessage* message)
     VBinaryIOStream io(mSocketStream);
     response->send(mName, io);
     VMessage::release(response);
-    }
+}
 
-void VBentoMessageInputThread::_callProcessMessage(VMessageHandler* handler)
-    {
-    try
-        {
+void VBentoMessageInputThread::_callProcessMessage(VMessageHandler* handler) {
+    try {
         VMessageInputThread::_callProcessMessage(handler);
-        }
-    catch (const std::exception& ex)
-        {
+    } catch (const std::exception& ex) {
         VBentoNode responseData("response");
         responseData.addInt("result", -1);
         responseData.addString("error", VSTRING_FORMAT("An error occurred processing the message: %s", ex.what()));
@@ -244,6 +210,6 @@ void VBentoMessageInputThread::_callProcessMessage(VMessageHandler* handler)
         VBinaryIOStream io(mSocketStream);
         response->send(mName, io);
         VMessage::release(response);
-        }
     }
+}
 

@@ -14,10 +14,9 @@ http://www.bombaydigital.com/
 /**
 Unit test class for validating VGeometry classes.
 */
-class VGeometryUnit : public VUnit
-    {
+class VGeometryUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -28,20 +27,20 @@ class VGeometryUnit : public VUnit
         Destructor.
         */
         virtual ~VGeometryUnit() {}
-        
+
         /**
         Executes the unit test.
         */
         virtual void run();
 
     private:
-    
+
         void _testVSize();
         void _testVPoint();
         void _testVPoint3D();
         void _testVRect();
         void _testVLine();
         void _testVPolygon();
-    };
+};
 
 #endif /* vgeometryunit_h */

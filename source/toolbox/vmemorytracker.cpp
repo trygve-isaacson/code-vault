@@ -81,37 +81,36 @@ assign an allocation number, which is incremented for each allocation. This allo
 sort by allocation order when we report, and to distinguish unique allocations at the same
 address.
 */
-class AllocationRecord
-    {
+class AllocationRecord {
     public:
-        AllocationRecord(void* pointer, bool isArray, size_t size, const char* file, int line, const char* stackCrawlInfo) :
-            fAllocationNumber(0),
-            fWhen(),
-            fPointer(pointer),
-            fIsArray(isArray),
-            fSize(size),
-            fFile(file),
-            fLine(line),
-            fStackCrawlInfo(stackCrawlInfo) {}
-        ~AllocationRecord() // Note that we don't own fPointer or fFile.
-            {
-            delete [] fStackCrawlInfo;
-            }
+        AllocationRecord(void* pointer, bool isArray, size_t size, const char* file, int line, const char* stackCrawlInfo)
+            : mAllocationNumber(0)
+            , mWhen()
+            , mPointer(pointer)
+            , mIsArray(isArray)
+            , mSize(size)
+            , mFile(file)
+            , mLine(line)
+            , mStackCrawlInfo(stackCrawlInfo)
+            {}
+        ~AllocationRecord() { // Note that we don't own mPointer or mFile.
+            delete [] mStackCrawlInfo;
+        }
 
-        mutable Vs64    fAllocationNumber;  ///< The unique sequential number of this allocation.
-        VInstant        fWhen;              ///< Time of the allocation.
-        void*           fPointer;           ///< The allocated pointer.
-        bool            fIsArray;           ///< True if the pointer was allocated through the array operator new[]().
-        size_t          fSize;              ///< The number of bytes allocated by the caller.
-        const char*     fFile;              ///< The file name supplied by the __FILE__ macro.
-        int             fLine;              ///< The line number supplied by the __LINE__ macro.
-        const char*     fStackCrawlInfo;    ///< If not null, a char* (to be delete[]'ed) with stack crawl text.
+        mutable Vs64    mAllocationNumber;  ///< The unique sequential number of this allocation.
+        VInstant        mWhen;              ///< Time of the allocation.
+        void*           mPointer;           ///< The allocated pointer.
+        bool            mIsArray;           ///< True if the pointer was allocated through the array operator new[]().
+        size_t          mSize;              ///< The number of bytes allocated by the caller.
+        const char*     mFile;              ///< The file name supplied by the __FILE__ macro.
+        int             mLine;              ///< The line number supplied by the __LINE__ macro.
+        const char*     mStackCrawlInfo;    ///< If not null, a char* (to be delete[]'ed) with stack crawl text.
 
-        // Need operator< to suport STL sort(). We sort by fAllocationNumber.
+        // Need operator< to suport STL sort(). We sort by mAllocationNumber.
         friend inline bool operator<(const AllocationRecord& r1, const AllocationRecord& r2);
-    };
+};
 
-inline bool operator<(const AllocationRecord& r1, const AllocationRecord& r2) { return r1.fAllocationNumber < r2.fAllocationNumber; }
+inline bool operator<(const AllocationRecord& r1, const AllocationRecord& r2) { return r1.mAllocationNumber < r2.mAllocationNumber; }
 
 typedef std::map<const void*, const AllocationRecord*> AllocationMap;
 
@@ -120,20 +119,20 @@ This class exists purely to allow a std::sort() on a vector of allocation record
 to AllocationRecord in a vector, sort() will sort on the raw pointer values. So instead, we wrap the pointers
 in this class, which can implement operator< correctly for our desired sort order.
 */
-class AllocationRecordPtr
-    {
+class AllocationRecordPtr {
     public:
-        AllocationRecordPtr(const AllocationRecord* r) :
-            fPtr(r) {}
-        ~AllocationRecordPtr() {} // Note that we don't own fPtr.
+        AllocationRecordPtr(const AllocationRecord* r)
+            : mPtr(r)
+            {}
+        ~AllocationRecordPtr() {} // Note that we don't own mPtr.
 
-        const AllocationRecord* fPtr; ///< Pointer to the allocation record we wrap.
+        const AllocationRecord* mPtr; ///< Pointer to the allocation record we wrap.
 
-        // Need operator< to suport STL sort(). We sort by fAllocationNumber.
+        // Need operator< to suport STL sort(). We sort by mAllocationNumber.
         friend inline bool operator<(const AllocationRecordPtr& r1, const AllocationRecordPtr& r2);
-    };
+};
 
-inline bool operator<(const AllocationRecordPtr& r1, const AllocationRecordPtr& r2) { return r1.fPtr->fAllocationNumber < r2.fPtr->fAllocationNumber; }
+inline bool operator<(const AllocationRecordPtr& r1, const AllocationRecordPtr& r2) { return r1.mPtr->mAllocationNumber < r2.mPtr->mAllocationNumber; }
 
 typedef std::vector<AllocationRecordPtr> AllocationPtrVector;
 
@@ -142,17 +141,17 @@ We allow the user to specify certain lines of code that record a stack crawl alo
 with the allocation record; to manage this we just keep a vector of file+line
 values for which this feature is turned on. Should be a very small set.
 */
-class CodeLocation
-    {
+class CodeLocation {
     public:
-        CodeLocation(const VString& file, int line) :
-            mFile(file),
-            mLine(line) {}
+        CodeLocation(const VString& file, int line)
+            : mFile(file)
+            , mLine(line)
+            {}
         ~CodeLocation() {}
 
         VString mFile;
         int mLine;
-    };
+};
 
 typedef std::vector<CodeLocation> CodeLocationVector;
 
@@ -161,7 +160,7 @@ static AllocationMap gAllocationMap; ///< The allocations we are currently track
 static CodeLocationVector gStackCrawlCodeLocations; ///< Code locations whose allocations record a stack crawl.
 static bool   gTrackMemory = false; ///< The flag to enable or disable tracking new allocations.
 static bool   gInsideLockedMutex = false; ///< True only when inside locker during reset or report code; prevents deletes there from recursive deadlock.
-static Vs64   gNextAllocationNumber = 1; ///< The fAllocationNumber value of the next allocation.
+static Vs64   gNextAllocationNumber = 1; ///< The mAllocationNumber value of the next allocation.
 static int    gMaxNumAllocations = 50000; ///< The max number of allocations we'll hold in our map. Desire: 5s max to produce report. Seems like it does about 10 per ms.
 static int    gCurrentNumAllocations = 0; ///< The current number of allocations in our map.
 static VDuration gExpirationDuration = 15 * VDuration::MINUTE(); ///< Whenever enabled(), we apply this to gExpirationTime.
@@ -175,360 +174,329 @@ static size_t gTrackAllocationssUnder = V_MAX_S32;
 /**
 Puts an item to the map. The allocation record must not be null.
 */
-static void _putToMap(const void* p, const AllocationRecord* r)
-    {
+static void _putToMap(const void* p, const AllocationRecord* r) {
     VMutexLocker locker(&gAllocationMapMutex, VString::EMPTY());
-    r->fAllocationNumber = gNextAllocationNumber++; // We do this manually so that AllocationRecord ctor doesn't also need to lock
+    r->mAllocationNumber = gNextAllocationNumber++; // We do this manually so that AllocationRecord ctor doesn't also need to lock
     ++gCurrentNumAllocations;
     gAllocationMap[p] = r;
-    }
+}
 
 /**
 Removes an item from the map. It's presumed that it's in the map, but
 it is harmless if not.
 */
-static void _removeFromMap(const void* p)
-    {
+static void _removeFromMap(const void* p) {
     VMutexLocker locker(&gAllocationMapMutex, VString::EMPTY());
     --gCurrentNumAllocations;
     gAllocationMap[p] = NULL;
-    }
+}
 
 /**
 Strips off everything before the file name in the supplied path. For example,
 a string like "C:\path\to\a\file.cpp" becomes "file.cpp". Basically we just
 look for the last slash or backslash and keep only what follows.
 */
-static void _stripFileName(VString& path)
-    {
+static void _stripFileName(VString& path) {
     int lastSlash = path.lastIndexOf('\\');
-    if (lastSlash == -1)
+    if (lastSlash == -1) {
         lastSlash = path.lastIndexOf('/');
-    if (lastSlash != -1)
-        path.substringInPlace(lastSlash+1);
     }
+
+    if (lastSlash != -1) {
+        path.substringInPlace(lastSlash + 1);
+    }
+}
 
 /**
 Walks backward from the end of the path and returns a pointer to the
 part that is a file name. That is, the first char after the last
 slash or backslash if there is one.
 */
-static const char* _getFileNamePtr(const char* path)
-    {
+static const char* _getFileNamePtr(const char* path) {
     int length = (int) ::strlen(path);
     // Walk backwards until we find a slash or backslash.
-    int offset = length-1;
-    while ((offset >= 0) && (path[offset] != '/') && (path[offset] != '\\'))
+    int offset = length - 1;
+    while ((offset >= 0) && (path[offset] != '/') && (path[offset] != '\\')) {
         --offset;
+    }
 
     return path + offset + 1;
-    }
+}
 
 /**
 Returns true if the specified file+line are enabled for stack crawl tracking.
 */
-static bool _isCodeLocationCrawlEnabled(const char* file, int line)
-    {
+static bool _isCodeLocationCrawlEnabled(const char* file, int line) {
     // Fast exit if no code locations are crawl-enabled.
-    if (gStackCrawlCodeLocations.size() == 0)
+    if (gStackCrawlCodeLocations.size() == 0) {
         return false;
+    }
 
     // Note that we can't use VString here because we are being called during memory allocation, and
     // a VString used here will itself allocate memory and we'll have infinite recursion. Use low-level
     // C char operations.
     const char* fileName = _getFileNamePtr(file);
-    for (CodeLocationVector::const_iterator i = gStackCrawlCodeLocations.begin(); i != gStackCrawlCodeLocations.end(); ++i)
-        {
-        if (((*i).mFile == fileName) && ((*i).mLine == line))
+    for (CodeLocationVector::const_iterator i = gStackCrawlCodeLocations.begin(); i != gStackCrawlCodeLocations.end(); ++i) {
+        if (((*i).mFile == fileName) && ((*i).mLine == line)) {
             return true;
         }
+    }
 
     return false;
-    }
+}
 
 /**
 Returns an item from the map. The result might be null.
 */
-static const AllocationRecord* _getFromMap(const void* p)
-    {
+static const AllocationRecord* _getFromMap(const void* p) {
     VMutexLocker locker(&gAllocationMapMutex, VString::EMPTY());
     return gAllocationMap[p];
-    }
+}
 
-VMemoryTracker::VMemoryTracker(bool enableAtStart)
-    {
-    if (enableAtStart)
+VMemoryTracker::VMemoryTracker(bool enableAtStart) {
+    if (enableAtStart) {
         VMemoryTracker::enable();
     }
+}
 
-VMemoryTracker::~VMemoryTracker()
-    {
+VMemoryTracker::~VMemoryTracker() {
     VMemoryTracker::disable();
     VMemoryTracker::reset();
-    }
+}
 
 // static
-void VMemoryTracker::enable()
-    {
+void VMemoryTracker::enable() {
     // Set the expiration first to avoid a race.
-    if (gExpirationDuration == VDuration::ZERO())
+    if (gExpirationDuration == VDuration::ZERO()) {
         gExpirationTime = VInstant::INFINITE_FUTURE();
-    else
+    } else {
         gExpirationTime = VInstant(/*now*/) + gExpirationDuration;
+    }
 
     gTrackMemory = true;
-    }
+}
 
 // static
-void VMemoryTracker::disable()
-    {
+void VMemoryTracker::disable() {
     gTrackMemory = false;
-    }
+}
 
 // static
-void VMemoryTracker::reset()
-    {
+void VMemoryTracker::reset() {
     VMutexLocker locker(&gAllocationMapMutex, VString::EMPTY());
     bool wasTracking = gTrackMemory;
     gTrackMemory = false;
     gInsideLockedMutex = true; // prevents our deletes from triggering delete processing while we hold the mutex
 
-    for (AllocationMap::const_iterator i = gAllocationMap.begin(); i != gAllocationMap.end(); ++i)
-        {
+    for (AllocationMap::const_iterator i = gAllocationMap.begin(); i != gAllocationMap.end(); ++i) {
         const void* p = i->first;
         const AllocationRecord* r = i->second;
-        if (r != NULL)
-            {
+        if (r != NULL) {
             gAllocationMap[p] = NULL;
             delete r;
-            }
         }
+    }
 
     gAllocationMap.clear();
     gCurrentNumAllocations = 0;
     gInsideLockedMutex = false;
     gTrackMemory = wasTracking;
-    }
+}
 
 // static
-bool VMemoryTracker::isEnabled()
-    {
+bool VMemoryTracker::isEnabled() {
     return gTrackMemory;
-    }
+}
 
 // static
-void VMemoryTracker::setLimit(int maxNumAllocations)
-    {
+void VMemoryTracker::setLimit(int maxNumAllocations) {
     gMaxNumAllocations = maxNumAllocations;
-    }
+}
 
 // static
-int VMemoryTracker::getLimit()
-    {
+int VMemoryTracker::getLimit() {
     return gMaxNumAllocations;
-    }
+}
 
 // static
-void VMemoryTracker::setOver(size_t newOver)
-    {
+void VMemoryTracker::setOver(size_t newOver) {
     gTrackAllocationssOver = newOver;
-    }
+}
 
 // static
-size_t VMemoryTracker::getOver()
-    {
+size_t VMemoryTracker::getOver() {
     return gTrackAllocationssOver;
-    }
+}
 
 // static
-void VMemoryTracker::setUnder(size_t newUnder)
-    {
+void VMemoryTracker::setUnder(size_t newUnder) {
     gTrackAllocationssUnder = newUnder == 0 ? V_MAX_S32 : newUnder;
-    }
+}
 
 // static
-size_t VMemoryTracker::getUnder()
-    {
+size_t VMemoryTracker::getUnder() {
     return gTrackAllocationssUnder;
-    }
+}
 
-Vs64 VMemoryTracker::getAllocationNumber()
-    {
+Vs64 VMemoryTracker::getAllocationNumber() {
     return gNextAllocationNumber;
-    }
+}
 
 // static
-void VMemoryTracker::setExpiration(const VDuration& d)
-    {
+void VMemoryTracker::setExpiration(const VDuration& d) {
     gExpirationDuration = d;
 
-    if (gExpirationDuration == VDuration::ZERO())
+    if (gExpirationDuration == VDuration::ZERO()) {
         gExpirationTime = VInstant::INFINITE_FUTURE();
-    else
+    } else {
         gExpirationTime = VInstant(/*now*/) + gExpirationDuration;
     }
+}
 
 // static
-Vs64 VMemoryTracker::getExpirationTime()
-    {
+Vs64 VMemoryTracker::getExpirationTime() {
     return gExpirationTime.getValue();
-    }
+}
 
 // static
-Vs64 VMemoryTracker::getExpirationMilliseconds()
-    {
+Vs64 VMemoryTracker::getExpirationMilliseconds() {
     return gExpirationDuration.getDurationMilliseconds();
-    }
+}
 
 // static
-void VMemoryTracker::omitPointer(const void* p)
-    {
+void VMemoryTracker::omitPointer(const void* p) {
     const AllocationRecord* r = _getFromMap(p);
-    if (r != NULL)
-        {
+    if (r != NULL) {
         _removeFromMap(p);
         delete r;
-        }
     }
+}
 
 // static
-void VMemoryTracker::enableCodeLocationCrawl(const VString& file, int line)
-    {
-    for (CodeLocationVector::const_iterator i = gStackCrawlCodeLocations.begin(); i != gStackCrawlCodeLocations.end(); ++i)
-        {
-        if (((*i).mFile == file) && ((*i).mLine == line))
+void VMemoryTracker::enableCodeLocationCrawl(const VString& file, int line) {
+    for (CodeLocationVector::const_iterator i = gStackCrawlCodeLocations.begin(); i != gStackCrawlCodeLocations.end(); ++i) {
+        if (((*i).mFile == file) && ((*i).mLine == line)) {
             return;
         }
+    }
 
     // Not already enabled -- add it.
     gStackCrawlCodeLocations.push_back(CodeLocation(file, line));
-    }
+}
 
 // static
-void VMemoryTracker::disableCodeLocationCrawl(const VString& file, int line)
-    {
-    for (CodeLocationVector::iterator i = gStackCrawlCodeLocations.begin(); i != gStackCrawlCodeLocations.end(); ++i)
-        {
-        if (((*i).mFile == file) && ((*i).mLine == line))
-            {
+void VMemoryTracker::disableCodeLocationCrawl(const VString& file, int line) {
+    for (CodeLocationVector::iterator i = gStackCrawlCodeLocations.begin(); i != gStackCrawlCodeLocations.end(); ++i) {
+        if (((*i).mFile == file) && ((*i).mLine == line)) {
             gStackCrawlCodeLocations.erase(i);
             return;
-            }
         }
     }
+}
 
-static void* _allocateMemory(size_t size, const char* file, int line, bool isArray)
-    {
+static void* _allocateMemory(size_t size, const char* file, int line, bool isArray) {
     void* p = ::malloc(size); // Would prefer to call through to global new: ::operator new(size) or new[](size)
 
     // When malloc fails, it returns null. But new should throw std::bad_alloc().
-    if (p == NULL)
+    if (p == NULL) {
         throw std::bad_alloc();
+    }
 
-    if (gTrackMemory)
-        {
-        if (size <= gTrackAllocationssOver || size >= gTrackAllocationssUnder)
-            {
+    if (gTrackMemory) {
+        if (size <= gTrackAllocationssOver || size >= gTrackAllocationssUnder) {
             return p;
-            }
+        }
+
         // The most efficient way to check expiration is to go ahead and create the allocation record,
         // and use its timestamp. This way we don't also read the clock a 2nd time.
-        if ((gMaxNumAllocations < 1) || (gCurrentNumAllocations < gMaxNumAllocations))
-            {
+        if ((gMaxNumAllocations < 1) || (gCurrentNumAllocations < gMaxNumAllocations)) {
             const char* stackCrawlInfo = NULL;
-            if (_isCodeLocationCrawlEnabled(file, line))
-                {
+            if (_isCodeLocationCrawlEnabled(file, line)) {
                 VStringLogger logger(VString::EMPTY(), VLoggerLevel::TRACE);
                 VThread::logStackCrawl(VString::EMPTY(), VNamedLoggerPtr(&logger), false);
                 stackCrawlInfo = logger.orphanLines();
-                }
+            }
             const AllocationRecord* r = new AllocationRecord(p, isArray, size, file, line, stackCrawlInfo);
             _putToMap(p, r);
 
-            if ((gExpirationDuration != VDuration::ZERO()) && (r->fWhen > gExpirationTime))
-                {
+            if ((gExpirationDuration != VDuration::ZERO()) && (r->mWhen > gExpirationTime)) {
                 gTrackMemory = false;
-                }
             }
-        else
-            {
-            gTrackMemory = false;
-            }
-        }
-    return p;
-    }
 
-static void _freeMemory(void* p, bool /*isArray*/)
-    {
-    if (gTrackMemory || (!gInsideLockedMutex && (gCurrentNumAllocations > 0))) // We must honor deletions that might be in our map, even if tracking is disabled. Unless we're inside our own mutex lock block.
-        {
+        } else {
+            gTrackMemory = false;
+        }
+    }
+    return p;
+}
+
+static void _freeMemory(void* p, bool /*isArray*/) {
+    if (gTrackMemory || (!gInsideLockedMutex && (gCurrentNumAllocations > 0))) { // We must honor deletions that might be in our map, even if tracking is disabled. Unless we're inside our own mutex lock block.
         const AllocationRecord* r = _getFromMap(p);
-        if (r != NULL)
-            {
+        if (r != NULL) {
             _removeFromMap(p);
             delete r;
-            }
         }
+    }
 
     ::free(p); // Would prefer to call through to global delete: ::operator delete(p) or delete[](p)
-    }
+}
 
-void* operator new(size_t size, const char* file, int line)
-    {
+void* operator new(size_t size, const char* file, int line) {
     return _allocateMemory(size, file, line, false);
-    }
+}
 
-void operator delete(void* p, const char* /*file*/, int /*line*/)
-    {
-    if (p == NULL)
+void operator delete(void* p, const char* /*file*/, int /*line*/) {
+    if (p == NULL) {
         return;
+    }
 
     _freeMemory(p, false);
-    }
+}
 
-void operator delete(void* p) throw()
-    {
-    if (p == NULL)
+void operator delete(void* p) throw() {
+    if (p == NULL) {
         return;
+    }
 
     _freeMemory(p, false);
-    }
+}
 
-void* operator new[](size_t size, const char* file, int line)
-    {
+void* operator new[](size_t size, const char* file, int line) {
     return _allocateMemory(size, file, line, true);
-    }
+}
 
-void operator delete[](void* p, const char* /*file*/, int /*line*/)
-    {
-    if (p == NULL)
+void operator delete[](void* p, const char* /*file*/, int /*line*/) {
+    if (p == NULL) {
         return;
+    }
 
     _freeMemory(p, true);
-    }
+}
 
-void operator delete[](void* p) throw()
-    {
-    if (p == NULL)
+void operator delete[](void* p) throw() {
+    if (p == NULL) {
         return;
+    }
 
     _freeMemory(p, true);
-    }
+}
 
-static void _reportText(const VString& s, bool toLogger, bool toConsole, VTextIOStream* toStream)
-    {
-    if (toLogger)
+static void _reportText(const VString& s, bool toLogger, bool toConsole, VTextIOStream* toStream) {
+    if (toLogger) {
         VLOGGER_INFO(s);
+    }
 
-    if (toConsole)
+    if (toConsole) {
         std::cout << s << std::endl;
+    }
 
-    if (toStream != NULL)
+    if (toStream != NULL) {
         toStream->writeLine(s);
     }
+}
 
-void VMemoryTracker::reportMemoryTracking(const VString& label, bool toLogger, bool toConsole, VTextIOStream* toStream, Vs64 bufferLengthLimit, bool showDetails, bool /*performAnalysis*/)
-    {
+void VMemoryTracker::reportMemoryTracking(const VString& label, bool toLogger, bool toConsole, VTextIOStream* toStream, Vs64 bufferLengthLimit, bool showDetails, bool /*performAnalysis*/) {
     VMemoryTracker::omitPointer(label.getDataBufferConst()); // don't include the label in the report
 
     VMutexLocker locker(&gAllocationMapMutex, VString::EMPTY());
@@ -539,114 +507,105 @@ void VMemoryTracker::reportMemoryTracking(const VString& label, bool toLogger, b
     gTrackMemory = false;
     VDuration duration;
 
-        { // scope for "records" to guarantee STL deletes stuff before we re-enable gTrackMemory at end of function
+    /* local scope */ {
+        // scope for "records" to guarantee STL deletes stuff before we re-enable gTrackMemory at end of function
         VInstant start;
         AllocationPtrVector records;
 
         // First pass is to gather the objects into a vector we can sort.
-        for (AllocationMap::const_iterator i = gAllocationMap.begin(); i != gAllocationMap.end(); ++i)
-            {
+        for (AllocationMap::const_iterator i = gAllocationMap.begin(); i != gAllocationMap.end(); ++i) {
             // void* p = i->first;
             const AllocationRecord* r = i->second;
-            if (r != NULL)
+            if (r != NULL) {
                 records.push_back(AllocationRecordPtr(r));
             }
+        }
 
         std::sort(records.begin(), records.end());
 
         // Second pass uses the vector and prints info about each record.
-        _reportText(VSTRING_FORMAT("----- START %s", (label.isEmpty() ? REPORT_LABEL.chars():label.chars())), toLogger, toConsole, toStream);
+        _reportText(VSTRING_FORMAT("----- START %s", (label.isEmpty() ? REPORT_LABEL.chars() : label.chars())), toLogger, toConsole, toStream);
         _reportText(VSTRING_FORMAT(" Tracked object limit=%d, tracked object count=%d.", gMaxNumAllocations, gCurrentNumAllocations), toLogger, toConsole, toStream);
-        for (AllocationPtrVector::const_iterator i = records.begin(); i != records.end(); ++i)
-            {
-            const AllocationRecord* r = (*i).fPtr;
-            if (r != NULL)
-                {
+        for (AllocationPtrVector::const_iterator i = records.begin(); i != records.end(); ++i) {
+            const AllocationRecord* r = (*i).mPtr;
+            if (r != NULL) {
                 ++numObjects;
-                numBytes += r->fSize;
-                const Vu8* dataPtr = static_cast<const Vu8*>(r->fPointer);
-                Vs64 hexDumpLength = static_cast<Vs64>(r->fSize);
+                numBytes += r->mSize;
+                const Vu8* dataPtr = static_cast<const Vu8*>(r->mPointer);
+                Vs64 hexDumpLength = static_cast<Vs64>(r->mSize);
                 hexDumpLength = V_MIN(bufferLengthLimit, hexDumpLength);
-                
+
                 // Strip off the front of the full file path, leaving just the file name. Could be DOS or Unix separators present.
-                VString fileName(r->fFile);
+                VString fileName(r->mFile);
                 _stripFileName(fileName);
 
-                try 
-                    {
-                    if (showDetails)
-                        {
+                try {
+                    if (showDetails) {
                         VString timeString;
-                        r->fWhen.getLocalString(timeString);
-                        VString summary(VSTRING_ARGS(" [" VSTRING_FORMATTER_S64 "] [%s] 0x%08X " VSTRING_FORMATTER_SIZE " bytes @%s:%d", r->fAllocationNumber, timeString.chars(), r->fPointer, r->fSize, fileName.chars(), r->fLine));
+                        r->mWhen.getLocalString(timeString);
+                        VString summary(VSTRING_ARGS(" [" VSTRING_FORMATTER_S64 "] [%s] 0x%08X " VSTRING_FORMATTER_SIZE " bytes @%s:%d", r->mAllocationNumber, timeString.chars(), r->mPointer, r->mSize, fileName.chars(), r->mLine));
 
-                        if (r->fStackCrawlInfo != NULL)
-                            {
+                        if (r->mStackCrawlInfo != NULL) {
                             summary += VString::NATIVE_LINE_ENDING();
-                            summary += r->fStackCrawlInfo;
-                            }
+                            summary += r->mStackCrawlInfo;
+                        }
 
-                        if (toLogger)
-                            {
+                        if (toLogger) {
                             VLOGGER_HEXDUMP(VLoggerLevel::INFO, summary, dataPtr, hexDumpLength);
-                            }
+                        }
 
-                        if (toConsole)
-                            {
+                        if (toConsole) {
                             std::cout << summary.chars() << std::endl;
                             VHex hexDump(NULL);
                             hexDump.printHex(dataPtr, hexDumpLength);
-                            }
+                        }
 
-                        if (toStream)
-                            {
+                        if (toStream) {
                             toStream->writeLine(summary);
                             VHex hexDump(toStream);
                             hexDump.printHex(dataPtr, hexDumpLength);
-                            }
                         }
-                    else
-                        {
+
+                    } else {
                         VString hexString;
                         VString asciiChars;
                         if (dataPtr != NULL && hexDumpLength > 0) {
                             VHex::bufferToHexString(dataPtr, hexDumpLength, hexString, false);
                             VHex::bufferToPrintableASCIIString(dataPtr, hexDumpLength, asciiChars);
                         }
-                        VString summary(VSTRING_ARGS(" [" VSTRING_FORMATTER_S64 "] 0x%08X " VSTRING_FORMATTER_SIZE " bytes @%s:%d %s %s", r->fAllocationNumber, r->fPointer, r->fSize, fileName.chars(), r->fLine, asciiChars.chars(), hexString.chars()));
+                        VString summary(VSTRING_ARGS(" [" VSTRING_FORMATTER_S64 "] 0x%08X " VSTRING_FORMATTER_SIZE " bytes @%s:%d %s %s", r->mAllocationNumber, r->mPointer, r->mSize, fileName.chars(), r->mLine, asciiChars.chars(), hexString.chars()));
 
-                        if (r->fStackCrawlInfo != NULL)
-                            {
+                        if (r->mStackCrawlInfo != NULL) {
                             summary += " ... was allocated by:";
                             summary += VString::NATIVE_LINE_ENDING();
-                            summary += r->fStackCrawlInfo;
-                            }
+                            summary += r->mStackCrawlInfo;
+                        }
 
                         _reportText(summary, toLogger, toConsole, toStream);
-                        }
                     }
-                catch (...) 
-                    {
-                    VString summary(VSTRING_ARGS(" [" VSTRING_FORMATTER_S64 "] 0x%08X " VSTRING_FORMATTER_SIZE " bytes @%s:%d **EXCEPTION GETTING DETAILS**", r->fAllocationNumber, r->fPointer, r->fSize, fileName.chars(), r->fLine));
+
+                } catch (...) {
+                    VString summary(VSTRING_ARGS(" [" VSTRING_FORMATTER_S64 "] 0x%08X " VSTRING_FORMATTER_SIZE " bytes @%s:%d **EXCEPTION GETTING DETAILS**", r->mAllocationNumber, r->mPointer, r->mSize, fileName.chars(), r->mLine));
                     _reportText(summary, toLogger, toConsole, toStream);
-                    }
                 }
             }
+        }
 
         VInstant end;
         duration = end - start;
-        } // end of artificial scope ensuring "records" vector is cleaned up early
+    } // end of artificial scope ensuring "records" vector is cleaned up early
 
     _reportText(VSTRING_FORMAT(" Total objects found: " VSTRING_FORMATTER_S64 " objects, " VSTRING_FORMATTER_SIZE " bytes. %s", numObjects, numBytes, duration.getDurationString().chars()), toLogger, toConsole, toStream);
 
-    if (!wasTracking && (numObjects > 0)) // Remind user that we still need to monitor deletes while our map has records.
+    if (!wasTracking && (numObjects > 0)) { // Remind user that we still need to monitor deletes while our map has records.
         _reportText("WARNING: There is still some performance overhead until you 'reset' the tracked memory.", false/*only scare interactive user, not log readers*/, toConsole, toStream);
+    }
 
-    _reportText(VSTRING_FORMAT("----- END %s", (label.isEmpty() ? REPORT_LABEL.chars():label.chars())), toLogger, toConsole, toStream);
+    _reportText(VSTRING_FORMAT("----- END %s", (label.isEmpty() ? REPORT_LABEL.chars() : label.chars())), toLogger, toConsole, toStream);
 
     gInsideLockedMutex = false;
     gTrackMemory = wasTracking;
-    }
+}
 
 #endif /* VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT */
 

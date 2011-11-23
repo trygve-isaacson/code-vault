@@ -14,10 +14,9 @@ http://www.bombaydigital.com/
 /**
 Unit test class for validating VException.
 */
-class VExceptionUnit : public VUnit
-    {
+class VExceptionUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -28,19 +27,19 @@ class VExceptionUnit : public VUnit
         Destructor.
         */
         virtual ~VExceptionUnit() {}
-        
+
         /**
         Executes the unit test.
         */
         virtual void run();
 
     private:
-    
+
         void _testConstructors();
         void _testCatchHierarchy();
         void _testCheckedDynamicCast();
         void _testWin32SEH();
-        
-    };
+
+};
 
 #endif /* vexceptionunit_h */

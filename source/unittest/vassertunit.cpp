@@ -13,12 +13,10 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 
 VAssertUnit::VAssertUnit(bool logOnSuccess, bool throwOnError) :
-VUnit("VAssertUnit", logOnSuccess, throwOnError)
-    {
-    }
+    VUnit("VAssertUnit", logOnSuccess, throwOnError) {
+}
 
-void VAssertUnit::run()
-    {
+void VAssertUnit::run() {
     // The purpose of this unit test is to exercise assertion macros of all flavors for all data types,
     // to make sure they compile and behave correctly. Numeric type overloading of the function APIs is the touchy part.
 
@@ -32,12 +30,11 @@ void VAssertUnit::run()
 
 #ifndef VASSERTUNIT_IS_NOT_USEFUL
 
-        {
-        /* scope for variable and its tests */
+    /* scope for variable and its tests */ {
         const int zero = 0;
         VASSERT_ZERO(zero);
-        }
-        
+    }
+
     // We can use a template function for all the basic numeric types, since they have uniform APIs to test.
     // We need to pass in some value so that the compiler cannot outsmart us by noticing that all the asserted conditions are true,
     // and skipping past them!
@@ -51,7 +48,7 @@ void VAssertUnit::run()
     this->_positiveAssertionsForNumericType<Vu32>("Vu32", 100);
     this->_positiveAssertionsForNumericType<Vs64>("Vs64", 100);
     this->_positiveAssertionsForNumericType<Vu64>("Vu64", 100);
-    
+
     this->_positiveAssertionsForDouble(100.0);
     this->_positiveAssertionsForString();
     this->_positiveAssertionsForDuration();
@@ -72,9 +69,9 @@ void VAssertUnit::run()
     this->_negativeAssertionsForString();
     this->_negativeAssertionsForDuration();
     this->_negativeAssertionsForInstant();
-    
+
 #endif /* VASSERTUNIT_IS_NOT_USEFUL */
-    }
+}
 
 #ifndef VASSERTUNIT_IS_NOT_USEFUL
 
@@ -99,31 +96,29 @@ void VAssertUnit::run()
         } \
     } while (false)
 
-void VAssertUnit::_positiveAssertionsForDouble(VDouble testValue)
-    {
+void VAssertUnit::_positiveAssertionsForDouble(VDouble testValue) {
     const VString dataTypeName("double");
     const VDouble i = testValue;
-    
+
     TEST_POSITIVE_ASSERTION_CALL(VASSERT(VGeometry::equal(i, testValue)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_VALUE(VGeometry::equal(i, testValue), i, VSTRING_DOUBLE(i)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_EQUAL(i, testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_NON_ZERO(i));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, testValue-10.0));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, testValue+10.0));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, testValue+1.0));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, testValue - 10.0));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, testValue + 10.0));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, testValue + 1.0));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, testValue));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, testValue-10.0));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, testValue-1.0));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, testValue - 10.0));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, testValue - 1.0));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, testValue));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, testValue-5.0, testValue+5.0));
-    }
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, testValue - 5.0, testValue + 5.0));
+}
 
 #define TEST_STRING_LITERAL_VALUE "hello"
-void VAssertUnit::_positiveAssertionsForString()
-    {
+void VAssertUnit::_positiveAssertionsForString() {
     const VString dataTypeName("string");
     const VString testValue(TEST_STRING_LITERAL_VALUE);
-    
+
     TEST_POSITIVE_ASSERTION_CALL(VASSERT(testValue == TEST_STRING_LITERAL_VALUE));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_VALUE(testValue == TEST_STRING_LITERAL_VALUE, testValue, testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_EQUAL(testValue, testValue));
@@ -142,13 +137,12 @@ void VAssertUnit::_positiveAssertionsForString()
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(testValue, testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL("zzz", testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(testValue, "aaa", "zzz"));
-    }
+}
 
-void VAssertUnit::_positiveAssertionsForDuration()
-    {
+void VAssertUnit::_positiveAssertionsForDuration() {
     const VString dataTypeName("duration");
     const VDuration testValue(VDuration::HOUR());
-    
+
     TEST_POSITIVE_ASSERTION_CALL(VASSERT(testValue == VDuration::HOUR()));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT(testValue == 60 * VDuration::MINUTE()));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT(testValue == 60 * 60 * VDuration::SECOND()));
@@ -172,16 +166,15 @@ void VAssertUnit::_positiveAssertionsForDuration()
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(VDuration::HOUR(), testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(VDuration::DAY(), testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(testValue, VDuration::MINUTE(), VDuration::DAY()));
-    }
+}
 
-void VAssertUnit::_positiveAssertionsForInstant()
-    {
+void VAssertUnit::_positiveAssertionsForInstant() {
     const VString dataTypeName("instant");
     const VInstant now;
     const VInstant testValue = now;
     const VInstant pastValue = testValue - VDuration::HOUR();
     const VInstant futureValue = testValue + VDuration::HOUR();
-    
+
     TEST_POSITIVE_ASSERTION_CALL(VASSERT(testValue == now));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_EQUAL(testValue, testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_EQUAL(now, testValue));
@@ -203,33 +196,31 @@ void VAssertUnit::_positiveAssertionsForInstant()
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(now, testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(futureValue, testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(testValue, pastValue, futureValue));
-    }
+}
 
-void VAssertUnit::_negativeAssertionsForDouble(VDouble testValue)
-    {
+void VAssertUnit::_negativeAssertionsForDouble(VDouble testValue) {
     const VString dataTypeName("double (negative test)");
     const VDouble i = testValue + 100.0;
-    
+
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT(VGeometry::equal(i, testValue)));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_VALUE(VGeometry::equal(i, testValue), i, VSTRING_DOUBLE(i)));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_EQUAL(i, testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_NON_ZERO(0.0));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, testValue+100.0));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, testValue-200.0));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, testValue-200.0));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, testValue+200.0));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, testValue+200.0));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, testValue, testValue+5.0));
-    }
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, testValue + 100.0));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, testValue - 200.0));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, testValue - 200.0));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, testValue + 200.0));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, testValue + 200.0));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, testValue, testValue + 5.0));
+}
 
 #define SAME_STRING_LITERAL_VALUE "hello"
 #define DIFFERENT_STRING_LITERAL_VALUE "other"
-void VAssertUnit::_negativeAssertionsForString()
-    {
+void VAssertUnit::_negativeAssertionsForString() {
     const VString dataTypeName("string (negative test)");
     const VString testValue(SAME_STRING_LITERAL_VALUE);
     const VString differentValue(DIFFERENT_STRING_LITERAL_VALUE);
-    
+
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT(testValue == DIFFERENT_STRING_LITERAL_VALUE));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_VALUE(testValue == DIFFERENT_STRING_LITERAL_VALUE, testValue, testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_EQUAL(testValue, differentValue));
@@ -247,13 +238,12 @@ void VAssertUnit::_negativeAssertionsForString()
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL("aaa", testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(testValue, "aaa", "bbb"));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(testValue, "yyy", "zzz"));
-    }
+}
 
-void VAssertUnit::_negativeAssertionsForDuration()
-    {
+void VAssertUnit::_negativeAssertionsForDuration() {
     const VString dataTypeName("duration (negative test)");
     const VDuration testValue(VDuration::HOUR());
-    
+
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT(testValue == VDuration::MINUTE()));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_EQUAL(testValue, VDuration::MINUTE()));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_EQUAL(VDuration::MINUTE(), testValue));
@@ -268,16 +258,15 @@ void VAssertUnit::_negativeAssertionsForDuration()
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(testValue, VDuration::DAY()));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(VDuration::MINUTE(), testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(testValue, 2 * VDuration::HOUR(), VDuration::DAY()));
-    }
+}
 
-void VAssertUnit::_negativeAssertionsForInstant()
-    {
+void VAssertUnit::_negativeAssertionsForInstant() {
     const VString dataTypeName("instant (negative test)");
     const VInstant now;
     const VInstant testValue = now;
     const VInstant pastValue = testValue - VDuration::HOUR();
     const VInstant futureValue = testValue + VDuration::HOUR();
-    
+
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT(testValue == futureValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_EQUAL(testValue, futureValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_EQUAL(now, futureValue));
@@ -293,7 +282,7 @@ void VAssertUnit::_negativeAssertionsForInstant()
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(testValue, futureValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(pastValue, testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(testValue, futureValue, futureValue + VDuration::MINUTE()));
-    }
+}
 
 // Compilers will legitimately warn about signed/unsigned comparisons here, but we are intentionally
 // performing them as part of the test suite. For VC++ we can disable the warnings locally with a
@@ -305,45 +294,43 @@ void VAssertUnit::_negativeAssertionsForInstant()
 #endif
 
 template <class T>
-void VAssertUnit::_positiveAssertionsForNumericType(const VString& dataTypeName, T testValue)
-    {
+void VAssertUnit::_positiveAssertionsForNumericType(const VString& dataTypeName, T testValue) {
     const T i = testValue;
-    
+
     TEST_POSITIVE_ASSERTION_CALL(VASSERT(i == testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT(i == (T)testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_VALUE(i == testValue, i, VSTRING_INT((int)i)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_EQUAL(i, testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_EQUAL(i, (T)testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_NON_ZERO(i));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (T)(testValue-10)));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (T)(testValue+10)));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (T)(testValue+1)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (T)(testValue - 10)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (T)(testValue + 10)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (T)(testValue + 1)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (T)testValue));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (T)(testValue-10)));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (T)(testValue-1)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (T)(testValue - 10)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (T)(testValue - 1)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (T)testValue));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (T)(testValue-5), (T)(testValue+5)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (T)(testValue - 5), (T)(testValue + 5)));
 
 #ifndef VPLATFORM_UNIX // GCC Linux correctly warns on these when T is an unsigned type.
     TEST_POSITIVE_ASSERTION_CALL(VASSERT(i == (int)testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_EQUAL(i, (int)testValue));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (int)(testValue-10)));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (int)(testValue+10)));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (int)(testValue+1)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (int)(testValue - 10)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (int)(testValue + 10)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (int)(testValue + 1)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (int)testValue));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (int)(testValue-10)));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)(testValue-1)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (int)(testValue - 10)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)(testValue - 1)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)testValue));
-    TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (int)(testValue-5), (int)(testValue+5)));
+    TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (int)(testValue - 5), (int)(testValue + 5)));
 #endif /* if not unix */
-    }
+}
 
 template <class T>
-void VAssertUnit::_negativeAssertionsForNumericType(const VString& dataTypeName, T testValue)
-    {
+void VAssertUnit::_negativeAssertionsForNumericType(const VString& dataTypeName, T testValue) {
     const T i = testValue;
     const T x = i + 5; // a value that should fail to test equal
-    
+
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT(x == testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT(x == (T)testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_VALUE(x == testValue, x, VSTRING_INT((int)x)));
@@ -351,25 +338,25 @@ void VAssertUnit::_negativeAssertionsForNumericType(const VString& dataTypeName,
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_EQUAL(x, (T)testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_NON_ZERO(0));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (T)i));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (T)(testValue-10)));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (T)(testValue-1)));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (T)(testValue+10)));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (T)(testValue+1)));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (T)testValue+10));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (T)(testValue+5), (T)(testValue+10)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (T)(testValue - 10)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (T)(testValue - 1)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (T)(testValue + 10)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (T)(testValue + 1)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (T)testValue + 10));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (T)(testValue + 5), (T)(testValue + 10)));
 
 #ifndef VPLATFORM_UNIX // GCC Linux correctly warns on these when T is an unsigned type.
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT(x  == (int)testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_EQUAL(x, (int)testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (int)i));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (int)(testValue-10)));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (int)(testValue-1)));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (int)(testValue+10)));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)(testValue+1)));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)testValue+10));
-    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (int)(testValue+5), (int)(testValue+10)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN(i, (int)(testValue - 10)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_LESS_THAN_OR_EQUAL(i, (int)(testValue - 1)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN(i, (int)(testValue + 10)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)(testValue + 1)));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)testValue + 10));
+    TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (int)(testValue + 5), (int)(testValue + 10)));
 #endif /* if not unix */
-    }
+}
 
 #ifdef VCOMPILER_MSVC
 #pragma warning(default: 4018)

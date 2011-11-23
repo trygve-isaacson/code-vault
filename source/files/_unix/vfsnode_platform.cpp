@@ -15,52 +15,47 @@ http://www.bombaydigital.com/
 
 #ifdef VPLATFORM_MAC
 #ifndef VPLATFORM_MAC_IOS
-    // There is a conflict between standard and OpenTransport definitions such as TCP_NODELAY. We don't use OT nor want it. This
-    // only cropped up when turning on precompiled headers. Specifying MAC_OS_X_VERSION_MIN_REQUIRED to MAC_OS_X_VERSION_10_4
-    // should suppress the OT includes at the end of OSServices.h, but I can't make that work. These three
-    // defines have the same effect. CoreServices.h is the thing that includes OSServices.h which conditionall
-    // includes the three OpenTransport*.h files. We need CoreServices.h to use FSFindFolder et al in our directory operations here.
-    // We also need Carbon.h for GetCurrentProcess and GetProcessBundleLocation in _platform_getExecutable.
-    #define __OPENTRANSPORT__
-    #define __OPENTRANSPORTPROVIDERS__
-    #define __OPENTRANSPORTPROTOCOL__
-    
-    // Workaround problem on iOS SDK. Prevent inclusion of WebServicesCore, which presumes inclusion of CFXMLNode.h which does not exist.
-    #define __WEBSERVICESCORE__
+// There is a conflict between standard and OpenTransport definitions such as TCP_NODELAY. We don't use OT nor want it. This
+// only cropped up when turning on precompiled headers. Specifying MAC_OS_X_VERSION_MIN_REQUIRED to MAC_OS_X_VERSION_10_4
+// should suppress the OT includes at the end of OSServices.h, but I can't make that work. These three
+// defines have the same effect. CoreServices.h is the thing that includes OSServices.h which conditionall
+// includes the three OpenTransport*.h files. We need CoreServices.h to use FSFindFolder et al in our directory operations here.
+// We also need Carbon.h for GetCurrentProcess and GetProcessBundleLocation in _platform_getExecutable.
+#define __OPENTRANSPORT__
+#define __OPENTRANSPORTPROVIDERS__
+#define __OPENTRANSPORTPROTOCOL__
 
-    #include <CoreServices/CoreServices.h>
+// Workaround problem on iOS SDK. Prevent inclusion of WebServicesCore, which presumes inclusion of CFXMLNode.h which does not exist.
+#define __WEBSERVICESCORE__
+
+#include <CoreServices/CoreServices.h>
 #endif /* not VPLATFORM_MAC_IOS */
 #endif /* VPLATFORM_MAC */
 
 // static
-void VFSNode::_platform_normalizePath(VString& /*path*/)
-    {
+void VFSNode::_platform_normalizePath(VString& /*path*/) {
     // Paths are already in our "normalized" form on Unix.
-    }
+}
 
 // static
-void VFSNode::_platform_denormalizePath(VString& /*path*/)
-    {
+void VFSNode::_platform_denormalizePath(VString& /*path*/) {
     // Paths are already in our "normalized" form on Unix.
-    }
+}
 
 #ifdef VPLATFORM_MAC
 
 extern VString _V_NSHomeDirectory(); // Implemented in private vtypes_platform.mm Objective-C++ code.
 
 // static
-VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName)
-    {
-    if (id == CURRENT_WORKING_DIRECTORY)
-        {
+VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName) {
+    if (id == CURRENT_WORKING_DIRECTORY) {
         char cwdPath[PATH_MAX];
         (void)/*char* pathPtr =*/ vault::getcwd(cwdPath, sizeof(cwdPath));
         VFSNode cwdNode(cwdPath);
         return cwdNode;
-        }
+    }
 
-    if (id == EXECUTABLE_DIRECTORY)
-        {
+    if (id == EXECUTABLE_DIRECTORY) {
         /*
         This depends on the structure of the application or tool.
         If it's an iOS application, it's a bundle where we have:
@@ -73,30 +68,30 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
             /...../wanted-dir/executable
             (1 level up, wanted-dir is wherever the tool has been placed)
         */
-        #ifdef VPLATFORM_MAC_IOS
-            const int NUM_LEVELS_UP = 2;
-        #else
-            #ifdef VAULT_MACOSX_APP_IS_BUNDLE
-                const int NUM_LEVELS_UP = 4;
-            #else
-                const int NUM_LEVELS_UP = 1;
-            #endif
-        #endif
+#ifdef VPLATFORM_MAC_IOS
+        const int NUM_LEVELS_UP = 2;
+#else
+#ifdef VAULT_MACOSX_APP_IS_BUNDLE
+        const int NUM_LEVELS_UP = 4;
+#else
+        const int NUM_LEVELS_UP = 1;
+#endif
+#endif
         VFSNode node = VFSNode::getExecutable();
-        for (int i = 0; i < NUM_LEVELS_UP; ++i)
-            {
+        for (int i = 0; i < NUM_LEVELS_UP; ++i) {
             VFSNode parentNode;
             node.getParentNode(parentNode);
             node = parentNode;
-            }
+        }
 
         return node;
-        }
+    }
 
     VFSNode currentUserFolder(_V_NSHomeDirectory());
 
-    if (id == USER_HOME_DIRECTORY)
+    if (id == USER_HOME_DIRECTORY) {
         return currentUserFolder;
+    }
 
     VFSNode libraryFolder;
     currentUserFolder.getChildNode("Library", libraryFolder);
@@ -104,8 +99,7 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
 
     VFSNode subFolder;
 
-    switch (id)
-        {
+    switch (id) {
         case USER_HOME_DIRECTORY:
             // handled earlier; we returned above
             break;
@@ -137,54 +131,48 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
         default:
             throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode: Requested invalid directory ID %d.", (int) id));
             break;
-        }
+    }
 
     subFolder.mkdir();
 
     VFSNode companyFolder;
-    if (companyName.isEmpty())
-        {
+    if (companyName.isEmpty()) {
         companyFolder = subFolder;
-        }
-    else
-        {
+    } else {
         subFolder.getChildNode(companyName, companyFolder);
         companyFolder.mkdir();
-        }
+    }
 
     VFSNode resultNode;
-    if (appName.isEmpty())
-        {
+    if (appName.isEmpty()) {
         resultNode = companyFolder;
-        }
-    else
-        {
+    } else {
         companyFolder.getChildNode(appName, resultNode);
         resultNode.mkdir();
-        }
+    }
 
     return resultNode;
-    }
+}
 
 #include <mach-o/dyld.h> // for _NSGetExecutablePath()
 
 // static
-VFSNode VFSNode::_platform_getExecutable()
-    {
+VFSNode VFSNode::_platform_getExecutable() {
     uint32_t bufsize = 3000; // can in theory be bigger than MAXPATH=1024
     VString executablePath;
     executablePath.preflight((int) bufsize);
     char* buffer = executablePath.buffer();
     int result = _NSGetExecutablePath(buffer, &bufsize);
-    if (result == -1)
+    if (result == -1) {
         throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getExecutable: Failed to get path. _NSGetExecutablePath returned %d.", result));
+    }
 
     executablePath.postflight((int) ::strlen(buffer));
 
     // todo: could then convert to a "real path" in case returned path has sym links
     VFSNode::normalizePath(executablePath); // must supply normalized form to VFSNode below
     return VFSNode(executablePath);
-    }
+}
 
 #else /* end of Mac OS X implementation of VFSNode::_platform_getKnownDirectoryNode and VFSNode::_platform_getExecutable */
 
@@ -193,37 +181,36 @@ VFSNode VFSNode::_platform_getExecutable()
 #include <pwd.h>
 
 // static
-VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName)
-    {
-    if (id == CURRENT_WORKING_DIRECTORY)
-        {
+VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName) {
+    if (id == CURRENT_WORKING_DIRECTORY) {
         char cwdPath[PATH_MAX];
         (void)/*char* pathPtr =*/ vault::getcwd(cwdPath, sizeof(cwdPath));
         VFSNode cwdNode(cwdPath);
         return cwdNode;
-        }
+    }
 
-    if (id == EXECUTABLE_DIRECTORY)
-        {
+    if (id == EXECUTABLE_DIRECTORY) {
         VFSNode executable = VFSNode::getExecutable();
         VFSNode executableDirectory;
         executable.getParentNode(executableDirectory);
         return executableDirectory;
-        }
+    }
 
     struct passwd* pwInfo = ::getpwuid(::getuid()); // Get info about the current user.
-    if (pwInfo == NULL)
-        throw VStackTraceException(errno, VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode failed to get current user info from getpwuid() (error %d: %s)", errno, (errno==0 ? "No such user" : ::strerror(errno))));
+    if (pwInfo == NULL) {
+        throw VStackTraceException(errno, VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode failed to get current user info from getpwuid() (error %d: %s)", errno, (errno == 0 ? "No such user" : ::strerror(errno))));
+    }
+
     const VString homePath(pwInfo->pw_dir);
 
-    if (id == USER_HOME_DIRECTORY)
+    if (id == USER_HOME_DIRECTORY) {
         return VFSNode(homePath);
+    }
 
     VString basePath;
     VString companyFolderName(companyName);
 
-    switch (id)
-        {
+    switch (id) {
         case USER_HOME_DIRECTORY:
             // handled earlier; we returned above
             break;
@@ -234,8 +221,9 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
 
         case USER_PREFERENCES_DIRECTORY:
             basePath = homePath;
-            if (companyName.isNotEmpty())
+            if (companyName.isNotEmpty()) {
                 companyFolderName.format(".%s", companyName.chars());
+            }
             break;
 
         case CACHED_DATA_DIRECTORY:
@@ -257,35 +245,29 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
         default:
             throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode: Requested invalid directory ID %d.", (int) id));
             break;
-        }
+    }
 
     VFSNode baseDir(basePath);
     baseDir.mkdir();
 
     VFSNode companyFolder;
-    if (companyFolderName.isEmpty())
-        {
+    if (companyFolderName.isEmpty()) {
         companyFolder = baseDir;
-        }
-    else
-        {
+    } else {
         baseDir.getChildNode(companyFolderName, companyFolder);
         companyFolder.mkdir();
-        }
+    }
 
     VFSNode resultNode;
-    if (appName.isEmpty())
-        {
+    if (appName.isEmpty()) {
         resultNode = companyFolder;
-        }
-    else
-        {
+    } else {
         companyFolder.getChildNode(appName, resultNode);
         resultNode.mkdir();
-        }
+    }
 
     return resultNode;
-    }
+}
 
 // Assume Linux; conditionalize others:
 #ifdef VPLATFORM_UNIX_BSD
@@ -295,90 +277,81 @@ static const VString PROCESS_LINKPATH("/proc/self/exe");
 #endif
 
 // static
-VFSNode VFSNode::_platform_getExecutable()
-    {
+VFSNode VFSNode::_platform_getExecutable() {
     const int PATH_BUFFER_SIZE = 1024;
     VString executablePath;
     executablePath.preflight(PATH_BUFFER_SIZE);
-    ssize_t len = ::readlink(PROCESS_LINKPATH, executablePath.buffer(), PATH_BUFFER_SIZE-1);
-    if (len == -1)
+    ssize_t len = ::readlink(PROCESS_LINKPATH, executablePath.buffer(), PATH_BUFFER_SIZE - 1);
+    if (len == -1) {
         throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getExecutable: Unable to determine executable path. Error %d (%s)", (int) errno, ::strerror(errno)));
+    }
+
     executablePath.postflight(len);
     VFSNode::normalizePath(executablePath); // must supply normalized form to VFSNode below
     return VFSNode(executablePath);
-    }
+}
 
 #endif /* end of generic Unix implementation of VFSNode::_platform_getKnownDirectoryNode and VFSNode::_platform_getExecutable */
 
-bool VFSNode::_platform_getNodeInfo(VFSNodeInfo& info) const
-    {
+bool VFSNode::_platform_getNodeInfo(VFSNodeInfo& info) const {
     struct stat statData;
     int result = VFileSystemAPI::wrap_stat(mPath, &statData);
 
-    if (result >= 0)
-        {
+    if (result >= 0) {
         info.mCreationDate = CONST_S64(1000) * static_cast<Vs64>(statData.st_ctime);
         info.mModificationDate = CONST_S64(1000) * static_cast<Vs64>(statData.st_mtime);
         info.mFileSize = statData.st_size;
         info.mIsFile = (! S_ISDIR(statData.st_mode)) && (! S_ISLNK(statData.st_mode));
         info.mIsDirectory = (S_ISDIR(statData.st_mode)) || (S_ISLNK(statData.st_mode));
         info.mErrNo = 0;
-        }
-    else
-        {
+    } else {
         info.mErrNo = errno;
-        }
-
-    return (result >= 0);
     }
 
-void VFSNode::_platform_createDirectory() const
-    {
+    return (result >= 0);
+}
+
+void VFSNode::_platform_createDirectory() const {
     int result = VFileSystemAPI::wrap_mkdir(mPath, (S_IFDIR | S_IRWXO | S_IRWXG | S_IRWXU));
 
     if (result != 0)
         throw VException(result, VSTRING_FORMAT("VFSNode::_platform_createDirectory failed (error %d: %s) for '%s'.", errno, ::strerror(errno), mPath.chars()));
-    }
+}
 
-bool VFSNode::_platform_removeDirectory() const
-    {
+bool VFSNode::_platform_removeDirectory() const {
     int result = VFileSystemAPI::wrap_rmdir(mPath);
     return (result == 0);
-    }
+}
 
-bool VFSNode::_platform_removeFile() const
-    {
+bool VFSNode::_platform_removeFile() const {
     int result = VFileSystemAPI::wrap_unlink(mPath);
     return (result == 0);
-    }
+}
 
-void VFSNode::_platform_renameNode(const VString& newPath) const
-    {
+void VFSNode::_platform_renameNode(const VString& newPath) const {
     int result = VFileSystemAPI::wrap_rename(mPath, newPath);
 
     if (result != 0)
         throw VException(result, VSTRING_FORMAT("VFSNode::_platform_renameNode failed (error %d: %s) renaming '%s' to '%s'.", errno, ::strerror(errno), mPath.chars(), newPath.chars()));
-    }
+}
 
 // This is the Unix implementation of directory iteration using
 // opendir(), readdir(), closedir() functions.
 
-void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) const
-    {
+void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) const {
     VString nodeName;
 
     DIR* dir = ::opendir(mPath);
 
-    if (dir == NULL)
+    if (dir == NULL) {
         throw VException(VSTRING_FORMAT("VFSNode::_platform_getDirectoryList failed for directory '%s'.", mPath.chars()));
+    }
 
-    try
-        {
+    try {
         bool keepGoing = true;
         struct dirent* entry = ::readdir(dir);
 
-        while (keepGoing && (entry != NULL))
-            {
+        while (keepGoing && (entry != NULL)) {
             VThread::yield(); // be nice if we're iterating over a huge directory
 
             nodeName = entry->d_name;
@@ -386,22 +359,19 @@ void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) 
             // Skip current and parent pseudo-entries. Otherwise client must
             // know too much detail in order to avoid traversal problems.
             if ((nodeName != ".") &&
-                (nodeName != ".."))
-                {
+                    (nodeName != "..")) {
                 VFSNode childNode;
                 this->getChildNode(nodeName, childNode);
                 keepGoing = callback.handleNextNode(childNode);
-                }
+            }
 
             entry = ::readdir(dir);
-            }
         }
-    catch (...)
-        {
+    } catch (...) {
         ::closedir(dir);
         throw;
-        }
+    }
 
     ::closedir(dir);
-    }
+}
 

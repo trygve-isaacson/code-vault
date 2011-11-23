@@ -8,10 +8,9 @@ http://www.bombaydigital.com/
 
 #include "vtypes.h"
 
-Vs64 vault::VgetMemoryUsage()
-    {
+Vs64 vault::VgetMemoryUsage() {
     return 0; // FIXME - find an API to use on Mac
-    }
+}
 
 // On Mac OS X, it is usually most convenient if we use Unix line endings
 // (0x0A) rather than Classic Mac OS 9 line endings (0x0D), because many
@@ -19,9 +18,8 @@ Vs64 vault::VgetMemoryUsage()
 
 static const Vu8 kUnixLineEnding = 0x0A;
 
-const Vu8* vault::VgetNativeLineEnding(int& numBytes)
-    {
+const Vu8* vault::VgetNativeLineEnding(int& numBytes) {
     numBytes = 1;
     return &kUnixLineEnding;
-    }
+}
 

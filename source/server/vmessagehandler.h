@@ -25,7 +25,7 @@ class VServer;
 class VSocketThread;
 
 class VMessageHandlerFactory;
-typedef std::map<VMessageID,VMessageHandlerFactory*> VMessageHandlerFactoryMap;
+typedef std::map<VMessageID, VMessageHandlerFactory*> VMessageHandlerFactoryMap;
 
 /**
 VMessageHandler is the abstract base class for objects that process inbound
@@ -49,8 +49,7 @@ time. And if appropriate, a handler or background task should try to release
 the lock as soon as possible when it no longer needs it, or if it doesn't
 really need it in the first place.
 */
-class VMessageHandler
-    {
+class VMessageHandler {
     public:
 
         /**
@@ -131,7 +130,7 @@ class VMessageHandler
         @param    logger    the logger to write to, or NULL to force the function to
                         look up the logger
         */
-        void logMessageContentRecord(const VString& details, VNamedLoggerPtr logger=VNamedLoggerPtr()) const;
+        void logMessageContentRecord(const VString& details, VNamedLoggerPtr logger = VNamedLoggerPtr()) const;
         /**
         Logs (at the appropriate log level) the supplied information about the
         message being handled. A message handler should call this to log the
@@ -150,11 +149,11 @@ class VMessageHandler
         @param    logger    the logger to write to, or NULL to force the function to
                         look up the logger
         */
-        void logMessageContentFields(const VString& details, VNamedLoggerPtr logger=VNamedLoggerPtr()) const;
+        void logMessageContentFields(const VString& details, VNamedLoggerPtr logger = VNamedLoggerPtr()) const;
         /**
         Similar to logMessageContentFields, but for a lower level of messaging.
         */
-        void logMessageDetailsFields(const VString& details, VNamedLoggerPtr logger=VNamedLoggerPtr()) const;
+        void logMessageDetailsFields(const VString& details, VNamedLoggerPtr logger = VNamedLoggerPtr()) const;
         /**
         Logs (at the appropriate log level) the message handler name to
         indicate that the handler has been invoked or has ended.
@@ -218,7 +217,7 @@ class VMessageHandler
         static VMessageHandlerFactoryMap* mapInstance();
 
         static VMessageHandlerFactoryMap* gFactoryMap;    ///< The factories that create handlers for each ID.
-    };
+};
 
 /**
 VMessageHandlerFactory defines the interface for factory objects that know
@@ -227,8 +226,7 @@ a particular message ID or set of message IDs. Normally you can just place
 the DEFINE_MESSAGE_HANDLER_FACTORY macro in your message handler
 implementation file.
 */
-class VMessageHandlerFactory
-    {
+class VMessageHandlerFactory {
     public:
 
         VMessageHandlerFactory() {}
@@ -243,12 +241,11 @@ class VMessageHandlerFactory
         @param    thread    the thread to be passed thru to the handler constructor
         */
         virtual VMessageHandler* createHandler(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread) = 0;
-    };
+};
 
 // This macro goes in the handler's .h file to define the handler's factory.
 #define DEFINE_MESSAGE_HANDLER_FACTORY(messageid, factoryclassname, handlerclassname, descriptivename) \
-class factoryclassname : public VMessageHandlerFactory \
-    { \
+class factoryclassname : public VMessageHandlerFactory { \
     public: \
     \
         factoryclassname() : VMessageHandlerFactory(), mName(VSTRING_ARGS("%s (%s)",#handlerclassname,descriptivename)) { VMessageHandler::registerHandlerFactory(messageid, this); } \
@@ -262,7 +259,7 @@ class factoryclassname : public VMessageHandlerFactory \
         static factoryclassname gFactory; \
         VString mName; \
     \
-    }
+}
 
 // This macro goes in the handler's .cpp file to declare the handler's factory.
 #define DECLARE_MESSAGE_HANDLER_FACTORY(factoryclassname) \
@@ -280,8 +277,7 @@ tasks have ended. If your VMessageHandler creates a task to perform work on
 a separate thread, it should derive from VMessageHandlerTask so that the
 session will know of its existence.
 */
-class VMessageHandlerTask
-    {
+class VMessageHandlerTask {
     public:
 
         VMessageHandlerTask(VClientSession* session) : mSessionReference(session) {}
@@ -291,6 +287,6 @@ class VMessageHandlerTask
 
         VClientSessionReference mSessionReference;  ///< Reference to the session object we are associated with.
 
-    };
+};
 
 #endif /* vmessagehandler_h */

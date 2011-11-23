@@ -14,10 +14,9 @@ http://www.bombaydigital.com/
 /**
 Unit test class for validating VLogger.
 */
-class VLoggerUnit : public VUnit
-    {
+class VLoggerUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -28,14 +27,14 @@ class VLoggerUnit : public VUnit
         Destructor.
         */
         virtual ~VLoggerUnit() {}
-        
+
         /**
         Executes the unit test.
         */
         virtual void run();
 
     private:
-    
+
         void _testNewInfrastructure();
         void _testMacros();
         void _testStringLoggers();
@@ -43,6 +42,6 @@ class VLoggerUnit : public VUnit
         void _testLoggerPathNames();
         void _testOptimizationPerformance();
 
-    };
+};
 
 #endif /* vloggerunit_h */

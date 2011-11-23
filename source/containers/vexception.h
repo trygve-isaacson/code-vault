@@ -18,43 +18,43 @@ http://www.bombaydigital.com/
     @defgroup vexception Vault Exceptions
 
     <h3>Overview</h3>
-    
+
     The Vault does not return error codes; instead it always throws
     exceptions of type VException or its
     subclass VEOFException. As is necessary for proper C++ behavior,
     these exceptions are always thrown "by value", and should be caught
     "by reference". For example:
-    
+
     - throw VException("D'oh!");
-    
+
     - catch (VException& ex) { cout << ex.what(); }
-    
+
     When throwing, you can construct a VException with several different constructor
     forms, including hardcoded strings, sprintf-like syntax, etc.,
     with or without integer error codes. For example:
-    
+
     - throw VException("Unable to process command.");
-    
+
     - throw VException("Unable to process command '%%s'.", command);
 
     - throw VException(kFakeIDErrorCode, "Fake ID detected.");
-    
+
     - throw VException(kFakeIDErrorCode, "Fake ID detected. %%d is not a valid ID number.", id);
-    
+
     When catching, you can get the error message as a (char*), and can
     get the integer error code. For example:
-    
+
     - catch (VException& ex) { cout << "Error number is " << ex.getError(); }
-    
+
     - catch (VException& ex) { cout << "Error string is '" << ex.what() << "'"; }
-    
+
     - catch (VException& ex)\n
         {\n
         VLOG(VLog::kErrorDetailLevel, "Caught error #%%d: '%%s'", ex.getError(), ex.what());\n
         }
-    
+
     <h3>Specialized Exceptions</h3>
-    
+
     VEOFException is thrown by the stream i/o classes when they unexpectedly
     encounter EOF during a read operation. (Of course, socket reads simply
     block if there is no data; an EOF exception would indicate that the socket
@@ -62,13 +62,13 @@ http://www.bombaydigital.com/
     In some cases, you may want to
     use this as a "normal" signal, and in other cases it may mean a problem
     with the data you are reading; it depends on what you are doing.
-    
+
     Just as VEOFException is, you can derive from VException to define your
     own specialized exceptions that might contain additional data or simply be
     separately identifiable in your catch blocks.
-    
+
 */
-    
+
 /**
     @ingroup vexception
 */
@@ -87,50 +87,49 @@ VException retains the static message's char pointer and does NOT free or
 delete it on destruction.
 */
 
-class VException : public std::exception
-    {
+class VException : public std::exception {
     public:
-    
+
         /**
         Constructs a VException with default error code and empty message.
         @param  recordStackTrace if true, will attempt to collect stack trace into mCallStack
         */
-        VException(bool recordStackTrace=false);
+        VException(bool recordStackTrace = false);
         /**
         Constructs a copy of another VException. Note that if the mErrorMessage
         is non-null, both objects will share a (const char*) value, which neither
         deletes on destruction since it is owned by the caller.
         @param  other   the exception to copy
         */
-        VException(const VException& other, bool recordStackTrace=false);
+        VException(const VException& other, bool recordStackTrace = false);
         /**
         Constructs a VException with error code and static message.
         @param    error            the error code
         @param    errorMessage    a static error message
         */
-        VException(int error, const char* errorMessage, bool recordStackTrace=false);
+        VException(int error, const char* errorMessage, bool recordStackTrace = false);
         /**
         Constructs a VException with error code and VString message.
         @param    error        the error code
         @param    errorString    the error message
         */
-        VException(int error, const VString& errorString, bool recordStackTrace=false);
+        VException(int error, const VString& errorString, bool recordStackTrace = false);
         /**
         Constructs a VException with default error code and static message.
         @param    errorMessage    a static error message
         */
-        VException(const char* errorMessage, bool recordStackTrace=false);
+        VException(const char* errorMessage, bool recordStackTrace = false);
         /**
         Constructs a VException with default error code and VString message.
         @param    errorString    the error message
         */
-        VException(const VString& errorString, bool recordStackTrace=false);
+        VException(const VString& errorString, bool recordStackTrace = false);
         /**
         Destructor. The throw() declaration is required to satisfy the
         base class std::exception definition.
         */
         virtual ~VException() throw();
-        
+
         /**
         Assignment operator. Note that if the mErrorMessage
         is non-null, both objects will share a (const char*) value, which neither
@@ -146,15 +145,15 @@ class VException : public std::exception
         @return the error message
         */
         virtual const char* what() const throw();
-        
+
         /**
         Returns the exception's error code.
         @return    the error code
         */
         int getError() const;
-        
+
         static const int kGenericError = -1;    ///< The default error code.
-        
+
         /**
         Returns a reference to the string vector containing the stack trace, if collected.
         The vector will be empty if no stack trace was collected. The reference is invalid
@@ -192,24 +191,24 @@ class VException : public std::exception
         static bool isWin32SEHandlerEnabled();
 
     private:
-    
+
         /** Asserts if any invariant is broken. */
         void _assertInvariant() const;
-        
+
         /** Called during construction if a stack trace was requested. */
         void _recordStackTrace();
 
         /** Called by each ctor to make for a convenient place to set a
         breakpoint that will be hit on any exception. */
         static void _breakpointLocation();
-        
+
         int         mError;         ///< The error code.
         VString     mErrorString;   ///< The error string if NOT supplied as const char*.
         const char* mErrorMessage;  ///< The error string if supplied as const char*, else NULL.
         VStringVector mStackTrace;   ///< Optional stack frame info strings.
-        
+
         static bool gWin32SEHEnabled; ///< If false, compile-time-enabled installWin32SEHandler() does nothing at runtime.
-    };
+};
 
 /**
     @ingroup vexception
@@ -219,16 +218,15 @@ class VException : public std::exception
 This simple helper class throws an exception with a stack trace included,
 without having to pass the boolean as you do with the base class.
 */
-class VStackTraceException : public VException
-    {
+class VStackTraceException : public VException {
     public:
-    
+
         VStackTraceException(const VString& errorString) :
             VException(errorString, true) {}
         VStackTraceException(int error, const VString& errorString) :
             VException(error, errorString, true) {}
         virtual ~VStackTraceException() throw() {}
-    };
+};
 
 /**
 VEOFException is a VException that indicates that a stream reader has hit the
@@ -236,10 +234,9 @@ end of the stream while reading. Normally this happens when reading past EOF
 in a file, or when a socket is closed while there is a blocking read waiting
 for data on the socket.
 */
-class VEOFException : public VException
-    {
+class VEOFException : public VException {
     public:
-    
+
         /**
         Constructs the exception with an error message.
         @param    errorMessage    the message
@@ -254,7 +251,7 @@ class VEOFException : public VException
         Destructor.
         */
         virtual ~VEOFException() throw() {}
-    };
+};
 
 /**
 VSocketClosedException is a VException that indicates that a read or write on
@@ -266,10 +263,9 @@ log a VSocketClosedException at a very high level, since it doesn't really indic
 an "error" per se, but rather just a condition requiring the VSocket to be cleaned
 up and the thread to finish.
 */
-class VSocketClosedException : public VException
-    {
+class VSocketClosedException : public VException {
     public:
-    
+
         /**
         Constructs the exception with default error code and VString message.
         @param    errorString    the error message
@@ -279,7 +275,7 @@ class VSocketClosedException : public VException
         Destructor.
         */
         virtual ~VSocketClosedException() throw() {}
-    };
+};
 
 /**
 VRangeException is a VException that indicates that a value is outside the
@@ -287,77 +283,74 @@ valid range of data. For example, when you instantiate a VDate or call its
 set() function with a bad month or day value, it will throw a VRangeException
 rather than asserting.
 */
-class VRangeException : public VException
-    {
+class VRangeException : public VException {
     public:
-    
+
         /**
         Constructs the exception with an error message.
         @param    errorMessage    the message
         */
-        VRangeException(const char* errorMessage, bool recordStackTrace=true) : VException(errorMessage, recordStackTrace) {}
+        VRangeException(const char* errorMessage, bool recordStackTrace = true) : VException(errorMessage, recordStackTrace) {}
         /**
         Constructs the exception with default error code and VString message.
         @param    errorString    the error message
         */
-        VRangeException(const VString& errorString, bool recordStackTrace=true) : VException(errorString, recordStackTrace) {}
+        VRangeException(const VString& errorString, bool recordStackTrace = true) : VException(errorString, recordStackTrace) {}
         /**
         Destructor.
         */
         virtual ~VRangeException() throw() {}
-    };
+};
 
 /**
 VUnimplementedException is a VException that indicates that a feature in the
 code is not yet implemented. Hopefully this is simply a work-in-progress.
 */
-class VUnimplementedException : public VException
-    {
+class VUnimplementedException : public VException {
     public:
-    
+
         /**
         Constructs the exception with an error message.
         @param    errorMessage    the message
         */
-        VUnimplementedException(const char* errorMessage, bool recordStackTrace=true) : VException(errorMessage, recordStackTrace) {}
+        VUnimplementedException(const char* errorMessage, bool recordStackTrace = true) : VException(errorMessage, recordStackTrace) {}
         /**
         Constructs the exception with default error code and VString message.
         @param    errorString    the error message
         */
-        VUnimplementedException(const VString& errorString, bool recordStackTrace=true) : VException(errorString, recordStackTrace) {}
+        VUnimplementedException(const VString& errorString, bool recordStackTrace = true) : VException(errorString, recordStackTrace) {}
         /**
         Destructor.
         */
         virtual ~VUnimplementedException() throw() {}
-    };
+};
 
 #ifdef VAULT_CORE_FOUNDATION_SUPPORT
 /**
 VOSStatusException is provided for exceptions caused by non-zero OSStatus
 values returned by Mac OS API functions.
 */
-class VOSStatusException : public VException
-    {
+class VOSStatusException : public VException {
     public:
-        
+
         /**
         Throws a VOSStatusException if err is non-zero; the error value is used for the
         VException error code.
         */
-        static void throwIfError(OSStatus err, const VString& message, bool recordStackTrace=true) { if (0 != err) throw VOSStatusException(err, message, recordStackTrace); }
-        
+        static void throwIfError(OSStatus err, const VString& message, bool recordStackTrace = true) { if (0 != err) throw VOSStatusException(err, message, recordStackTrace); }
+
         /**
         Constructs the exception with the OSStatus value. The value is
         stored in the VException error code.
         @param err the error code
         */
-        VOSStatusException(OSStatus err, const VString& message, bool recordStackTrace=true) : VException(static_cast<int>(err), message, recordStackTrace) {}
+        VOSStatusException(OSStatus err, const VString& message, bool recordStackTrace = true) : VException(static_cast<int>(err), message, recordStackTrace) {}
         /**
         Destructor.
         */
         virtual ~VOSStatusException() throw() {}
-    };
-    
+};
+
 #endif /* VAULT_CORE_FOUNDATION_SUPPORT */
 
 /**
@@ -383,34 +376,30 @@ than an exception being re-thrown
 @throws VException that re-formats any raw exception message by adding the file and line number
 */
 template<typename cast_to_type, typename an_object_ptr>
-static cast_to_type VcheckedDynamicCast(an_object_ptr& obj, const char* file, int line, bool rethrowException, bool logException, bool logStackCrawl)
-    {
-    try
-        {
+static cast_to_type VcheckedDynamicCast(an_object_ptr& obj, const char* file, int line, bool rethrowException, bool logException, bool logStackCrawl) {
+    try {
         return dynamic_cast<cast_to_type>(obj);
-        }
-    catch (const std::exception& ex)
-        {
+    } catch (const std::exception& ex) {
         // Avoid message construction overhead if no flags require it.
-        if (logException || rethrowException)
-            {
+        if (logException || rethrowException) {
             VString message(VSTRING_ARGS("Exception in dynamic_cast operation at %s:%d: '%s'", file, line, ex.what()));
 
-            if (logException)
-                {
-                if (logStackCrawl)
+            if (logException) {
+                if (logStackCrawl) {
                     VThread::logStackCrawl(message, VLogger::getDefaultLogger(), false);
-
-                VLogger::getDefaultLogger()->log(VLoggerLevel::ERROR, file, line, message);
                 }
 
-            if (rethrowException)
-                throw VException(message);
+                VLogger::getDefaultLogger()->log(VLoggerLevel::ERROR, file, line, message);
             }
 
-        return NULL;
+            if (rethrowException) {
+                throw VException(message);
+            }
         }
+
+        return NULL;
     }
+}
 
 /// Performs a checked dynamic cast that will propagate any dynamic cast exception after first logging a stack crawl.
 #define V_CHECKED_DYNAMIC_CAST(cast_to_type, an_object) VcheckedDynamicCast<cast_to_type>((an_object), __FILE__, __LINE__, true, true, true)

@@ -15,7 +15,7 @@ class VStream;
 
 /**
     @defgroup viostream_derived Formatted Streams (upper layer)
-    
+
     These are the stream classes that you use to read and write formatted
     data -- either text- or binary-oriented data -- regardless of what
     transport it is carried over. When you construct an upper layer stream,
@@ -39,10 +39,9 @@ VTextIOStream.
 @see VBinaryIOStream
 @see VTextIOStream
 */
-class VIOStream
-    {
+class VIOStream {
     public:
-    
+
         /**
         Constructs the object with an underlying raw stream.
         @param    rawStream    the raw stream on which I/O will be performed
@@ -52,7 +51,7 @@ class VIOStream
         Destructor.
         */
         virtual ~VIOStream() {}
-        
+
         /**
         Reads a specified number of bytes from the stream, and throws a
         VException if they cannot be read.
@@ -67,7 +66,7 @@ class VIOStream
         @return    the actual number of bytes that could be read
         */
         Vs64 read(Vu8* targetBuffer, Vs64 numBytesToRead);
-        
+
         /**
         Writes bytes to the stream.
         @param    buffer            the buffer containing the data
@@ -81,7 +80,7 @@ class VIOStream
         written to the underlying physical stream.
         */
         void flush();
-        
+
         /**
         Skips forward in the stream a specified number of bytes. For memory
         and file streams, this means advancing the i/o offset by the specified
@@ -94,7 +93,7 @@ class VIOStream
         Seeks in the stream using Unix seek() semantics. VSocketStream has
         some restrictions in the kinds of seek that are allowed; if you
         specify an illegal socket seek operation, a VException is thrown.
-        
+
         The following table shows the valid seek parameters for the different
         stream types:
 
@@ -128,7 +127,7 @@ class VIOStream
             <td>no</td>
         </tr>
         </table>
-        
+
         @param    offset    the offset, meaning depends on whence value
         @param    whence    SEEK_SET, SEEK_CUR, or SEEK_END
         @return true if the seek was successful
@@ -171,7 +170,7 @@ class VIOStream
         @return the number of bytes currently available for reading
         */
         Vs64 available() const;
-        
+
         /**
         Returns a reference to the underlying raw stream; used by the friend
         function streamCopy() so it can call through to the corresponding
@@ -181,7 +180,7 @@ class VIOStream
         */
         VStream& getRawStream();
 
-        
+
         /**
         Compare 2 streams by ascii values. The streams will be restored to their current positions upon
         return.
@@ -190,15 +189,15 @@ class VIOStream
         static Vs16 streamCompare(VIOStream& streamA, VIOStream& streamB, Vs64 numBytesToCompare);
 
     protected:
-    
+
         VStream& mRawStream;    ///< The underlying raw stream.
 
     private:
-    
+
         // Prevent copy construction and assignment since there is no provision for sharing a raw stream.
         VIOStream(const VIOStream& other);
         VIOStream& operator=(const VIOStream& other);
-    };
+};
 
 /** @} */
 

@@ -10,43 +10,37 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 
 // This little class hierarchy is used to test the VcheckedDynamicCast template function.
-class VExceptionUnit_ExampleBase
-    {
+class VExceptionUnit_ExampleBase {
     public:
         VExceptionUnit_ExampleBase() {}
         virtual ~VExceptionUnit_ExampleBase() {}
         virtual void hello() { std::cout << "hello(ExampleBase)" << std::endl; }
-    };
-class VExceptionUnit_SubclassBranchA : public VExceptionUnit_ExampleBase
-    {
+};
+class VExceptionUnit_SubclassBranchA : public VExceptionUnit_ExampleBase {
     public:
         VExceptionUnit_SubclassBranchA() : VExceptionUnit_ExampleBase() {}
         virtual ~VExceptionUnit_SubclassBranchA() {}
         virtual void hello() { std::cout << "hello(SubclassBranchA)" << std::endl; }
-    };
-class VExceptionUnit_SubclassBranchB : public VExceptionUnit_ExampleBase
-    {
+};
+class VExceptionUnit_SubclassBranchB : public VExceptionUnit_ExampleBase {
     public:
         VExceptionUnit_SubclassBranchB() : VExceptionUnit_ExampleBase() {}
         virtual ~VExceptionUnit_SubclassBranchB() {}
         virtual void hello() { std::cout << "hello(SubclassBranchB)" << std::endl; }
-    };
+};
 
 VExceptionUnit::VExceptionUnit(bool logOnSuccess, bool throwOnError) :
-VUnit("VExceptionUnit", logOnSuccess, throwOnError)
-    {
-    }
+    VUnit("VExceptionUnit", logOnSuccess, throwOnError) {
+}
 
-void VExceptionUnit::run()
-    {
+void VExceptionUnit::run() {
     this->_testConstructors();
     this->_testCatchHierarchy();
     this->_testCheckedDynamicCast();
     this->_testWin32SEH();
-    }
+}
 
-void VExceptionUnit::_testConstructors()
-    {
+void VExceptionUnit::_testConstructors() {
     // Note that we must wrap the what() compares here in a VString in order
     // to get VString::operator== involved -- otherwise we are just
     // testing == on two raw char* values (pointers), which are only == if
@@ -55,140 +49,114 @@ void VExceptionUnit::_testConstructors()
 
     VException    ex1;
     this->test((ex1.getError() == VException::kGenericError) &&
-                VString(ex1.what()).isEmpty(),
-                "constructor 1");
+               VString(ex1.what()).isEmpty(),
+               "constructor 1");
 
     VException    ex2(-2, "ex2");
     this->test((ex2.getError() == -2) &&
-                VString(ex2.what()) == "ex2",
-                "constructor 2");
+               VString(ex2.what()) == "ex2",
+               "constructor 2");
 
     VException    ex3(-3, VSTRING_FORMAT("ex%d", 3));
     this->test((ex3.getError() == -3) &&
-                VString(ex3.what()) == "ex3",
-                "constructor 3");
+               VString(ex3.what()) == "ex3",
+               "constructor 3");
 
     VException    ex4(-4, VSTRING_FORMAT("ex%d", 4));
     this->test((ex4.getError() == -4) &&
-                VString(ex4.what()) == "ex4",
-                "constructor 4");
+               VString(ex4.what()) == "ex4",
+               "constructor 4");
 
     VException    ex5("ex5");
     this->test((ex5.getError() == VException::kGenericError) &&
-                VString(ex5.what()) == "ex5",
-                "constructor 5");
+               VString(ex5.what()) == "ex5",
+               "constructor 5");
 
     VException    ex6(VSTRING_FORMAT("ex%d", 6));
     this->test((ex6.getError() == VException::kGenericError) &&
-                VString(ex6.what()) == "ex6",
-                "constructor 6");
+               VString(ex6.what()) == "ex6",
+               "constructor 6");
 
     VException    ex7(VSTRING_FORMAT("ex%d", 7));
     this->test((ex7.getError() == VException::kGenericError) &&
-                VString(ex7.what()) == "ex7",
-                "constructor 7");
+               VString(ex7.what()) == "ex7",
+               "constructor 7");
 
     VEOFException    exEOF("EOF");
     this->test((exEOF.getError() == VException::kGenericError) &&
-                VString(exEOF.what()) == "EOF",
-                "EOF Exception constructor");
+               VString(exEOF.what()) == "EOF",
+               "EOF Exception constructor");
 
     VUnimplementedException    exUnimplemented("Unimplemented");
     this->test((exUnimplemented.getError() == VException::kGenericError) &&
-                VString(exUnimplemented.what()).startsWith("Unimplemented"),
-                "Unimplemented Exception constructor");
-    }
+               VString(exUnimplemented.what()).startsWith("Unimplemented"),
+               "Unimplemented Exception constructor");
+}
 
-void VExceptionUnit::_testCatchHierarchy()
-    {
+void VExceptionUnit::_testCatchHierarchy() {
     // We can try a few throws to verify type-correctness.
     bool    caughtAsExpected = false;
 
-    try
-        {
+    try {
         throw VException("throw/catch VException");
-        }
-    catch (const VException& /*ex*/)
-        {
+    } catch (const VException& /*ex*/) {
         caughtAsExpected = true;
-        }
-    catch (...) {}
-    
-    this->test(caughtAsExpected, "throw/catch VException");
-    
+    } catch (...) {}
 
-    try
-        {
+    this->test(caughtAsExpected, "throw/catch VException");
+
+
+    try {
         caughtAsExpected = false;
         throw VException("throw VException / catch std::exception");
-        }
-    catch (const std::exception& /*ex*/)
-        {
+    } catch (const std::exception& /*ex*/) {
         caughtAsExpected = true;
-        }
-    catch (...) {}
-    
-    this->test(caughtAsExpected, "throw VException / catch std::exception");
-    
+    } catch (...) {}
 
-    try
-        {
+    this->test(caughtAsExpected, "throw VException / catch std::exception");
+
+
+    try {
         caughtAsExpected = false;
         throw VEOFException("throw/catch VEOFException");
-        }
-    catch (const VEOFException& /*ex*/)
-        {
+    } catch (const VEOFException& /*ex*/) {
         caughtAsExpected = true;
-        }
-    catch (...) {}
-    
-    this->test(caughtAsExpected, "throw/catch VEOFException");
-    
+    } catch (...) {}
 
-    try
-        {
+    this->test(caughtAsExpected, "throw/catch VEOFException");
+
+
+    try {
         caughtAsExpected = false;
         throw VUnimplementedException("throw/catch VUnimplementedException");
-        }
-    catch (const VUnimplementedException& /*ex*/)
-        {
+    } catch (const VUnimplementedException& /*ex*/) {
         caughtAsExpected = true;
-        }
-    catch (...) {}
-    
-    this->test(caughtAsExpected, "throw/catch VUnimplementedException");
-    
+    } catch (...) {}
 
-    try
-        {
+    this->test(caughtAsExpected, "throw/catch VUnimplementedException");
+
+
+    try {
         caughtAsExpected = false;
         throw VEOFException("throw VEOFException / catch VException");
-        }
-    catch (const VException& /*ex*/)
-        {
+    } catch (const VException& /*ex*/) {
         caughtAsExpected = true;
-        }
-    catch (...) {}
-    
-    this->test(caughtAsExpected, "throw VEOFException / catch VException");
-    
+    } catch (...) {}
 
-    try
-        {
+    this->test(caughtAsExpected, "throw VEOFException / catch VException");
+
+
+    try {
         caughtAsExpected = false;
         throw VEOFException("throw VEOFException / catch std::exception");
-        }
-    catch (const std::exception& /*ex*/)
-        {
+    } catch (const std::exception& /*ex*/) {
         caughtAsExpected = true;
-        }
-    catch (...) {}
-    
-    this->test(caughtAsExpected, "throw VEOFException / catch std::exception");
-    }
+    } catch (...) {}
 
-void VExceptionUnit::_testCheckedDynamicCast()
-    {
+    this->test(caughtAsExpected, "throw VEOFException / catch std::exception");
+}
+
+void VExceptionUnit::_testCheckedDynamicCast() {
     // Tests to verify proper function of VcheckedDynamicCast and its macros.
     VExceptionUnit_ExampleBase* branchB_asBase = new VExceptionUnit_SubclassBranchB();
     VExceptionUnit_ExampleBase* base = new VExceptionUnit_ExampleBase();
@@ -219,12 +187,11 @@ void VExceptionUnit::_testCheckedDynamicCast()
     limitations are of dynamic_cast's abilities to detect error and throw an exception; and it obviously
     depends on the platform. This ability is really what we are trying to exploit in VcheckedDynamicCast().
     */
-#ifdef VPLATFORM_WIN    
-    try
-        {
+#ifdef VPLATFORM_WIN
+    try {
         VExceptionUnit_ExampleBase* garbage = (VExceptionUnit_ExampleBase*) 0x12345678; // This value causes exception when casting on Windows.
         VExceptionUnit_ExampleBase* result;
-        
+
         // This should return null and eat the expected exception.
         VLOGGER_INFO(VSTRING_FORMAT("Note: You may see a stack crawl for a bad dynamic cast originating at %s line %d after this line in the log. This is expected test output.", __FILE__, (__LINE__ + 1)));
         result = V_CHECKED_DYNAMIC_CAST_NOTHROW(VExceptionUnit_SubclassBranchA*, garbage);
@@ -234,22 +201,19 @@ void VExceptionUnit::_testCheckedDynamicCast()
         VLOGGER_INFO(VSTRING_FORMAT("Note: You may see a stack crawl for a bad dynamic cast originating at %s line %d after this line in the log. This is expected test output.", __FILE__, (__LINE__ + 1)));
         result = V_CHECKED_DYNAMIC_CAST(VExceptionUnit_SubclassBranchA*, garbage);
         this->test(false, "V_CHECKED_DYNAMIC_CAST particular garbage => throws exception");
-        }
-    catch (const VException& /*ex*/)
-        {
+    } catch (const VException& /*ex*/) {
         this->test(true, "V_CHECKED_DYNAMIC_CAST particular garbage => throws exception");
-        }
-    
+    }
+
 #endif /* VPLATFORM_WIN */
 
     delete branchB_asBase;
     delete base;
     delete branchA;
     delete branchB;
-    }
+}
 
-void VExceptionUnit::_testWin32SEH()
-    {
+void VExceptionUnit::_testWin32SEH() {
 #ifdef V_TRANSLATE_WIN32_STRUCTURED_EXCEPTIONS
 
     if (!VException::isWin32SEHandlerEnabled())
@@ -258,17 +222,14 @@ void VExceptionUnit::_testWin32SEH()
     bool caughtException = false;
     // See if we can correctly use Win32 exception translation.
     VString exceptionStack;
-    try
-        {
+    try {
         caughtException = false;
         int* nullPtr = NULL;
         *nullPtr = 0; // kerblammo!
-        }
-    catch (const VException& ex)
-        {
+    } catch (const VException& ex) {
         caughtException = true;
         exceptionStack = ex.what();
-        }
+    }
 
     this->test(caughtException, "Caught exception when writing to address 0. If caught, stack follows");
     if (caughtException)
@@ -276,73 +237,61 @@ void VExceptionUnit::_testWin32SEH()
 
     // 2010.03.21 JHR ARGO-24630 Unit test for access violations
     //   Tests are from Sparcs: testAccessViolationCatches
-    try
-        {
+    try {
         caughtException = false;
         VString* nullPointer = NULL;
         nullPointer->format("will %s first", "crash");
-        }
-    catch (const VException& ex)
-        {
+    } catch (const VException& ex) {
         caughtException = true;
         exceptionStack = ex.what();
-        }
+    }
 
     this->test(caughtException, "Caught exception when calling bad object vtable. If caught, stack follows");
     if (caughtException)
         this->logStatus(exceptionStack);
 
     // Really hard thing: method call from valid object pointer of totally wrong kind.
-    try
-        {
+    try {
         caughtException = false;
         VString* vstrPointer = NULL;
         VString myString("aVString");
         VException* badPointer = NULL;
 
         vstrPointer = &myString;
-        badPointer = (VException *)vstrPointer;
+        badPointer = (VException*)vstrPointer;
         myString = badPointer->what();
-        }
-    catch (const VException& ex)
-        {
+    } catch (const VException& ex) {
         caughtException = true;
         exceptionStack = ex.what();
-        }
+    }
 
     this->test(caughtException, "Caught exception when calling wrong method call. If caught, stack follows");
     if (caughtException)
         this->logStatus(exceptionStack);
 
-    try
-        {
+    try {
         caughtException = false;
         int* badPtr = (int*)0xDEADDEAD;
         *badPtr = 0; // kerblammo!
-        }
-    catch (const VException& ex)
-        {
+    } catch (const VException& ex) {
         caughtException = true;
         exceptionStack = ex.what();
-        }
+    }
 
     this->test(caughtException, "Caught exception when writing to address 0xDEADDEAD. If caught, stack follows");
     if (caughtException)
         this->logStatus(exceptionStack);
 
-    try
-        {
+    try {
         caughtException = false;
         int x = 0;
         int y = 5;
         int z = y / x;
         if (z > 4) {}
-        }
-    catch (const VException& ex)
-        {
+    } catch (const VException& ex) {
         caughtException = true;
         exceptionStack = ex.what();
-        }
+    }
 
     this->test(caughtException, "Caught exception when dividing int by zero. If caught, stack follows");
     if (caughtException)
@@ -350,19 +299,16 @@ void VExceptionUnit::_testWin32SEH()
 
 #ifdef NDEBUG
     // This negative test fails when running in the VC++ debugger, because the debugger intercepts it, preventing our throw.
-    try
-        {
+    try {
         caughtException = false;
         VDouble x = 0.0;
         VDouble y = 5.0;
         VDouble z = y / x;
         if (z > 4.0) {}
-        }
-    catch (const VException& ex)
-        {
+    } catch (const VException& ex) {
         caughtException = true;
         exceptionStack = ex.what();
-        }
+    }
 
     this->test(caughtException, "Caught exception when dividing double by zero. If caught, stack follows");
     if (caughtException)
@@ -371,18 +317,15 @@ void VExceptionUnit::_testWin32SEH()
 
 #ifdef NDEBUG
     // This negative test fails when running in the VC++ debugger, because the debugger intercepts it, preventing our throw.
-    try
-        {
+    try {
         caughtException = false;
         Vu8 buffer[8];
         Vs32* p = (Vs32*) &buffer[1];
         *p = 42;
-        }
-    catch (const VException& ex)
-        {
+    } catch (const VException& ex) {
         caughtException = true;
         exceptionStack = ex.what();
-        }
+    }
 
     this->test(caughtException, "Caught exception when writing to misaligned address (32 bit write on odd byte boundary). If caught, stack follows");
     if (caughtException)
@@ -391,17 +334,14 @@ void VExceptionUnit::_testWin32SEH()
 
 #ifdef VCOMPILER_MSVC
 #if _MSC_VER < 1600 // Visual C++ 2010 sees this code as improper (which it is, intentionally) and emits a compilation error. Only try to compile with earlier compiler versions.
-    try
-        {
+    try {
         caughtException = false;
         int things[4];
         things[20] = 42;
-        }
-    catch (const VException& ex)
-        {
+    } catch (const VException& ex) {
         caughtException = true;
         exceptionStack = ex.what();
-        }
+    }
 
     this->test(caughtException, "Caught exception when writing to out of bounds stack array element. If caught, stack follows");
     if (caughtException)
@@ -412,17 +352,14 @@ void VExceptionUnit::_testWin32SEH()
 #ifdef VCOMPILER_MSVC
 #if _MSC_VER < 1600 // Visual C++ 2010 sees this code as improper (which it is, intentionally) and emits a compilation error. Only try to compile with earlier compiler versions.
     // This negative test fails when running in the debugger, because the debugger catches it.
-    try
-        {
+    try {
         caughtException = false;
         int things[4];
         things[-4] = 42;
-        }
-    catch (const VException& ex)
-        {
+    } catch (const VException& ex) {
         caughtException = true;
         exceptionStack = ex.what();
-        }
+    }
 
     this->test(caughtException, "Caught exception when writing to negative index stack array element. If caught, stack follows");
     if (caughtException)
@@ -431,4 +368,4 @@ void VExceptionUnit::_testWin32SEH()
 #endif
 
 #endif
-    }
+}

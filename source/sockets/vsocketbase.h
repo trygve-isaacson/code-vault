@@ -42,11 +42,11 @@ http://www.bombaydigital.com/
 
 // We have to define VSocketID here because we don't include platform (it includes us).
 #ifdef VPLATFORM_WIN
-    typedef SOCKET VSocketID;    ///< The platform-dependent definition of a socket identifier.
-    #define V_NO_SOCKET_ID_CONSTANT INVALID_SOCKET ///< Used internally to initialize kNoSocketID
+typedef SOCKET VSocketID;    ///< The platform-dependent definition of a socket identifier.
+#define V_NO_SOCKET_ID_CONSTANT INVALID_SOCKET ///< Used internally to initialize kNoSocketID
 #else
-    typedef int VSocketID;    ///< The platform-dependent definition of a socket identifier.
-    #define V_NO_SOCKET_ID_CONSTANT -1 ///< Used internally to initialize kNoSocketID
+typedef int VSocketID;    ///< The platform-dependent definition of a socket identifier.
+#define V_NO_SOCKET_ID_CONSTANT -1 ///< Used internally to initialize kNoSocketID
 #endif
 
 typedef Vu32 VNetAddr;    ///< A 32-bit IP address, in network byte order (think of it as an array of 4 bytes, not as a 32-bit integer).
@@ -65,15 +65,14 @@ VSocket::getLocalHostIPAddress(), which takes this information into account alon
 with the concept of a "preferred" interface on a multi-home system (where multiple
 interfaces are active).
 */
-class VNetworkInterfaceInfo
-    {
+class VNetworkInterfaceInfo {
     public:
         VNetworkInterfaceInfo() : mFamily(0), mName(), mAddress() {}
         ~VNetworkInterfaceInfo() {}
         int mFamily;        ///< Indicator of the type of interface.
         VString mName;      ///< Interface name.
         VString mAddress;   ///< IP address of the interface.
-    };
+};
 typedef std::vector<VNetworkInterfaceInfo> VNetworkInterfaceList;
 
 /**
@@ -127,8 +126,7 @@ socket is:
 2. loop on recv until it returns 0 or any error
 3. call close (or closesocket + WSACleanup on Win (is WSACleanup gone in WS2?))
 */
-class VSocketBase
-    {
+class VSocketBase {
     public:
 
         /**
@@ -171,7 +169,7 @@ class VSocketBase
                                 the call; otherwise, we obtain it once and cache
                                 that to be returned on subsequent calls
         */
-        static void getLocalHostIPAddress(VString& ipAddress, bool refresh=false);
+        static void getLocalHostIPAddress(VString& ipAddress, bool refresh = false);
         /**
         Returns a list of network interface info elements, by probing the
         network APIs and getting all of the AF_INET elements. Note that this
@@ -418,19 +416,18 @@ class VSocketBase
         Vs64            mNumBytesWritten;       ///< Number of bytes written to this socket.
         VInstant        mLastEventTime;         ///< Timestamp of last read or write.
         VString         mSocketName;            ///< Returned by getName(), useful purely for logging and debugging.
-        
+
         static VString gPreferredNetworkInterfaceName;
         static VString gPreferredLocalIPAddressPrefix;
         static VString gCachedLocalHostIPAddress;
-    };
+};
 
 /**
 VSocketInfo is essentially a structure that just contains a copy of
 information about a VSocket as it existed at the point in time when
 the VSocketInfo was created.
 */
-class VSocketInfo
-    {
+class VSocketInfo {
     public:
 
         /**
@@ -449,7 +446,7 @@ class VSocketInfo
         Vs64        mNumBytesRead;      ///< Number of bytes read from this socket.
         Vs64        mNumBytesWritten;   ///< Number of bytes written to this socket.
         VDuration   mIdleTime;          ///< Amount of time elapsed since last activity.
-    };
+};
 
 /**
 VSocketInfoVector is simply a vector of VSocketInfo objects.

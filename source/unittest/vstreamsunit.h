@@ -14,10 +14,9 @@ http://www.bombaydigital.com/
 /**
 Unit test class for validating several of the VStream-related classes.
 */
-class VStreamsUnit : public VUnit
-    {
+class VStreamsUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -28,12 +27,12 @@ class VStreamsUnit : public VUnit
         Destructor.
         */
         virtual ~VStreamsUnit() {}
-        
+
         /**
         Executes the unit test.
         */
         virtual void run();
 
-    };
+};
 
 #endif /* vstreamsunit_h */

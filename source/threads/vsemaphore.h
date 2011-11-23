@@ -27,10 +27,9 @@ unblock a waiter, respectively. To wait on a semaphore, you must supply a
 pointer to the VMutex that you have already acquired -- a semaphore is
 implicitly linked with a mutex.
 */
-class VSemaphore
-    {
+class VSemaphore {
     public:
-    
+
         /**
         Creates and initializes the semaphore.
         */
@@ -39,7 +38,7 @@ class VSemaphore
         Destructs the semaphore.
         */
         virtual ~VSemaphore();
-        
+
         /**
         Waits until the semaphore is signaled by another thread.
         @param    ownedMutex    the mutex that the caller has already
@@ -54,13 +53,13 @@ class VSemaphore
         wait() call returning.
         */
         void signal();
-    
+
         /* PLATFORM-SPECIFIC STATIC FUNCTIONS --------------------------------
         The remaining functions defined here are the low-level interfaces to
         the platform-specific semaphore APIs. These are implemented in each
         platform-specific version of vthread_platform.cpp.
         */
-        
+
         /**
         Initializes the platform semaphore value.
         Wrapper on Unix for pthread_cond_init.
@@ -76,7 +75,7 @@ class VSemaphore
         @return true on success; false on failure
         */
         static bool semaphoreDestroy(VSemaphore_Type* semaphore);
-        
+
         /**
         Waits on the platform semaphore value.
         Wrapper on Unix for pthread_cond_wait.
@@ -108,9 +107,9 @@ class VSemaphore
         static bool semaphoreBroadcast(VSemaphore_Type* semaphore);
 
     private:
-    
+
         VSemaphore_Type mSemaphore; ///< The OS semaphore handle.
-    };
+};
 
 #endif /* vsemaphore_h */
 

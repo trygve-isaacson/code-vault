@@ -62,8 +62,7 @@ Sorting functions require a strict weak ordering to be defined. This is implemen
 by the comparision operators. It is defined as follows:
   NEGATIVE_INFINITY < negative durations < ZERO < positive durations < POSITIVE_INFINITY < UNSPECIFIED
 */
-class VDuration
-    {
+class VDuration {
     public:
 
         static const VDuration& ZERO();        ///< Duration constant of zero milliseconds.
@@ -159,18 +158,18 @@ class VDuration
         The prefix value is simply multiplied out to get the raw number of milliseconds to store in
         the object. No calendar-like operations are done, which is why "weeks", "months", etc. are
         not supported.
-        
+
         For symmetry of getDurationString/setDurationString, the following strings are used for the
         special durations. (They are case-insensitive on input, and written as upper case on output.)
         "INFINITY"    <-> VDuration::POSITIVE_INFINITY()
         "-INFINITY"   <-> VDuration::NEGATIVE_INFINITY()
         "UNSPECIFIED" <-> VDuration::UNSPECIFIED()
-        
+
         @param  s   the string indicating the duration
         @throws VRangeException if the string is malformed
         */
         void setDurationString(const VString& s);
-        
+
         friend inline bool operator==(const VDuration& lhs, const VDuration& rhs);  ///< Compares durations for equality in milliseconds using ==.
         friend inline bool operator!=(const VDuration& lhs, const VDuration& rhs);  ///< Compares durations for equality in milliseconds using !=.
         friend inline bool operator< (const VDuration& lhs, const VDuration& rhs);  ///< Compares durations for equality in milliseconds using <.
@@ -226,7 +225,7 @@ class VDuration
         static const Vs64 kMillisecondsPerMinute = CONST_S64(60000);
         static const Vs64 kMillisecondsPerHour = CONST_S64(3600000);
         static const Vs64 kMillisecondsPerDay = CONST_S64(86400000);
-    };
+};
 
 // Inline implementations of some of the above VDuration operators.
 // For non-specific values, some operators need to call more complicated functions to provide
@@ -255,8 +254,7 @@ typedef std::vector<VDuration> VDurationVector;
 This structure is passed to or returned by the core functions to
 describe a calendar structured instant in some implied time zone.
 */
-class VInstantStruct
-    {
+class VInstantStruct {
     public:
         VInstantStruct() : mYear(0), mMonth(1), mDay(1), mHour(0), mMinute(0), mSecond(0), mMillisecond(0), mDayOfWeek(0) {}
         VInstantStruct(const VDate& date, const VTimeOfDay& timeOfDay);
@@ -268,7 +266,7 @@ class VInstantStruct
         int mSecond;        ///< The second of the minute (0 to 59).
         int mMillisecond;   ///< The millisecond within the second (0 to 999).
         int mDayOfWeek;     ///< See enum in VInstant: kSunday=0..kSaturday=6.
-    };
+};
 
 /**
 You can provide a callback interface for VInstant to allow for converting
@@ -281,8 +279,7 @@ call VInstant::setRemoteTimeZoneConverter(). Then you can pass RTZ specifiers
 to the VInstant APIs that allow them, and VInstant will call back to
 the installed RTZ converter interface.
 */
-class MRemoteTimeZoneConverter
-    {
+class MRemoteTimeZoneConverter {
     public:
 
         MRemoteTimeZoneConverter() {}
@@ -313,7 +310,7 @@ class MRemoteTimeZoneConverter
                             time zone
         */
         virtual Vs64 offsetFromRTZStruct(const VString& timeZoneID, const VInstantStruct& when) = 0;
-    };
+};
 
 /**
 A VInstant is an object that represents an instant in time regardless of the
@@ -331,8 +328,7 @@ past or future, to indicate events that have not yet happened or should
 never happen.
 */
 
-class VInstant
-    {
+class VInstant {
     public:
 
         /** Constant VInstant representing the kInfinitePast value. */
@@ -421,7 +417,7 @@ class VInstant
         @param    wantMilliseconds  if true (the default), the string includes the
                                 milliseconds; if not, it only goes to seconds
         */
-        void getUTCString(VString& s, bool fileNameSafe=false, bool wantMilliseconds=true) const;
+        void getUTCString(VString& s, bool fileNameSafe = false, bool wantMilliseconds = true) const;
         /**
         Convenience version of getUTCString that returns the string as the
         function result. May involve one extra string copy depending on use case
@@ -434,7 +430,7 @@ class VInstant
                                 milliseconds; if not, it only goes to seconds
         @return formatted UTC time string (ends in " UTC")
         */
-        VString getUTCString(bool fileNameSafe=false, bool wantMilliseconds=true) const;
+        VString getUTCString(bool fileNameSafe = false, bool wantMilliseconds = true) const;
         /**
         Sets the instant from a UTC string representation.
         You must use the same string format as returned by getUTCString.
@@ -452,7 +448,7 @@ class VInstant
         @param    wantMilliseconds  if true (the default), the string includes the
                                 milliseconds; if not, it only goes to seconds
         */
-        void getLocalString(VString& s, bool fileNameSafe=false, bool wantMilliseconds=true) const;
+        void getLocalString(VString& s, bool fileNameSafe = false, bool wantMilliseconds = true) const;
         /**
         Convenience version of getLocalString that returns the string as the
         function result. May involve one extra string copy depending on use case
@@ -465,7 +461,7 @@ class VInstant
                                 milliseconds; if not, it only goes to seconds
         @return formatted local time string
         */
-        VString getLocalString(bool fileNameSafe=false, bool wantMilliseconds=true) const;
+        VString getLocalString(bool fileNameSafe = false, bool wantMilliseconds = true) const;
         /**
         Sets the instant from a local string representation.
         You must use the same string format as returned by getLocalString.
@@ -847,7 +843,7 @@ class VInstant
         // structure which is dependent on time.h functionality.
         friend class VDate;
         friend class VInstantUnit;  // Let unit test validate our internal APIs.
-    };
+};
 
 // Inline implementations of some of the above VInstant operators.
 inline bool operator==(const VInstant& lhs, const VInstant& rhs) { return lhs.mValue == rhs.mValue; }
@@ -874,8 +870,7 @@ Per (*) below, the "day" field is actually allowed to be in the range 1 to 32,
 for purposes of allowing the caller to increment the day and then convert to
 a VInstant.
 */
-class VDate
-    {
+class VDate {
     public:
 
         /**
@@ -964,7 +959,7 @@ class VDate
             kMDY,   ///< Year/Day/Month
             kDYM,   ///< Day/Year/Month
             kDMY    ///< Day/Month/Year
-            };
+        };
 
         /**
         Returns the date string element order for the locale.
@@ -981,7 +976,7 @@ class VDate
             kThursday,
             kFriday,
             kSaturday
-            };
+        };
 
         friend inline bool operator==(const VDate& d1, const VDate& d2);
 
@@ -995,7 +990,7 @@ class VDate
         int mDay;   ///< The day of the month (1 to 31*).
 
         static const VChar kLocalDateSeparator; ///< The character to separate M/D/Y
-    };
+};
 
 inline bool operator==(const VDate& d1, const VDate& d2) { return (d1.mYear == d2.mYear) && (d1.mMonth == d2.mMonth) && (d1.mDay == d2.mDay); }
 
@@ -1003,8 +998,7 @@ inline bool operator==(const VDate& d1, const VDate& d2) { return (d1.mYear == d
 VTimeOfDay represents a time of day without understanding about
 calendars or time zones; it is simply an hour/minute/second container.
 */
-class VTimeOfDay
-    {
+class VTimeOfDay {
     public:
 
         /**
@@ -1108,15 +1102,14 @@ class VTimeOfDay
         int mMillisecond;   ///< The millisecond of the second (0 to 999).
 
         static const VChar kLocalTimeSeparator;    ///< The character to separate HH:MM:SS
-    };
+};
 
 inline bool operator==(const VTimeOfDay& t1, const VTimeOfDay& t2) { return (t1.mHour == t2.mHour) && (t1.mMinute == t2.mMinute) && (t1.mSecond == t2.mSecond) && (t1.mMillisecond == t2.mMillisecond); }
 
 /**
 VDateAndTime simply aggregates a VDate and a VTimeOfDay into one convenient object.
 */
-class VDateAndTime
-    {
+class VDateAndTime {
     public:
 
         VDateAndTime() : mDate(), mTimeOfDay() {}
@@ -1138,8 +1131,9 @@ class VDateAndTime
         int getSecond() const { return mTimeOfDay.getSecond(); }
         int getMillisecond() const { return mTimeOfDay.getMillisecond(); }
 
-        void set(int inYear, int inMonth, int inDay, int inHour, int inMinute, int inSecond, int inMillisecond)
-            { mDate.set(inYear, inMonth, inDay); mTimeOfDay.set(inHour, inMinute, inSecond, inMillisecond); }
+        void set(int inYear, int inMonth, int inDay, int inHour, int inMinute, int inSecond, int inMillisecond) {
+            mDate.set(inYear, inMonth, inDay); mTimeOfDay.set(inHour, inMinute, inSecond, inMillisecond);
+        }
 
         void setYear(int year) { mDate.setYear(year); }
         void setMonth(int month) { mDate.setMonth(month); }
@@ -1156,7 +1150,7 @@ class VDateAndTime
 
         VDate       mDate;
         VTimeOfDay  mTimeOfDay;
-    };
+};
 
 inline bool operator==(const VDateAndTime& dt1, const VDateAndTime& dt2) { return (dt1.mDate == dt2.mDate) && (dt1.mTimeOfDay == dt2.mTimeOfDay); }
 

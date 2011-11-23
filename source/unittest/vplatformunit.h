@@ -14,10 +14,9 @@ http://www.bombaydigital.com/
 /**
 Unit test class for validating the platform configuration.
 */
-class VPlatformUnit : public VUnit
-    {
+class VPlatformUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -28,7 +27,7 @@ class VPlatformUnit : public VUnit
         Destructor.
         */
         virtual ~VPlatformUnit() {}
-        
+
         /**
         Executes the unit test.
         */
@@ -43,6 +42,6 @@ class VPlatformUnit : public VUnit
         void _runTimeCheck();
         void _runUtilitiesTest();
 
-    };
+};
 
 #endif /* vplatformunit_h */

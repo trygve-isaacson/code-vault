@@ -23,42 +23,42 @@ class VBentoNode;
 /**
 
     @defgroup vlogger Vault Logging
-    
+
     <h1>Overview</h1>
 
     The VLogger facility has been improved in Vault 3.3, keeping the macro API for emitting
     log output exactly the same, while changing the internals and changing some of the APIs
     needed when programmatically accessing logger objects or creating custom subclasses.
-    
+
     VLogger is the static API for accessing loggers directly and modifying the configuration
     on the fly. It is not an instantiable class.
-    
+
     A VNamedLogger is a filtering object that receives log data based on name match, and
     restricts output by log level. It sends filtered output to one or more appenders.
-    
+
     VLogAppender is an abstract class from which concrete classes are derived that write output
     to a specific destination such as a file or the console. Appenders receive level-filtered
     output from loggers that reference them. An appender can be referenced by more than one logger,
     and can be put in a "global appender" list to which all loggers also send their level-filtered
     output.
-    
+
     A factory pattern is used to allow a concrete appender object to be instantiated when a logger
     needs it. By registering your own factory before initialization, you can have custom appender
     classes referenced in the configuration that is set up during initialization.
-    
+
     In Vault 3.2 and earlier, an instantiated VLogger combined the functionality of VNamedLogger
     and VLogAppender, which was simpler but lacked flexibility in routing output at different
     log levels. With these improvements in 3.3, you now have the ability to route multiple loggers
     at different levels to the same appender, and route any logger's output to multiple appenders.
-    
+
     <h1>Emitting Log Output</h1>
-    
+
     Application code that wants to emit log output should simply use the various VLOGGER_xxxx()
     macros to write output. There are two flavors; the ones with shorter names of the form
     VLOGGER_<level>() write to the default logger at the specified level, while the ones with
     the longer names of the form VLOGGER_NAMED_<level>() have an extra parameter that is the
     name of the logger to write to.
-    
+
     These macros expand to code that does not evaluate the string value unless the output may actually
     be emitted. Therefore, the caller does not have to be concerned about any overhead of formatting
     a complex string that would not be logged at the current level. For example, if you were to log
@@ -68,12 +68,12 @@ class VBentoNode;
     <pre>
         VLOGGER_DEBUG(VSTRING_FORMAT("State is: %d.", expensiveStateCalculation()));
     </pre>
-    
+
     So there is no need to test the debug level before formatting in that case. However, if you do
     have a case where you want to avoid all overhead (say, in a tight loop or for precalculating some
     value to be used in subsequent logging), you can simply call VLOGGER_WOULD_LOG(level) or
     VLOGGER_NAMED_WOULD_LOG(name, level) in advance.
-    
+
     If a specified named logger is not found, the system emits to another logger. In the simple case,
     this just means using the default logger. However, you can set up a naming hierarchy where logger
     names use a "dot.separated.naming.convention", because the fallback search is done by repeatedly
@@ -84,9 +84,9 @@ class VBentoNode;
     the hierarchy is, and you can use arbitrary hierarchies for arbitrary purposes (for example, the
     hierarchy could be unrelated to the class structure of the code, and instead describe some
     hierarchy of entities and their ids).
-    
+
     <h1>Configuration XML</h1>
-    
+
     If you do nothing to configure logging, a logger at INFO level is created upon first use, and
     it creates an appender to the console output upon first need. So you get all output at the console.
 
@@ -95,17 +95,17 @@ class VBentoNode;
     created.
 
     Here is a simple example configuration that sets up logging to log at DEBUG level to a file "my.log".
-    
+
     <pre>
         <loggers>
             <appender name="default" kind="file" file="my.log" />
             <logger name="default" level="80" appender="default" />
         </loggers>
     </pre>
-    
+
     Here is a more complex configuration with two loggers and two appenders, where one of the loggers
     writes to both of the appenders.
-    
+
     <pre>
         <loggers>
             <appender name="primary" kind="file" file="my.log" />
@@ -117,19 +117,19 @@ class VBentoNode;
             </logger>
         </loggers>
     </pre>
-    
+
     For a given kind of appender, you can configure default property values to be applied to any
     particular appender of the kind where the values are not specified. For example, to set the
     default value of the "format-output" boolean to false for all file loggers, you would include:
-    
+
     <pre>
         <loggers>
             <appender-defaults kind="file" format-output="false" />
         </loggers>
     </pre>
-    
+
     You can specify in that manner any property appropriate to the appender kind indicated.
-    
+
     The documentation for each concrete appender class describes the settings is supports.
     The following settings are defined by the base class VLogAppender, so they can be specified
     for any appender individually or via defaults:
@@ -152,18 +152,18 @@ class VBentoNode;
       repeated stack tracing.
 
     <h1>Custom Appenders</h1>
-    
+
     Call VLogger::registerLogAppenderFactory() to make your custom appender available to the system.
     Do so prior to calling VLogger::configure() if you want the XML configuration to be able to
     use your custom appenders.
-    
+
     At a minimum, derive your appender from VLogAppender, and override emitRaw() to write the specified
     string to the destination output medium. If you wish to alter the normal format of the output,
     instead (or in addition) override emit() which must format the actual string to be emitted and then
     emitRaw() it. Look at the provided appenders as examples.
-    
+
 */
-    
+
 /**
     @ingroup vlogger
 */
@@ -200,14 +200,13 @@ class VBentoNode;
 /**
 VLogAppender is an abstract base class that defines the API for writing output to a destination.
 */
-class VLogAppender
-    {
+class VLogAppender {
     public:
-    
+
         // These constants can be used for the formatOutput constructor parameter.
         static const bool DO_FORMAT_OUTPUT = true;
         static const bool DONT_FORMAT_OUTPUT = false;
-    
+
         /**
         Constructs the appender with the specified name. A VNamedLogger that refers to this appender
         by name will route its output (after level filtering) to this appender.
@@ -223,10 +222,10 @@ class VLogAppender
         VLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults);
 
         virtual ~VLogAppender();
-        
+
         const VString& getName() const { return mName; }    ///< Returns the appender name. @return obvious
         bool isDefaultAppender() const;                     ///< Returns true if this appender is the default appender. Diagnostic only. @return obvious
-        
+
         /**
         Entry point called by named loggers to cause an appender to append to its output.
         The level is not used for filtering, but rather as information that usually appears in an appender's output format.
@@ -237,7 +236,7 @@ class VLogAppender
         Primarily the ability to emit a raw line is used when doing hex dump (VLOGGER_HEXDUMP) or stack trace logging,
         where there is one header message that needs normal log formatting, followed by additional lines that are
         effectively just continuations of that same message, on additional lines.
-        
+
         Concrete subclasses rarely need to override this method; they typically instead implement the protected
         method _emitRawLine().
 
@@ -264,7 +263,7 @@ class VLogAppender
         virtual void addInfo(VBentoNode& infoNode) const;
 
     protected:
-    
+
         /**
         Emits a message using the appender's normal formatting of log output. The base class implementation
         calls this->_formatMessage() to format the message if mFormatOutput is set. Then it calls
@@ -304,18 +303,18 @@ class VLogAppender
         static VString _getStringInitSetting(const VString& attributePath, const VSettingsNode& settings, const VSettingsNode& defaults, const VString& defaultValue);
 
         VMutex mMutex;          ///< A mutex to protect against multiple threads' messages from being intertwined;
-                                // subclasses may access this carefully; note that it is locked prior to any
-                                // call to emitMessage() or emitRawLine(), so implementors of those functions must
-                                // not re-lock because to do so would cause a deadlock.
+        // subclasses may access this carefully; note that it is locked prior to any
+        // call to emitMessage() or emitRawLine(), so implementors of those functions must
+        // not re-lock because to do so would cause a deadlock.
         VString mName;          ///< The name of the appender, used for lookup by loggers.
         bool    mFormatOutput;  ///< True if this appender should format messages it is asked to emit.
 
     private:
-    
+
         VString _toString() const; ///< For diagnostics, returns a string representation of this appender and its name.
 
         static void _breakpointLocationForEmit(); ///< A convenient place to set a debugger breakpoint for any appender emitting output.
-    };
+};
 
 typedef boost::shared_ptr<VLogAppender> VLogAppenderPtr;
 typedef boost::shared_ptr<const VLogAppender> VLogAppenderConstPtr;
@@ -329,8 +328,7 @@ output. If the same text is emitted at the same level multiple times in successi
 the first and last occurrences are emitted (the last one is adorned with an indication of
 how many occurrences were suppressed, if any).
 */
-class VLoggerRepetitionFilter
-    {
+class VLoggerRepetitionFilter {
     public:
 
         VLoggerRepetitionFilter();
@@ -401,31 +399,30 @@ class VLoggerRepetitionFilter
         const char* mFile;                      ///< The __FILE__ value of the suppressed messages.
         int         mLine;                      ///< The __LINE__ value of the suppressed messages.
         VString     mMessage;                   ///< The text of the suppressed messages.
-    };
+};
 
 /**
 This class encapsulates the configuration and state for when a named logger should decide to emit a
 stack trace upon emitting a message. See how VNamedLogger::mPrintStackConfig is used.
 */
-class VLoggerPrintStackConfig
-    {
+class VLoggerPrintStackConfig {
     public:
-        
+
         VLoggerPrintStackConfig();
         ~VLoggerPrintStackConfig() {}
-        
+
         int getLevel() const { return mLevel; } ///< Returns the level that triggers a stack trace.
         void configure(int level, int maxNumOccurrences, const VDuration& timeLimit);
         bool shouldPrintStack(int level, VNamedLogger& logger);
 
     private:
-    
+
         int         mLevel;         ///< Messages at this level and lower can trigger a stack crawl.
         int         mMaxCount;      ///< A max number of stack crawls before automatically turning level back to OFF.
         VDuration   mDuration;      ///< A max duration of time before automatically turning level back to OFF.
         int         mCountdown;     ///< Internal counter when counting down from max count to 0 and turning back to OFF.
         VInstant    mExpiration;    ///< Internal instant for when the configured duration expires and we turn back to OFF
-    };
+};
 
 /**
 VNamedLogger defines an object to which log output is initially sent. A logger has a name (that is used
@@ -439,8 +436,7 @@ a message that has passed the level and repetition filters, to zero or more appe
     adds an empty string so the the logger will emit to the default appender.
 - It emits to all "global appenders".
 */
-class VNamedLogger
-    {
+class VNamedLogger {
     public:
 
         /**
@@ -452,7 +448,7 @@ class VNamedLogger
         @param  appenderNames       an optional list of appender names to which filtered output will be emitted (see note above)
         @param  specificAppender    an optional specific appender instance to which filtered output will be emitted (see note above)
         */
-        VNamedLogger(const VString& name, int level, const VStringVector& appenderNames, VLogAppenderPtr specificAppender=VLogAppenderPtr());
+        VNamedLogger(const VString& name, int level, const VStringVector& appenderNames, VLogAppenderPtr specificAppender = VLogAppenderPtr());
         virtual ~VNamedLogger();
 
         /**
@@ -552,7 +548,7 @@ class VNamedLogger
         virtual void _emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine);
 
     private:
-    
+
         VString _toString() const; ///< For diagnostics, returns a string representation of this appender and its name.
 
         static void _breakpointLocationForLog(); ///< A convenient place to set a debugger breakpoint for any appender emitting output.
@@ -564,10 +560,10 @@ class VNamedLogger
         VLogAppenderPtr         mSpecificAppender;  ///< If not null, a specific appender instance we emit to.
         VLoggerRepetitionFilter mRepetitionFilter;  ///< Used to prevent repetitive info from clogging output.
         VLoggerPrintStackConfig mPrintStackConfig;  ///< Settings that control whether we add a stack trace for log messages at certain levels.
-        
+
         friend class VLoggerRepetitionFilter; // it can call our _emitToAppenders when we call it from our log() function
         friend class VLoggerPrintStackConfig; // ditto
-    };
+};
 
 typedef boost::shared_ptr<VNamedLogger> VNamedLoggerPtr;
 typedef boost::shared_ptr<const VNamedLogger> VNamedLoggerConstPtr;
@@ -576,10 +572,9 @@ typedef boost::shared_ptr<const VNamedLogger> VNamedLoggerConstPtr;
 The abstract base class is what you implement to allow an appender class to be
 dynamically instantiated from settings, typically during a call to configure() at startup.
 */
-class VLogAppenderFactory
-    {
+class VLogAppenderFactory {
     public:
-    
+
         /**
         Instantiates the concreted appender class from the specified settings.
         @param  settings    settings to use to configure the appender
@@ -595,12 +590,11 @@ class VLogAppenderFactory
         */
         virtual void addInfo(VBentoNode& infoNode) const = 0;
 
-    };
+};
 
 typedef boost::shared_ptr<const VLogAppenderFactory> VLogAppenderFactoryPtr;
 
-class VLoggerLevel
-    {
+class VLoggerLevel {
     public:
 
         // Log level constants.
@@ -614,15 +608,14 @@ class VLoggerLevel
         static const int ALL   = 100;  ///< Level of detail to output all messages.
 
         static VString getName(int level);
-    };
+};
 
 // Primary outward facing class for logging. All static methods. The other stuff is internal.
 /**
 The VLogger class provides the static APIs for configuring the logging system, adding, removing, and
 finding appenders and loggers, etc.
 */
-class VLogger
-    {
+class VLogger {
     public:
 
         /**
@@ -635,7 +628,7 @@ class VLogger
         @param  factory         an appender factory
         */
         static void registerLogAppenderFactory(const VString& appenderKind, VLogAppenderFactoryPtr factory);
-        
+
         /**
         Configures logging by reading settings info.
         The supplied baseLogDirectory can be an empty path, but otherwise it specifies a directory
@@ -653,7 +646,7 @@ class VLogger
           - Typically they also have an "appender" string property that defines the appender to use.
           - For multiple appenders, the logger node can have child nodes named "appender" that have
             a "name" string property.
-        @param  
+        @param
         @param  loggingSettings the settings to process
         */
         static void configure(const VFSNode& baseLogDirectory, const VSettingsNode& loggingSettings);
@@ -704,7 +697,7 @@ class VLogger
         @param  appender            the appender to register
         @param  asDefaultAppender   if true, the appender becomes the default appender
         */
-        static void registerLogAppender(VLogAppenderPtr appender, bool asDefaultAppender=false);
+        static void registerLogAppender(VLogAppenderPtr appender, bool asDefaultAppender = false);
         /**
         Registers the supplied appender, and also adds it to the list of global appenders to which all loggers
         implicitly emit their filtered output. If there is no default appender at the time of this call, the
@@ -712,7 +705,7 @@ class VLogger
         @param  appender            the appender to register
         @param  asDefaultAppender   if true, the appender becomes the default appender
         */
-        static void registerGlobalAppender(VLogAppenderPtr appender, bool asDefaultAppender=false);
+        static void registerGlobalAppender(VLogAppenderPtr appender, bool asDefaultAppender = false);
         /**
         Registers the supplied logger. If there is no default logger at the time of this call, the
         logger becomes the default logger.
@@ -721,7 +714,7 @@ class VLogger
         @param  level           the log leve for the logger
         @param  appenderName    an appender name to which this logger will emit its filtered output
         */
-        static void registerLogger(VNamedLoggerPtr namedLogger, bool asDefaultLogger=false);
+        static void registerLogger(VNamedLoggerPtr namedLogger, bool asDefaultLogger = false);
         /**
         Removes the specified appender from the registry.
         @param  appender    the appender to deregister
@@ -753,7 +746,7 @@ class VLogger
         @param  newActiveLevel  the new log level of the logger that is changing
         */
         static void checkMaxActiveLogLevelForChangedLogger(int oldActiveLevel, int newActiveLevel);
-        
+
         /**
         Returns true if the default logger is active for the specified level.
         @param  level   the level to check
@@ -766,11 +759,11 @@ class VLogger
         @return true if some registered logger would log at that level
         */
         static bool isLogLevelActive(int level);
-        
+
         // The following "getters" and "finders" have the following consistent naming convention:
         // - "get" always returns a valid object; it may need to create the object in question
         // - "find" will return null if there is no such object; it will not create an object
-        
+
         // Loggers:
         /**
         Returns the default logger; creates, installs, and returns a new one if there is no default logger.
@@ -844,7 +837,7 @@ class VLogger
         @return an appender (@Nullable)
         */
         static VLogAppenderPtr findAppender(const VString& name);
-        
+
         // These functions whose name is prefixed with "command" are intended for use at runtime from
         // a command facility that allows reconfiguring logging on the fly.
         static VBentoNode* commandGetInfo();    ///< Returns a Bento structure describing the logging structures in effect, for diagnostic output. @return obvious
@@ -864,13 +857,13 @@ class VLogger
         static void emitToGlobalAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine);
 
     private:
-    
+
         VLogger(const VLogger&); // not copyable
         VLogger& operator=(const VLogger&); // not assignable
 
         // These helper methods, like private methods in general, assume the caller has locked.
-        static void _registerAppender(VLogAppenderPtr appender, bool asDefaultAppender=false, bool asGlobalAppender=false);
-        static void _registerLogger(VNamedLoggerPtr namedLogger, bool asDefaultLogger=false);
+        static void _registerAppender(VLogAppenderPtr appender, bool asDefaultAppender = false, bool asGlobalAppender = false);
+        static void _registerLogger(VNamedLoggerPtr namedLogger, bool asDefaultLogger = false);
         static VBentoNode* _commandGetInfo();
         static VString _commandGetInfoString();
 
@@ -879,7 +872,7 @@ class VLogger
         static void _checkMaxActiveLogLevelForRemovedLogger(int removedActiveLevel); // Called when a logger is removed, since that may change the max active log level.
         static void _checkMaxActiveLogLevelForChangedLogger(int oldActiveLevel, int newActiveLevel); // Called when a logger's level is changed, since that may change the max active log level.
         static void _recalculateMaxActiveLogLevel(); // Called when one of the _check... methods decides the max active log level may indeed have changed, and must be recalculated.
-        
+
         // These two methods are how we really search for a specified named logger.
         static VNamedLoggerPtr _findNamedLoggerFromExactName(const VString& name);      ///< Return the logger with the specified name, or null if it doesn't exist. (@Nullable)
         static VNamedLoggerPtr _findNamedLoggerFromPathName(const VString& pathName);   ///< Return a logger using a dot-separated path name, falling back to an exact name find. (@Nullable)
@@ -893,7 +886,7 @@ class VLogger
         friend class VLoggerUnit;  // unit tests directly examine our state
         friend bool VNamedLogger::isDefaultLogger() const;
         friend bool VLogAppender::isDefaultAppender() const;
-        
+
         // Internal development debugging methods. Only enabled as needed.
 //#define VLOGGER_INTERNAL_DEBUGGING
 #ifdef VLOGGER_INTERNAL_DEBUGGING
@@ -903,14 +896,13 @@ class VLogger
         static void _reportLoggerChange(bool /*before*/, const VString& /*label*/, const VNamedLoggerPtr& /*was*/, const VNamedLoggerPtr& /*is*/) {}
         static void _reportAppenderChange(bool /*before*/, const VString& /*label*/, const VLogAppenderPtr& /*was*/, const VLogAppenderPtr& /*is*/) {}
 #endif /* VLOGGER_INTERNAL_DEBUGGING */
-    };
+};
 
 /**
 An appender that emits to the console using the std::cout stream.
 It defines no additional settings properties.
 */
-class VCoutLogAppender : public VLogAppender
-    {
+class VCoutLogAppender : public VLogAppender {
     public:
         VCoutLogAppender(const VString& name, bool formatOutput);
         VCoutLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults);
@@ -918,7 +910,7 @@ class VCoutLogAppender : public VLogAppender
         virtual void addInfo(VBentoNode& infoNode) const;
     protected:
         virtual void _emitRawLine(const VString& line);
-    };
+};
 
 /**
 An appender that emits to one big file.
@@ -926,8 +918,7 @@ It defines the following additional properties:
 - "path" (string)
   Defaults to the appender name. Specifies the file path for the log file.
 */
-class VFileLogAppender : public VLogAppender
-    {
+class VFileLogAppender : public VLogAppender {
     public:
         VFileLogAppender(const VString& name, bool formatOutput, const VString& filePath);
         VFileLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults);
@@ -939,7 +930,7 @@ class VFileLogAppender : public VLogAppender
         void _openFile(); // constructor helper
         VBufferedFileStream mFileStream;    ///< The underlying file stream we open and write to.
         VTextIOStream       mOutputStream;  ///< The high-level text stream we write to.
-    };
+};
 
 /**
 Not yet implemented. An appender that emits to rolling log files.
@@ -952,8 +943,7 @@ are not currently in use. Another approach might be to only fire a cleaning job 
 rollover, since although a file can become old due to the passing of time, if no rollover
 occurs then there is no growth in the number of files on disk.
 */
-class VRollingFileLogAppender : public VLogAppender
-    {
+class VRollingFileLogAppender : public VLogAppender {
     public:
         VRollingFileLogAppender(const VString& name, bool formatOutput, const VString& dirPath, const VString& fileNamePrefix, int maxNumLines);
         VRollingFileLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults);
@@ -961,21 +951,20 @@ class VRollingFileLogAppender : public VLogAppender
         virtual void addInfo(VBentoNode& infoNode) const;
     protected:
         virtual void _emitRawLine(const VString& line);
-    };
+};
 
 /**
 An appender that discards everything emitted to it.
 It defines no additional settings properties.
 */
-class VSilentLogAppender : public VLogAppender
-    {
+class VSilentLogAppender : public VLogAppender {
     public:
         VSilentLogAppender(const VString& name) : VLogAppender(name, true/*this won't matter*/) {}
         VSilentLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults) : VLogAppender(settings, defaults) {}
         virtual ~VSilentLogAppender() {}
         virtual void addInfo(VBentoNode& infoNode) const;
         virtual void emit(int /*level*/, const char* /*file*/, int /*line*/, bool /*emitMessage*/, const VString& /*message*/, bool /*emitRawLine*/, const VString& /*rawLine*/) {}
-    };
+};
 
 /**
 An appender that appends each emitted message to a multi-line string instance variable that
@@ -984,8 +973,7 @@ would run out of memory; it's intended to capture log output emitted for a speci
 of limited duration.
 It defines no additional settings properties.
 */
-class VStringLogAppender : public VLogAppender
-    {
+class VStringLogAppender : public VLogAppender {
     public:
         VStringLogAppender(const VString& name, bool formatOutput);
         VStringLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults);
@@ -1000,7 +988,7 @@ class VStringLogAppender : public VLogAppender
         virtual void _emitRawLine(const VString& line);
     private:
         VString mLines;
-    };
+};
 
 /**
 An appender that appends each emitted message to a string list that can be obtained afterwards.
@@ -1008,8 +996,7 @@ You would not want to use such a logger indefinitely, since it would run out of 
 intended to capture log output emitted for a specific action of limited duration.
 It defines no additional settings properties.
 */
-class VStringVectorLogAppender : public VLogAppender
-    {
+class VStringVectorLogAppender : public VLogAppender {
     public:
         VStringVectorLogAppender(const VString& name, bool formatOutput, VStringVector* storage);
         VStringVectorLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults);
@@ -1024,17 +1011,16 @@ class VStringVectorLogAppender : public VLogAppender
     private:
         VStringVector* mStorage;
         VStringVector mLines;
-    };
+};
 
 /**
 A special logger subclass meant to be declared on the stack (not "registered") and explicitly logged
 to, which uses an embedded VStringLogAppender to capture the emitted messages to a multi-line string.
 */
-class VStringLogger : public VNamedLogger
-    {
+class VStringLogger : public VNamedLogger {
     public:
 
-        VStringLogger(const VString& name, int level, bool formatOutput=VLogAppender::DO_FORMAT_OUTPUT);
+        VStringLogger(const VString& name, int level, bool formatOutput = VLogAppender::DO_FORMAT_OUTPUT);
         virtual ~VStringLogger() {}
         virtual void addInfo(VBentoNode& infoNode) const;
 
@@ -1046,20 +1032,19 @@ class VStringLogger : public VNamedLogger
         virtual void _emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine);
 
     private:
-    
+
         VStringLogAppender mAppender;
 
-    };
+};
 
 /**
 A special logger subclass meant to be declared on the stack (not "registered") and explicitly logged
 to, which uses an embedded VStringVectorLogAppender to capture the emitted messages to a string list.
 */
-class VStringVectorLogger : public VNamedLogger
-    {
+class VStringVectorLogger : public VNamedLogger {
     public:
 
-        VStringVectorLogger(const VString& name, int level, VStringVector* storage, bool formatOutput=VLogAppender::DO_FORMAT_OUTPUT);
+        VStringVectorLogger(const VString& name, int level, VStringVector* storage, bool formatOutput = VLogAppender::DO_FORMAT_OUTPUT);
         virtual ~VStringVectorLogger() {}
         virtual void addInfo(VBentoNode& infoNode) const;
 
@@ -1070,9 +1055,9 @@ class VStringVectorLogger : public VNamedLogger
         virtual void _emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine);
 
     private:
-    
+
         VStringVectorLogAppender mAppender;
 
-    };
+};
 
 #endif /* vlogger_h */

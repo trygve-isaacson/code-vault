@@ -203,8 +203,7 @@ VBentoNode represents an object in the data hierarchy; objects can have
 named/typed attributes attached to them, as well as contained (child)
 objects.
 */
-class VBentoNode
-    {
+class VBentoNode {
     public:
 
         // Lifecycle methods -------------------------------------------------
@@ -229,7 +228,7 @@ class VBentoNode
         /**
         */
         VBentoNode(const VBentoNode& original);
-         /**
+        /**
         Adds a child to the object. This object will delete the child
         object when this object is destructed.
         @param    node    the child object node to add
@@ -248,8 +247,8 @@ class VBentoNode
         // "int" is just a more convenient name here for S32.
         void addInt(const VString& name, int value);                  ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addBool(const VString& name, bool value);                ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
-        void addString(const VString& name, const VString& value, const VString& encoding=VString::EMPTY());    ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value @param encoding the text encoding of the value string (UTF-8 assumed if not specified)
-        void addStringIfNotEmpty(const VString& name, const VString& value, const VString& encoding=VString::EMPTY());    ///< Adds the specified string to the node if its length is non-zero. @param name the attribute name @param value the attribute value @param encoding the text encoding of the value string (UTF-8 assumed if not specified)
+        void addString(const VString& name, const VString& value, const VString& encoding = VString::EMPTY());  ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value @param encoding the text encoding of the value string (UTF-8 assumed if not specified)
+        void addStringIfNotEmpty(const VString& name, const VString& value, const VString& encoding = VString::EMPTY());  ///< Adds the specified string to the node if its length is non-zero. @param name the attribute name @param value the attribute value @param encoding the text encoding of the value string (UTF-8 assumed if not specified)
         void addChar(const VString& name, const VChar& value);        ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addDouble(const VString& name, VDouble value);           ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addDuration(const VString& name, const VDuration& value);///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
@@ -299,7 +298,7 @@ class VBentoNode
         VBentoInstantArray* addInstantArray(const VString& name);                                   ///< Adds the specified attribute to the node. @param name the attribute name @return the newly added attribute
         VBentoInstantArray* addInstantArray(const VString& name, const VInstantVector& value);      ///< Adds the specified attribute with array data to the node. @param name the attribute name @param value the attribute value @return the newly added attribute
 
-       /**
+        /**
         Writes the object, including its attributes and contained child
         objects, to a binary data stream.
         @param    stream    the stream to write to
@@ -312,7 +311,7 @@ class VBentoNode
         @param    lineWrap  true if each bento node should start on its own indented line
         @param    indentDepth if lineWrap is true, the indent level depth of this node
         */
-        void writeToBentoTextStream(VTextIOStream& stream, bool lineWrap=false, int indentDepth=0) const;
+        void writeToBentoTextStream(VTextIOStream& stream, bool lineWrap = false, int indentDepth = 0) const;
         /**
         Writes the object, including its attributes and contained child
         objects, to a text stream in Bento Text Format. Use some caution in calling this vs.
@@ -321,7 +320,7 @@ class VBentoNode
         @param    s    the string to write to
         @param    lineWrap  true if each bento node should start on its own indented line
         */
-        void writeToBentoTextString(VString& s, bool lineWrap=false) const;
+        void writeToBentoTextString(VString& s, bool lineWrap = false) const;
 
         // Methods for de-serializing and reading a data hierarchy -----------
 
@@ -487,7 +486,7 @@ class VBentoNode
         // These setters update an existing attribute's value if the attribute exists, and adds a new attribute if it does not (just as if addXXX had been called);
         void setInt(const VString& name, int value);                  ///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value
         void setBool(const VString& name, bool value);                ///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value
-        void setString(const VString& name, const VString& value, const VString& encoding=VString::EMPTY());    ///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value @param encoding the text encoding of the value string (UTF-8 assumed if not specified)
+        void setString(const VString& name, const VString& value, const VString& encoding = VString::EMPTY());  ///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value @param encoding the text encoding of the value string (UTF-8 assumed if not specified)
         void setChar(const VString& name, const VChar& value);        ///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value
         void setDouble(const VString& name, VDouble value);           ///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value
         void setDuration(const VString& name, const VDuration& value);///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value
@@ -533,7 +532,7 @@ class VBentoNode
         @param    lineWrap  true if each bento node should start on its own indented line
         @param    indentDepth if lineWrap is true, the indent level depth of this node
         */
-        void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap=false, int indentDepth=0) const;
+        void writeToXMLTextStream(VTextIOStream& stream, bool lineWrap = false, int indentDepth = 0) const;
         /**
         Prints the node's XML text rendering to stdout for debugging purposes.
         */
@@ -542,7 +541,7 @@ class VBentoNode
         Prints the node's binary stream layout to stdout for debugging purposes.
         */
         void printHexDump(VHex& hexDump) const;
-        
+
         /**
         Deletes all attributes and children (recursive) from this node. This node
         remains with the same name, but everything beneath it is destroyed. Be certain
@@ -630,7 +629,7 @@ class VBentoNode
         /**
         This is the same as _findAttribute, but it returns a non-const pointer, and is
         itself non-const, for use in non-const code that needs to update an existing
-        attribute. 
+        attribute.
         @param    name        the attribute name to match
         @param    dataType    the data type name to match; typically you should
                             supply the static DATA_TYPE_ID() method of the desired
@@ -701,7 +700,7 @@ class VBentoNode
         friend class VBentoUnit;
         friend class VBentoTextNodeParser;
         friend class VBentoStringArray;
-    };
+};
 
 inline bool operator< (const VBentoNode& lhs, const VBentoNode& rhs) { return lhs.getName() < rhs.getName(); } ///< Compares nodes using their name strings.
 inline bool operator<=(const VBentoNode& lhs, const VBentoNode& rhs) { return !operator>(lhs, rhs); }
@@ -718,8 +717,7 @@ Normally you would just pick and choose which of the "xxxxComplete()" methods to
 and/or override readAttributeData() to read the actual data. If you don't override
 readAttributeData, the data is skipped over in the input stream.
 */
-class VBentoCallbackParser
-    {
+class VBentoCallbackParser {
     public:
 
         /**
@@ -804,7 +802,7 @@ class VBentoCallbackParser
         @param    dataLength        the length of the attribute data
         */
         virtual void readAttributeData(int depth, VBinaryIOStream& stream, Vu64 dataLength);
-    };
+};
 
 /**
 VBentoAttribute is an abstract base class for all of the concrete VBento
@@ -814,15 +812,14 @@ a concrete VBentoAttribute-derived class. These objects know how to
 read/write themselves from the stream, when asked to do so by the
 VBentoNode objects that contain them.
 */
-class VBentoAttribute
-    {
+class VBentoAttribute {
     public:
 
         VBentoAttribute(); ///< Constructs with uninitialized name.
         VBentoAttribute(VBinaryIOStream& stream, const VString& dataType); ///< Constructs by reading from stream.
         VBentoAttribute(const VString& name, const VString& dataType); ///< Constructs with name and type. @param name the attribute name @param dataType the data type
         virtual ~VBentoAttribute(); ///< Destructor.
-        
+
         virtual VBentoAttribute* clone() const = 0;
         VBentoAttribute& operator=(const VBentoAttribute& rhs) { mName = rhs.mName; mDataType = rhs.mDataType; return *this; }
 
@@ -858,13 +855,12 @@ class VBentoAttribute
 
         VString mName;      ///< The attribute name.
         VString mDataType;  ///< The data type name.
-    };
+};
 
 /**
 VBentoS8 is a VBentoAttribute that holds a Vs8 value.
 */
-class VBentoS8 : public VBentoAttribute
-    {
+class VBentoS8 : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("vs_8"); return kID; } ///< The data type name / class ID string.
@@ -892,13 +888,12 @@ class VBentoS8 : public VBentoAttribute
     private:
 
         Vs8 mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoU8 is a VBentoAttribute that holds a Vu8 value.
 */
-class VBentoU8 : public VBentoAttribute
-    {
+class VBentoU8 : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("vu_8"); return kID; } ///< The data type name / class ID string.
@@ -926,13 +921,12 @@ class VBentoU8 : public VBentoAttribute
     private:
 
         Vu8 mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoS16 is a VBentoAttribute that holds a Vs16 value.
 */
-class VBentoS16 : public VBentoAttribute
-    {
+class VBentoS16 : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("vs16"); return kID; } ///< The data type name / class ID string.
@@ -960,13 +954,12 @@ class VBentoS16 : public VBentoAttribute
     private:
 
         Vs16 mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoU16 is a VBentoAttribute that holds a Vu16 value.
 */
-class VBentoU16 : public VBentoAttribute
-    {
+class VBentoU16 : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("vu16"); return kID; } ///< The data type name / class ID string.
@@ -994,13 +987,12 @@ class VBentoU16 : public VBentoAttribute
     private:
 
         Vu16 mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoS32 is a VBentoAttribute that holds a Vs32 value.
 */
-class VBentoS32 : public VBentoAttribute
-    {
+class VBentoS32 : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("vs32"); return kID; } ///< The data type name / class ID string.
@@ -1028,13 +1020,12 @@ class VBentoS32 : public VBentoAttribute
     private:
 
         Vs32 mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoU32 is a VBentoAttribute that holds a Vu32 value.
 */
-class VBentoU32 : public VBentoAttribute
-    {
+class VBentoU32 : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("vu32"); return kID; } ///< The data type name / class ID string.
@@ -1062,13 +1053,12 @@ class VBentoU32 : public VBentoAttribute
     private:
 
         Vu32 mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoS64 is a VBentoAttribute that holds a Vs64 value.
 */
-class VBentoS64 : public VBentoAttribute
-    {
+class VBentoS64 : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("vs64"); return kID; } ///< The data type name / class ID string.
@@ -1096,13 +1086,12 @@ class VBentoS64 : public VBentoAttribute
     private:
 
         Vs64 mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoU64 is a VBentoAttribute that holds a Vu64 value.
 */
-class VBentoU64 : public VBentoAttribute
-    {
+class VBentoU64 : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("vu64"); return kID; } ///< The data type name / class ID string.
@@ -1130,13 +1119,12 @@ class VBentoU64 : public VBentoAttribute
     private:
 
         Vu64 mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoBool is a VBentoAttribute that holds a bool value.
 */
-class VBentoBool : public VBentoAttribute
-    {
+class VBentoBool : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("bool"); return kID; } ///< The data type name / class ID string.
@@ -1150,7 +1138,7 @@ class VBentoBool : public VBentoAttribute
         VBentoBool& operator=(const VBentoBool& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
         virtual void getValueAsXMLText(VString& s) const { s = VSTRING_BOOL(mValue); }
-        virtual void getValueAsString(VString& s) const { s.format("%s 0x%02X", (mValue ? "true":"false"), static_cast<Vu8>(mValue)); }
+        virtual void getValueAsString(VString& s) const { s.format("%s 0x%02X", (mValue ? "true" : "false"), static_cast<Vu8>(mValue)); }
         virtual void getValueAsBentoTextString(VString& s) const { s = VSTRING_BOOL(mValue); }
 
         inline bool getValue() const { return mValue; } ///< Returns the attribute's value. @return the value
@@ -1164,13 +1152,12 @@ class VBentoBool : public VBentoAttribute
     private:
 
         bool mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoString is a VBentoAttribute that holds a VString value.
 */
-class VBentoString : public VBentoAttribute
-    {
+class VBentoString : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("vstr"); return kID; } ///< The data type name / class ID string.
@@ -1189,7 +1176,7 @@ class VBentoString : public VBentoAttribute
 
         inline const VString& getValue() const { return mValue; } ///< Returns the attribute's value. @return a reference to the value string
         inline void setValue(const VString& s) { mValue = s; } ///< Sets the attribute's value. @param s the attribute value
-        
+
         inline const VString& getEncoding() const { return mEncoding; } ///< Returns the value's encoding name; empty implies UTF-8. @return a reference to the encoding name
         inline void setEncoding(const VString& encoding) { mEncoding = encoding; } ///< Sets the the value's encoding name; empty implies UTF-8. @param encoding the attribute value's encoding
 
@@ -1202,13 +1189,12 @@ class VBentoString : public VBentoAttribute
 
         VString mEncoding; ///< The optional indicator of the value's encoding (assumed UTF-8 otherwise).
         VString mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoChar is a VBentoAttribute that holds a VChar value.
 */
-class VBentoChar : public VBentoAttribute
-    {
+class VBentoChar : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("char"); return kID; } ///< The data type name / class ID string.
@@ -1236,13 +1222,12 @@ class VBentoChar : public VBentoAttribute
     private:
 
         VChar mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoFloat is a VBentoAttribute that holds a VFloat value.
 */
-class VBentoFloat : public VBentoAttribute
-    {
+class VBentoFloat : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("flot"); return kID; } ///< The data type name / class ID string.
@@ -1270,13 +1255,12 @@ class VBentoFloat : public VBentoAttribute
     private:
 
         VFloat mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoDouble is a VBentoAttribute that holds a VDouble value.
 */
-class VBentoDouble : public VBentoAttribute
-    {
+class VBentoDouble : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("doub"); return kID; } ///< The data type name / class ID string.
@@ -1304,13 +1288,12 @@ class VBentoDouble : public VBentoAttribute
     private:
 
         VDouble mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoDuration is a VBentoAttribute that holds a VDuration value.
 */
-class VBentoDuration : public VBentoAttribute
-    {
+class VBentoDuration : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("dura"); return kID; } ///< The data type name / class ID string.
@@ -1338,13 +1321,12 @@ class VBentoDuration : public VBentoAttribute
     private:
 
         VDuration mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoInstant is a VBentoAttribute that holds a VInstant value.
 */
-class VBentoInstant : public VBentoAttribute
-    {
+class VBentoInstant : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("inst"); return kID; } ///< The data type name / class ID string.
@@ -1372,13 +1354,12 @@ class VBentoInstant : public VBentoAttribute
     private:
 
         VInstant mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoSize is a VBentoAttribute that holds a VSize value.
 */
-class VBentoSize : public VBentoAttribute
-    {
+class VBentoSize : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("sizd"); return kID; } ///< The data type name / class ID string.
@@ -1409,13 +1390,12 @@ class VBentoSize : public VBentoAttribute
     private:
 
         VSize mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoSize is a VBentoAttribute that holds a VISize value.
 */
-class VBentoISize : public VBentoAttribute
-    {
+class VBentoISize : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("sizi"); return kID; } ///< The data type name / class ID string.
@@ -1446,13 +1426,12 @@ class VBentoISize : public VBentoAttribute
     private:
 
         VISize mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoPoint is a VBentoAttribute that holds a VPoint value.
 */
-class VBentoPoint : public VBentoAttribute
-    {
+class VBentoPoint : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("pt_d"); return kID; } ///< The data type name / class ID string.
@@ -1483,13 +1462,12 @@ class VBentoPoint : public VBentoAttribute
     private:
 
         VPoint mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoIPoint is a VBentoAttribute that holds a VIPoint value.
 */
-class VBentoIPoint : public VBentoAttribute
-    {
+class VBentoIPoint : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("pt_i"); return kID; } ///< The data type name / class ID string.
@@ -1520,13 +1498,12 @@ class VBentoIPoint : public VBentoAttribute
     private:
 
         VIPoint mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoPoint3D is a VBentoAttribute that holds a VPoint3D value.
 */
-class VBentoPoint3D : public VBentoAttribute
-    {
+class VBentoPoint3D : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("pt3d"); return kID; } ///< The data type name / class ID string.
@@ -1557,13 +1534,12 @@ class VBentoPoint3D : public VBentoAttribute
     private:
 
         VPoint3D mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoIPoint3D is a VBentoAttribute that holds a VIPoint3D value.
 */
-class VBentoIPoint3D : public VBentoAttribute
-    {
+class VBentoIPoint3D : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("pt3i"); return kID; } ///< The data type name / class ID string.
@@ -1594,13 +1570,12 @@ class VBentoIPoint3D : public VBentoAttribute
     private:
 
         VIPoint3D mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoLine is a VBentoAttribute that holds a VLine value.
 */
-class VBentoLine : public VBentoAttribute
-    {
+class VBentoLine : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("line"); return kID; } ///< The data type name / class ID string.
@@ -1631,13 +1606,12 @@ class VBentoLine : public VBentoAttribute
     private:
 
         VLine mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoILine is a VBentoAttribute that holds a VILine value.
 */
-class VBentoILine : public VBentoAttribute
-    {
+class VBentoILine : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("lini"); return kID; } ///< The data type name / class ID string.
@@ -1668,13 +1642,12 @@ class VBentoILine : public VBentoAttribute
     private:
 
         VILine mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoRect is a VBentoAttribute that holds a VRect value.
 */
-class VBentoRect : public VBentoAttribute
-    {
+class VBentoRect : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("recd"); return kID; } ///< The data type name / class ID string.
@@ -1705,13 +1678,12 @@ class VBentoRect : public VBentoAttribute
     private:
 
         VRect mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoIRect is a VBentoAttribute that holds a VIRect value.
 */
-class VBentoIRect : public VBentoAttribute
-    {
+class VBentoIRect : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("reci"); return kID; } ///< The data type name / class ID string.
@@ -1742,13 +1714,12 @@ class VBentoIRect : public VBentoAttribute
     private:
 
         VIRect mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoPolygon is a VBentoAttribute that holds a VPolygon value.
 */
-class VBentoPolygon : public VBentoAttribute
-    {
+class VBentoPolygon : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("pold"); return kID; } ///< The data type name / class ID string.
@@ -1757,7 +1728,7 @@ class VBentoPolygon : public VBentoAttribute
         VBentoPolygon(VBinaryIOStream& stream) : VBentoAttribute(stream, DATA_TYPE_ID()), mValue(stream) {} ///< Constructs by reading from stream. @param stream the stream to read
         VBentoPolygon(const VString& name, const VPolygon& p) : VBentoAttribute(name, DATA_TYPE_ID()), mValue(p) {} ///< Constructs from supplied name and value.
         virtual ~VBentoPolygon() {} ///< Destructor.
-        
+
         virtual VBentoAttribute* clone() const { return new VBentoPolygon(this->getName(), mValue); }
         VBentoPolygon& operator=(const VBentoPolygon& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
@@ -1775,21 +1746,20 @@ class VBentoPolygon : public VBentoAttribute
 
     protected:
 
-        virtual Vs64 getDataLength() const { return 4 + (16*mValue.getNumPoints()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual Vs64 getDataLength() const { return 4 + (16 * mValue.getNumPoints()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
         virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
-    
+
         static void _formatPolygonAsBentoTextString(const VPolygon& p, VString& s);
 
         VPolygon mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoPolygon is a VBentoAttribute that holds a VIPolygon value.
 */
-class VBentoIPolygon : public VBentoAttribute
-    {
+class VBentoIPolygon : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("poli"); return kID; } ///< The data type name / class ID string.
@@ -1816,7 +1786,7 @@ class VBentoIPolygon : public VBentoAttribute
 
     protected:
 
-        virtual Vs64 getDataLength() const { return 4 + (8*mValue.getNumPoints()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual Vs64 getDataLength() const { return 4 + (8 * mValue.getNumPoints()); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
         virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
@@ -1824,13 +1794,12 @@ class VBentoIPolygon : public VBentoAttribute
         static void _formatPolygonAsBentoTextString(const VIPolygon& p, VString& s);
 
         VIPolygon mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoColor is a VBentoAttribute that holds a VColor value.
 */
-class VBentoColor : public VBentoAttribute
-    {
+class VBentoColor : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("rgba"); return kID; } ///< The data type name / class ID string.
@@ -1858,15 +1827,14 @@ class VBentoColor : public VBentoAttribute
     private:
 
         VColor mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoBinary is a VBentoAttribute that holds untyped data.
 */
-class VBentoBinary : public VBentoAttribute
-    {
+class VBentoBinary : public VBentoAttribute {
     public:
-    
+
         static VBentoBinary* newFromBentoTextString(const VString& name, const VString& bentoText);
 
         static const VString& DATA_TYPE_ID() { static const VString kID("bina"); return kID; } ///< The data type name / class ID string.
@@ -1893,11 +1861,11 @@ class VBentoBinary : public VBentoAttribute
         virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const; ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
-    
+
         void _getValueAsHexString(VString& s) const;
 
         VMemoryStream mValue; ///< The binary data.
-    };
+};
 
 /**
 VBentoUnknownValue is a VBentoAttribute that holds a value that is read from
@@ -1906,8 +1874,7 @@ to hold the binary data of unknown type. The data's length is known. Its data
 type name is known but the VBento code does not know how to map that data
 type name to a C++ class, and must therefore use a VBentoUnknownValue.
 */
-class VBentoUnknownValue : public VBentoAttribute
-    {
+class VBentoUnknownValue : public VBentoAttribute {
     public:
 
         static const VString& DATA_TYPE_ID() { static const VString kID("unkn"); return kID; } ///< The data type name / class ID string.
@@ -1933,14 +1900,13 @@ class VBentoUnknownValue : public VBentoAttribute
     private:
 
         VMemoryStream mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoArray is a VBentoAttribute that holds an array of homogeneous simple values;
 there is a subclass for each supported data type.
 */
-class VBentoArray : public VBentoAttribute
-    {
+class VBentoArray : public VBentoAttribute {
     public:
 
         VBentoArray() : VBentoAttribute() {} ///< Constructs with uninitialized name and value.
@@ -1963,15 +1929,14 @@ class VBentoArray : public VBentoAttribute
         virtual void _appendElementBentoText(int elementIndex, VString& s) const = 0;
 
     private:
-    
+
         void _getValueAsBentoTextString(VString& s) const;
-    };
+};
 
 /**
 VBentoS8Array is a VBentoArray that holds an array of Vs8 values.
 */
-class VBentoS8Array : public VBentoArray
-    {
+class VBentoS8Array : public VBentoArray {
     public:
 
         static VBentoS8Array* newFromBentoTextString(const VString& name, const VString& bentoText);
@@ -2005,13 +1970,12 @@ class VBentoS8Array : public VBentoArray
     private:
 
         Vs8Array mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoS16Array is a VBentoArray that holds an array of Vs16 values.
 */
-class VBentoS16Array : public VBentoArray
-    {
+class VBentoS16Array : public VBentoArray {
     public:
 
         static VBentoS16Array* newFromBentoTextString(const VString& name, const VString& bentoText);
@@ -2045,13 +2009,12 @@ class VBentoS16Array : public VBentoArray
     private:
 
         Vs16Array mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoS32Array is a VBentoArray that holds an array of Vs32 values.
 */
-class VBentoS32Array : public VBentoArray
-    {
+class VBentoS32Array : public VBentoArray {
     public:
 
         static VBentoS32Array* newFromBentoTextString(const VString& name, const VString& bentoText);
@@ -2085,13 +2048,12 @@ class VBentoS32Array : public VBentoArray
     private:
 
         Vs32Array mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoS64Array is a VBentoArray that holds an array of Vs64 values.
 */
-class VBentoS64Array : public VBentoArray
-    {
+class VBentoS64Array : public VBentoArray {
     public:
 
         static VBentoS64Array* newFromBentoTextString(const VString& name, const VString& bentoText);
@@ -2125,13 +2087,12 @@ class VBentoS64Array : public VBentoArray
     private:
 
         Vs64Array mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoStringArray is a VBentoArray that holds an array of VString values.
 */
-class VBentoStringArray : public VBentoArray
-    {
+class VBentoStringArray : public VBentoArray {
     public:
 
         static VBentoStringArray* newFromBentoTextString(const VString& name, const VString& bentoText);
@@ -2160,18 +2121,17 @@ class VBentoStringArray : public VBentoArray
         virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (VStringVector::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeString(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
         virtual int _getNumElements() const { return static_cast<int>(mValue.size()); }
-        virtual void _appendElementBentoText(int elementIndex, VString& s) const { VString valueString = mValue[elementIndex]; valueString.replace("\"","\\\\\""); s += '"'; s += valueString; s += '"'; }
+        virtual void _appendElementBentoText(int elementIndex, VString& s) const { VString valueString = mValue[elementIndex]; valueString.replace("\"", "\\\\\""); s += '"'; s += valueString; s += '"'; }
 
     private:
 
         VStringVector mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoBoolArray is a VBentoArray that holds an array of bool values.
 */
-class VBentoBoolArray : public VBentoArray
-    {
+class VBentoBoolArray : public VBentoArray {
     public:
 
         static VBentoBoolArray* newFromBentoTextString(const VString& name, const VString& bentoText);
@@ -2200,18 +2160,17 @@ class VBentoBoolArray : public VBentoArray
         virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (VBoolArray::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeBool(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
         virtual int _getNumElements() const { return static_cast<int>(mValue.size()); }
-        virtual void _appendElementBentoText(int elementIndex, VString& s) const { s += (mValue[elementIndex] ? "true":"false"); }
+        virtual void _appendElementBentoText(int elementIndex, VString& s) const { s += (mValue[elementIndex] ? "true" : "false"); }
 
     private:
 
         VBoolArray mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoDoubleArray is a VBentoArray that holds an array of VDouble values.
 */
-class VBentoDoubleArray : public VBentoArray
-    {
+class VBentoDoubleArray : public VBentoArray {
     public:
 
         static VBentoDoubleArray* newFromBentoTextString(const VString& name, const VString& bentoText);
@@ -2245,13 +2204,12 @@ class VBentoDoubleArray : public VBentoArray
     private:
 
         VDoubleArray mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoDurationArray is a VBentoArray that holds an array of VDuration values.
 */
-class VBentoDurationArray : public VBentoArray
-    {
+class VBentoDurationArray : public VBentoArray {
     public:
 
         static VBentoDurationArray* newFromBentoTextString(const VString& name, const VString& bentoText);
@@ -2285,13 +2243,12 @@ class VBentoDurationArray : public VBentoArray
     private:
 
         VDurationVector mValue; ///< The attribute value.
-    };
+};
 
 /**
 VBentoInstantArray is a VBentoArray that holds an array of VInstant values.
 */
-class VBentoInstantArray : public VBentoArray
-    {
+class VBentoInstantArray : public VBentoArray {
     public:
 
         static VBentoInstantArray* newFromBentoTextString(const VString& name, const VString& bentoText);
@@ -2325,6 +2282,6 @@ class VBentoInstantArray : public VBentoArray
     private:
 
         VInstantVector mValue; ///< The attribute value.
-    };
+};
 
 #endif /* vbento_h */

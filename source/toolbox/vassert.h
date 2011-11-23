@@ -41,10 +41,10 @@ similar tests:
 
 VASSERT(nameOfOwner == nameOfParticipant);
   Assertion failed: nameOfOwner == nameOfParticipant
-  
+
 VASSERT_EQUAL(nameOfOwner, nameOfParticipant);
   Equal assertion failed. (nameOfOwner = Flavio) (nameOfParticipant = Fernando)
-  
+
 You can use VASSERT_VALUE if you have a complex boolean to evaluate and want to supply a value string or other
 information to be included if the assertion fails, for example:
 VASSERT_VALUE(x == 1 || x == 20 || x > 50, x, VSTRING_INT(x));
@@ -57,53 +57,52 @@ Another example, with good/better/best output:
 
 VASSERT(balance < 100);
   Assertion failed: balance < 100
-  
+
 VASSERT_LESS_THAN(balance, 100);
   Less Than assertion failed. (balance = 250) (100 = 100)
-  
+
 VASSERT_LESS_THAN(balance, MAX_BALANCE);
   Less Than assertion failed. (balance = 250) (MAX_BALANCE = 100)
 
 */
 
 #ifdef V_ASSERT_ACTIVE
-    #define VASSERT(expression)                             do { if (!(expression))                     VAssert::failedAssert(#expression, __FILE__, __LINE__); } while (false)
-    #define VASSERT_VALUE(expression, valName, valString)   do { if (!(expression))                     VAssert::failedAssertValue(#expression, #valName, valString, __FILE__, __LINE__); } while (false)
-    #define VASSERT_NULL(pointer)                           do { if (pointer != NULL)                   VAssert::failedAssertNull(pointer, #pointer, __FILE__, __LINE__); } while (false)
-    #define VASSERT_NOT_NULL(pointer)                       do { if (pointer == NULL)                   VAssert::failedAssertNotNull(#pointer, __FILE__, __LINE__); } while (false)
-    #define VASSERT_ZERO(i)                                 do { if (i != 0)                            VAssert::failedAssertZero((Vs64)i, #i, __FILE__, __LINE__); } while (false)
-    #define VASSERT_NON_ZERO(i)                             do { if (i == 0)                            VAssert::failedAssertNonZero(#i, __FILE__, __LINE__); } while (false)
-    #define VASSERT_EQUAL(a, b)                             do { if (a != b)                            VAssert::failedAssertEqual(a, b, #a, #b, __FILE__, __LINE__); } while (false)
-    #define VASSERT_NOT_EQUAL(a, b)                         do { if (a == b)                            VAssert::failedAssertNotEqual(a, #a, #b, __FILE__, __LINE__); } while (false)
-    #define VASSERT_LESS_THAN(a, b)                         do { if (!(a < b))                          VAssert::failedLessGreaterComparison(true, false, a, b, #a, #b, __FILE__, __LINE__); } while (false)
-    #define VASSERT_LESS_THAN_OR_EQUAL(a, b)                do { if (!(a <= b))                         VAssert::failedLessGreaterComparison(true, true, a, b, #a, #b, __FILE__, __LINE__); } while (false)
-    #define VASSERT_GREATER_THAN(a, b)                      do { if (!(a > b))                          VAssert::failedLessGreaterComparison(false, false, a, b, #a, #b, __FILE__, __LINE__); } while (false)
-    #define VASSERT_GREATER_THAN_OR_EQUAL(a, b)             do { if (!(a >= b))                         VAssert::failedLessGreaterComparison(false, true, a, b, #a, #b, __FILE__, __LINE__); } while (false)
-    #define VASSERT_IN_RANGE(i, minVal, maxVal)             do { if (!((i >= minVal) && (i <= maxVal))) VAssert::failedRangeCheck(i, minVal, maxVal, #i, #minVal, #maxVal, __FILE__, __LINE__); } while (false)
+#define VASSERT(expression)                             do { if (!(expression))                     VAssert::failedAssert(#expression, __FILE__, __LINE__); } while (false)
+#define VASSERT_VALUE(expression, valName, valString)   do { if (!(expression))                     VAssert::failedAssertValue(#expression, #valName, valString, __FILE__, __LINE__); } while (false)
+#define VASSERT_NULL(pointer)                           do { if (pointer != NULL)                   VAssert::failedAssertNull(pointer, #pointer, __FILE__, __LINE__); } while (false)
+#define VASSERT_NOT_NULL(pointer)                       do { if (pointer == NULL)                   VAssert::failedAssertNotNull(#pointer, __FILE__, __LINE__); } while (false)
+#define VASSERT_ZERO(i)                                 do { if (i != 0)                            VAssert::failedAssertZero((Vs64)i, #i, __FILE__, __LINE__); } while (false)
+#define VASSERT_NON_ZERO(i)                             do { if (i == 0)                            VAssert::failedAssertNonZero(#i, __FILE__, __LINE__); } while (false)
+#define VASSERT_EQUAL(a, b)                             do { if (a != b)                            VAssert::failedAssertEqual(a, b, #a, #b, __FILE__, __LINE__); } while (false)
+#define VASSERT_NOT_EQUAL(a, b)                         do { if (a == b)                            VAssert::failedAssertNotEqual(a, #a, #b, __FILE__, __LINE__); } while (false)
+#define VASSERT_LESS_THAN(a, b)                         do { if (!(a < b))                          VAssert::failedLessGreaterComparison(true, false, a, b, #a, #b, __FILE__, __LINE__); } while (false)
+#define VASSERT_LESS_THAN_OR_EQUAL(a, b)                do { if (!(a <= b))                         VAssert::failedLessGreaterComparison(true, true, a, b, #a, #b, __FILE__, __LINE__); } while (false)
+#define VASSERT_GREATER_THAN(a, b)                      do { if (!(a > b))                          VAssert::failedLessGreaterComparison(false, false, a, b, #a, #b, __FILE__, __LINE__); } while (false)
+#define VASSERT_GREATER_THAN_OR_EQUAL(a, b)             do { if (!(a >= b))                         VAssert::failedLessGreaterComparison(false, true, a, b, #a, #b, __FILE__, __LINE__); } while (false)
+#define VASSERT_IN_RANGE(i, minVal, maxVal)             do { if (!((i >= minVal) && (i <= maxVal))) VAssert::failedRangeCheck(i, minVal, maxVal, #i, #minVal, #maxVal, __FILE__, __LINE__); } while (false)
 #else
-    #define VASSERT(expression)                             ((void) 0)
-    #define VASSERT_VALUE(expression, valName, valString)   ((void) 0)
-    #define VASSERT_NULL(pointer)                           ((void) 0)
-    #define VASSERT_NOT_NULL(pointer)                       ((void) 0)
-    #define VASSERT_ZERO(i)                                 ((void) 0)
-    #define VASSERT_NON_ZERO(i)                             ((void) 0)
-    #define VASSERT_EQUAL(a, b)                             ((void) 0)
-    #define VASSERT_NOT_EQUAL(a, b)                         ((void) 0)
-    #define VASSERT_LESS_THAN(a, b)                         ((void) 0)
-    #define VASSERT_LESS_THAN_OR_EQUAL(a, b)                ((void) 0)
-    #define VASSERT_GREATER_THAN(a, b)                      ((void) 0)
-    #define VASSERT_GREATER_THAN_OR_EQUAL(a, b)             ((void) 0)
-    #define VASSERT_IN_RANGE(i, minVal, maxVal)             ((void) 0)
+#define VASSERT(expression)                             ((void) 0)
+#define VASSERT_VALUE(expression, valName, valString)   ((void) 0)
+#define VASSERT_NULL(pointer)                           ((void) 0)
+#define VASSERT_NOT_NULL(pointer)                       ((void) 0)
+#define VASSERT_ZERO(i)                                 ((void) 0)
+#define VASSERT_NON_ZERO(i)                             ((void) 0)
+#define VASSERT_EQUAL(a, b)                             ((void) 0)
+#define VASSERT_NOT_EQUAL(a, b)                         ((void) 0)
+#define VASSERT_LESS_THAN(a, b)                         ((void) 0)
+#define VASSERT_LESS_THAN_OR_EQUAL(a, b)                ((void) 0)
+#define VASSERT_GREATER_THAN(a, b)                      ((void) 0)
+#define VASSERT_GREATER_THAN_OR_EQUAL(a, b)             ((void) 0)
+#define VASSERT_IN_RANGE(i, minVal, maxVal)             ((void) 0)
 #endif
 
 /**
 This static helper class provides the various overloaded assertion functions that we call from our VASSERT
 macros.
 */
-class VAssert
-    {
+class VAssert {
     public:
-    
+
         // Note: The reason that 'expressions' are passed as raw (const char*) rather than (const VString&) is that they are always formed
         // by the # stringifier from one of the macros defined above, are therefore compile-time constants, and constructing a VString to wrap
         // each of them as we pass them along to the string formatter would be needlessly wasteful.
@@ -170,7 +169,7 @@ class VAssert
         static void failedAssertNotEqual(const VInstant& val,   const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertNotEqual(const VColor& val,     const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertNotEqual(const VColorPair& val, const char* expressionA, const char* expressionB, const char* file, int line);
-    
+
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, int a, int b,                              const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, unsigned int a, unsigned int b,            const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, unsigned int a, int b,                     const char* expressionA, const char* expressionB, const char* file, int line);
@@ -218,9 +217,9 @@ class VAssert
         static void failedRangeCheck(const VInstant& val, const VInstant& minVal, const VInstant& maxVal,       const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
 
     private:
-    
+
         VAssert() {}
         ~VAssert() {}
-    };
+};
 
 #endif /* vassert_h */

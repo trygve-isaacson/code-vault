@@ -43,10 +43,10 @@ typedef signed long ssize_t; // used by i/o APIs defined below
 #define SHUT_WR SD_SEND
 
 #ifdef VCOMPILER_MSVC
-    typedef int mode_t;
-    #define S_IRWXO    _S_IREAD | _S_IWRITE
-    #define S_IRWXG    _S_IREAD | _S_IWRITE
-    #define S_IRWXU    _S_IREAD | _S_IWRITE
+typedef int mode_t;
+#define S_IRWXO    _S_IREAD | _S_IWRITE
+#define S_IRWXG    _S_IREAD | _S_IWRITE
+#define S_IRWXU    _S_IREAD | _S_IWRITE
 #endif
 
 // On VC++ but not CodeWarrior, we implement snapshot using _ftime64(), which is UTC-based.
@@ -140,14 +140,13 @@ inline int strcasecmp(const char* s1, const char* s2) { return ::_stricmp(s1, s2
 inline int strncasecmp(const char* s1, const char* s2, size_t length) { return ::_strnicmp(s1, s2, length); }
 inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args) { return ::_vsnprintf(buffer, length, format, args); }
 
-inline int snprintf(char* buffer, size_t length, const char* format, ...)
-    {
+inline int snprintf(char* buffer, size_t length, const char* format, ...) {
     va_list args;
     va_start(args, format);
     int result = ::snprintf(buffer, length, format, args);
     va_end(args);
     return result;
-    }
+}
 
 #endif /* Compiler-specific inline core functions. */
 

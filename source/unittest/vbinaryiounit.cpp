@@ -12,12 +12,10 @@ http://www.bombaydigital.com/
 #include "vmemorystream.h"
 
 VBinaryIOUnit::VBinaryIOUnit(bool logOnSuccess, bool throwOnError) :
-VUnit("VBinaryIOUnit", logOnSuccess, throwOnError)
-    {
-    }
+    VUnit("VBinaryIOUnit", logOnSuccess, throwOnError) {
+}
 
-void VBinaryIOUnit::run()
-    {
+void VBinaryIOUnit::run() {
     VMemoryStream    buffer;
     VBinaryIOStream    stream(buffer);
 
@@ -34,7 +32,7 @@ void VBinaryIOUnit::run()
     stream.writeS32(-32L);
     stream.writeU32(4000000032UL);    // exceeds 31 bits
     stream.writeS64(CONST_S64(-64));
-    stream.writeU64((static_cast<Vu64> (V_MAX_S64)) + (static_cast<Vu64> (CONST_S64(64))));    // exceeds 63 bits
+    stream.writeU64((static_cast<Vu64>(V_MAX_S64)) + (static_cast<Vu64>(CONST_S64(64))));      // exceeds 63 bits
     stream.writeFloat(kFloatValue);
     stream.writeDouble(kDoubleValue);
     stream.writeBool(true);
@@ -91,5 +89,5 @@ void VBinaryIOUnit::run()
     this->test(bytes[5] == 0x12, "double byte[5]");
     this->test(bytes[6] == 0xD8, "double byte[6]");
     this->test(bytes[7] == 0x4A, "double byte[7]");
-    }
+}
 

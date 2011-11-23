@@ -24,16 +24,16 @@ class VBentoNode;
     @defgroup vthread Vault Threads
 
     <h3>Overview</h3>
-    
+
     The Vault's thread-related facilities make it easy to create multiple
     threads of concurrent execution, starting with VThread. Care is still
     needed to make those threads safely cooperate with shared data, and you
     can use VMutex and VMutexLocker to implement that consistently and
     safely. Finally, VSemaphore can be used to implement message-passing
     between threads.
-    
+
     <h4>Threads</h4>
-    
+
     VThread is the abstract base class from which you will derive your
     thread classes. Your subclass just needs to override the run()
     method. Your code there is executed in its own thread and that
@@ -44,9 +44,9 @@ class VBentoNode;
     stop() method to notify it that it should complete at its next
     opportunity. See the VThread documentation for complete details
     on all that.
-    
+
     <h4>Locking</h4>
-    
+
     VMutex is a mutual exclusion lock for synchronization. Use a mutex to
     prevent multiple threads from accessing the same resource at the same time.
     However, the code that attempts to access the lock should usually do so via
@@ -58,7 +58,7 @@ class VBentoNode;
     acquire the lock, the calling thread blocks until it is able to
     acquire the lock; only one thread can own the lock at any given
     moment in time.
-    
+
     VMutexLocker is a helper class for ensuring proper lock/unlock behavior
     around a VMutex object. The code that needs to acquire a VMutex lock
     will usually declare a temporary VMutexLocker object on the stack to
@@ -68,9 +68,9 @@ class VBentoNode;
     caller would have to be sure to catch all exceptions and call unlock()
     on the mutex object, which leads to ugly and error-prone code. VMutexLocker
     make the correct behavior trivial. See the VMutexLocker documentation for details.
-    
+
     <h4>Signaling</h4>
-    
+
     VSemaphore is a mechanism for allowing threads to communicate by waiting
     for signals from each other; while a thread is waiting on a semaphore, it
     is blocked and does not consume the CPU. Another thread can signal the
@@ -80,9 +80,9 @@ class VBentoNode;
     a receiving thread sleeps if there are no messages for it to process, yet
     wakes up the moment a message is available. See the VSemaphore documentation
     for details.
-    
+
 */
-    
+
 /**
     @ingroup vthread
 */
@@ -103,7 +103,7 @@ block on each join() call until that thread has finished. This is far better
 than cycling through a while loop waiting until you notice that all of your
 thread objects have been removed. Pass kCreateThreadJoinable for
 createDetached in the constructor to make the thread joinable.
-        
+
 There is no safe way to remotely "force-kill" another thread. You can only
 stop() it and let it notice that it has been stopped. As noted above, if you
 need to wait until thread x has completed, call x->join(). Of course, if the
@@ -131,10 +131,9 @@ file i/o operation, this can often be done in the loop that reads or
 writes a chunk of data at a time, when it updates the progress
 information.
 */
-class VThread
-    {
+class VThread {
     public:
-    
+
         /*
         The following three static functions are to be implemented in your client application
         code. The APIs are defined here and are called when needed, and you just have to
@@ -175,11 +174,11 @@ class VThread
         // Constants to pass for VThread constructor deleteSelfAtEnd parameter:
         static const bool kDeleteSelfAtEnd = true;      ///< The thread main deletes the VThread at end.
         static const bool kDontDeleteSelfAtEnd = false; ///< The thread main does not delete the VThread at end.
-    
+
         // Constants to pass for VThread constructor createDetached parameter:
         static const bool kCreateThreadDetached = true;     ///< The thread will be created in detached state.
         static const bool kCreateThreadJoinable = false;    ///< The thread will be created in joinable state.
-    
+
         /**
         Constructs the thread object in stopped state.
         @param    name            a name for the thread, useful for debugging purposes
@@ -202,7 +201,7 @@ class VThread
         Destructor.
         */
         virtual ~VThread();
-        
+
         /**
         Starts the thread by creating whatever OS-specific resources are
         necessary, and invoking the thread main, resulting in the
@@ -224,7 +223,7 @@ class VThread
         when the property becomes false.
         */
         virtual void run() = 0;
-        
+
         /**
         Returns the underlying OS thread ID. On each OS this type is suitable
         for supplying to OS-specific thread functions.
@@ -257,7 +256,7 @@ class VThread
         @return the manager
         */
         VManagementInterface* getManagementInterface() const;
-        
+
         /**
         Returns the thread name (useful for debugging).
         @return the thread name
@@ -275,14 +274,14 @@ class VThread
         @param    name    a name for this thread
         */
         void setName(const VString& threadName) { mName = threadName; }
-        
+
         /**
         The main function that invokes the thread's run() and cleans up when
         it returns.
         @param    arg    we use this parameter for the VThread object pointer
         */
         static void* threadMain(void* arg);
-        
+
         /**
         Returns a Bento data hierarchy describing the set of threads existent at the
         time of the call. Note that upon return, some of those threads may end, and
@@ -291,7 +290,7 @@ class VThread
                         filled out with a name, and a child for each thread
         */
         static void getThreadsInfo(VBentoNode& bento);
-        
+
         /**
         Returns the name of the VThread specified by thread id, if it exists. If the thread
         does not exist, an empty string is returned.
@@ -314,8 +313,8 @@ class VThread
         the platform-specific threading APIs. These are implemented in each
         platform-specific version of vthread_platform.cpp.
         */
-        
-        typedef void* (*threadMainFunction)(void* param);
+
+        typedef void*(*threadMainFunction)(void* param);
 
         /**
         Starts up a new running thread.
@@ -345,7 +344,7 @@ class VThread
         @return true on success; false on failure
         */
         static bool threadJoin(VThreadID_Type threadID, void** value);
-        
+
         /**
         Marks the specified thread's storage to be reclaimed when the thread terminates.
         This function does not terminate the thread.
@@ -360,14 +359,14 @@ class VThread
         @return the current thread ID
         */
         static VThreadID_Type threadSelf();
-        
+
         /**
         Returns the current thread's VThread. If the current thread is main or a thread that
         was not created using VThread, a dummy "stand-in" object is returned, that is not actually
         running or having a valid thread ID. But this means we guarantee to not return NULL.
         */
         static VThread* getCurrentThread();
-        
+
         /**
         This is a preferred alternative to getCurrentThread()->getName() to handle the case where
         it is called from a thread that was not created with a VThread. It is smart enough to
@@ -392,7 +391,7 @@ class VThread
         @param    interval    the amount of time to sleep for
         */
         static void sleep(const VDuration& interval);
-        
+
         /**
         Yields to other threads. This is a way of the calling thread
         being more cooperative with other threads. Unfortunately, the
@@ -400,9 +399,9 @@ class VThread
         facilities available.
         */
         static void yield();
-        
+
     protected:
-    
+
         bool                    mIsDeleted;         ///< For debugging purposes it's useful to detect when an attempt is made to delete a thread twice.
         VString                 mName;              ///< For debugging purposes it's very useful to give each thread a name.
         bool                    mDeleteAtEnd;       ///< True if threadMain should delete this obj when it returns from run().
@@ -410,9 +409,9 @@ class VThread
         VManagementInterface*   mManager;           ///< The VManagementInterface that manages us, or NULL.
         VThreadID_Type          mThreadID;          ///< The OS-specific thread ID value.
         volatile bool           mIsRunning;         ///< The running state of the thread (@see isRunning()).
-    
+
     private:
-    
+
         // Prevent copy construction and assignment since there is no provision for sharing the underlying thread.
         VThread(const VThread& other);
         VThread& operator=(const VThread& other);
@@ -423,7 +422,7 @@ class VThread
         // threadEnded() calls.
         static void _threadStarting(const VThread* thread);
         static void _threadEnded(const VThread* thread);
-    };
+};
 
 /**
 The VMainThread is a special case that is intended to be declared and called by the application's main function as follows:
@@ -436,16 +435,16 @@ Therefore you can call VThread::getCurrentThread() from the main thread and it w
 You must not "start" the VMainThread, because it is not a real VThread. If you do, its start() method will throw.
 VMainThread's execute() method simply calls VThread::userMain() which is defined by the application as always.
 */
-class VMainThread : public VThread
-    {
+class VMainThread : public VThread {
     public:
         VMainThread();
         virtual ~VMainThread();
+
         virtual void start();
         virtual void run() {} // Will never be called because start() throws.
 
         int execute(int argc, char** argv);
-    };
+};
 
 /**
 VForeignThread is a special case that is intended to be declared on the stack in a callback or similar function that
@@ -453,14 +452,14 @@ is called by a foreign (non-VThread) source such as the Windows Service Control 
 name to that thread via the constructor, and it will register the current thread id with that name. This provides
 for getting a useful thread name (useful in VLogger output) from within that thread.
 */
-class VForeignThread : public VThread
-    {
+class VForeignThread : public VThread {
     public:
         VForeignThread(const VString& name);
         virtual ~VForeignThread();
+
         virtual void start();
         virtual void run() {} // Will never be called because start() throws.
-    };
+};
 
 #endif /* vthread_h */
 

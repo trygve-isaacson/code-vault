@@ -19,7 +19,7 @@ First, define the 2 fundamental properties:
 
 // Maybe there's a cleaner way to do this; but we need to distinguish HP-UX below.
 #ifdef _HPUX_SOURCE
-    #define VPLATFORM_UNIX_HPUX
+#define VPLATFORM_UNIX_HPUX
 #endif
 
 /*
@@ -36,15 +36,15 @@ Finally, proceed with everything else.
 // Boost seems to require being included first.
 // If using shared_ptr, must include before our vtypes.h redefines new.
 #ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
-    #define V_INCLUDE_BOOST_CORE
+#define V_INCLUDE_BOOST_CORE
 #endif
 #ifdef VAULT_BOOST_SHARED_PTR_INCLUDE
-    #define V_INCLUDE_BOOST_CORE
+#define V_INCLUDE_BOOST_CORE
 #endif
 #ifdef V_INCLUDE_BOOST_CORE
-    #include <boost/format.hpp>
-    #include <boost/shared_ptr.hpp>
-    // Unfortunately GCC does not have a save/restore diagnostic state pragma.
+#include <boost/format.hpp>
+#include <boost/shared_ptr.hpp>
+// Unfortunately GCC does not have a save/restore diagnostic state pragma.
 #endif
 
 #include <math.h>
@@ -57,10 +57,10 @@ Finally, proceed with everything else.
 #include <typeinfo> // std::bad_cast, etc.
 
 #ifdef VPLATFORM_UNIX_HPUX
-    // On HPUX, std::abs(float) is not defined. For now, we can revert to macro style.
-    // FIXME: do this more selectively rather than all-or-nothing below; just do V_FABS
-    // rather than all 4 macros.
-    #define DEFINE_V_MINMAXABS
+// On HPUX, std::abs(float) is not defined. For now, we can revert to macro style.
+// FIXME: do this more selectively rather than all-or-nothing below; just do V_FABS
+// rather than all 4 macros.
+#define DEFINE_V_MINMAXABS
 #endif
 
 #define V_HAVE_REENTRANT_TIME    // we can and should use the _r versions of time.h calls
@@ -73,10 +73,10 @@ Finally, proceed with everything else.
 /* In case BYTE_ORDER stuff from <endian.h> is not defined, we'll
    define the environment as big-endian. */
 #ifndef BYTE_ORDER
-    #define LITTLE_ENDIAN   1234    /* LSB first: i386, vax */
-    #define BIG_ENDIAN      4321    /* MSB first: 68000, ibm, net */
-    #define PDP_ENDIAN      3412    /* LSB first in word, MSW first in long */
-    #define BYTE_ORDER      BIG_ENDIAN
+#define LITTLE_ENDIAN   1234    /* LSB first: i386, vax */
+#define BIG_ENDIAN      4321    /* MSB first: 68000, ibm, net */
+#define PDP_ENDIAN      3412    /* LSB first in word, MSW first in long */
+#define BYTE_ORDER      BIG_ENDIAN
 #endif
 
 /*
@@ -88,7 +88,7 @@ actually call the swapping functions. If not, the macros do nothing.
 */
 
 #if BYTE_ORDER == LITTLE_ENDIAN
-    #define VBYTESWAP_NEEDED // This means "host order" and "network order" differ.
+#define VBYTESWAP_NEEDED // This means "host order" and "network order" differ.
 #endif
 
 /*
@@ -97,24 +97,24 @@ own portable versions.
 */
 #ifdef DEFINE_V_MINMAXABS
 
-    #define V_MIN(a, b) ((a) > (b) ? (b) : (a)) ///< Macro for getting min of compatible values when standard functions / templates are not available.
-    #define V_MAX(a, b) ((a) > (b) ? (a) : (b)) ///< Macro for getting max of compatible values when standard functions / templates are not available.
-    #define V_ABS(a) ((a) < 0 ? (-(a)) : (a))   ///< Macro for getting abs of an integer value when standard functions / templates are not available.
-    #define V_FABS(a) ((a) < 0 ? (-(a)) : (a))  ///< Macro for getting abs of a floating point value when standard functions / templates are not available.
+#define V_MIN(a, b) ((a) > (b) ? (b) : (a)) ///< Macro for getting min of compatible values when standard functions / templates are not available.
+#define V_MAX(a, b) ((a) > (b) ? (a) : (b)) ///< Macro for getting max of compatible values when standard functions / templates are not available.
+#define V_ABS(a) ((a) < 0 ? (-(a)) : (a))   ///< Macro for getting abs of an integer value when standard functions / templates are not available.
+#define V_FABS(a) ((a) < 0 ? (-(a)) : (a))  ///< Macro for getting abs of a floating point value when standard functions / templates are not available.
 
 #else
 
-    #define V_MIN(a, b) std::min(a, b)  ///< Macro for getting min of compatible values using standard function template.
-    #define V_MAX(a, b) std::max(a, b)  ///< Macro for getting max of compatible values using standard function template.
-    #define V_ABS(a) std::abs(a)        ///< Macro for getting abs of an integer value using standard function template.
-    #define V_FABS(a) fabs(a)      ///< Macro for getting abs of a floating point value using standard function template.
+#define V_MIN(a, b) std::min(a, b)  ///< Macro for getting min of compatible values using standard function template.
+#define V_MAX(a, b) std::max(a, b)  ///< Macro for getting max of compatible values using standard function template.
+#define V_ABS(a) std::abs(a)        ///< Macro for getting abs of an integer value using standard function template.
+#define V_FABS(a) fabs(a)      ///< Macro for getting abs of a floating point value using standard function template.
 
 #endif /* DEFINE_V_MINMAXABS */
 
 // vsnprintf(NULL, 0, . . .) behavior generally conforms to IEEE 1003.1,
 // but not on HP-UX.
 #ifndef VPLATFORM_UNIX_HPUX
-    #define V_EFFICIENT_SPRINTF
+#define V_EFFICIENT_SPRINTF
 #endif
 
 #endif /* vtypes_platform_h */

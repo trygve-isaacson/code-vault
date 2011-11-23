@@ -16,37 +16,33 @@ http://www.bombaydigital.com/
 #include <psapi.h> // for GetProcessMemoryInfo used by VgetMemoryUsage
 
 V_STATIC_INIT_TRACE
-    
-Vs64 vault::VgetMemoryUsage()
-    {
+
+Vs64 vault::VgetMemoryUsage() {
     PROCESS_MEMORY_COUNTERS info;
     BOOL success = ::GetProcessMemoryInfo(::GetCurrentProcess(), &info, sizeof(info));
     if (success)
         return info.WorkingSetSize;
     else
         return 0;
-    }
-    
+}
+
 static const Vu8 kDOSLineEnding[2] = { 0x0D, 0x0A };
 
-const Vu8* vault::VgetNativeLineEnding(int& numBytes)
-    {
+const Vu8* vault::VgetNativeLineEnding(int& numBytes) {
     numBytes = 2;
     return kDOSLineEnding;
-    }
+}
 
-static void getCurrentTZ(VString& tz)
-    {
+static void getCurrentTZ(VString& tz) {
     char* tzEnvString = vault::getenv("TZ");
-    
+
     if (tzEnvString == NULL)
         tz = VString::EMPTY();
     else
         tz = tzEnvString;
-    }
+}
 
-static void setCurrentTZ(const VString& tz)
-    {
+static void setCurrentTZ(const VString& tz) {
     VString envString(VSTRING_ARGS("TZ=%s", tz.chars()));
 
     /*
@@ -60,31 +56,29 @@ static void setCurrentTZ(const VString& tz)
     char* orphanBuffer = new char[bufferLength];
     envString.copyToBuffer(orphanBuffer, bufferLength);
     vault::putenv(orphanBuffer);
-    }
+}
 
 static VMutex gTimeGMMutex("gTimeGMMutex", true/*suppressLogging*/);
 
-time_t timegm(struct tm* t)
-    {
+time_t timegm(struct tm* t) {
     VMutexLocker    locker(&gTimeGMMutex, "timegm");
     VString         savedTZ;
-    
+
     getCurrentTZ(savedTZ);
     setCurrentTZ("UTC");
 
     time_t result = ::mktime(t);
 
     setCurrentTZ(savedTZ);
-    
+
     return result;
-    }
+}
 
 #ifdef VCOMPILER_CODEWARRIOR
 #include "vexception.h"
-int vault::open(const char* path, int flags, mode_t mode)
-    {
+int vault::open(const char* path, int flags, mode_t mode) {
     throw VException(VSTRING_FORMAT("Error opening '%s': POSIX open() is not supported by CodeWarrior on Windows.", path));
-    }
+}
 #endif
 
 // VAutoreleasePool is a no-op on Windows.

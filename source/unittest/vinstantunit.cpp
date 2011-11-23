@@ -13,27 +13,25 @@ http://www.bombaydigital.com/
 #include "vthread.h"
 
 VInstantUnit::VInstantUnit(bool logOnSuccess, bool throwOnError) :
-VUnit("VInstantUnit", logOnSuccess, throwOnError)
+    VUnit("VInstantUnit", logOnSuccess, throwOnError) {
+}
+
+void VInstantUnit::run() {
+
     {
+        VInstant    now;
+        VString        nowLocalString;
+        VString        nowUTCString;
+        now.getLocalString(nowLocalString);
+        now.getUTCString(nowUTCString);
+
+        this->logStatus(VSTRING_FORMAT("VInstant current local time is %s. This must be visually confirmed to be correct.",
+                                       nowLocalString.chars()));
+
+        this->logStatus(VSTRING_FORMAT("VInstant current UTC time is %s. This must be visually confirmed to be correct.",
+                                       nowUTCString.chars()));
     }
 
-void VInstantUnit::run()
-    {
-    
-    {
-    VInstant    now;
-    VString        nowLocalString;
-    VString        nowUTCString;
-    now.getLocalString(nowLocalString);
-    now.getUTCString(nowUTCString);
-    
-    this->logStatus(VSTRING_FORMAT("VInstant current local time is %s. This must be visually confirmed to be correct.",
-        nowLocalString.chars()));
-    
-    this->logStatus(VSTRING_FORMAT("VInstant current UTC time is %s. This must be visually confirmed to be correct.",
-        nowUTCString.chars()));
-    }
-    
     VInstant    i1;
     VInstant    i2;
     Vs64        offset1;
@@ -72,7 +70,7 @@ void VInstantUnit::run()
     this->test(offset1 == offset2, "modification test 5");
     i2 -= VDuration(kDeltaC);                            // i2 is base + kDeltaABC
     this->test(i1 == i2, "modification test 6");
-    
+
     // Test comparison operators.
     // Set things up for this set of tests.
     offset1 = base;
@@ -83,7 +81,7 @@ void VInstantUnit::run()
     const VDuration kDeltaD = VDuration::MILLISECOND() * CONST_S64(24680);
     i2 += kDeltaD;
     // Now i2 is kDeltaD milliseconds later than i1.
-    this->test(! (i1 == i2), "comparison test 1a");
+    this->test(!(i1 == i2), "comparison test 1a");
     this->test(i1 != i2, "comparison test 1b");
     this->test(i1 < i2, "comparison test 1c");
     this->test(i1 <= i2, "comparison test 1d");
@@ -93,10 +91,10 @@ void VInstantUnit::run()
     i2 -= kDeltaD;
     // Now i1 and i2 are equal.
     this->test(i1 == i2, "comparison test 2a");
-    this->test(! (i1 != i2), "comparison test 2b");
-    this->test(! (i1 < i2), "comparison test 2c");
+    this->test(!(i1 != i2), "comparison test 2b");
+    this->test(!(i1 < i2), "comparison test 2c");
     this->test(i1 <= i2, "comparison test 2d");
-    this->test(! (i2 > i1), "comparison test 2e");
+    this->test(!(i2 > i1), "comparison test 2e");
     this->test(i2 >= i1, "comparison test 2f");
     this->test(i2 - i1 == VDuration::ZERO(), "comparison test 2g");
 
@@ -111,28 +109,28 @@ void VInstantUnit::run()
     this->test(infinitePast <= now, "comparison test 3b");
     this->test(now > infinitePast, "comparison test 3c");
     this->test(now >= infinitePast, "comparison test 3d");
-    this->test(! (infinitePast > now), "comparison test 3e");
-    this->test(! (infinitePast >= now), "comparison test 3f");
+    this->test(!(infinitePast > now), "comparison test 3e");
+    this->test(!(infinitePast >= now), "comparison test 3f");
     this->test(infinitePast != now, "comparison test 3g");
-    this->test(! (infinitePast == now), "comparison test 3h");
+    this->test(!(infinitePast == now), "comparison test 3h");
 
     this->test(infiniteFuture > now, "comparison test 4a");
     this->test(infiniteFuture >= now, "comparison test 4b");
     this->test(now < infiniteFuture, "comparison test 4c");
     this->test(now <= infiniteFuture, "comparison test 4d");
-    this->test(! (infiniteFuture < now), "comparison test 4e");
-    this->test(! (infiniteFuture <= now), "comparison test 4f");
+    this->test(!(infiniteFuture < now), "comparison test 4e");
+    this->test(!(infiniteFuture <= now), "comparison test 4f");
     this->test(infiniteFuture != now, "comparison test 4g");
-    this->test(! (infiniteFuture == now), "comparison test 4h");
+    this->test(!(infiniteFuture == now), "comparison test 4h");
 
     this->test(infinitePast < infiniteFuture, "comparison test 5a");
     this->test(infinitePast <= infiniteFuture, "comparison test 5b");
     this->test(infiniteFuture > infinitePast, "comparison test 5c");
     this->test(infiniteFuture >= infinitePast, "comparison test 5d");
-    this->test(! (infinitePast > infiniteFuture), "comparison test 5e");
-    this->test(! (infinitePast >= infiniteFuture), "comparison test 5f");
+    this->test(!(infinitePast > infiniteFuture), "comparison test 5e");
+    this->test(!(infinitePast >= infiniteFuture), "comparison test 5f");
     this->test(infinitePast != infiniteFuture, "comparison test 5g");
-    this->test(! (infinitePast == infiniteFuture), "comparison test 5h");
+    this->test(!(infinitePast == infiniteFuture), "comparison test 5h");
 
     this->test(infinitePast == VInstant::INFINITE_PAST(), "comparison test 6a");
     this->test(infiniteFuture == VInstant::INFINITE_FUTURE(), "comparison test 6b");
@@ -150,89 +148,92 @@ void VInstantUnit::run()
     // Test the operation of the simulated clock offset. Restore it right away,
     // because while we do this, we are messing with the time continuum! (Other
     // threads that get the current time from VInstant will see weirdness.)
-    { // scope for test subset local variables
-    VInstant base0;
-    VInstant basePlus1Minute = base0; basePlus1Minute += VDuration::MINUTE();
-    VInstant::incrementSimulatedClockOffset(2 * VDuration::MINUTE()); // should put us forward about 2 additional minutes
-    VInstant fakeFutureNow;
-    this->test(fakeFutureNow > basePlus1Minute, "advance simulated clock offset");
-    VInstant::setSimulatedClockOffset(VDuration::ZERO()); // restore the time continuum to normal
-    VInstant normalNow;
-    this->test(normalNow >= base0, "restore simulated clock offset part 1");
-    this->test(normalNow < basePlus1Minute, "restore simulated clock offset part 2"); // can only fail if it takes > 1 real minute to execute the last 5 lines of code
+    {
+        // scope for test subset local variables
+        VInstant base0;
+        VInstant basePlus1Minute = base0; basePlus1Minute += VDuration::MINUTE();
+        VInstant::incrementSimulatedClockOffset(2 * VDuration::MINUTE()); // should put us forward about 2 additional minutes
+        VInstant fakeFutureNow;
+        this->test(fakeFutureNow > basePlus1Minute, "advance simulated clock offset");
+        VInstant::setSimulatedClockOffset(VDuration::ZERO()); // restore the time continuum to normal
+        VInstant normalNow;
+        this->test(normalNow >= base0, "restore simulated clock offset part 1");
+        this->test(normalNow < basePlus1Minute, "restore simulated clock offset part 2"); // can only fail if it takes > 1 real minute to execute the last 5 lines of code
     }
 
-    { // scope for test subset local variables
-    // Here we test that setSimulatedClockValue() sets the time correctly;
-    // we set it and the obtain the current time, which should differ by
-    // only by the amount of time it takes to execute the set and get, so
-    // we'll allow 1 second to be on the safe side. Should be 1ms or less in reality.
-    VDateAndTime fakePastDT(1984, 1, 23, 9, 15, 0, 0);
-    VInstant fakePastInstant; fakePastInstant.setLocalDateAndTime(fakePastDT);
-    VInstant::setSimulatedClockValue(fakePastInstant);
-    VInstant fakePastNow;
-    this->test(fakePastNow - fakePastInstant < VDuration::SECOND(), "set clock to past instant");
-    // note that we do NOT zero the offset before the next test; we want to verify it can be set directly
-    VDateAndTime fakeFutureDT(2034, 1, 6, 14, 35, 0, 0);
-    VInstant fakeFutureInstant; fakeFutureInstant.setLocalDateAndTime(fakeFutureDT);
-    VInstant::setSimulatedClockValue(fakeFutureInstant);
-    VInstant fakeFutureNow;
-    this->test(fakeFutureNow - fakeFutureInstant < VDuration::SECOND(), "set clock to future instant");
-    
-    VInstant::setSimulatedClockOffset(VDuration::ZERO()); // restore the time continuum to normal
+    {
+        // scope for test subset local variables
+        // Here we test that setSimulatedClockValue() sets the time correctly;
+        // we set it and the obtain the current time, which should differ by
+        // only by the amount of time it takes to execute the set and get, so
+        // we'll allow 1 second to be on the safe side. Should be 1ms or less in reality.
+        VDateAndTime fakePastDT(1984, 1, 23, 9, 15, 0, 0);
+        VInstant fakePastInstant; fakePastInstant.setLocalDateAndTime(fakePastDT);
+        VInstant::setSimulatedClockValue(fakePastInstant);
+        VInstant fakePastNow;
+        this->test(fakePastNow - fakePastInstant < VDuration::SECOND(), "set clock to past instant");
+        // note that we do NOT zero the offset before the next test; we want to verify it can be set directly
+        VDateAndTime fakeFutureDT(2034, 1, 6, 14, 35, 0, 0);
+        VInstant fakeFutureInstant; fakeFutureInstant.setLocalDateAndTime(fakeFutureDT);
+        VInstant::setSimulatedClockValue(fakeFutureInstant);
+        VInstant fakeFutureNow;
+        this->test(fakeFutureNow - fakeFutureInstant < VDuration::SECOND(), "set clock to future instant");
+
+        VInstant::setSimulatedClockOffset(VDuration::ZERO()); // restore the time continuum to normal
     }
-    
-    { // scope for frozen time tests
-    VInstant realNow;
 
-    VDateAndTime fakePastDT(1990, 3, 17, 10, 11, 0, 0);
-    VInstant fakePastInstant; fakePastInstant.setLocalDateAndTime(fakePastDT);
-    
-    // Freeze time at the specified past time.
-    VInstant::freezeTime(fakePastInstant);
-    
-    // Sleep for 2 seconds and verify that no time seemed to actually pass.
-    VThread::sleep(2 * VDuration::SECOND());
-    VInstant frozenNow1;
-    this->test(frozenNow1 == fakePastInstant, "freeze time 1");
-    
-    Vs64 frozenSnapshot = VInstant::snapshot();
-    
-    // Shift frozen time forward by 10 seconds and validate.
-    VDuration shiftAmount = 10 * VDuration::SECOND();
-    VInstant::shiftFrozenTime(shiftAmount);
-    VInstant frozenNow2;
-    this->test(frozenNow2 == frozenNow1 + shiftAmount, "shift frozen time");
-    
-    VDuration frozenSnapshotDelta = VInstant::snapshotDelta(frozenSnapshot);
-    this->test(frozenSnapshotDelta == shiftAmount, "shift frozen time snapshot");
-    
-    this->test(VInstant::isTimeFrozen(), "time is frozen");
+    {
+        // scope for frozen time tests
+        VInstant realNow;
 
-    // Sleep for 2 seconds and verify that no time seemed to actually pass.
-    VThread::sleep(2 * VDuration::SECOND());
-    VInstant frozenNow3;
-    this->test(frozenNow3 == frozenNow2, "freeze time 2");
-    
-    // Unfreeze time and make sure it now rolls forward in true real time.
-    // First we verify that the current time is equal to or later than the
-    // real time when we started this test block.
-    // Then we sleep a little bit and verify that a later time is reported.
-    // We need to sleep long enough to exceed the time resolution on all
-    // platforms. On Windows this can be > 100ms. Otherwise, it may look like
-    // time did not roll forward while we slept.
-    VInstant::unfreezeTime();
-    VInstant realNow1;
-    this->test(realNow1 >= realNow, "normal time resumed");
-    VThread::sleep(200 * VDuration::MILLISECOND());
-    VInstant realNow2;
-    this->test(realNow2 > realNow1, "unfrozen time proceeds");
+        VDateAndTime fakePastDT(1990, 3, 17, 10, 11, 0, 0);
+        VInstant fakePastInstant; fakePastInstant.setLocalDateAndTime(fakePastDT);
 
-    VInstant::setSimulatedClockOffset(VDuration::ZERO()); // restore the time continuum to normal
+        // Freeze time at the specified past time.
+        VInstant::freezeTime(fakePastInstant);
+
+        // Sleep for 2 seconds and verify that no time seemed to actually pass.
+        VThread::sleep(2 * VDuration::SECOND());
+        VInstant frozenNow1;
+        this->test(frozenNow1 == fakePastInstant, "freeze time 1");
+
+        Vs64 frozenSnapshot = VInstant::snapshot();
+
+        // Shift frozen time forward by 10 seconds and validate.
+        VDuration shiftAmount = 10 * VDuration::SECOND();
+        VInstant::shiftFrozenTime(shiftAmount);
+        VInstant frozenNow2;
+        this->test(frozenNow2 == frozenNow1 + shiftAmount, "shift frozen time");
+
+        VDuration frozenSnapshotDelta = VInstant::snapshotDelta(frozenSnapshot);
+        this->test(frozenSnapshotDelta == shiftAmount, "shift frozen time snapshot");
+
+        this->test(VInstant::isTimeFrozen(), "time is frozen");
+
+        // Sleep for 2 seconds and verify that no time seemed to actually pass.
+        VThread::sleep(2 * VDuration::SECOND());
+        VInstant frozenNow3;
+        this->test(frozenNow3 == frozenNow2, "freeze time 2");
+
+        // Unfreeze time and make sure it now rolls forward in true real time.
+        // First we verify that the current time is equal to or later than the
+        // real time when we started this test block.
+        // Then we sleep a little bit and verify that a later time is reported.
+        // We need to sleep long enough to exceed the time resolution on all
+        // platforms. On Windows this can be > 100ms. Otherwise, it may look like
+        // time did not roll forward while we slept.
+        VInstant::unfreezeTime();
+        VInstant realNow1;
+        this->test(realNow1 >= realNow, "normal time resumed");
+        VThread::sleep(200 * VDuration::MILLISECOND());
+        VInstant realNow2;
+        this->test(realNow2 > realNow1, "unfrozen time proceeds");
+
+        VInstant::setSimulatedClockOffset(VDuration::ZERO()); // restore the time continuum to normal
     }
 
     // Test local-gm time conversion consistency.
-    
+
     // First let's validate that we get the expected value for UTC zero time.
     VDate        utc0Date(1970, 1, 1);
     VTimeOfDay    utc0Time(0, 0, 0, 0);
@@ -240,7 +241,7 @@ void VInstantUnit::run()
 
     utc0Instant.setValues(utc0Date, utc0Time, VInstant::UTC_TIME_ZONE_ID());
     this->test(utc0Instant.getValue() == CONST_S64(0), "utc epoch base");
-    
+
     // A little debugging code here:
     // Out of curiosity, do all platforms agree on what values we get exactly
     // 24 hours after that? (Let's avoid pre-1970 values for Windows compatibility.)
@@ -270,12 +271,12 @@ void VInstantUnit::run()
     july_14_2004_noon_utc.getValues(dateUTC, noonUTC, VInstant::UTC_TIME_ZONE_ID());
     // If you're testing this in Pacific time, dateLocal/noonLocal vs. dateUTC/noonUTC
     // should differ by 8 hours in the winter (standard), 7 hours in the summer (daylight).
-    
+
     // Verify symmetry of UTC<->Local conversion in the core platform-specific code.
     Vs64            nowOffset = VInstant::_platform_now();
     VInstantStruct    nowUTCStruct;
     VInstantStruct    nowLocalStruct;
-    
+
     VInstant::_platform_offsetToUTCStruct(nowOffset, nowUTCStruct);
     VInstant::_platform_offsetToLocalStruct(nowOffset, nowLocalStruct);
 
@@ -284,11 +285,11 @@ void VInstantUnit::run()
 
     this->test(nowOffset == utcCheckOffset, "platform UTC conversion cycle");
     this->test(nowOffset == localCheckOffset, "platform local conversion cycle");
-    
+
     // We know exactly what the correct value for July 14 2004 noon UTC is:
     this->test(july_14_2004_noon_utc.getValue() == CONST_S64(1089806400000), "utc epoch known offset");
     // (The value for July 14 2004 local time depends on our local time zone.)
-    
+
     // Those two times must not have the same underlying "value", because
     // they were specified in different time zones -- (We'll assume that
     // this machine is not running with local time zone = UTC. This test
@@ -296,9 +297,9 @@ void VInstantUnit::run()
     // case, the other zone conversion tests are not really being exercised
     // anyway, so testing in UTC is perhaps a bogus test environment anyway.)
     this->test(july_14_2004_noon_local != july_14_2004_noon_utc, "local != gm time");
-    
+
     // Reverse each VInstant back into VDate and VTimeOfDay, and verify.
-    
+
     VDate        dateLocalFromLocal;
     VTimeOfDay    timeLocalFromLocal;
     july_14_2004_noon_local.getValues(dateLocalFromLocal, timeLocalFromLocal, VInstant::LOCAL_TIME_ZONE_ID());
@@ -314,12 +315,12 @@ void VInstantUnit::run()
     this->test((dateUTCFromUTC == july_14_2004) && (timeUTCFromUTC == noon), "utc conversion cycle 2");
 
     this->test((dateUTCFromUTC.getYear() == 2004) &&
-                (dateUTCFromUTC.getMonth() == 7) &&
-                (dateUTCFromUTC.getDay() == 14) &&
-                (dateUTCFromUTC.getDayOfWeek() == VDate::kWednesday), "date values");
+               (dateUTCFromUTC.getMonth() == 7) &&
+               (dateUTCFromUTC.getDay() == 14) &&
+               (dateUTCFromUTC.getDayOfWeek() == VDate::kWednesday), "date values");
     this->test((timeUTCFromUTC.getHour() == 12) &&
-                (timeUTCFromUTC.getMinute() == 0) &&
-                (timeUTCFromUTC.getSecond() == 0), "time of day values");
+               (timeUTCFromUTC.getMinute() == 0) &&
+               (timeUTCFromUTC.getSecond() == 0), "time of day values");
 
     // VDuration tests.
 
@@ -328,14 +329,14 @@ void VInstantUnit::run()
     this->test(VDuration::MINUTE().getDurationMilliseconds() == CONST_S64(60000), "VDuration MINUTE");
     this->test(VDuration::HOUR().getDurationMilliseconds() == CONST_S64(3600000), "VDuration HOUR");
     this->test(VDuration::DAY().getDurationMilliseconds() == CONST_S64(86400000), "VDuration DAY");
-    
+
     VString zeroDurationString = VDuration::ZERO().getDurationString();
     this->test(VDuration::ZERO().getDurationString(), "0ms", "VDuration zero string");
     this->test(VDuration::ZERO().getDurationStringFractionalSeconds(), "0.000", "VDuration zero fractional string");
     this->test(VDuration::UNSPECIFIED().getDurationString(), "UNSPECIFIED", "VDuration UNSPECIFIED string");
     this->test(VDuration::NEGATIVE_INFINITY().getDurationString(), "-INFINITY", "VDuration NEGATIVE_INFINITY string");
     this->test(VDuration::POSITIVE_INFINITY().getDurationString(), "INFINITY", "VDuration POSITIVE_INFINITY string");
-    
+
     VDuration durationStringTest;
     durationStringTest = CONST_S64(987) * VDuration::MILLISECOND();
     this->test(durationStringTest.getDurationString(), "987ms", "VDuration 0.987 string");
@@ -411,7 +412,7 @@ void VInstantUnit::run()
     VDuration negativeDay = -1 * VDuration::DAY();
     VDuration positiveDay = VDuration::DAY();
     VDuration someDuration = VDuration::HOUR();
-    
+
     this->test(VDuration::NEGATIVE_INFINITY() != VDuration::POSITIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() != VDuration::POSITIVE_INFINITY()");
     this->test(VDuration::NEGATIVE_INFINITY() < VDuration::POSITIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() < VDuration::POSITIVE_INFINITY()");
     this->test(VDuration::NEGATIVE_INFINITY() <= VDuration::POSITIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() <= VDuration::POSITIVE_INFINITY()");
@@ -478,49 +479,49 @@ void VInstantUnit::run()
     infinitePast = VInstant::INFINITE_PAST();
     infiniteFuture = VInstant::INFINITE_FUTURE();
     VInstant never = VInstant::NEVER_OCCURRED();
-    
+
     this->test(infinitePast < currentTime, "infinitePast < currentTime");
     this->test(infinitePast <= currentTime, "infinitePast <= currentTime");
-    this->test(! (infinitePast >= currentTime), "! (infinitePast >= currentTime)");
-    this->test(! (infinitePast > currentTime), "! (infinitePast > currentTime)");
-    
+    this->test(!(infinitePast >= currentTime), "! (infinitePast >= currentTime)");
+    this->test(!(infinitePast > currentTime), "! (infinitePast > currentTime)");
+
     VDuration stringTestDuration;
-    
+
     stringTestDuration.setDurationString("42ms");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(42), "setDurationString ms suffix");
     stringTestDuration.setDurationString("2742ms");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(2742), "setDurationString ms suffix gt 1s");
     stringTestDuration.setDurationString("-87ms");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(-87), "setDurationString ms suffix negative value");
-    
+
     stringTestDuration.setDurationString("19s");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(19000), "setDurationString s suffix");
     stringTestDuration.setDurationString("194s");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(194000), "setDurationString s suffix gt 1m");
     stringTestDuration.setDurationString("-130s");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(-130000), "setDurationString s suffix negative value");
-    
+
     stringTestDuration.setDurationString("5m");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(300000), "setDurationString m suffix");
     stringTestDuration.setDurationString("78m");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(4680000), "setDurationString m suffix gt 1h");
     stringTestDuration.setDurationString("-12m");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(-720000), "setDurationString m suffix negative value");
-    
+
     stringTestDuration.setDurationString("2h");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(7200000), "setDurationString h suffix");
     stringTestDuration.setDurationString("48h");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(172800000), "setDurationString h suffix gt 1d");
     stringTestDuration.setDurationString("-6h");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(-21600000), "setDurationString h suffix negative value");
-    
+
     stringTestDuration.setDurationString("0.123");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(123), "setDurationString no suffix");
     stringTestDuration.setDurationString("5.678");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(5678), "setDurationString no suffix gt 1s");
     stringTestDuration.setDurationString("-2.723");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), CONST_S64(-2723), "setDurationString no suffix negative value");
-    
+
     stringTestDuration.setDurationString("unspecified");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), VDuration::UNSPECIFIED().getDurationMilliseconds(), "setDurationString unspecified");
     stringTestDuration.setDurationString("UNSPECIFIED");
@@ -535,5 +536,5 @@ void VInstantUnit::run()
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), VDuration::POSITIVE_INFINITY().getDurationMilliseconds(), "setDurationString infinity");
     stringTestDuration.setDurationString("INFINITY");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), VDuration::POSITIVE_INFINITY().getDurationMilliseconds(), "setDurationString INFINITY");
-    }
+}
 

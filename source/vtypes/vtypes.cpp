@@ -29,8 +29,7 @@ const void* const VCPP_DEBUG_BAD_POINTER_VALUE = reinterpret_cast<const void*>(0
 #pragma warning(default: 4312)
 #endif
 
-Vu16 vault::VbyteSwap16(Vu16 a16BitValue)
-    {
+Vu16 vault::VbyteSwap16(Vu16 a16BitValue) {
     Vu16    original = a16BitValue;
     Vu16    swapped;
     Vu8*    originalBytes = reinterpret_cast<Vu8*>(&original);
@@ -40,10 +39,9 @@ Vu16 vault::VbyteSwap16(Vu16 a16BitValue)
     swappedBytes[1] = originalBytes[0];
 
     return swapped;
-    }
+}
 
-Vu32 vault::VbyteSwap32(Vu32 a32BitValue)
-    {
+Vu32 vault::VbyteSwap32(Vu32 a32BitValue) {
     Vu32    original = a32BitValue;
     Vu32    swapped;
     Vu8*    originalBytes = reinterpret_cast<Vu8*>(&original);
@@ -55,10 +53,9 @@ Vu32 vault::VbyteSwap32(Vu32 a32BitValue)
     swappedBytes[3] = originalBytes[0];
 
     return swapped;
-    }
+}
 
-Vu64 vault::VbyteSwap64(Vu64 a64BitValue)
-    {
+Vu64 vault::VbyteSwap64(Vu64 a64BitValue) {
     Vu64    original = a64BitValue;
     Vu64    swapped;
     Vu8*    originalBytes = reinterpret_cast<Vu8*>(&original);
@@ -74,10 +71,9 @@ Vu64 vault::VbyteSwap64(Vu64 a64BitValue)
     swappedBytes[7] = originalBytes[0];
 
     return swapped;
-    }
+}
 
-VFloat vault::VbyteSwapFloat(VFloat a32BitValue)
-    {
+VFloat vault::VbyteSwapFloat(VFloat a32BitValue) {
     /*
     The key here is avoid allowing the compiler to do any
     conversion of the float to int, which would cause truncation
@@ -95,10 +91,9 @@ VFloat vault::VbyteSwapFloat(VFloat a32BitValue)
     swappedBytes[3] = originalBytes[0];
 
     return swapped;
-    }
+}
 
-VDouble vault::VbyteSwapDouble(VDouble a64BitValue)
-    {
+VDouble vault::VbyteSwapDouble(VDouble a64BitValue) {
     /*
     The key here is avoid allowing the compiler to do any
     conversion of the double to Vs64, which would cause truncation
@@ -120,16 +115,15 @@ VDouble vault::VbyteSwapDouble(VDouble a64BitValue)
     swappedBytes[7] = originalBytes[0];
 
     return swapped;
-    }
+}
 
 /*
 We don't conditionally compile this according to V_DEBUG_STATIC_INITIALIZATION_TRACE;
 rather, we always compile it, so that you have the option of turning it on per-file
 instead of all-or-nothing. We let the linker decide whether anyone calls it.
 */
-int Vtrace(const char* fileName, int lineNumber)
-    {
+int Vtrace(const char* fileName, int lineNumber) {
     std::cout << "Static Initialization @ " << fileName << ":" << lineNumber << std::endl;
     return 0;
-    }
+}
 

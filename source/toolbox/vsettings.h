@@ -45,10 +45,9 @@ VSettingsNode is the abstract class used to describe any node in the settings hi
 It may be the top level VSettings object, an arbitrary tag node, an attribute/value node,
 or a CDATA node.
 */
-class VSettingsNode
-    {
+class VSettingsNode {
     public:
-        
+
         VSettingsNode(VSettingsTag* parent, const VString& name);
         VSettingsNode(const VSettingsNode& other);
         virtual ~VSettingsNode() {}
@@ -56,7 +55,7 @@ class VSettingsNode
         VSettingsNode& operator=(const VSettingsNode& other);
 
         virtual void writeToStream(VTextIOStream& outputStream, int indentLevel = 0) const = 0;
-        virtual VBentoNode* writeToBento() const = 0;    
+        virtual VBentoNode* writeToBento() const = 0;
 
         virtual const VSettingsNode* findNode(const VString& path) const;
         virtual VSettingsNode* findMutableNode(const VString& path);
@@ -104,7 +103,7 @@ class VSettingsNode
         virtual VDuration getDuration(const VString& path) const;
         virtual VDuration getDurationValue() const = 0;
         virtual bool nodeExists(const VString& path) const;
-        
+
         virtual void addIntValue(const VString& path, int value);
         virtual void addS64Value(const VString& path, Vs64 value);
         virtual void addBooleanValue(const VString& path, bool value);
@@ -134,9 +133,9 @@ class VSettingsNode
         virtual void addValue(const VString& value);
 
         virtual void addChildNode(VSettingsNode* node);
-        
+
         VSettingsTag* getParent();
-    
+
     protected:
 
         virtual VSettingsAttribute* _findAttribute(const VString& /*name*/) const { return NULL; }
@@ -144,28 +143,27 @@ class VSettingsNode
         virtual void _addLeafValue(const VString& name, bool hasValue, const VString& value);
         virtual void _removeAttribute(VSettingsAttribute* /*attribute*/) {}
         virtual void _removeChildNode(VSettingsNode* /*child*/) {}
-        
+
         void throwNotFound(const VString& dataKind, const VString& missingTrail) const;
-        
+
         static const char kPathDelimiterChar;
 
         VSettingsTag*   mParent;
         VString         mName;
-    };
+};
 
 /**
 VSettings is the top level object you use to read and write a settings hierarchy. It is derived
 from the generic node class.
 */
-class VSettings : public VSettingsNode
-    {
+class VSettings : public VSettingsNode {
     public:
-        
+
         VSettings();
         VSettings(const VFSNode& file);
         VSettings(VTextIOStream& inputStream);
         virtual ~VSettings();
-        
+
         void readFromFile(const VFSNode& file);
         void writeToFile(const VFSNode& file) const;
         void readFromStream(VTextIOStream& inputStream);
@@ -193,30 +191,29 @@ class VSettings : public VSettingsNode
 
         // String value converters.
         static bool stringToBoolean(const VString& value);
-        
+
         // Path navigation utilities.
         static bool isPathLeaf(const VString& path);
         static void splitPathFirst(const VString& path, VString& nextNodeName, VString& outRemainder);
         static void splitPathLast(const VString& path, VString& leadingPath, VString& lastNode);
-        
+
     protected:
-    
+
         virtual VSettingsTag* _findChildTag(const VString& /*name*/) const;
         virtual void _addLeafValue(const VString& name, bool hasValue, const VString& value);
-    
+
     private:
-    
+
         VSettingsNodePtrVector mNodes;
-        
-    };
+
+};
 
 /**
 A VSettingsTag node is one that has optional attribute/value pairs and optional child nodes.
 */
-class VSettingsTag : public VSettingsNode
-    {
+class VSettingsTag : public VSettingsNode {
     public:
-        
+
         // In reality, the parent can be a VSettings object; but no other kind of VSettings Node (i.e., attributes).
         VSettingsTag(VSettingsTag* parent, const VString& name);
         virtual ~VSettingsTag();
@@ -230,7 +227,7 @@ class VSettingsTag : public VSettingsNode
 
         void addAttribute(VSettingsAttribute* attribute);
         virtual void addChildNode(VSettingsNode* node);
-        
+
         virtual Vs64 getS64Value() const;
         virtual bool getBooleanValue() const;
         virtual VString getStringValue() const;
@@ -256,8 +253,8 @@ class VSettingsTag : public VSettingsNode
 
         VSettingsAttributePtrVector mAttributes;
         VSettingsNodePtrVector      mChildNodes;
-    
-    };
+
+};
 
 /**
 A VSettingsAttribute is a node that has a name and value. Because all data originates as text
@@ -265,10 +262,9 @@ from XML, you can attempt to get the value as the desired type, and if it can be
 will be. An exception is thrown if the type is incompatible, for example if you getIntValue()
 for the string "this is not an integer".
 */
-class VSettingsAttribute : public VSettingsNode
-    {
+class VSettingsAttribute : public VSettingsNode {
     public:
-    
+
         VSettingsAttribute(VSettingsTag* parent, const VString& name, const VString& value);
         VSettingsAttribute(VSettingsTag* parent, const VString& name);
         virtual ~VSettingsAttribute() {}
@@ -288,14 +284,14 @@ class VSettingsAttribute : public VSettingsNode
         virtual VDuration getDurationValue() const;
 
         virtual void setLiteral(const VString& value);
-        
+
         bool hasValue() const;
-        
+
     private:
-    
+
         bool    mHasValue;
         VString mValue;
-    };
+};
 
 /**
 VSettingsCDATA is a node that represents text inside the tag hierarchy; what it really means
@@ -304,10 +300,9 @@ if you have "<tag1><tag2>hello</tag2></tag1>" then tag2 is represented by a VSet
 has a VSettingsCDATA child whose CDATA value is "hello". It could retrieved from the root node
 via ->getString("tag1/tag2");
 */
-class VSettingsCDATA : public VSettingsNode
-    {
+class VSettingsCDATA : public VSettingsNode {
     public:
-        
+
         VSettingsCDATA(VSettingsTag* parent, const VString& cdata);
         virtual ~VSettingsCDATA() {}
 
@@ -326,28 +321,26 @@ class VSettingsCDATA : public VSettingsNode
         virtual VDuration getDurationValue() const;
 
         virtual void setLiteral(const VString& value);
-        
+
     private:
-    
+
         VString mCDATA;
-    };
+};
 
 /**
 This is the class that contains the logic for parsing XML text into VSettings objects.
 */
-class VSettingsXMLParser
-    {
+class VSettingsXMLParser {
     public:
-    
+
         VSettingsXMLParser(VTextIOStream& inputStream, VSettingsNodePtrVector* nodes);
         virtual ~VSettingsXMLParser() {}
-        
+
         void parse();
 
     protected:
 
-        enum ParserState
-            {
+        enum ParserState {
             kReady,
             kComment1_bang,
             kComment2_bang_dash,
@@ -365,14 +358,14 @@ class VSettingsXMLParser
             kCloseTag1_open_slash,
             kCloseTag2_in_name,
             kCloseTag3_trailing_whitespace
-            };
-    
+        };
+
         void parseLine();
         void resetElement();
         void accumulate(const VChar& c);
         void changeState(ParserState newState);
         void stateError(const VString& errorMessage);
-        
+
         void emitCDATA();
         void emitOpenTagName();
         void emitAttributeName();
@@ -380,7 +373,7 @@ class VSettingsXMLParser
         void emitAttributeValue();
         void emitCloseTagName();
         void emitEndSoloTag();
-    
+
         VTextIOStream&          mInputStream;
         VSettingsNodePtrVector* mNodes;
         VString                 mCurrentLine;
@@ -390,18 +383,18 @@ class VSettingsXMLParser
         VString                 mElement;
         VSettingsTag*           mCurrentTag;
         VString                 mPendingAttributeName;
-        
+
         static bool isValidTagNameChar(const VChar& c);
         static bool isValidAttributeNameChar(const VChar& c);
         static bool isValidAttributeValueChar(const VChar& c);
-    
+
     private:
-    
+
         // Prevent copy construction and assignment since there is no provision for sharing pointer data.
         VSettingsXMLParser(const VSettingsXMLParser& other);
         VSettingsXMLParser& operator=(const VSettingsXMLParser& other);
-        
-    };
+
+};
 
 #endif /* vsettings_h */
 

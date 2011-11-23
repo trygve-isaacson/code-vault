@@ -27,10 +27,9 @@ You can find out what the line ending mode is when reading, in case
 you need to tell the user (imagine implementing a line ending selection
 the way the CodeWarrior IDE does).
 */
-class VTextIOStream : public VIOStream
-    {
+class VTextIOStream : public VIOStream {
     public:
-    
+
         /** Values for mLineEndingsReadKind, set as we read the stream and figure out what its format is. */
         enum {
             kLineEndingsUnknown,    ///< Indicates that we have not yet read a line ending.
@@ -40,7 +39,7 @@ class VTextIOStream : public VIOStream
             kLineEndingsMixed,        ///< Indicates that we have seen a mixture of line ending types.
 
             kNumLineEndingsReadKinds
-            };
+        };
 
         /** Values for mLineEndingsWriteKind, which the caller tells us to use as we write to the stream. */
         enum {
@@ -49,9 +48,9 @@ class VTextIOStream : public VIOStream
             kUseMacLineEndings,            ///< Indicates that we are writing Mac line endings (0x0D).
             kUseSuppliedLineEndings,    ///< Indicates that the caller is giving us the line endings, so we don't actually write them.
             kUseNativeLineEndings,        ///< Indicates that we are writing line endings native to the OS we are compiled for.
-            
+
             kNumLineEndingsWriteKinds
-            };
+        };
 
         /**
         Constructs the object with an underlying raw stream and the kind of
@@ -59,12 +58,12 @@ class VTextIOStream : public VIOStream
         @param    rawStream                the raw stream on which I/O will be performed
         @param    lineEndingsWriteKind    the kind of line endings to write
         */
-        VTextIOStream(VStream& rawStream, int lineEndingsWriteKind=kUseNativeLineEndings);
+        VTextIOStream(VStream& rawStream, int lineEndingsWriteKind = kUseNativeLineEndings);
         /**
         Destructor.
         */
         virtual ~VTextIOStream() {}
-        
+
         /**
         Reads the next line of text from the stream. Throws a VException if
         EOF is encountered. Sets the mLineEndingsReadKind property depending
@@ -74,8 +73,8 @@ class VTextIOStream : public VIOStream
         @param    includeLineEnding    true if you want the line ending character(s)
                                     to be included in the string that is returned
         */
-        void readLine(VString& s, bool includeLineEnding=false);
-        
+        void readLine(VString& s, bool includeLineEnding = false);
+
         /**
         Reads the next character from the stream, even if that character is part
         of a line ending. Throws a VException if EOF is encountered. You probably
@@ -88,7 +87,7 @@ class VTextIOStream : public VIOStream
         @return    the next character
         */
         VChar readCharacter();
-        
+
         /**
         Primarily useful for reading from an underlying file stream, reads until
         eof is encountered, and returns the entire stream as a single string, by
@@ -101,7 +100,7 @@ class VTextIOStream : public VIOStream
         @param    includeLineEndings   true if you want the line ending character(s)
                                     to be included in the string that is returned
         */
-        void readAll(VString& s, bool includeLineEndings=true);
+        void readAll(VString& s, bool includeLineEndings = true);
         /**
         This convenience function is like the other readAll, but it returns the
         stream's contents as a vector of strings rather than a single giant string.
@@ -109,7 +108,7 @@ class VTextIOStream : public VIOStream
         @param  lines   a vector of strings; lines are appended to this vector
         */
         void readAll(VStringVector& lines);
-        
+
         /**
         This method is equivalent to writeString(s) + writeLineEnd().
         Writes a line of text to the stream, with line ending character(s).
@@ -120,7 +119,7 @@ class VTextIOStream : public VIOStream
         @param    s    the line of text to write
         */
         void writeLine(const VString& s);
-        
+
         /**
         Writes a string of text to the stream, WITHOUT line ending character(s).
         @param    s    the string of text to write
@@ -133,25 +132,25 @@ class VTextIOStream : public VIOStream
         that means you supply the line endings in the strings you write.
         */
         void writeLineEnd();
-        
+
         /**
         Returns the mLineEndingsReadKind property, describing the kind of
         line endings that the file has encountered while reading from the
         stream.
-        @return    one of the mLineEndingsReadKind enum values 
+        @return    one of the mLineEndingsReadKind enum values
         */
         int getLineEndingsReadKind() const { return mLineEndingsReadKind; }
         /**
         Returns the mLineEndingsReadKind property, converted to a value
         suitable for supplying as the mLineEndingsWriteKind value for
         an output stream.
-        @return    one of the mLineEndingsReadKind enum values 
+        @return    one of the mLineEndingsReadKind enum values
         */
         int getLineEndingsReadKindForWrite() const;
         /**
         Returns the mLineEndingsWriteKind property, describing the kind of
         line endings that this object has been set up to write to the stream.
-        @return    one of the mLineEndingsReadKind enum values 
+        @return    one of the mLineEndingsReadKind enum values
         */
         int getLineEndingsWriteKind() const { return mLineEndingsWriteKind; }
         /**
@@ -161,9 +160,9 @@ class VTextIOStream : public VIOStream
         @param    kind    one of the mLineEndingsWriteKind enum values
         */
         void setLineEndingsKind(int kind);
-    
+
     private:
-    
+
         /** Updates the mLineEndingsReadKind based on the kind of line ending just detected. */
         void _updateLineEndingsReadKind(int lineEndingKind);
 
@@ -180,8 +179,8 @@ class VTextIOStream : public VIOStream
             kReadStateGot0x0D,  ///< We have just read a 0x0D, which could be a Mac line ending, or the first byte of a DOS line ending.
 
             kNumReadStates
-            };
+        };
 
-    };
+};
 
 #endif /* vtextiostream_h */

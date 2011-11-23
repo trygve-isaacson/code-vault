@@ -41,8 +41,7 @@ functions are to manage the queue of outbound messages, and to ensure
 that it is not destructed until pending attached threaded tasks complete
 (see _selfDestruct() mechanism).
 */
-class VClientSession
-    {
+class VClientSession {
     public:
 
         /**
@@ -95,7 +94,7 @@ class VClientSession
         @return true if the message was posted; when broadcasting, failure to post is the caller's
             responsibility to maintain ownership of the message (may get posted to other sessions)
         */
-        bool postOutputMessage(VMessage* message, bool isForBroadcast=false);
+        bool postOutputMessage(VMessage* message, bool isForBroadcast = false);
         /**
         Convenience function for posting a message to the session that is being broadcast to other
         sessions. Calls postOutputMessage() with isForBroadcast=true.
@@ -137,7 +136,7 @@ class VClientSession
 
         void _moveStandbyMessagesToAsyncOutputQueue();  ///< Moves messages from mStartupStandbyQueue to the output queue.
         int _getOutputQueueSize() const; ///< Returns the number of messages currently queued on the output thread.
-        
+
         /**
         This function can be overridden if the session needs to filter messages
         being moved from standby queue to output queue. The supplied message must either
@@ -161,7 +160,7 @@ class VClientSession
 
         VClientSession(const VClientSession&); // not copyable
         VClientSession& operator=(const VClientSession&); // not assignable
-        
+
         void _releaseQueuedClientMessages();   ///< Releases all pending queued messages (called during shutdown).
 
         VMessageQueue   mStartupStandbyQueue;   ///< A queue we use to hold outbound updates while this client session is starting up.
@@ -181,7 +180,7 @@ class VClientSession
         VMutex  mReferenceCountMutex;   ///< Protects reference count state.
         friend class VClientSessionReference; // This class manages our reference count.
         friend class VServer;                 // This class checks our reference count to do garbage collection, and deletes us when safe.
-    };
+};
 
 typedef std::vector<VClientSession*> VClientSessionList;
 
@@ -191,8 +190,7 @@ to create a socket listener that will create the desired type of VClientSession 
 an incoming connection is accepted on that socket. This class is a parameter to the
 VListenerThread constructor.
 */
-class VClientSessionFactory
-    {
+class VClientSessionFactory {
     public:
 
         /**
@@ -233,7 +231,7 @@ class VClientSessionFactory
 
         VManagementInterface*   mManager;   ///< The object that will be notified of session events.
         VServer*                mServer;    ///< The server that will be notified of session creation.
-    };
+};
 
 /**
 This class provides for reference-counted pointers to the VClientSession, in order to
@@ -243,8 +241,7 @@ of these. Such classes include VMessageHandler, VMessageInputThread, and VMessag
 For convenience, you can use a VClientSessionReference if there is no session (session is NULL).
 This allows for VMessageHandler subclasses that work independent of any session context.
 */
-class VClientSessionReference
-    {
+class VClientSessionReference {
     public:
 
         VClientSessionReference(VClientSession* session);
@@ -259,6 +256,6 @@ class VClientSessionReference
         void operator=(const VClientSessionReference&); // not assignable
 
         VClientSession* mSession;
-    };
+};
 
 #endif /* vclientsession_h */

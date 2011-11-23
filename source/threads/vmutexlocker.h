@@ -62,28 +62,27 @@ scope specifically to surround the VMutexLocker's existence.
 
 @see    VMutex
 */
-class VMutexLocker
-    {
+class VMutexLocker {
     public:
-    
+
         /**
         Constructs the locker, and if specified, acquires the mutex lock. If
         the mutex is already locked by another thread, this call blocks until
         it obtains the lock.
-        
+
         You can pass NULL to constructor if you don't want anything to
         happen; this can useful if, for example, you allow a NULL VMutex
         pointer to be passed to a routine that needs to lock it if supplied.
-        
+
         @param    mutex            the VMutex to lock, or NULL if no action is wanted
         @param    lockInitially    true if the lock should be acquired on construction
         */
-        VMutexLocker(VMutex* mutex, const VString& name, bool lockInitially=true);
+        VMutexLocker(VMutex* mutex, const VString& name, bool lockInitially = true);
         /**
         Destructor, unlocks the mutex if this object has acquired it.
         */
         virtual ~VMutexLocker();
-        
+
         /**
         Acquires the mutex lock; if the mutex is currently locked by another
         thread, this call blocks until the mutex lock can be acquired (if
@@ -114,19 +113,19 @@ class VMutexLocker
         more "cooperative" with other threads that are competing for the same lock.
         */
         void yield();
-    
+
     protected:
-    
+
         VMutex* mMutex;     ///< Pointer to the VMutex object, or NULL.
         bool    mIsLocked;  ///< True if this object has acquired the lock.
         VString mName;      ///< The name of this locker, for diagnostic purposes.
-    
+
     private:
-    
+
         // Prevent copy construction and assignment since there is no provision for sharing a mutex.
         VMutexLocker(const VMutexLocker& other);
         VMutexLocker& operator=(const VMutexLocker& other);
-    };
+};
 
 // VMutexUnlocker --------------------------------------------------------------
 
@@ -135,34 +134,33 @@ VMutexUnlocker is helper class that is the inverse of a VMutexLocker: it
 unlocks a mutex upon construction, and locks it upon destruction. The unlocker
 presumes that the mutex is locked to begin with.
 */
-class VMutexUnlocker : public VMutexLocker
-    {
+class VMutexUnlocker : public VMutexLocker {
     public:
-    
+
         /**
         Constructs the unlocker, and if specified, releases the mutex lock.
         It is presumed by this class that the mutex is locked when this
         object is constructed.
-        
+
         You can pass NULL to constructor if you don't want anything to
         happen; this can useful if, for example, you allow a NULL VMutex
         pointer to be passed to a routine that needs to unlock it if supplied.
-        
+
         @param    mutex            the VMutex to unlock, or NULL if no action is wanted
         @param    unlockInitially    true if the lock should be released on construction
         */
-        VMutexUnlocker(VMutex* mutex, bool unlockInitially=true);
+        VMutexUnlocker(VMutex* mutex, bool unlockInitially = true);
         /**
         Destructor, re-locks the mutex if this object has released it.
         */
         virtual ~VMutexUnlocker();
-        
+
     private:
-    
+
         // Prevent copy construction and assignment since there is no provision for sharing a mutex.
         VMutexUnlocker(const VMutexUnlocker& other);
         VMutexUnlocker& operator=(const VMutexUnlocker& other);
-    };
+};
 
 #endif /* vmutexlocker_h */
 

@@ -12,20 +12,19 @@ http://www.bombaydigital.com/
 #include "vunit.h"
 
 #ifndef V_ASSERT_ACTIVE
-    #define VASSERTUNIT_IS_NOT_USEFUL
+#define VASSERTUNIT_IS_NOT_USEFUL
 #else
-    #ifndef V_ASSERT_THROWS_EXCEPTION
-        #define VASSERTUNIT_IS_NOT_USEFUL
-    #endif
+#ifndef V_ASSERT_THROWS_EXCEPTION
+#define VASSERTUNIT_IS_NOT_USEFUL
+#endif
 #endif
 
 /**
 Unit test class for validating VHex.
 */
-class VAssertUnit : public VUnit
-    {
+class VAssertUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -36,7 +35,7 @@ class VAssertUnit : public VUnit
         Destructor.
         */
         virtual ~VAssertUnit() {}
-        
+
         /**
         Executes the unit test.
         */
@@ -63,6 +62,6 @@ class VAssertUnit : public VUnit
 
 #endif /* VASSERTUNIT_IS_NOT_USEFUL */
 
-    };
+};
 
 #endif /* vassertunit_h */

@@ -148,8 +148,7 @@ string is not a suitable data structure for data larger than 4 gigabytes!
 You can still use arbitrary buffers and VMemoryStream objects for such large
 data, just not VString.
 */
-class VBinaryIOStream : public VIOStream
-    {
+class VBinaryIOStream : public VIOStream {
     public:
 
         /**
@@ -403,6 +402,6 @@ class VBinaryIOStream : public VIOStream
         VBinaryIOStream(const VBinaryIOStream& other);
         VBinaryIOStream& operator=(const VBinaryIOStream& other);
 
-    };
+};
 
 #endif /* vbinaryiostream_h */

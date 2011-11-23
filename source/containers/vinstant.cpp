@@ -22,203 +22,173 @@ http://www.bombaydigital.com/
 // that are initialized on first use, and return them from these accessors.
 
 // static
-const VDuration& VDuration::UNSPECIFIED()
-    {
+const VDuration& VDuration::UNSPECIFIED() {
     static const VDuration kUNSPECIFIED(V_MAX_S64);
     return kUNSPECIFIED;
-    }
+}
 
 // static
-const VDuration& VDuration::NEGATIVE_INFINITY()
-    {
+const VDuration& VDuration::NEGATIVE_INFINITY() {
     static const VDuration kNEGATIVE_INFINITY(V_MIN_S64);
     return kNEGATIVE_INFINITY;
-    }
+}
 
 // static
-const VDuration& VDuration::ZERO()
-    {
+const VDuration& VDuration::ZERO() {
     static const VDuration kZERO(CONST_S64(0));
     return kZERO;
-    }
+}
 
 // static
-const VDuration& VDuration::MILLISECOND()
-    {
+const VDuration& VDuration::MILLISECOND() {
     static const VDuration kMILLISECOND(CONST_S64(1));
     return kMILLISECOND;
-    }
+}
 
 // static
-const VDuration& VDuration::SECOND()
-    {
+const VDuration& VDuration::SECOND() {
     static const VDuration kSECOND(kMillisecondsPerSecond);
     return kSECOND;
-    }
+}
 
 // static
-const VDuration& VDuration::MINUTE()
-    {
+const VDuration& VDuration::MINUTE() {
     static const VDuration kMINUTE(kMillisecondsPerMinute);
     return kMINUTE;
-    }
+}
 
 // static
-const VDuration& VDuration::HOUR()
-    {
+const VDuration& VDuration::HOUR() {
     static const VDuration kHOUR(kMillisecondsPerHour);
     return kHOUR;
-    }
+}
 
 // static
-const VDuration& VDuration::DAY()
-    {
+const VDuration& VDuration::DAY() {
     static const VDuration kDAY(kMillisecondsPerDay);
     return kDAY;
-    }
+}
 
 // static
-const VDuration& VDuration::POSITIVE_INFINITY()
-    {
+const VDuration& VDuration::POSITIVE_INFINITY() {
     static const VDuration kPOSITIVE_INFINITY(V_MAX_S64 - CONST_S64(1));
     return kPOSITIVE_INFINITY;
-    }
+}
 
 VDuration::VDuration(const VInstant& sinceWhen) :
-mDurationMilliseconds(VDuration(VInstant() - sinceWhen).getDurationMilliseconds())
-    {
-    }
+    mDurationMilliseconds(VDuration(VInstant() - sinceWhen).getDurationMilliseconds()) {
+}
 
 // static
-VDuration VDuration::createFromDurationString(const VString& s)
-    {
+VDuration VDuration::createFromDurationString(const VString& s) {
     VDuration duration;
     duration.setDurationString(s);
     return duration;
-    }
+}
 
-VDuration& VDuration::operator+=(const VDuration& forwardOffset)
-    {
+VDuration& VDuration::operator+=(const VDuration& forwardOffset) {
     // For normal values:
     // Adding +/- infinity results in +/- infinity.
     // All other operations result in no change.
     // For infinite values:
     // Adding the opposite infinity results in zero.
     // All other operations result in no change.
-    if (this->isSpecific())
-        {
-        if (forwardOffset.isSpecific())
+    if (this->isSpecific()) {
+        if (forwardOffset.isSpecific()) {
             mDurationMilliseconds += forwardOffset.getDurationMilliseconds();
-        else if (forwardOffset == VDuration::POSITIVE_INFINITY())
+        } else if (forwardOffset == VDuration::POSITIVE_INFINITY()) {
             *this = VDuration::POSITIVE_INFINITY();
-        else if (forwardOffset == VDuration::NEGATIVE_INFINITY())
+        } else if (forwardOffset == VDuration::NEGATIVE_INFINITY()) {
             *this = VDuration::NEGATIVE_INFINITY();
         }
-    else if ((*this == VDuration::POSITIVE_INFINITY()) && (forwardOffset == VDuration::NEGATIVE_INFINITY()))
-        {
+    } else if ((*this == VDuration::POSITIVE_INFINITY()) && (forwardOffset == VDuration::NEGATIVE_INFINITY())) {
         *this = VDuration::ZERO();
-        }
-    else if ((*this == VDuration::NEGATIVE_INFINITY()) && (forwardOffset == VDuration::POSITIVE_INFINITY()))
-        {
+    } else if ((*this == VDuration::NEGATIVE_INFINITY()) && (forwardOffset == VDuration::POSITIVE_INFINITY())) {
         *this = VDuration::ZERO();
-        }
-
-    return *this;
     }
 
-VDuration& VDuration::operator-=(const VDuration& backwardOffset)
-    {
+    return *this;
+}
+
+VDuration& VDuration::operator-=(const VDuration& backwardOffset) {
     // For normal values:
     // Subtracting +/- infinity results in the opposite +/- infinity.
     // All other operations result in no change.
     // For infinite values:
     // Subtracting the the same infinity results in zero.
     // All other operations result in no change.
-    if (this->isSpecific())
-        {
-        if (backwardOffset.isSpecific())
+    if (this->isSpecific()) {
+        if (backwardOffset.isSpecific()) {
             mDurationMilliseconds -= backwardOffset.getDurationMilliseconds();
-        else if (backwardOffset == VDuration::POSITIVE_INFINITY())
+        } else if (backwardOffset == VDuration::POSITIVE_INFINITY()) {
             *this = VDuration::NEGATIVE_INFINITY();
-        else if (backwardOffset == VDuration::NEGATIVE_INFINITY())
+        } else if (backwardOffset == VDuration::NEGATIVE_INFINITY()) {
             *this = VDuration::POSITIVE_INFINITY();
         }
-    else if ((*this == VDuration::POSITIVE_INFINITY()) && (backwardOffset == VDuration::POSITIVE_INFINITY()))
-        {
+    } else if ((*this == VDuration::POSITIVE_INFINITY()) && (backwardOffset == VDuration::POSITIVE_INFINITY())) {
         *this = VDuration::ZERO();
-        }
-    else if ((*this == VDuration::NEGATIVE_INFINITY()) && (backwardOffset == VDuration::NEGATIVE_INFINITY()))
-        {
+    } else if ((*this == VDuration::NEGATIVE_INFINITY()) && (backwardOffset == VDuration::NEGATIVE_INFINITY())) {
         *this = VDuration::ZERO();
-        }
-
-    return *this;
     }
 
-VDuration& VDuration::operator*=(Vs64 multiplier)
-    {
+    return *this;
+}
+
+VDuration& VDuration::operator*=(Vs64 multiplier) {
     // Normal values use simple multiplication.
     // Anything multiplied by zero is zero.
     // +/- infinity can be flipped to the opposite +/- infinity with a
     // negative multiplier, and set to zero with a zero multiplier.
     // All other operations result in no change.
-    if (this->isSpecific())
-        {
+    if (this->isSpecific()) {
         mDurationMilliseconds *= multiplier;
-        }
-    else if (multiplier == 0)
-        {
+    } else if (multiplier == 0) {
         *this = VDuration::ZERO();
-        }
-    else if (multiplier < 0)
-        {
-        if (*this == VDuration::POSITIVE_INFINITY())
+    } else if (multiplier < 0) {
+        if (*this == VDuration::POSITIVE_INFINITY()) {
             *this = VDuration::NEGATIVE_INFINITY();
-        else if (*this == VDuration::NEGATIVE_INFINITY())
+        } else if (*this == VDuration::NEGATIVE_INFINITY()) {
             *this = VDuration::POSITIVE_INFINITY();
         }
-
-    return *this;
     }
 
-VDuration& VDuration::operator/=(int divisor)
-    {
+    return *this;
+}
+
+VDuration& VDuration::operator/=(int divisor) {
     // Normal values use simple division, with divide-by-zero yielding
     // +/- infinity.
     // All other operations result in no change.
-    if (this->isSpecific())
-        {
-        if (divisor != 0)
+    if (this->isSpecific()) {
+        if (divisor != 0) {
             mDurationMilliseconds /= divisor;
-        else
-            {
+        } else {
             // Dividing a normal duration by zero.
-            if (mDurationMilliseconds >= 0)
+            if (mDurationMilliseconds >= 0) {
                 *this = VDuration::POSITIVE_INFINITY();
-            else
+            } else {
                 *this = VDuration::NEGATIVE_INFINITY();
             }
         }
-
-    return *this;
     }
 
-VDuration& VDuration::operator%=(const VDuration& divisor)
-    {
+    return *this;
+}
+
+VDuration& VDuration::operator%=(const VDuration& divisor) {
     // Normal values use simple remainder division, with mod-by-zero yielding
     // no change.
     // All other operations result in no change.
-    if (this->isSpecific())
-        {
-        if (divisor.isSpecific() && (divisor != VDuration::ZERO()))
+    if (this->isSpecific()) {
+        if (divisor.isSpecific() && (divisor != VDuration::ZERO())) {
             mDurationMilliseconds %= divisor.mDurationMilliseconds;
         }
-
-    return *this;
     }
 
-VDuration VDuration::operator-() const
-    {
+    return *this;
+}
+
+VDuration VDuration::operator-() const {
     // Negating a normal value is obvious.
     // Negating +/- infinity flips to the opposite +/- infinity.
     // All other operations result in the same value returned.
@@ -230,26 +200,23 @@ VDuration VDuration::operator-() const
         return VDuration::POSITIVE_INFINITY();
     else
         return *this;
-    }
+}
 
-VDuration operator/(const VDuration& d, int divisor)
-    {
+VDuration operator/(const VDuration& d, int divisor) {
     // Re-use in-place division code.
     VDuration result = d;
     result /= divisor;
     return result;
-    }
+}
 
-VDuration operator%(const VDuration& d, const VDuration& divisor)
-    {
+VDuration operator%(const VDuration& d, const VDuration& divisor) {
     // Re-use in-place mod code.
     VDuration result = d;
     result %= divisor;
     return result;
-    }
+}
 
-VString VDuration::getDurationString() const
-    {
+VString VDuration::getDurationString() const {
     // most common case first!
     if ((mDurationMilliseconds >= 0) && (mDurationMilliseconds < kMillisecondsPerSecond))
         return VSTRING_FORMAT(VSTRING_FORMATTER_S64 "ms", mDurationMilliseconds);
@@ -269,98 +236,75 @@ VString VDuration::getDurationString() const
         return VSTRING_FORMAT(VSTRING_FORMATTER_INT "s", this->getDurationSeconds());
     else
         return VSTRING_FORMAT(VSTRING_FORMATTER_S64 "ms", mDurationMilliseconds);
-    }
+}
 
-VString VDuration::getDurationStringFractionalSeconds() const
-    {
+VString VDuration::getDurationStringFractionalSeconds() const {
     int wholeSeconds = this->getDurationSeconds();
     int thousandths = static_cast<int>(this->getDurationMilliseconds() % kMillisecondsPerSecond);
-    
+
     return VSTRING_FORMAT("%d.%03d", wholeSeconds, thousandths);
-    }
-    
-void VDuration::setDurationString(const VString& s)
-    {
+}
+
+void VDuration::setDurationString(const VString& s) {
     // Our API doc declares that we throw VRangeException on a malformed
     // input string. The VString parse functions are doing this for us.
     // Get the test order right: note that "ends with d" (days) is true
     // for "unspecified".
     VString value(s);
-    if (s.endsWith("ms"))
-        {
+    if (s.endsWith("ms")) {
         value.truncateLength(value.length() - 2);
         mDurationMilliseconds = value.parseS64();
-        }
-    else if (s.endsWith('s'))
-        {
+    } else if (s.endsWith('s')) {
         value.truncateLength(value.length() - 1);
         mDurationMilliseconds = kMillisecondsPerSecond * value.parseS64();
-        }
-    else if (s.endsWith('m'))
-        {
+    } else if (s.endsWith('m')) {
         value.truncateLength(value.length() - 1);
         mDurationMilliseconds = kMillisecondsPerMinute * value.parseS64();
-        }
-    else if (s.endsWith('h'))
-        {
+    } else if (s.endsWith('h')) {
         value.truncateLength(value.length() - 1);
         mDurationMilliseconds = kMillisecondsPerHour * value.parseS64();
-        }
-    else if (s.equalsIgnoreCase("UNSPECIFIED"))
-        {
+    } else if (s.equalsIgnoreCase("UNSPECIFIED")) {
         *this = VDuration::UNSPECIFIED();
-        }
-    else if (s.equalsIgnoreCase("INFINITY"))
-        {
+    } else if (s.equalsIgnoreCase("INFINITY")) {
         *this = VDuration::POSITIVE_INFINITY();
-        }
-    else if (s.equalsIgnoreCase("-INFINITY"))
-        {
+    } else if (s.equalsIgnoreCase("-INFINITY")) {
         *this = VDuration::NEGATIVE_INFINITY();
-        }
-    else if (s.endsWith('d'))
-        {
+    } else if (s.endsWith('d')) {
         value.truncateLength(value.length() - 1);
         mDurationMilliseconds = kMillisecondsPerDay * value.parseS64();
-        }
-    else
-        {
+    } else {
         VDouble seconds = value.parseDouble();
         VDouble milliseconds = seconds * 1000.0;
         mDurationMilliseconds = (Vs64) milliseconds;
-        }
     }
+}
 
 // static
-VDuration VDuration::_complexAdd(const VDuration& d1, const VDuration& d2)
-    {
+VDuration VDuration::_complexAdd(const VDuration& d1, const VDuration& d2) {
     // Re-use in-place addition code.
     VDuration result = d1;
     result += d2;
     return result;
-    }
+}
 
 // static
-VDuration VDuration::_complexSubtract(const VDuration& d1, const VDuration& d2)
-    {
+VDuration VDuration::_complexSubtract(const VDuration& d1, const VDuration& d2) {
     // Re-use in-place subtraction code.
     VDuration result = d1;
     result -= d2;
     return result;
-    }
+}
 
 // static
-VDuration VDuration::_complexMultiply(const VDuration& d, Vs64 multiplier)
-    {
+VDuration VDuration::_complexMultiply(const VDuration& d, Vs64 multiplier) {
     // Re-use in-place multiplication code.
     VDuration result = d;
     result *= multiplier;
     return result;
-    }
+}
 
 // static
-VDuration VDuration::_complexMin(const VDuration& d1, const VDuration& d2)
-    {
+VDuration VDuration::_complexMin(const VDuration& d1, const VDuration& d2) {
     if (VDuration::areValuesSpecific(d1, d2))
         return (d1 < d2) ? d1 : d2;
 
@@ -377,11 +321,10 @@ VDuration VDuration::_complexMin(const VDuration& d1, const VDuration& d2)
         return d2;
     else
         return d1;
-    }
+}
 
 // static
-VDuration VDuration::_complexMax(const VDuration& d1, const VDuration& d2)
-    {
+VDuration VDuration::_complexMax(const VDuration& d1, const VDuration& d2) {
     if (VDuration::areValuesSpecific(d1, d2))
         return (d1 > d2) ? d1 : d2;
 
@@ -398,11 +341,10 @@ VDuration VDuration::_complexMax(const VDuration& d1, const VDuration& d2)
         return d2;
     else
         return d1;
-    }
+}
 
 // static
-VDuration VDuration::_complexAbs(const VDuration& d)
-    {
+VDuration VDuration::_complexAbs(const VDuration& d) {
     if (d.isSpecific())
         return (d.mDurationMilliseconds < CONST_S64(0)) ? -d : d;
 
@@ -410,21 +352,20 @@ VDuration VDuration::_complexAbs(const VDuration& d)
         return VDuration::POSITIVE_INFINITY();
 
     return d; // presumably UNSPECIFIED
-    }
+}
 
 // VInstantStruct ------------------------------------------------------------
 
 VInstantStruct::VInstantStruct(const VDate& date, const VTimeOfDay& timeOfDay) :
-mYear(date.getYear()),
-mMonth(date.getMonth()),
-mDay(date.getDay()),
-mHour(timeOfDay.getHour()),
-mMinute(timeOfDay.getMinute()),
-mSecond(timeOfDay.getSecond()),
-mMillisecond(timeOfDay.getMillisecond()),
-mDayOfWeek(0)
-    {
-    }
+    mYear(date.getYear()),
+    mMonth(date.getMonth()),
+    mDay(date.getDay()),
+    mHour(timeOfDay.getHour()),
+    mMinute(timeOfDay.getMinute()),
+    mSecond(timeOfDay.getSecond()),
+    mMillisecond(timeOfDay.getMillisecond()),
+    mDayOfWeek(0) {
+}
 
 // VInstant ------------------------------------------------------------------
 
@@ -437,35 +378,30 @@ static const Vs64 kNeverOccurredInternalValue = V_MAX_S64;
 // that are initialized on first use, and return them from these accessors.
 
 // static
-const VInstant& VInstant::INFINITE_PAST()
-    {
+const VInstant& VInstant::INFINITE_PAST() {
     static const VInstant kINFINITE_PAST(kInfinitePastInternalValue);
     return kINFINITE_PAST;
-    }
+}
 
-const VInstant& VInstant::INFINITE_FUTURE()
-    {
+const VInstant& VInstant::INFINITE_FUTURE() {
     static const VInstant kINFINITE_FUTURE(kInfiniteFutureInternalValue);
     return kINFINITE_FUTURE;
-    }
+}
 
-const VInstant& VInstant::NEVER_OCCURRED()
-    {
+const VInstant& VInstant::NEVER_OCCURRED() {
     static const VInstant kNEVER_OCCURRED(kNeverOccurredInternalValue);
     return kNEVER_OCCURRED;
-    }
+}
 
-const VString& VInstant::UTC_TIME_ZONE_ID()
-    {
+const VString& VInstant::UTC_TIME_ZONE_ID() {
     static const VString kUTC_TIME_ZONE_ID("UTC");
     return kUTC_TIME_ZONE_ID;
-    }
+}
 
-const VString& VInstant::LOCAL_TIME_ZONE_ID()
-    {
+const VString& VInstant::LOCAL_TIME_ZONE_ID() {
     static const VString kLOCAL_TIME_ZONE_ID; // empty string means local time zone
     return kLOCAL_TIME_ZONE_ID;
-    }
+}
 
 Vs64 VInstant::gSimulatedClockOffset(0);
 Vs64 VInstant::gFrozenClockValue(0);
@@ -473,35 +409,30 @@ Vs64 VInstant::gFrozenClockValue(0);
 MRemoteTimeZoneConverter* VInstant::gRemoteTimeZoneConverter = NULL;
 
 // static
-void VInstant::setRemoteTimeZoneConverter(MRemoteTimeZoneConverter* converter)
-    {
+void VInstant::setRemoteTimeZoneConverter(MRemoteTimeZoneConverter* converter) {
     gRemoteTimeZoneConverter = converter;
-    }
+}
 
 // static
-MRemoteTimeZoneConverter* VInstant::getRemoteTimeZoneConverter()
-    {
+MRemoteTimeZoneConverter* VInstant::getRemoteTimeZoneConverter() {
     return gRemoteTimeZoneConverter;
-    }
+}
 
-VInstant::VInstant() :
-mValue(0)
+VInstant::VInstant()
+    : mValue(0)
     {
     VInstant::setNow();
-    }
+}
 
-VInstant& VInstant::operator=(const VInstant& i)
-    {
-    if (this != &i)
-        {
+VInstant& VInstant::operator=(const VInstant& i) {
+    if (this != &i) {
         mValue = i.getValue();
-        }
+    }
 
     return *this;
-    }
+}
 
-VInstant& VInstant::operator+=(const VDuration& forwardOffsetDuration)
-    {
+VInstant& VInstant::operator+=(const VDuration& forwardOffsetDuration) {
     if (this->isSpecific() && forwardOffsetDuration.isSpecific())
         mValue += forwardOffsetDuration.getDurationMilliseconds();
     else if (this->isSpecific() && (forwardOffsetDuration == VDuration::NEGATIVE_INFINITY()))
@@ -510,10 +441,9 @@ VInstant& VInstant::operator+=(const VDuration& forwardOffsetDuration)
         *this = VInstant::INFINITE_FUTURE();
 
     return *this;
-    }
+}
 
-VInstant& VInstant::operator-=(const VDuration& backwardOffsetDuration)
-    {
+VInstant& VInstant::operator-=(const VDuration& backwardOffsetDuration) {
     if (this->isSpecific() && backwardOffsetDuration.isSpecific())
         mValue -= backwardOffsetDuration.getDurationMilliseconds();
     else if (this->isSpecific() && (backwardOffsetDuration == VDuration::NEGATIVE_INFINITY()))
@@ -522,25 +452,20 @@ VInstant& VInstant::operator-=(const VDuration& backwardOffsetDuration)
         *this = VInstant::INFINITE_PAST();
 
     return *this;
-    }
+}
 
-void VInstant::setNow()
-    {
-    if (gFrozenClockValue == 0)
-        {
+void VInstant::setNow() {
+    if (gFrozenClockValue == 0) {
         mValue = VInstant::_platform_now();
         mValue += gSimulatedClockOffset;
-        }
-    else
-        {
+    } else {
         mValue = gFrozenClockValue;
-        }
     }
+}
 
-void VInstant::setTrueNow()
-    {
+void VInstant::setTrueNow() {
     mValue = VInstant::_platform_now();
-    }
+}
 
 #define FORMAT_FILE_NAME_SAFE_WITH_MILLISECONDS     "%d%02d%02d%02d%02d%02d%03d"
 #define FORMAT_FILE_NAME_SAFE_WITHOUT_MILLISECONDS  "%d%02d%02d%02d%02d%02d"
@@ -549,121 +474,107 @@ void VInstant::setTrueNow()
 #define FORMAT_LOCAL_WITH_MILLISECONDS              "%d-%02d-%02d %02d:%02d:%02d.%03d"
 #define FORMAT_LOCAL_WITHOUT_MILLISECONDS           "%d-%02d-%02d %02d:%02d:%02d"
 
-static void _formatInstantString(const VInstantStruct& when, bool isUTC, VString& s, bool fileNameSafe, bool wantMilliseconds)
-    {
-    if (fileNameSafe)
-        {
-        if (wantMilliseconds)
+static void _formatInstantString(const VInstantStruct& when, bool isUTC, VString& s, bool fileNameSafe, bool wantMilliseconds) {
+    if (fileNameSafe) {
+        if (wantMilliseconds) {
             s.format(FORMAT_FILE_NAME_SAFE_WITH_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
-        else
+        } else {
             s.format(FORMAT_FILE_NAME_SAFE_WITHOUT_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond);
         }
-    else if (isUTC)
-        {
-        if (wantMilliseconds)
+    } else if (isUTC) {
+        if (wantMilliseconds) {
             s.format(FORMAT_UTC_WITH_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
-        else
+        } else {
             s.format(FORMAT_UTC_WITHOUT_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond);
         }
-    else
-        {
-        if (wantMilliseconds)
+    } else {
+        if (wantMilliseconds) {
             s.format(FORMAT_LOCAL_WITH_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
-        else
+        } else {
             s.format(FORMAT_LOCAL_WITHOUT_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond);
         }
     }
+}
 
-void VInstant::getUTCString(VString& s, bool fileNameSafe, bool wantMilliseconds) const
-    {
-    if (this->isSpecific())
-        {
+void VInstant::getUTCString(VString& s, bool fileNameSafe, bool wantMilliseconds) const {
+    if (this->isSpecific()) {
         VInstantStruct    when;
         VInstant::_platform_offsetToUTCStruct(mValue, when);
         _formatInstantString(when, true/*utc*/, s, fileNameSafe, wantMilliseconds);
-        }
-    else if (*this == VInstant::INFINITE_PAST())
+    } else if (*this == VInstant::INFINITE_PAST()) {
         s = "PAST";
-    else if (*this == VInstant::INFINITE_FUTURE())
+    } else if (*this == VInstant::INFINITE_FUTURE()) {
         s = "FUTURE";
-    else /* NEVER_OCCURRED */
+    } else { /* NEVER_OCCURRED */
         s = "NEVER";
     }
+}
 
-VString VInstant::getUTCString(bool fileNameSafe, bool wantMilliseconds) const
-    {
+VString VInstant::getUTCString(bool fileNameSafe, bool wantMilliseconds) const {
     VString s;
     this->getUTCString(s, fileNameSafe, wantMilliseconds);
     return s;
-    }
-    
-void VInstant::setUTCString(const VString& s)
-    {
-    if (s == "NOW")
+}
+
+void VInstant::setUTCString(const VString& s) {
+    if (s == "NOW") {
         this->setNow();
-    else if (s == "PAST")
+    } else if (s == "PAST") {
         mValue = kInfinitePastInternalValue;
-    else if (s == "FUTURE")
+    } else if (s == "FUTURE") {
         mValue = kInfiniteFutureInternalValue;
-    else if (s == "NEVER")
+    } else if (s == "NEVER") {
         mValue = kNeverOccurredInternalValue;
-    else
-        {
+    } else {
         VInstantStruct when;
         when.mDayOfWeek = 0;
 
         (void) ::sscanf(s, FORMAT_UTC_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
 
         mValue = VInstant::_platform_offsetFromUTCStruct(when);
-        }
     }
+}
 
-void VInstant::getLocalString(VString& s, bool fileNameSafe, bool wantMilliseconds) const
-    {
-    if (this->isSpecific())
-        {
+void VInstant::getLocalString(VString& s, bool fileNameSafe, bool wantMilliseconds) const {
+    if (this->isSpecific()) {
         VInstantStruct    when;
         VInstant::_platform_offsetToLocalStruct(mValue, when);
         _formatInstantString(when, false/*not utc*/, s, fileNameSafe, wantMilliseconds);
-        }
-    else if (*this == VInstant::INFINITE_PAST())
+    } else if (*this == VInstant::INFINITE_PAST()) {
         s = "PAST";
-    else if (*this == VInstant::INFINITE_FUTURE())
+    } else if (*this == VInstant::INFINITE_FUTURE()) {
         s = "FUTURE";
-    else /* NEVER_OCCURRED */
+    } else { /* NEVER_OCCURRED */
         s = "NEVER";
     }
+}
 
-VString VInstant::getLocalString(bool fileNameSafe, bool wantMilliseconds) const
-    {
+VString VInstant::getLocalString(bool fileNameSafe, bool wantMilliseconds) const {
     VString s;
     this->getLocalString(s, fileNameSafe, wantMilliseconds);
     return s;
-    }
-    
-void VInstant::setLocalString(const VString& s)
-    {
-    if (s == "NOW")
+}
+
+void VInstant::setLocalString(const VString& s) {
+    if (s == "NOW") {
         this->setNow();
-    else if (s == "PAST")
+    } else if (s == "PAST") {
         mValue = kInfinitePastInternalValue;
-    else if (s == "FUTURE")
+    } else if (s == "FUTURE") {
         mValue = kInfiniteFutureInternalValue;
-    else if (s == "NEVER")
+    } else if (s == "NEVER") {
         mValue = kNeverOccurredInternalValue;
-    else
-        {
+    } else {
         VInstantStruct when;
         when.mDayOfWeek = 0;
 
         (void) ::sscanf(s, FORMAT_LOCAL_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
 
         mValue = VInstant::_platform_offsetFromLocalStruct(when);
-        }
     }
+}
 
-void VInstant::getValues(VDate& date, VTimeOfDay& timeOfDay, const VString& timeZoneID) const
-    {
+void VInstant::getValues(VDate& date, VTimeOfDay& timeOfDay, const VString& timeZoneID) const {
     VInstantStruct when;
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
@@ -677,15 +588,13 @@ void VInstant::getValues(VDate& date, VTimeOfDay& timeOfDay, const VString& time
 
     date.set(when.mYear, when.mMonth, when.mDay);
     timeOfDay.set(when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
-    }
+}
 
-VDate VInstant::getLocalDate() const
-    {
+VDate VInstant::getLocalDate() const {
     return this->getDate(VInstant::LOCAL_TIME_ZONE_ID());
-    }
+}
 
-VDate VInstant::getDate(const VString& timeZoneID) const
-    {
+VDate VInstant::getDate(const VString& timeZoneID) const {
     VInstantStruct when;
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
@@ -698,15 +607,13 @@ VDate VInstant::getDate(const VString& timeZoneID) const
         gRemoteTimeZoneConverter->offsetToRTZStruct(mValue, timeZoneID, when);
 
     return VDate(when.mYear, when.mMonth, when.mDay);
-    }
+}
 
-VTimeOfDay VInstant::getLocalTimeOfDay() const
-    {
+VTimeOfDay VInstant::getLocalTimeOfDay() const {
     return this->getTimeOfDay(VInstant::LOCAL_TIME_ZONE_ID());
-    }
+}
 
-VTimeOfDay VInstant::getTimeOfDay(const VString& timeZoneID) const
-    {
+VTimeOfDay VInstant::getTimeOfDay(const VString& timeZoneID) const {
     VInstantStruct when;
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
@@ -719,15 +626,13 @@ VTimeOfDay VInstant::getTimeOfDay(const VString& timeZoneID) const
         gRemoteTimeZoneConverter->offsetToRTZStruct(mValue, timeZoneID, when);
 
     return VTimeOfDay(when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
-    }
+}
 
-VDateAndTime VInstant::getLocalDateAndTime() const
-    {
+VDateAndTime VInstant::getLocalDateAndTime() const {
     return this->getDateAndTime(VInstant::LOCAL_TIME_ZONE_ID());
-    }
+}
 
-VDateAndTime VInstant::getDateAndTime(const VString& timeZoneID) const
-    {
+VDateAndTime VInstant::getDateAndTime(const VString& timeZoneID) const {
     VInstantStruct when;
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
@@ -740,15 +645,13 @@ VDateAndTime VInstant::getDateAndTime(const VString& timeZoneID) const
         gRemoteTimeZoneConverter->offsetToRTZStruct(mValue, timeZoneID, when);
 
     return VDateAndTime(when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
-    }
+}
 
-void VInstant::setLocalDateAndTime(const VDateAndTime& dt)
-    {
+void VInstant::setLocalDateAndTime(const VDateAndTime& dt) {
     this->setDateAndTime(dt, VInstant::LOCAL_TIME_ZONE_ID());
-    }
+}
 
-void VInstant::setDateAndTime(const VDateAndTime& dt, const VString& timeZoneID)
-    {
+void VInstant::setDateAndTime(const VDateAndTime& dt, const VString& timeZoneID) {
     VInstantStruct when(dt.getDate(), dt.getTimeOfDay());
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
@@ -759,10 +662,9 @@ void VInstant::setDateAndTime(const VDateAndTime& dt, const VString& timeZoneID)
         throw VStackTraceException(VSTRING_FORMAT("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
         mValue = gRemoteTimeZoneConverter->offsetFromRTZStruct(timeZoneID, when);
-    }
+}
 
-void VInstant::setValues(const VDate& date, const VTimeOfDay& timeOfDay, const VString& timeZoneID)
-    {
+void VInstant::setValues(const VDate& date, const VTimeOfDay& timeOfDay, const VString& timeZoneID) {
     VInstantStruct when(date, timeOfDay);
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
@@ -773,12 +675,11 @@ void VInstant::setValues(const VDate& date, const VTimeOfDay& timeOfDay, const V
         throw VStackTraceException(VSTRING_FORMAT("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
         mValue = gRemoteTimeZoneConverter->offsetFromRTZStruct(timeZoneID, when);
-    }
+}
 
 static const int kSecondsPerDay = 86400;
 
-Vs64 VInstant::getLocalOffsetMilliseconds() const
-    {
+Vs64 VInstant::getLocalOffsetMilliseconds() const {
     /*
     Return the offset, in milliseconds, of the local time zone, at this
     indicated instant.
@@ -799,27 +700,22 @@ Vs64 VInstant::getLocalOffsetMilliseconds() const
     int localSecondsOfDay = (3600 * localStruct.mHour) + (60 * localStruct.mMinute) + localStruct.mSecond;
     int utcSecondsOfDay = (3600 * utcStruct.mHour) + (60 * utcStruct.mMinute) + utcStruct.mSecond;
 
-    if (localStruct.mDay == utcStruct.mDay)
-        {
+    if (localStruct.mDay == utcStruct.mDay) {
         // Same date. Just a difference in hours/minutes.
 
         deltaSeconds = localSecondsOfDay - utcSecondsOfDay;
-        }
-    else if ((localStruct.mDay == utcStruct.mDay+1) ||
-            ((localStruct.mDay == 1) && (utcStruct.mDay > 27))) // detect wrap-around day 1 and day 28-31
-        {
+    } else if ((localStruct.mDay == utcStruct.mDay + 1) ||
+               ((localStruct.mDay == 1) && (utcStruct.mDay > 27))) { // detect wrap-around day 1 and day 28-31
         // We are ahead of GMT and we are already on the "next" calendar date.
         // localSecondsOfDay is therefore smaller, so add a day's worth of seconds it to compensate.
 
         deltaSeconds = (localSecondsOfDay + kSecondsPerDay) - utcSecondsOfDay;
-        }
-    else
-        {
+    } else {
         // We are behind GMT and are still on the "previous" calendar date.
         // utcSecondsOfDay is therefore smaller, so add a day's worth of seconds it to compensate.
 
         deltaSeconds = localSecondsOfDay - (utcSecondsOfDay + kSecondsPerDay);
-        }
+    }
 
     /*
     Debugging notes:
@@ -828,12 +724,11 @@ Vs64 VInstant::getLocalOffsetMilliseconds() const
     For a value in India Standard Time, we should return +5 hrs 30 minutes, which is +19800 * 1000 = +19,800,000ms
     */
 
-    return (Vs64) (deltaSeconds * 1000);
-    }
+    return (Vs64)(deltaSeconds * 1000);
+}
 
 // static
-void VInstant::threadsafe_localtime(const time_t epochOffset, struct tm* resultStorage)
-    {
+void VInstant::threadsafe_localtime(const time_t epochOffset, struct tm* resultStorage) {
     time_t      offset = epochOffset;
     struct tm*  result;
 
@@ -850,11 +745,10 @@ void VInstant::threadsafe_localtime(const time_t epochOffset, struct tm* resultS
 #ifndef V_HAVE_REENTRANT_TIME
     *resultStorage = *result;
 #endif
-    }
+}
 
 // static
-void VInstant::threadsafe_gmtime(const time_t epochOffset, struct tm* resultStorage)
-    {
+void VInstant::threadsafe_gmtime(const time_t epochOffset, struct tm* resultStorage) {
     struct tm* result;
 
 #ifdef V_HAVE_REENTRANT_TIME
@@ -870,11 +764,10 @@ void VInstant::threadsafe_gmtime(const time_t epochOffset, struct tm* resultStor
 #ifndef V_HAVE_REENTRANT_TIME
     *resultStorage = *result;
 #endif
-    }
+}
 
 // static
-bool VInstant::_complexGT(const VInstant& i1, const VInstant& i2)
-    {
+bool VInstant::_complexGT(const VInstant& i1, const VInstant& i2) {
     // We also handle the simple case correctly.
     if (i1.isSpecific() && i2.isSpecific())
         return i1 > i2;
@@ -893,11 +786,10 @@ bool VInstant::_complexGT(const VInstant& i1, const VInstant& i2)
 
     // None the above. Condition does not hold.
     return false;
-    }
+}
 
 // static
-bool VInstant::_complexGTE(const VInstant& i1, const VInstant& i2)
-    {
+bool VInstant::_complexGTE(const VInstant& i1, const VInstant& i2) {
     // We also handle the simple case correctly.
     if (i1.isSpecific() && i2.isSpecific())
         return i1 >= i2;
@@ -916,11 +808,10 @@ bool VInstant::_complexGTE(const VInstant& i1, const VInstant& i2)
 
     // None the above. Condition does not hold.
     return false;
-    }
+}
 
 // static
-bool VInstant::_complexLT(const VInstant& i1, const VInstant& i2)
-    {
+bool VInstant::_complexLT(const VInstant& i1, const VInstant& i2) {
     // We also handle the simple case correctly.
     if (i1.isSpecific() && i2.isSpecific())
         return i1 < i2;
@@ -939,11 +830,10 @@ bool VInstant::_complexLT(const VInstant& i1, const VInstant& i2)
 
     // None the above. Condition does not hold.
     return false;
-    }
+}
 
 // static
-bool VInstant::_complexLTE(const VInstant& i1, const VInstant& i2)
-    {
+bool VInstant::_complexLTE(const VInstant& i1, const VInstant& i2) {
     // We also handle the simple case correctly.
     if (i1.isSpecific() && i2.isSpecific())
         return i1 <= i2;
@@ -962,99 +852,89 @@ bool VInstant::_complexLTE(const VInstant& i1, const VInstant& i2)
 
     // None the above. Condition does not hold.
     return false;
-    }
+}
 
 // static
-Vs64 VInstant::snapshot()
-    {
+Vs64 VInstant::snapshot() {
     if (gFrozenClockValue == 0)
         return VInstant::_platform_snapshot() + gSimulatedClockOffset;
     else
         return gFrozenClockValue;
-    }
+}
 
 // static
-VDuration VInstant::snapshotDelta(Vs64 snapshotValue)
-    {
+VDuration VInstant::snapshotDelta(Vs64 snapshotValue) {
     return VDuration::MILLISECOND() * (VInstant::snapshot() - snapshotValue);
-    }
+}
 
 // static
-void VInstant::incrementSimulatedClockOffset(const VDuration& delta)
-    {
+void VInstant::incrementSimulatedClockOffset(const VDuration& delta) {
     gSimulatedClockOffset += delta.getDurationMilliseconds();
-    }
+}
 
 // static
-void VInstant::setSimulatedClockOffset(const VDuration& offset)
-    {
+void VInstant::setSimulatedClockOffset(const VDuration& offset) {
     gSimulatedClockOffset = offset.getDurationMilliseconds();
-    }
+}
 
 // static
-void VInstant::setSimulatedClockValue(const VInstant& simulatedCurrentTime)
-    {
+void VInstant::setSimulatedClockValue(const VInstant& simulatedCurrentTime) {
     gSimulatedClockOffset = 0; // so that "now" will be true current time, not existing simulated time
     VInstant now;
     VInstant::setSimulatedClockOffset(simulatedCurrentTime - now);
-    }
+}
 
 // static
-VDuration VInstant::getSimulatedClockOffset()
-    {
+VDuration VInstant::getSimulatedClockOffset() {
     return VDuration::MILLISECOND() * gSimulatedClockOffset;
-    }
+}
 
 // static
-void VInstant::freezeTime(const VInstant& frozenTimeValue)
-    {
+void VInstant::freezeTime(const VInstant& frozenTimeValue) {
     gFrozenClockValue = frozenTimeValue.getValue();
-    }
+}
 
 // static
-void VInstant::shiftFrozenTime(const VDuration& delta)
-    {
+void VInstant::shiftFrozenTime(const VDuration& delta) {
     gFrozenClockValue += delta.getDurationMilliseconds();
-    }
+}
 
 // static
-void VInstant::unfreezeTime()
-    {
+void VInstant::unfreezeTime() {
     gFrozenClockValue = 0;
-    }
+}
 
 // static
-bool VInstant::isTimeFrozen()
-    {
+bool VInstant::isTimeFrozen() {
     return gFrozenClockValue != 0;
-    }
+}
 
 // VDate ---------------------------------------------------------------------
 
 // Is ASSERT_INVARIANT enabled/disabled specifically for VDate and VTimeOfDay?
 #ifdef V_ASSERT_INVARIANT_VDATE_AND_TIME_ENABLED
-    #undef ASSERT_INVARIANT
-    #if V_ASSERT_INVARIANT_VDATE_AND_TIME_ENABLED == 1
-        #define ASSERT_INVARIANT() this->_assertInvariant() ///< Macro to call this->_assertInvariant().
-    #else
-        #define ASSERT_INVARIANT() ((void) 0) ///< No-op.
-    #endif
+#undef ASSERT_INVARIANT
+#if V_ASSERT_INVARIANT_VDATE_AND_TIME_ENABLED == 1
+#define ASSERT_INVARIANT() this->_assertInvariant() ///< Macro to call this->_assertInvariant().
+#else
+#define ASSERT_INVARIANT() ((void) 0) ///< No-op.
+#endif
 #endif
 
 const VChar VDate::kLocalDateSeparator('/');
 
-VDate::VDate() :
-mYear(0),
-mMonth(1),
-mDay(1)
+VDate::VDate()
+    : mYear(0)
+    , mMonth(1)
+    , mDay(1)
     {
     ASSERT_INVARIANT();
-    }
+}
 
-VDate::VDate(const VString& timeZoneID) :
-mYear(0),
-mMonth(1),
-mDay(1)
+VDate::VDate(const VString& timeZoneID)
+    : mYear(0)
+    , mMonth(1)
+    , mDay(1)
     {
     VInstant    now;
     VDate       nowDate = now.getDate(timeZoneID);
@@ -1063,43 +943,39 @@ mDay(1)
     mDay = nowDate.getDay();
 
     ASSERT_INVARIANT();
-    }
+}
 
-VDate::VDate(int year, int month, int day) :
-mYear(year),
-mMonth(month),
-mDay(day)
+VDate::VDate(int year, int month, int day)
+    : mYear(year)
+    , mMonth(month)
+    , mDay(day)
     {
     if ((month < 1) || (month > 12) ||
-        (day   < 1) || (day   > 32)) // 32 allowed when incrementing the date
+            (day   < 1) || (day   > 32)) // 32 allowed when incrementing the date
         throw VRangeException(VSTRING_FORMAT("VDate: %d-%02d-%02d is an invalid value.", year, month, day));
 
     ASSERT_INVARIANT();
-    }
+}
 
-int VDate::getYear() const
-    {
+int VDate::getYear() const {
     ASSERT_INVARIANT();
 
     return mYear;
-    }
+}
 
-int VDate::getMonth() const
-    {
+int VDate::getMonth() const {
     ASSERT_INVARIANT();
 
     return mMonth;
-    }
+}
 
-int VDate::getDay() const
-    {
+int VDate::getDay() const {
     ASSERT_INVARIANT();
 
     return mDay;
-    }
+}
 
-int VDate::getDayOfWeek() const
-    {
+int VDate::getDayOfWeek() const {
     ASSERT_INVARIANT();
 
     VInstantStruct when;
@@ -1119,14 +995,13 @@ int VDate::getDayOfWeek() const
     VInstant::_platform_offsetToUTCStruct(offset, when);
 
     return when.mDayOfWeek;
-    }
+}
 
-void VDate::set(int year, int month, int day)
-    {
+void VDate::set(int year, int month, int day) {
     ASSERT_INVARIANT();
 
     if ((month < 1) || (month > 12) ||
-        (day   < 1) || (day   > 32)) // 32 allowed when incrementing the date
+            (day   < 1) || (day   > 32)) // 32 allowed when incrementing the date
         throw VRangeException(VSTRING_FORMAT("VDate::set: %d-%02d-%02d is an invalid value.", year, month, day));
 
     mYear = year;
@@ -1134,59 +1009,55 @@ void VDate::set(int year, int month, int day)
     mDay = day;
 
     ASSERT_INVARIANT();
-    }
+}
 
-void VDate::setYear(int year)
-    {
+void VDate::setYear(int year) {
     ASSERT_INVARIANT();
 
     mYear = year;
 
     ASSERT_INVARIANT();
-    }
+}
 
-void VDate::setMonth(int month)
-    {
+void VDate::setMonth(int month) {
     ASSERT_INVARIANT();
 
     mMonth = month;
 
     ASSERT_INVARIANT();
-    }
+}
 
-void VDate::setDay(int day)
-    {
+void VDate::setDay(int day) {
     ASSERT_INVARIANT();
 
     mDay = day;
 
     ASSERT_INVARIANT();
-    }
+}
 
-void VDate::_assertInvariant() const
-    {
+void VDate::_assertInvariant() const {
     VASSERT_IN_RANGE(mMonth, 0, 12);
     VASSERT_IN_RANGE(mDay, 0, 32);
-    }
+}
 
 // VTimeOfDay ----------------------------------------------------------------
 
 const VChar VTimeOfDay::kLocalTimeSeparator(':');
 
-VTimeOfDay::VTimeOfDay() :
-mHour(0),
-mMinute(0),
-mSecond(0),
-mMillisecond(0)
+VTimeOfDay::VTimeOfDay()
+    : mHour(0)
+    , mMinute(0)
+    , mSecond(0)
+    , mMillisecond(0)
     {
     ASSERT_INVARIANT();
-    }
+}
 
-VTimeOfDay::VTimeOfDay(const VString& timeZoneID) :
-mHour(0),
-mMinute(0),
-mSecond(0),
-mMillisecond(0)
+VTimeOfDay::VTimeOfDay(const VString& timeZoneID)
+    : mHour(0)
+    , mMinute(0)
+    , mSecond(0)
+    , mMillisecond(0)
     {
     VInstant    now;
     VTimeOfDay  nowTimeOfDay = now.getTimeOfDay(timeZoneID);
@@ -1196,63 +1067,57 @@ mMillisecond(0)
     mMillisecond = nowTimeOfDay.getMillisecond();
 
     ASSERT_INVARIANT();
-    }
+}
 
-VTimeOfDay::VTimeOfDay(int hour, int minute, int second, int millisecond) :
-mHour(hour),
-mMinute(minute),
-mSecond(second),
-mMillisecond(millisecond)
+VTimeOfDay::VTimeOfDay(int hour, int minute, int second, int millisecond)
+    : mHour(hour)
+    , mMinute(minute)
+    , mSecond(second)
+    , mMillisecond(millisecond)
     {
     if ((hour   < 0) || (hour   > 23) ||
-        (minute < 0) || (minute > 59) ||
-        (second < 0) || (second > 59) ||
-        (millisecond < 0) || (millisecond > 999))
+            (minute < 0) || (minute > 59) ||
+            (second < 0) || (second > 59) ||
+            (millisecond < 0) || (millisecond > 999))
         throw VRangeException(VSTRING_FORMAT("VTimeOfDay: %02d:%02d:%02d.%03d is an invalid value.", hour, minute, second, millisecond));
 
     ASSERT_INVARIANT();
-    }
+}
 
-int VTimeOfDay::getHour() const
-    {
+int VTimeOfDay::getHour() const {
     ASSERT_INVARIANT();
 
     return mHour;
-    }
+}
 
-int VTimeOfDay::getMinute() const
-    {
+int VTimeOfDay::getMinute() const {
     ASSERT_INVARIANT();
 
     return mMinute;
-    }
+}
 
-int VTimeOfDay::getSecond() const
-    {
+int VTimeOfDay::getSecond() const {
     ASSERT_INVARIANT();
 
     return mSecond;
-    }
+}
 
-int VTimeOfDay::getMillisecond() const
-    {
+int VTimeOfDay::getMillisecond() const {
     ASSERT_INVARIANT();
 
     return mMillisecond;
-    }
+}
 
-void VTimeOfDay::set(int hour, int minute, int second, int millisecond)
-    {
+void VTimeOfDay::set(int hour, int minute, int second, int millisecond) {
     // No point in doing our own ASSERT_INVARIANT here, because each
     // setter we call will do it anyway.
     this->setHour(hour);
     this->setMinute(minute);
     this->setSecond(second);
     this->setMillisecond(millisecond);
-    }
+}
 
-void VTimeOfDay::setHour(int hour)
-    {
+void VTimeOfDay::setHour(int hour) {
     ASSERT_INVARIANT();
 
     if ((hour < 0) || (hour > 23))
@@ -1261,10 +1126,9 @@ void VTimeOfDay::setHour(int hour)
     mHour = hour;
 
     ASSERT_INVARIANT();
-    }
+}
 
-void VTimeOfDay::setMinute(int minute)
-    {
+void VTimeOfDay::setMinute(int minute) {
     ASSERT_INVARIANT();
 
     if ((minute < 0) || (minute > 59))
@@ -1273,10 +1137,9 @@ void VTimeOfDay::setMinute(int minute)
     mMinute = minute;
 
     ASSERT_INVARIANT();
-    }
+}
 
-void VTimeOfDay::setSecond(int second)
-    {
+void VTimeOfDay::setSecond(int second) {
     ASSERT_INVARIANT();
 
     if ((second < 0) || (second > 59))
@@ -1285,10 +1148,9 @@ void VTimeOfDay::setSecond(int second)
     mSecond = second;
 
     ASSERT_INVARIANT();
-    }
+}
 
-void VTimeOfDay::setMillisecond(int millisecond)
-    {
+void VTimeOfDay::setMillisecond(int millisecond) {
     ASSERT_INVARIANT();
 
     if ((millisecond < 0) || (millisecond > 999))
@@ -1297,27 +1159,25 @@ void VTimeOfDay::setMillisecond(int millisecond)
     mMillisecond = millisecond;
 
     ASSERT_INVARIANT();
-    }
+}
 
-void VTimeOfDay::setToStartOfDay()
-    {
+void VTimeOfDay::setToStartOfDay() {
     // No need for ASSERT_INVARIANT, since set() will call it.
     this->set(0, 0, 0, 0);
-    }
+}
 
-void VTimeOfDay::_assertInvariant() const
-    {
+void VTimeOfDay::_assertInvariant() const {
     VASSERT_IN_RANGE(mHour, 0, 23);
     VASSERT_IN_RANGE(mMinute, 0, 59);
     VASSERT_IN_RANGE(mSecond, 0, 59);
     VASSERT_IN_RANGE(mMillisecond, 0, 999);
-    }
+}
 
 // VDateAndTime --------------------------------------------------------------
 
-VDateAndTime::VDateAndTime(const VString& timeZoneID) :
-mDate(),
-mTimeOfDay()
+VDateAndTime::VDateAndTime(const VString& timeZoneID)
+    : mDate()
+    , mTimeOfDay()
     {
     // This is more efficient than simply letting both the mDate and
     // mTimeOfDay construct themselves from the timeZoneID, because here we
@@ -1336,5 +1196,5 @@ mTimeOfDay()
     mTimeOfDay.setMinute(nowTimeOfDay.getMinute());
     mTimeOfDay.setSecond(nowTimeOfDay.getSecond());
     mTimeOfDay.setMillisecond(nowTimeOfDay.getMillisecond());
-    }
+}
 

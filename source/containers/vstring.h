@@ -40,24 +40,24 @@ class VMutex;
     It is a good way to avoid the unavoidable bugs associated with
     using raw C strings, and it provides many useful ways of working
     with strings in a safe way.
-    
+
     A related class, VChar, can be used to represent a single character
     and the operations that are useful for characters.
-    
+
 */
-    
+
 /**
     @ingroup vstring
 */
 
 #ifdef VAULT_VSTRING_STRICT_FORMATTING
-    #define VSTRING_FORMAT(format_string, ...) VString(0, format_string, __VA_ARGS__)
-    #define VSTRING_ARGS(format_string, ...) true, format_string, __VA_ARGS__
-    #define VSTRING_COPY(literal_string) VString(literal_string)
+#define VSTRING_FORMAT(format_string, ...) VString(0, format_string, __VA_ARGS__)
+#define VSTRING_ARGS(format_string, ...) true, format_string, __VA_ARGS__
+#define VSTRING_COPY(literal_string) VString(literal_string)
 #else
-    #define VSTRING_FORMAT(format_string, ...) VString(format_string, __VA_ARGS__)
-    #define VSTRING_ARGS(format_string, ...) format_string, __VA_ARGS__
-    #define VSTRING_COPY(literal_string) VString((char*)literal_string) // call non-formatting ctor
+#define VSTRING_FORMAT(format_string, ...) VString(format_string, __VA_ARGS__)
+#define VSTRING_ARGS(format_string, ...) format_string, __VA_ARGS__
+#define VSTRING_COPY(literal_string) VString((char*)literal_string) // call non-formatting ctor
 #endif
 
 // The following macros define the proper formatting directives for the basic POD types,
@@ -125,8 +125,7 @@ Methods that modify the string will expand the buffer as necessary, so you
 don't have to worry about overflowing the buffer. If the buffer needs to be
 expanded but the object is unable to expand it, a VException will be thrown.
 */
-class VString
-    {
+class VString {
     public:
 
         /**
@@ -137,7 +136,7 @@ class VString
         Returns a reference to the read-only VString constant holding the platform-native line ending character(s).
         */
         static const VString& NATIVE_LINE_ENDING();
-    
+
         /**
         Constructs an empty string.
         */
@@ -317,7 +316,7 @@ class VString
         @param    d    the double value to be formatted
         */
         VString& operator=(VDouble d);
-        
+
 
         /**
         Appends a string + char
@@ -447,22 +446,22 @@ class VString
         specified offset (default is at the front of the string),
         moving the remaining part of the string later in the buffer.
         Thus the length of the string increases by 1 character.
-        To append, you are better off using operator+=. 
-        @param    c        the char to insert
-        @param    offset    the location to insert in front of
+        To append, you are better off using operator+=.
+        @param  c       the char to insert
+        @param  offset  the location to insert in front of
         */
-        void insert(char c, int offset=0);
+        void insert(char c, int offset = 0);
         /**
         Inserts the specified string into the string at the
         specified offset (default is at the front of the string),
         moving the remaining part of the string later in the buffer.
         Thus the length of the string increases by the length of
         the string being inserted.
-        To append, you are better off using operator+=. 
-        @param    s        the string to insert
-        @param    offset    the location to insert in front of
+        To append, you are better off using operator+=.
+        @param  s       the string to insert
+        @param  offset  the location to insert in front of
         */
-        void insert(const VString& s, int offset=0);
+        void insert(const VString& s, int offset = 0);
 
         /**
         Returns the string length.
@@ -472,7 +471,7 @@ class VString
         /**
         Truncates the string to specified length; if the string is already
         that length or less, nothing happens.
-        @param    length    the length to truncate to
+        @param  length  the length to truncate to
         */
         void truncateLength(int maxLength);
         /**
@@ -488,37 +487,37 @@ class VString
         /**
         Returns the character at the specified index.
         If the index is out of range, a VException is thrown.
-        @param    i    the index (0 to length-1)
-        @return    the character
+        @param  i   the index (0 to length-1)
+        @return the character
         */
         VChar at(int i) const;
         /**
         Returns the character at the specified index.
         If the index is out of range, a VException is thrown.
-        @param    i    the index (0 to length-1)
-        @return    the character
+        @param  i   the index (0 to length-1)
+        @return the character
         */
         VChar operator[](int i) const;
         /**
         Returns a reference to the char at the specified index, which
         can be assigned to.
         If the index is out of range, a VException is thrown.
-        @param    i    the index (0 to length-1)
-        @return    the character
+        @param  i   the index (0 to length-1)
+        @return the character
         */
         char& operator[](int i);
         /**
         Returns the char at the specified index.
         If the index is out of range, a VException is thrown.
-        @param    i    the index (0 to length-1)
-        @return    the char
+        @param  i   the index (0 to length-1)
+        @return the char
         */
         char charAt(int i) const;
         /**
         Coerces the string to a C string, for use with APIs that take
         a const char* parameter.
         In fact, this coercion returns the string buffer pointer.
-        @return    the char buffer pointer
+        @return the char buffer pointer
         */
         operator const char*() const;
         /**
@@ -529,20 +528,20 @@ class VString
         but is explicit. You need an explicit method like this when passing
         to an API that does not have sufficient type information, such as
         vararg calls like printf and sprintf.
-        
+
         Example:    \c    printf("string='%s'\n", myString->chars());
-        
+
         In the example above, simply passing myString would result in
         garbage output, because printf would not know how to treat
         myString other than as a pointer value.
-        @return    the char buffer pointer
+        @return the char buffer pointer
         */
         const char* chars() const;
 
 #ifdef VAULT_QT_SUPPORT
         /**
         Returns a QString built from the VString.
-        @return    the QString
+        @return the QString
         */
         QString qstring() const;
 #endif
@@ -552,7 +551,7 @@ class VString
         Returns a CFStringRef built from the VString. The returned
         CFStringRef must be released at some point by the caller since it is a
         new object.
-        @return    the CFStringRef
+        @return the CFStringRef
         */
         CFStringRef cfstring() const;
 #endif
@@ -560,209 +559,209 @@ class VString
         /**
         Returns true if this string is equal to the specified string,
         ignoring case, using strcmp semantics.
-        @param    s    the string to compare with
-        @return    true if the strings are equal, case-insensitive
+        @param  s   the string to compare with
+        @return true if the strings are equal, case-insensitive
         */
         bool equalsIgnoreCase(const VString& s) const;
         /**
         Returns true if this string is equal to the specified C string,
         ignoring case, using strcmp semantics.
-        @param    s    the C string to compare with
-        @return    true if the strings are equal, case-insensitive
+        @param  s   the C string to compare with
+        @return true if the strings are equal, case-insensitive
         */
         bool equalsIgnoreCase(const char* s) const;
         /**
         Returns the comparison value of this string and the supplied
         string, using strcmp semantics.
-        @param    s    the string to compare with
-        @return    <0, 0, or >0, depending on how the strings compare
+        @param  s   the string to compare with
+        @return <0, 0, or >0, depending on how the strings compare
         */
         int compare(const VString& s) const;
         /**
         Returns the comparison value of this string and the supplied
         C string, using strcmp semantics.
-        @param    s    the C string to compare with
-        @return    <0, 0, or >0, depending on how the strings compare
+        @param  s   the C string to compare with
+        @return <0, 0, or >0, depending on how the strings compare
         */
         int compare(const char* s) const;
         /**
         Returns the comparison value of this string and the supplied
         string, ignoring case, using strcmp semantics.
-        @param    s    the string to compare with
-        @return    <0, 0, or >0, depending on how the strings compare
+        @param  s   the string to compare with
+        @return <0, 0, or >0, depending on how the strings compare
         */
         int compareIgnoreCase(const VString& s) const;
         /**
         Returns the comparison value of this string and the supplied
         C string, ignoring case, using strcmp semantics.
-        @param    s    the C string to compare with
-        @return    <0, 0, or >0, depending on how the strings compare
+        @param  s   the C string to compare with
+        @return <0, 0, or >0, depending on how the strings compare
         */
         int compareIgnoreCase(const char* s) const;
         /**
         Returns true if this string starts with the specified string.
-        @param    s    the string to search for
+        @param  s   the string to search for
         @return true if this string starts with the specified string
         */
         bool startsWith(const VString& s) const;
         /**
         Returns true if this string starts with the specified string (ignoring case).
-        @param    s    the string to search for
+        @param  s   the string to search for
         @return true if this string starts with the specified string (ignoring case)
         */
         bool startsWithIgnoreCase(const VString& s) const;
         /**
         Returns true if this string starts with the specified char.
-        @param    c    the char to search for
+        @param  c   the char to search for
         @return true if this string starts with the specified char
         */
         bool startsWith(char c) const;
         /**
         Returns true if this string ends with the specified string.
-        @param    s    the string to search for
+        @param  s   the string to search for
         @return true if this string ends with the specified string
         */
         bool endsWith(const VString& s) const;
         /**
         Returns true if this string ends with the specified string (ignoring case).
-        @param    s    the string to search for
+        @param  s   the string to search for
         @return true if this string ends with the specified string (ignoring case)
         */
         bool endsWithIgnoreCase(const VString& s) const;
         /**
         Returns true if this string ends with the specified char.
-        @param    c    the char to search for
+        @param  c   the char to search for
         @return true if this string ends with the specified char
         */
         bool endsWith(char c) const;
         /**
         Returns the index of the first occurrence of the specified character.
-        @param    c            the character to search for
-        @param    fromIndex    index in this string to start the search from
-        @return    the index where the character was found, or -1 if not found
+        @param  c           the character to search for
+        @param  fromIndex   index in this string to start the search from
+        @return the index where the character was found, or -1 if not found
         */
-        int indexOf(char c, int fromIndex=0) const;
+        int indexOf(char c, int fromIndex = 0) const;
         /**
         Returns the index of the first occurrence of the specified character,
         using a case-insensitive comparison.
-        @param    c            the character to search for
-        @param    fromIndex    index in this string to start the search from
-        @return    the index where the character was found, or -1 if not found
+        @param  c           the character to search for
+        @param  fromIndex   index in this string to start the search from
+        @return the index where the character was found, or -1 if not found
         */
-        int indexOfIgnoreCase(char c, int fromIndex=0) const;
+        int indexOfIgnoreCase(char c, int fromIndex = 0) const;
         /**
         Returns the index of the first occurrence of the specified string.
-        @param    s            the string to look for
-        @param    fromIndex    index in this string to start the search from
-        @return    the index where the string was found, or -1 if not found
+        @param  s           the string to look for
+        @param  fromIndex   index in this string to start the search from
+        @return the index where the string was found, or -1 if not found
         */
-        int indexOf(const VString& s, int fromIndex=0) const;
+        int indexOf(const VString& s, int fromIndex = 0) const;
         /**
         Returns the index of the first occurrence of the specified string,
         using a case-insensitive comparison.
         @param    s            the string to look for
         @param    fromIndex    index in this string to start the search from
-        @return    the index where the string was found, or -1 if not found
+        @return the index where the string was found, or -1 if not found
         */
-        int indexOfIgnoreCase(const VString& s, int fromIndex=0) const;
+        int indexOfIgnoreCase(const VString& s, int fromIndex = 0) const;
         /**
         Returns the index of the last occurrence of the specified character.
-        @param    c            the character to search for
-        @param    fromIndex    index in this string to start the backward search from,
+        @param  c           the character to search for
+        @param  fromIndex   index in this string to start the backward search from,
                             with -1 indicating a search from the end
-        @return    the index where the character was found, or -1 if not found
+        @return the index where the character was found, or -1 if not found
         */
-        int lastIndexOf(char c, int fromIndex=-1) const;
+        int lastIndexOf(char c, int fromIndex = -1) const;
         /**
         Returns the index of the last occurrence of the specified character,
         using a case-insensitive comparison.
-        @param    c            the character to search for
-        @param    fromIndex    index in this string to start the backward search from,
+        @param  c           the character to search for
+        @param  fromIndex   index in this string to start the backward search from,
                             with -1 indicating a search from the end
-        @return    the index where the character was found, or -1 if not found
+        @return the index where the character was found, or -1 if not found
         */
-        int lastIndexOfIgnoreCase(char c, int fromIndex=-1) const;
+        int lastIndexOfIgnoreCase(char c, int fromIndex = -1) const;
         /**
         Returns the index of the last occurrence of the specified string.
-        @param    s            the string to look for
-        @param    fromIndex    index in this string to start the backward search from,
+        @param  s           the string to look for
+        @param  fromIndex   index in this string to start the backward search from,
                             with -1 indicating a search from the end
-        @return    the index where the string was found, or -1 if not found
+        @return the index where the string was found, or -1 if not found
         */
-        int lastIndexOf(const VString& s, int fromIndex=-1) const;
+        int lastIndexOf(const VString& s, int fromIndex = -1) const;
         /**
         Returns the index of the last occurrence of the specified string,
         using a case-insensitive comparison.
-        @param    s            the string to look for
-        @param    fromIndex    index in this string to start the backward search from,
+        @param  s           the string to look for
+        @param  fromIndex   index in this string to start the backward search from,
                             with -1 indicating a search from the end
-        @return    the index where the string was found, or -1 if not found
+        @return the index where the string was found, or -1 if not found
         */
-        int lastIndexOfIgnoreCase(const VString& s, int fromIndex=-1) const;
+        int lastIndexOfIgnoreCase(const VString& s, int fromIndex = -1) const;
         /**
         Returns true if the specified range of this string matches the
         specified range of the specified string. If the characters in
         the ranges do not match, or if either range goes past the end
         of either string, then the result is false.
-        
-        @param    thisIndex        the start index (0 to this this->length()-1) in this string to start the match
-        @param    otherString        the string to match
-        @param    otherIndex        the start index (0 to other otherString.length()-1) in the other string to start the match
-        @param    regionLength    the number of characters to compare
-        @param    caseSensitive   true if the comparison should be case-sensitive
+
+        @param  thisIndex       the start index (0 to this this->length()-1) in this string to start the match
+        @param  otherString     the string to match
+        @param  otherIndex      the start index (0 to other otherString.length()-1) in the other string to start the match
+        @param  regionLength    the number of characters to compare
+        @param  caseSensitive   true if the comparison should be case-sensitive
         @return true if the ranges match
         */
-        bool regionMatches(int thisIndex, const VString& otherString, int otherIndex, int regionLength, bool caseSensitive=true) const;
+        bool regionMatches(int thisIndex, const VString& otherString, int otherIndex, int regionLength, bool caseSensitive = true) const;
         /**
         Returns true if the specified character exists in this string.
-        @param    c            the character to search for
-        @param    fromIndex    index in this string to start the search from
-        @return   true if the character was found
+        @param  c           the character to search for
+        @param  fromIndex   index in this string to start the search from
+        @return true if the character was found
         */
-        bool contains(char c, int fromIndex=0) const;
+        bool contains(char c, int fromIndex = 0) const;
         /**
         Returns true if the specified character exists in this string,
         using a case-insensitive match.
-        @param    c            the character to search for
-        @param    fromIndex    index in this string to start the search from
-        @return   true if the character was found
+        @param  c           the character to search for
+        @param  fromIndex   index in this string to start the search from
+        @return true if the character was found
         */
-        bool containsIgnoreCase(char c, int fromIndex=0) const;
+        bool containsIgnoreCase(char c, int fromIndex = 0) const;
         /**
         Returns true if the specified string exists in this string.
-        @param    s            the string to look for
-        @param    fromIndex    index in this string to start the search from
-        @return   true if the string was found
+        @param  s           the string to look for
+        @param  fromIndex   index in this string to start the search from
+        @return true if the string was found
         */
-        bool contains(const VString& s, int fromIndex=0) const;
+        bool contains(const VString& s, int fromIndex = 0) const;
         /**
         Returns true if the specified string exists in this string,
         using a case-insensitive match.
-        @param    s            the string to look for
-        @param    fromIndex    index in this string to start the search from
-        @return   true if the string was found
+        @param  s           the string to look for
+        @param  fromIndex   index in this string to start the search from
+        @return true if the string was found
         */
-        bool containsIgnoreCase(const VString& s, int fromIndex=0) const;
+        bool containsIgnoreCase(const VString& s, int fromIndex = 0) const;
         /**
         Replaces every occurrence of the specified search string with the supplied
         replacement string. Returns the number of replacements performed, which may
         be zero.
-        @param    searchString        the string to search for
-        @param    replacementString    the string to replace the search string with
-        @param    caseSensitiveSearch  true if the search match should be case-sensitive
+        @param  searchString        the string to search for
+        @param  replacementString   the string to replace the search string with
+        @param  caseSensitiveSearch true if the search match should be case-sensitive
         @return the number of replaced occurrences
         */
-        int replace(const VString& searchString, const VString& replacementString, bool caseSensitiveSearch=true);
+        int replace(const VString& searchString, const VString& replacementString, bool caseSensitiveSearch = true);
         /**
         Replaces every occurrence of the specified search string with the supplied
         replacement string. Returns the number of replacements performed, which may
         be zero.
-        @param    searchChar        the character to search for
-        @param    replacementChar    the character to replace the search character with
-        @param    caseSensitiveSearch  true if the search match should be case-sensitive
+        @param  searchChar          the character to search for
+        @param  replacementChar     the character to replace the search character with
+        @param  caseSensitiveSearch true if the search match should be case-sensitive
         @return the number of replaced occurrences
         */
-        int replace(const VChar& searchChar, const VChar& replacementChar, bool caseSensitiveSearch=true);
+        int replace(const VChar& searchChar, const VChar& replacementChar, bool caseSensitiveSearch = true);
 
         /**
         Folds the string to lower case using tolower().
@@ -810,8 +809,8 @@ class VString
         /**
         Sets the character at the specified index to the specified value.
         If the index is out of range, a VException is thrown.
-        @param    i    the index (0 to length-1)
-        @param    c    the new character value
+        @param  i   the index (0 to length-1)
+        @param  c   the new character value
         */
         void set(int i, const VChar& c);
         /**
@@ -821,11 +820,11 @@ class VString
         exclusive, that is it is one past the index of the last character
         copied; the default value of -1 means to copy all the way to the end
         of the string. Thus with the defaults you get the whole string.
-        @param    toString    the string to copy the specified substring into
-        @param    startIndex    index of the first char to copy, inclusive
-        @param    endIndex    index of the last char to copy, exclusive (end-start is the length)
+        @param  toString    the string to copy the specified substring into
+        @param  startIndex  index of the first char to copy, inclusive
+        @param  endIndex    index of the last char to copy, exclusive (end-start is the length)
         */
-        void getSubstring(VString& toString, int startIndex/* = 0*/, int endIndex=-1) const;
+        void getSubstring(VString& toString, int startIndex/* = 0*/, int endIndex = -1) const;
         /**
         Makes a substring of this string in place (contrast with getSubstring(),
         which puts the substring into a different object). The start index
@@ -838,35 +837,35 @@ class VString
         not to fail or reallocate memory, because it only shrinks the string and
         thus at most just moves bytes towards the start of the buffer and updates
         the length field.
-        @param    startIndex    index of the first char to copy, inclusive
-        @param    endIndex    index of the last char to copy, exclusive (end-start is the length)
+        @param  startIndex  index of the first char to copy, inclusive
+        @param  endIndex    index of the last char to copy, exclusive (end-start is the length)
         */
-        void substringInPlace(int startIndex/* = 0*/, int endIndex=-1);
+        void substringInPlace(int startIndex/* = 0*/, int endIndex = -1);
         /**
         Splits the string into pieces using a specified delimiter character.
         Trailing empty strings are omitted in the output.
         The intent is to behave similarly to Java String.split().
-        @param  result      this string vector is cleared and then fill with the result
-        @param  delimiter   the character that delimits the split points
-        @param  limit       if non-zero, the max number of result items; if the string
-                                has more elements than that, the trailing part of the
-                                string is collapsed into one element (including delimiters)
-        @param  stripTrailingEmpties if true, any empty strings at the end of the resulting
-                                list are discarded (this is the Java String.split() behavior)
+        @param  result                  this string vector is cleared and then fill with the result
+        @param  delimiter               the character that delimits the split points
+        @param  limit                   if non-zero, the max number of result items; if the string
+                                            has more elements than that, the trailing part of the
+                                            string is collapsed into one element (including delimiters)
+        @param  stripTrailingEmpties    if true, any empty strings at the end of the resulting
+                                            list are discarded (this is the Java String.split() behavior)
         */
-        void split(VStringVector& result, const VChar& delimiter, int limit=0, bool stripTrailingEmpties=true) const;
+        void split(VStringVector& result, const VChar& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
         /**
         Convenience version of split() that returns the vector. Will likely incur copy overhead
         compared to the non-returning version, so use the other version in time-critical code.
-        @param  delimiter   the character that delimits the split points
-        @param  limit       if non-zero, the max number of result items; if the string
-                                has more elements than that, the trailing part of the
-                                string is collapsed into one element (including delimiters)
-        @param  stripTrailingEmpties if true, any empty strings at the end of the resulting
-                                list are discarded (this is the Java String.split() behavior)
+        @param  delimiter               the character that delimits the split points
+        @param  limit                   if non-zero, the max number of result items; if the string
+                                            has more elements than that, the trailing part of the
+                                            string is collapsed into one element (including delimiters)
+        @param  stripTrailingEmpties    if true, any empty strings at the end of the resulting
+                                            list are discarded (this is the Java String.split() behavior)
         @return a vector of split result strings
         */
-        VStringVector split(const VChar& delimiter, int limit=0, bool stripTrailingEmpties=true) const;
+        VStringVector split(const VChar& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
         /**
         Strips leading and trailing whitespace from the string.
         Whitespace as implemented here is defined as ASCII byte
@@ -884,10 +883,10 @@ class VString
         void copyToBuffer(char* toBuffer, int bufferSize) const;
         /**
         Sets the string by copying a number of characters from the source buffer.
-        @param    fromBuffer    the char buffer to copy from
-        @param    startIndex    the offset in the buffer to start from, inclusive (0 starts at first character)
-        @param    endIndex    the offset in the buffer to stop at, exclusive (end-start is the length,
-                              thus strlen(fromBuffer) will copy to the last character).
+        @param  fromBuffer  the char buffer to copy from
+        @param  startIndex  the offset in the buffer to start from, inclusive (0 starts at first character)
+        @param  endIndex    the offset in the buffer to stop at, exclusive (end-start is the length,
+                                thus strlen(fromBuffer) will copy to the last character).
         */
         void copyFromBuffer(const char* fromBuffer, int startIndex, int endIndex);
         /**
@@ -895,12 +894,12 @@ class VString
         the Pascal string format (length byte plus data). The caller is responsible
         for making sure that the buffer is big enough to hold 1 + this->length()
         bytes, up to a maximum of 256 total bytes.
-        @param    pascalBuffer    the Pascal string buffer to copy into
+        @param  pascalBuffer    the Pascal string buffer to copy into
         */
         void copyToPascalString(char* pascalBuffer) const;
         /**
         Sets the string by copying a Pascal string from the source buffer.
-        @param    pascalBuffer    the Pascal string buffer to copy from
+        @param  pascalBuffer    the Pascal string buffer to copy from
         */
         void copyFromPascalString(const char* pascalBuffer);
         /**
@@ -923,8 +922,8 @@ class VString
         /**
         Vararg format method used by the sprintf method, and also available
         if you have a vararg API that needs to then format a string.
-        @param    formatText    the format text
-        @param    args        the argument list
+        @param  formatText  the format text
+        @param  args        the argument list
         */
         void vaFormat(const char* formatText, va_list args);
 #endif
@@ -933,7 +932,7 @@ class VString
         Ensures that the buffer is big enough to hold the specified string length.
         If preflight needs to reallocate the buffer and is unable to do so, a
         VException is thrown.
-        @param    stringLength    the length of the string that will need to fit in the buffer
+        @param  stringLength    the length of the string that will need to fit in the buffer
         */
         void preflight(int stringLength);
         /**
@@ -949,7 +948,7 @@ class VString
         postflight() to manage the buffer. The pointer is non-const, for the
         purpose of allowing the caller to manipulate the buffer under the
         preflight/postflight rules.
-        @return    the buffer pointer
+        @return the buffer pointer
         */
         char* buffer();
         /**
@@ -961,7 +960,7 @@ class VString
         preflight() and postflight() to manage the buffer. The returned pointer
         is non-const, for the purpose of allowing the caller to manipulate the
         buffer under the preflight/postflight rules.
-        @return    the buffer pointer
+        @return the buffer pointer
         */
         Vu8* getDataBuffer();
         /**
@@ -969,7 +968,7 @@ class VString
         directly compatible with the various stream data writing APIs. So this
         method lets the caller avoid a reinterpret_cast that is often otherwise
         needed when doing stream writes from the string data buffer.
-        @return    the buffer pointer
+        @return the buffer pointer
         */
         const Vu8* getDataBufferConst() const;
         /**
@@ -977,7 +976,7 @@ class VString
         to empty (with no buffer). This is a way of extracting a char buffer from a
         VString such that the VString can be destructed and the caller retains the
         buffer.
-        @return    the buffer pointer, which is now owned by the caller and no longer
+        @return the buffer pointer, which is now owned by the caller and no longer
                     referenced by the VString object (which is now an "empty" string)
         */
         char* orphanDataBuffer();
@@ -989,39 +988,39 @@ class VString
         the normal public API.
         */
         void postflight(int stringLength);
-        
+
         friend inline bool operator==(const VString& s1, const VString& s2);
         friend inline bool operator==(const VString& s1, const char* s2);
         friend inline bool operator==(const char* s1, const VString& s2);
         friend inline bool operator==(const VString& s, char c);
-    
+
         friend inline bool operator!=(const VString& s1, const VString& s2);
         friend inline bool operator!=(const VString& s1, const char* s2);
         friend inline bool operator!=(const char* s1, const VString& s2);
         friend inline bool operator!=(const VString& s, char c);
-    
+
         friend inline bool operator<(const VString& s1, const VString& s2);
         friend inline bool operator<(const VString& s1, const char* s2);
         friend inline bool operator<(const char* s1, const VString& s2);
-        
+
         friend inline bool operator<=(const VString& s1, const VString& s2);
         friend inline bool operator<=(const VString& s1, const char* s2);
         friend inline bool operator<=(const char* s1, const VString& s2);
-    
+
         friend inline bool operator>=(const VString& s1, const VString& s2);
         friend inline bool operator>=(const VString& s1, const char* s2);
         friend inline bool operator>=(const char* s1, const VString& s2);
-    
+
         friend inline bool operator>(const VString& s1, const VString& s2);
         friend inline bool operator>(const VString& s1, const char* s2);
         friend inline bool operator>(const char* s1, const VString& s2);
-    
+
     private:
 
         void _setLength(int stringLength);
         Vs64 _parseSignedInteger() const;
         Vu64 _parseUnsignedInteger() const;
-    
+
         /** Asserts if any invariant is broken. */
         void _assertInvariant() const;
 
@@ -1030,8 +1029,8 @@ class VString
         Determines the length of a string if it were to be sprintf'd into
         a buffer. Used by VString to preflight buffers that will be used
         with sprintf.
-        @param    formatText    the format text
-        @param    args        the argument list
+        @param  formatText  the format text
+        @param  args        the argument list
         */
         static int _determineSprintfLength(const char* formatText, va_list args);
 #endif
@@ -1045,21 +1044,21 @@ class VString
         char*   mBuffer;        ///< The character buffer, containing the string plus a null terminator, and possibly unused bytes beyond that.
 
 #ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
-/*
-For implementations of vsnprintf that don't comply with IEEE 1003.1
-behavior when n=0 and s=NULL, we need a large-ish static
-buffer that is protected by a mutex that we can use instead. See
-VString::determineSprintfLength(). As of Code Vault 2.5, Windows is
-the only platform that needs this workaround.
-*/
-    #ifndef V_EFFICIENT_SPRINTF
+        /*
+        For implementations of vsnprintf that don't comply with IEEE 1003.1
+        behavior when n=0 and s=NULL, we need a large-ish static
+        buffer that is protected by a mutex that we can use instead. See
+        VString::determineSprintfLength(). As of Code Vault 2.5, Windows is
+        the only platform that needs this workaround.
+        */
+#ifndef V_EFFICIENT_SPRINTF
         static const int kSprintfBufferSize = 32768;    ///< Size of the static printf buffer used when efficient sprintf is not available.
         static char gSprintfBuffer[kSprintfBufferSize]; ///< A static buffer used when efficient sprintf is not available.
         static VMutex* gSprintfBufferMutex;             ///< Mutex to protect the static buffer from multiple threads.
-    #endif
+#endif
 #endif
 
-    };
+};
 
 inline bool operator==(const VString& lhs, const VString& rhs) { return ::strcmp(lhs, rhs) == 0; }      ///< Compares lhs and rhs for equality. @param    lhs    a string @param    rhs    a string @return true if lhs and rhs are equal according to strcmp()
 inline bool operator==(const VString& lhs, const char* rhs) { return ::strcmp(lhs, rhs) == 0; }         ///< Compares lhs and rhs for equality. @param    lhs    a string @param    rhs    a C string @return true if lhs and rhs are equal according to strcmp()

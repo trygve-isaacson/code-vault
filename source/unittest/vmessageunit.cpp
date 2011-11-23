@@ -11,56 +11,51 @@ http://www.bombaydigital.com/
 #include "vmessage.h"
 #include "vcompactingdeque.h"
 
-class TestMessage : public VMessage
-    {
+class TestMessage : public VMessage {
     public:
-    
+
         TestMessage();
         TestMessage(VMessageID messageID);
         virtual ~TestMessage();
 
         virtual void send(const VString& /*sessionLabel*/, VBinaryIOStream& /*out*/) {}
         virtual void receive(const VString& /*sessionLabel*/, VBinaryIOStream& /*in*/) {}
-        
+
         static int getNumMessagesConstructed() { return gNumMessagesConstructed; }
         static int getNumMessagesDestructed() { return gNumMessagesDestructed; }
         static void resetCounters() { gNumMessagesConstructed = 0; gNumMessagesDestructed = 0; }
 
     private:
-    
+
         static int gNextMessageUniqueID;
-        
+
         static int gNumMessagesConstructed;
         static int gNumMessagesDestructed;
-        
+
         int mUniqueID;
-    };
+};
 
 int TestMessage::gNextMessageUniqueID = 1;
 int TestMessage::gNumMessagesConstructed = 0;
 int TestMessage::gNumMessagesDestructed = 0;
 
 TestMessage::TestMessage() :
-VMessage(),
-mUniqueID(TestMessage::gNextMessageUniqueID++)
-    {
+    VMessage(),
+    mUniqueID(TestMessage::gNextMessageUniqueID++) {
     ++gNumMessagesConstructed;
-    }
+}
 
 TestMessage::TestMessage(VMessageID messageID) :
-VMessage(messageID),
-mUniqueID(TestMessage::gNextMessageUniqueID++)
-    {
+    VMessage(messageID),
+    mUniqueID(TestMessage::gNextMessageUniqueID++) {
     ++gNumMessagesConstructed;
-    }
+}
 
-TestMessage::~TestMessage()
-    {
+TestMessage::~TestMessage() {
     ++gNumMessagesDestructed;
-    }
+}
 
-class TestMessageFactory : public VMessageFactory
-    {
+class TestMessageFactory : public VMessageFactory {
     public:
 
         TestMessageFactory() {}
@@ -70,17 +65,15 @@ class TestMessageFactory : public VMessageFactory
         Must be implemented by subclass, to simply instantiate a
         new VMessage object of a concrete VMessage subclass type.
         @return    pointer to a new message object
-        */        
+        */
         virtual VMessage* instantiateNewMessage(VMessageID messageID) const { return new TestMessage(messageID); }
-    };
+};
 
 VMessageUnit::VMessageUnit(bool logOnSuccess, bool throwOnError) :
-VUnit("VMessageUnit", logOnSuccess, throwOnError)
-    {
-    }
+    VUnit("VMessageUnit", logOnSuccess, throwOnError) {
+}
 
-void VMessageUnit::run()
-    {
+void VMessageUnit::run() {
     // Basic tests of VCompactingDeque, which is used only by VMessageQueue at this time.
     const size_t HWM = 10;
     const size_t LWM = 2;
@@ -103,7 +96,7 @@ void VMessageUnit::run()
     VUNIT_ASSERT_EQUAL(q.mHighWaterMark, (size_t) 0); // <- not a requirement but verifies expected internal behavior; mHighWaterMark only updated on pop
     VUNIT_ASSERT_EQUAL(q.mHighWaterMarkRequired, HWM);
     VUNIT_ASSERT_EQUAL(q.mLowWaterMarkRequired, LWM);
-    
+
     q.pop_front();
     q.pop_front();
     q.pop_front();
@@ -113,7 +106,7 @@ void VMessageUnit::run()
     VUNIT_ASSERT_EQUAL(q.mHighWaterMark, (size_t) 12);
     VUNIT_ASSERT_EQUAL(q.mHighWaterMarkRequired, HWM);
     VUNIT_ASSERT_EQUAL(q.mLowWaterMarkRequired, LWM);
-    
+
     q.pop_back();
     q.pop_back();
     q.pop_back();
@@ -134,7 +127,7 @@ void VMessageUnit::run()
     VUNIT_ASSERT_EQUAL(q.mHighWaterMark, (size_t) 0); // <- verifies that we triggered compaction at LWM == size == 2
     VUNIT_ASSERT_EQUAL(q.mHighWaterMarkRequired, HWM);
     VUNIT_ASSERT_EQUAL(q.mLowWaterMarkRequired, LWM);
-    
+
     q.push_front(42);
     q.push_back(43);
     q.pop_back();
@@ -144,5 +137,5 @@ void VMessageUnit::run()
     VUNIT_ASSERT_EQUAL(q.mHighWaterMark, (size_t) 4); // <- verifies that pop_back updated mHighWaterMark to max before pop
     VUNIT_ASSERT_EQUAL(q.mHighWaterMarkRequired, HWM);
     VUNIT_ASSERT_EQUAL(q.mLowWaterMarkRequired, LWM);
-    }
+}
 

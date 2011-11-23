@@ -82,10 +82,9 @@ instance. These are typically design bugs that need to be re-thought.
 @see MShutdownHandler
 */
 template <class T>
-class VSingleton : public MShutdownHandler
-    {
+class VSingleton : public MShutdownHandler {
     public:
-    
+
         /** Specifies whether the VSingleton can be deleted. */
         enum HolderDeletionPolicy { kDeleteHolderAtShutdown, kDontDeleteHolderAtShutdown };
         /** Specifies whether a mutex is used to access the instance. */
@@ -94,7 +93,7 @@ class VSingleton : public MShutdownHandler
         enum ShutdownPolicy { kRegisterForShutdown, kDontRegisterForShutdown };
         /** Specifies whether the instance can be re-created after being previously destroyed. */
         enum ResurrectionPolicy { kDontAllowResurrection, kAllowResurrection };
-    
+
         /**
         Constructs the singleton holder.
         @param    holderDeletionPolicy  specifies whether the holder can be deleted
@@ -103,15 +102,15 @@ class VSingleton : public MShutdownHandler
         @param    resurrectionPolicy    specifies whether the instance can be re-created after being previously destroyed
         */
         VSingleton(HolderDeletionPolicy holderDeletionPolicy,
-                        ThreadSafetyPolicy threadSafetyPolicy,
-                        ShutdownPolicy shutdownPolicy,
-                        ResurrectionPolicy resurrectionPolicy=kDontAllowResurrection) :
-        MShutdownHandler(holderDeletionPolicy == kDeleteHolderAtShutdown),
-        mThreadSafe(threadSafetyPolicy == kThreadSafeAccess),
-        mWantShutdown(shutdownPolicy == kRegisterForShutdown),
-        mAllowResurrection(resurrectionPolicy == kAllowResurrection)
+                   ThreadSafetyPolicy threadSafetyPolicy,
+                   ShutdownPolicy shutdownPolicy,
+                   ResurrectionPolicy resurrectionPolicy = kDontAllowResurrection)
+            : MShutdownHandler(holderDeletionPolicy == kDeleteHolderAtShutdown)
+            , mThreadSafe(threadSafetyPolicy == kThreadSafeAccess)
+            , mWantShutdown(shutdownPolicy == kRegisterForShutdown)
+            , mAllowResurrection(resurrectionPolicy == kAllowResurrection)
             {
-            }
+        }
 
         ~VSingleton() {}
 
@@ -121,57 +120,55 @@ class VSingleton : public MShutdownHandler
         was previously deleted, a VException is thrown.
         @return the instance of T
         */
-        T* instance()
-            {
+        T* instance() {
             VMutexLocker locker(&gMutex, "VSingleton::instance()", mThreadSafe);
-            
-            if (gInstance == NULL)
-                {
-                if (gInstanceDeleted && !mAllowResurrection)
+
+            if (gInstance == NULL) {
+                if (gInstanceDeleted && !mAllowResurrection) {
                     throw VStackTraceException("VSingleton called with invalid attempt to get instance of deleted singleton.");
+                }
 
                 gInstance = new T();
 
-                if (mWantShutdown)
+                if (mWantShutdown) {
                     VShutdownRegistry::instance()->registerHandler(this);
                 }
-            
-            return gInstance;
             }
-        
+
+            return gInstance;
+        }
+
         /**
         Deletes the instance of T if it exists.
         */
-        void deleteInstance()
-            {
+        void deleteInstance() {
             VMutexLocker locker(&gMutex, "VSingleton::deleteInstance()", mThreadSafe);
             delete gInstance;
             gInstance = NULL;
             gInstanceDeleted = true;
-            }
-    
+        }
+
     protected:
 
         /**
         Implementation of MShutdownHandler interface.
         To shut down the singleton means to delete the instance.
         */
-        virtual void _shutdown()
-            {
+        virtual void _shutdown() {
             this->deleteInstance();
-            }
+        }
 
     private:
-    
-        static VMutex gMutex;           ///< Mutex to protect the instance if the thread safety policy says so.
-        static T* gInstance;            ///< Pointer to the instance; NULL until first call to instance().
-        static bool gInstanceDeleted;   ///< True if deleteInstance() has been called; used with resurrection policy.
-        
+
+        static VMutex   gMutex;             ///< Mutex to protect the instance if the thread safety policy says so.
+        static T*       gInstance;          ///< Pointer to the instance; NULL until first call to instance().
+        static bool     gInstanceDeleted;   ///< True if deleteInstance() has been called; used with resurrection policy.
+
         bool mThreadSafe;           ///< True if access to the instance is done via a mutex lock.
         bool mWantShutdown;         ///< True if the holder will register with the shutdown registry upon creating the instance.
         bool mAllowResurrection;    ///< True if the instance is allowed to be created after having been previously destroyed.
-        
-    };
+
+};
 
 template <class T> VMutex VSingleton<T>::gMutex("VSingleton::gMutex");
 template <class T> T* VSingleton<T>::gInstance = NULL;

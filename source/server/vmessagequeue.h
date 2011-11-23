@@ -34,10 +34,9 @@ decide how to manage de-queueing messages without chewing up the CPU
 needlessly (for UI apps this may mean a notification scheme so that the app's
 UI thread only looks at the queue when something gets posted to it).
 */
-class VMessageQueue
-    {
+class VMessageQueue {
     public:
-    
+
         /**
         Constructs the queue.
         */
@@ -46,7 +45,7 @@ class VMessageQueue
         Virtual destructor.
         */
         virtual ~VMessageQueue();
-        
+
         /**
         Posts a message to the back of the queue. May be safely called from
         any thread.
@@ -101,7 +100,7 @@ class VMessageQueue
         static VDuration getQueueingLagLoggingThreshold() { return gVMessageQueueLagLoggingThreshold; }
         static void setQueueingLagLoggingLevel(int logLevel) { gVMessageQueueLagLoggingLevel = logLevel; }
         static int getQueueingLagLoggingLevel() { return gVMessageQueueLagLoggingLevel; }
-    
+
     private:
 
         VCompactingDeque<VMessage*> mQueuedMessages;///< The actual queue of messages.
@@ -109,7 +108,7 @@ class VMessageQueue
         VMutex          mMessageQueueMutex;         ///< The mutex used to synchronize.
         VSemaphore      mMessageQueueSemaphore;     ///< The semaphore used to block/awaken.
         VInstant        mLastMessagePostTime;       ///< Time most recent message was posted.
-        
+
         static VDuration gVMessageQueueLagLoggingThreshold; ///< If >=0, queuing lags are logged.
         static int gVMessageQueueLagLoggingLevel;           ///< Log level at which queuing lags are logged.
 };

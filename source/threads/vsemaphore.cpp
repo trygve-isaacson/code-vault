@@ -11,27 +11,28 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vmutex.h"
 
-VSemaphore::VSemaphore() :
-mSemaphore()
+VSemaphore::VSemaphore()
+    : mSemaphore()
     {
-    if (! VSemaphore::semaphoreInit(&mSemaphore))
+
+    if (! VSemaphore::semaphoreInit(&mSemaphore)) {
         throw VStackTraceException("VSemaphore::VSemaphore unable to initialize semaphore.");
     }
+}
 
-VSemaphore::~VSemaphore()
-    {
+VSemaphore::~VSemaphore() {
     (void) VSemaphore::semaphoreDestroy(&mSemaphore);
-    }
+}
 
-void VSemaphore::wait(VMutex* ownedMutex, const VDuration& timeoutInterval)
-    {
-    if (! VSemaphore::semaphoreWait(&mSemaphore, ownedMutex->getMutex(), timeoutInterval))
+void VSemaphore::wait(VMutex* ownedMutex, const VDuration& timeoutInterval) {
+    if (! VSemaphore::semaphoreWait(&mSemaphore, ownedMutex->getMutex(), timeoutInterval)) {
         throw VStackTraceException("VSemaphore::wait unable to wait on semaphore.");
     }
+}
 
-void VSemaphore::signal()
-    {
-    if (! VSemaphore::semaphoreSignal(&mSemaphore))
+void VSemaphore::signal() {
+    if (! VSemaphore::semaphoreSignal(&mSemaphore)) {
         throw VStackTraceException("VSemaphore::signal unable to signal semaphore.");
     }
+}
 

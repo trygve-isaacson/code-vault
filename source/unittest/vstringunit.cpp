@@ -11,12 +11,10 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 
 VStringUnit::VStringUnit(bool logOnSuccess, bool throwOnError) :
-VUnit("VStringUnit", logOnSuccess, throwOnError)
-    {
-    }
+    VUnit("VStringUnit", logOnSuccess, throwOnError) {
+}
 
-void VStringUnit::run()
-    {
+void VStringUnit::run() {
     // Start by testing assignment and concatenation.
     VString    s("(A)");
 
@@ -141,20 +139,19 @@ void VStringUnit::run()
     const char* nullPointer = NULL;
     VString nullFormatted(nullPointer);
     this->test(nullFormatted, VString::EMPTY(), "null ctor formatting");
-    
+
     VString    formatted(VSTRING_ARGS("%s is %d years old", "Spot", 5));
     this->test(formatted, "Spot is 5 years old", "ctor formatting");
 
     formatted.format("%s is %d years old", "Rover", 3);
     this->test(formatted, "Rover is 3 years old", "sprintf");
-    
+
     formatted.format(nullPointer);
     this->test(formatted, VString::EMPTY(), "null formatting");
 #endif
 
     VString preflightFail("d'oh!");
-    try
-        {
+    try {
         this->logStatus("VStringUnit will now intentionally invoke a memory allocation failure in VString::preflight.");
         std::cout << "VStringUnit will now intentionally invoke a memory allocation failure in VString::preflight; this may result in console error output." << std::endl;
 #ifndef VPLATFORM_WIN
@@ -163,13 +160,11 @@ void VStringUnit::run()
         preflightFail.preflight(static_cast<int>(V_MAX_S32 - CONST_S64(1)));
 #endif
         this->test(false, "Intentional preflight allocation failure"); // If we get here, the test failed.
-        }
-    catch (const VException& ex)
-        {
+    } catch (const VException& ex) {
         this->logStatus(ex.what());
         this->test(true, "Intentional preflight allocation failure"); // If we get here, the test succeeded.
         this->test(preflightFail, "d'oh!", "No change during preflight allocation failure"); // verify that the string was not changed during the failure
-        }
+    }
 
     // Test copying out.
     char    testBuffer[256];    // Largest legal Pascal string buffer.
@@ -302,18 +297,26 @@ void VStringUnit::run()
     this->test(s, "ABC", "insert test 10");
 
     // What the heck, let's do those same tests with an unallocated string buffer. Should be the same since preflight will always allocate the required buffer.
-    { VString s2;
+    {
+        VString s2;
         s2.insert('x');
-        this->test(s2, "x", "insert test 11"); }
-    { VString s2;
+        this->test(s2, "x", "insert test 11");
+    }
+    {
+        VString s2;
         s2.insert("ABC");
-        this->test(s2, "ABC", "insert test 12"); }
-    { VString s2;
+        this->test(s2, "ABC", "insert test 12");
+    }
+    {
+        VString s2;
         s2.insert('x', 5);    // this will also test out-of-bounds handling (currently it forces in-bounds; I think an exception would be better)
-        this->test(s2, "x", "insert test 13"); }
-    { VString s2;
+        this->test(s2, "x", "insert test 13");
+    }
+    {
+        VString s2;
         s2.insert("ABC", 5);    // this will also test out-of-bounds handling (currently it forces in-bounds; I think an exception would be better)
-        this->test(s2, "ABC", "insert test 14"); }
+        this->test(s2, "ABC", "insert test 14");
+    }
 
     // We also need to verify that insert handles inserting from itself.
     s = "California";
@@ -392,7 +395,7 @@ void VStringUnit::run()
     s.set(20, 'e');
     s.set(21, 'u');
     this->test(s, "OnE , Two , REd , Bleu , ", "set() assignment");
-    
+
     // Case-insensitive replace() validation:
     int numOccurrences;
     s = "Send lawyers, guns, more LAWYERS, and money.";
@@ -609,25 +612,19 @@ void VStringUnit::run()
     rangeTester.postflight(0); // should succeed since no buffer is necessary
     this->test(true, "postflight 0 for null buffer");
 
-    try
-        {
+    try {
         rangeTester.postflight(-1); // should throw a VRangeException
         this->test(false, "postflight -1 exception for null buffer");
-        }
-    catch (const VRangeException& /*ex*/)
-        {
+    } catch (const VRangeException& /*ex*/) {
         this->test(true, "postflight -1 exception for null buffer");
-        }
+    }
 
-    try
-        {
+    try {
         rangeTester.postflight(1); // should throw a VRangeException
         this->test(false, "postflight >0 exception for null buffer");
-        }
-    catch (const VRangeException& /*ex*/)
-        {
+    } catch (const VRangeException& /*ex*/) {
         this->test(true, "postflight >0 exception for null buffer");
-        }
+    }
 
     // Note: Now that VString uses chunk-sized allocations, a test
     // of postflight cannot assume the exact buffer size created by
@@ -638,54 +635,45 @@ void VStringUnit::run()
     rangeTester.preflight(3); // just enough room for "abc"
     char* buffer = rangeTester.buffer();
     buffer[0] = 'a'; buffer[1] = 'b'; buffer[2] = 'c'; buffer[3] = 0;
-    try
-        {
+    try {
         rangeTester.postflight(200); // should throw a VRangeException if value is too large compared to preflight chunk size
         this->test(false, "postflight >=mBufferLength exception");
-        }
-    catch (const VRangeException& /*ex*/)
-        {
+    } catch (const VRangeException& /*ex*/) {
         this->test(true, "postflight >=mBufferLength exception");
-        }
+    }
 
     rangeTester.postflight(3); // should succeed
     this->test(true, "postflight mBufferLength-1");
 
     // These tests cover invalid input to preflight.
-    try
-        {
+    try {
         rangeTester.preflight(-1); // should throw a VRangeException
         this->test(false, "preflight <0 exception");
-        }
-    catch (const VRangeException& /*ex*/)
-        {
+    } catch (const VRangeException& /*ex*/) {
         this->test(true, "preflight <0 exception");
-        }
+    }
 
     // Test handling of null terminating character access.
     const VString nullCharString;
     VChar nullVChar;
-    
+
     nullVChar = nullCharString.at(0);
     this->test(nullVChar == VChar::NULL_CHAR(), "null VChar at(0)");
-    
+
     nullVChar = nullCharString[0];
     this->test(nullVChar == VChar::NULL_CHAR(), "null VChar [0]");
-    
+
     char nullChar = nullCharString[0];
     this->test(nullChar == (char) 0, "null char [0]");
-    
+
     VString nonConstNullCharString;
     // This one should go out of bounds and throw
-    try
-        {
+    try {
         nonConstNullCharString[0] = '!';
         this->test(false, "null char& [0] did not throw the correct exception");
-        }
-    catch (const VException& /*ex*/)
-        {
+    } catch (const VException& /*ex*/) {
         this->test(true, "null char& [0] threw the correct exception");
-        }
+    }
 
     VString parseTest;
 
@@ -718,82 +706,67 @@ void VStringUnit::run()
     this->test(parseTest.parseDouble() == 1.2, "parseDouble f");
 
     // Negative tests.
-    try
-        {
+    try {
         parseTest = "12.345";
         (void) parseTest.parseInt();
         this->test(false, "parseInt with illegal decimal");
-        }
-    catch (const VException& /*ex*/)
-        {
+    } catch (const VException& /*ex*/) {
         this->test(true, "parseInt with illegal decimal");
-        }
+    }
 
-    try
-        {
+    try {
         parseTest = "12-345";
         (void) parseTest.parseInt();
         this->test(false, "parseInt with out of order minus");
-        }
-    catch (const VException& /*ex*/)
-        {
+    } catch (const VException& /*ex*/) {
         this->test(true, "parseInt with out of order minus");
-        }
+    }
 
-    try
-        {
+    try {
         parseTest = "12+345";
         (void) parseTest.parseInt();
         this->test(false, "parseInt with out of order plus");
-        }
-    catch (const VException& /*ex*/)
-        {
+    } catch (const VException& /*ex*/) {
         this->test(true, "parseInt with out of order plus");
-        }
+    }
 
-    try
-        {
+    try {
         parseTest = "12q345";
         (void) parseTest.parseInt();
         this->test(false, "parseInt with illegal character");
-        }
-    catch (const VException& /*ex*/)
-        {
+    } catch (const VException& /*ex*/) {
         this->test(true, "parseInt with illegal character");
-        }
+    }
 
-    try
-        {
+    try {
         parseTest = "foo";
         (void) parseTest.parseDouble();
         this->test(false, "parseDouble with bad format a");
-        }
-    catch (const VException& /*ex*/)
-        {
+    } catch (const VException& /*ex*/) {
         this->test(true, "parseDouble with bad format a");
-        }
+    }
 
     // Bug fix validation: Take a substring of an empty string that has no buffer.
-    
+
     VString initializedEmptyString; // initialized to empty means it has no buffer
     VString shouldBecomeEmpty("1234567");
     initializedEmptyString.getSubstring(shouldBecomeEmpty, 0, 2);
     VUNIT_ASSERT_EQUAL_LABELED(shouldBecomeEmpty, VString::EMPTY(), "substring of an initialized empty string");
-    
+
     VString forcedToEmptyString("abcdef");
     forcedToEmptyString.truncateLength(0); // make it empty; old way keeps buffer, new way discards buffer
     shouldBecomeEmpty = "123456789";
     forcedToEmptyString.getSubstring(shouldBecomeEmpty, 0, 2);
     VUNIT_ASSERT_EQUAL_LABELED(shouldBecomeEmpty, VString::EMPTY(), "substring of a truncated to empty string");
-    
+
     initializedEmptyString.substringInPlace(0, 2);
     VUNIT_ASSERT_EQUAL_LABELED(initializedEmptyString, VString::EMPTY(), "substring-in-place of an initialized empty string");
-    
+
     forcedToEmptyString.substringInPlace(0, 2);
     VUNIT_ASSERT_EQUAL_LABELED(forcedToEmptyString, VString::EMPTY(), "substring-in-place of a truncated to empty string");
-    
+
     // New API: split()
-    
+
     VStringVector splitResult;
     VString splitInput("one,two,three,,fivee"); // extra ee used for trailing split test
 
@@ -837,9 +810,9 @@ void VStringUnit::run()
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[4], "",          "split test 4 [4]");
     VStringVector returnResult4 = splitInput.split('e', 0, false);
     this->test(returnResult4 == splitResult, "split return 4");
-    
+
     // Change to vararg constructor to allow "%" to avoid unwanted formatting.
     VString percentSign("%");
     this->test(percentSign == '%', "percent sign literal constructor");
-    }
+}
 

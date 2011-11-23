@@ -8,24 +8,21 @@ http://www.bombaydigital.com/
 
 #include "vsocketfactory.h"
 
-VSocketFactory::VSocketFactory()
-    {
-    }
+VSocketFactory::VSocketFactory() {
+}
 
-VSocket* VSocketFactory::createSocket(VSocketID socketID)
-    {
+VSocket* VSocketFactory::createSocket(VSocketID socketID) {
     VSocket* theSocket = new VSocket(socketID);
     theSocket->discoverHostAndPort();
     theSocket->setDefaultSockOpt();
-    
-    return theSocket;
-    }
 
-VSocket* VSocketFactory::createSocket(const VString& hostName, int portNumber)
-    {
+    return theSocket;
+}
+
+VSocket* VSocketFactory::createSocket(const VString& hostName, int portNumber) {
     VSocket* theSocket = new VSocket(hostName, portNumber);
     theSocket->connect();
 
     return theSocket;
-    }
+}
 

@@ -49,22 +49,22 @@ become required.
 #ifdef _MSC_VER
 #define VCOMPILER_MSVC
 
-    #if _MSC_VER < 1300
-        #define VCOMPILER_MSVC_6_CRIPPLED
-    #endif
+#if _MSC_VER < 1300
+#define VCOMPILER_MSVC_6_CRIPPLED
+#endif
 
-    // For the moment, turn off the new 8.0 library deprecation stuff.
-    // Later, we can change the code to conditionally use the newer
-    // function names, depending on the compiler version.
-    #if _MSC_VER >= 1400
-        #define _CRT_SECURE_NO_DEPRECATE
-    #endif
+// For the moment, turn off the new 8.0 library deprecation stuff.
+// Later, we can change the code to conditionally use the newer
+// function names, depending on the compiler version.
+#if _MSC_VER >= 1400
+#define _CRT_SECURE_NO_DEPRECATE
+#endif
 
 #endif
 
 #ifdef __MWERKS__
-    #define VCOMPILER_CODEWARRIOR
-    #define VLIBRARY_METROWERKS    /* might want to consider adding a check for using CW but not MSL */
+#define VCOMPILER_CODEWARRIOR
+#define VLIBRARY_METROWERKS    /* might want to consider adding a check for using CW but not MSL */
 #endif
 
 /*
@@ -81,24 +81,24 @@ Finally, proceed with everything else.
 // Boost seems to require being included first.
 // If using shared_ptr, must include before our vtypes.h redefines new.
 #ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
-    #define V_INCLUDE_BOOST_CORE
+#define V_INCLUDE_BOOST_CORE
 #endif
 #ifdef VAULT_BOOST_SHARED_PTR_INCLUDE
-    #define V_INCLUDE_BOOST_CORE
+#define V_INCLUDE_BOOST_CORE
 #endif
 #ifdef V_INCLUDE_BOOST_CORE
-    // Prevent spurious VC8 warnings about "deprecated"/"unsafe" boost std c++ lib use.
-    #if _MSC_VER >= 1400
-        #pragma warning(push)
-        #pragma warning(disable : 4996)
-    #endif
+// Prevent spurious VC8 warnings about "deprecated"/"unsafe" boost std c++ lib use.
+#if _MSC_VER >= 1400
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
 
-    #include <boost/format.hpp>
-    #include <boost/shared_ptr.hpp>
+#include <boost/format.hpp>
+#include <boost/shared_ptr.hpp>
 
-    #if _MSC_VER >= 1400
-        #pragma warning(pop)
-    #endif
+#if _MSC_VER >= 1400
+#pragma warning(pop)
+#endif
 #endif
 
 // Minimal includes needed to compile against the Vault header files.
@@ -109,8 +109,8 @@ Finally, proceed with everything else.
 #include <math.h>
 
 #ifdef VCOMPILER_CODEWARRIOR
-    #include <time.h>
-    #include <stdio.h>
+#include <time.h>
+#include <stdio.h>
 #endif
 
 // Platform-specific definitions for types, byte order, min/max/abs/fabs, etc.
@@ -126,16 +126,16 @@ Here are the workarounds we need to define if we're compiling under
 the crippled VC++ 6 compiler.
 */
 #ifdef VCOMPILER_MSVC_6_CRIPPLED
-    // 64-bit integer definitions are non-standard. Should be signed/unsigned long long.
-    typedef LONGLONG  Vs64;
-    typedef ULONGLONG Vu64;
-    // 64-bit constants definitions are non-standard. Should be LL and ULL.
-    #define CONST_S64(s) s##i64
-    #define CONST_U64(s) s##i64
-    // Static constants are not supported, so this is a way to create them.
-    #define CLASS_CONST(type, name, init) enum { name = init }
-    // Scoped variables do not work. This works around that.
-    #define for if(false);else for
+// 64-bit integer definitions are non-standard. Should be signed/unsigned long long.
+typedef LONGLONG  Vs64;
+typedef ULONGLONG Vu64;
+// 64-bit constants definitions are non-standard. Should be LL and ULL.
+#define CONST_S64(s) s##i64
+#define CONST_U64(s) s##i64
+// Static constants are not supported, so this is a way to create them.
+#define CLASS_CONST(type, name, init) enum { name = init }
+// Scoped variables do not work. This works around that.
+#define for if(false);else for
 #endif
 
 /*
@@ -152,24 +152,24 @@ so our convenience macros V_MIN, V_MAX, and V_ABS need to be implemented as
 old-fashioned C preprocessor macros rather than standard C++ library inlines.
 */
 #ifdef VCOMPILER_MSVC
-    #if _MSC_VER < 1600 // VC++ 10.0 (2010) (_MSC_VER = 1600) has std::min/max/abs/fabs available; not sure about 1400/1500.
-        #define DEFINE_V_MINMAXABS 1
-    #endif
+#if _MSC_VER < 1600 // VC++ 10.0 (2010) (_MSC_VER = 1600) has std::min/max/abs/fabs available; not sure about 1400/1500.
+#define DEFINE_V_MINMAXABS 1
+#endif
 #endif
 
 #ifdef DEFINE_V_MINMAXABS
 
-    #define V_MIN(a, b) ((a) > (b) ? (b) : (a)) ///< Macro for getting min of compatible values when standard functions / templates are not available.
-    #define V_MAX(a, b) ((a) > (b) ? (a) : (b)) ///< Macro for getting max of compatible values when standard functions / templates are not available.
-    #define V_ABS(a) ((a) < 0 ? (-(a)) : (a))   ///< Macro for getting abs of an integer value when standard functions / templates are not available.
-    #define V_FABS(a) ((a) < 0 ? (-(a)) : (a))  ///< Macro for getting abs of a floating point value when standard functions / templates are not available.
+#define V_MIN(a, b) ((a) > (b) ? (b) : (a)) ///< Macro for getting min of compatible values when standard functions / templates are not available.
+#define V_MAX(a, b) ((a) > (b) ? (a) : (b)) ///< Macro for getting max of compatible values when standard functions / templates are not available.
+#define V_ABS(a) ((a) < 0 ? (-(a)) : (a))   ///< Macro for getting abs of an integer value when standard functions / templates are not available.
+#define V_FABS(a) ((a) < 0 ? (-(a)) : (a))  ///< Macro for getting abs of a floating point value when standard functions / templates are not available.
 
 #else
 
-    #define V_MIN(a, b) std::min(a, b) ///< Macro for getting min of compatible values using standard function template.
-    #define V_MAX(a, b) std::max(a, b) ///< Macro for getting max of compatible values using standard function template.
-    #define V_ABS(a) std::abs(a)       ///< Macro for getting abs of an integer value using standard function template.
-    #define V_FABS(a) std::fabs(a)     ///< Macro for getting abs of a floating point value using standard function template.
+#define V_MIN(a, b) std::min(a, b) ///< Macro for getting min of compatible values using standard function template.
+#define V_MAX(a, b) std::max(a, b) ///< Macro for getting max of compatible values using standard function template.
+#define V_ABS(a) std::abs(a)       ///< Macro for getting abs of an integer value using standard function template.
+#define V_FABS(a) std::fabs(a)     ///< Macro for getting abs of a floating point value using standard function template.
 
 #endif /* DEFINE_V_MINMAXABS */
 
@@ -179,14 +179,14 @@ old-fashioned C preprocessor macros rather than standard C++ library inlines.
 
 // Suppress incorrect warnings from Level 4 VC++ warning level. (/W4 option)
 #ifdef VCOMPILER_MSVC
-    // VLOGGER_xxx macros properly use "do ... while(false)" but this emits warning 4127.
-    #pragma warning(disable: 4127)
+// VLOGGER_xxx macros properly use "do ... while(false)" but this emits warning 4127.
+#pragma warning(disable: 4127)
 #endif
 
 #ifdef VCOMPILER_MSVC
-    #ifdef VAULT_WIN32_STRUCTURED_EXCEPTION_TRANSLATION_SUPPORT
-        #define V_TRANSLATE_WIN32_STRUCTURED_EXCEPTIONS // This is the private symbol we actually used. Depends on user setting, platform, and compiler.
-    #endif
+#ifdef VAULT_WIN32_STRUCTURED_EXCEPTION_TRANSLATION_SUPPORT
+#define V_TRANSLATE_WIN32_STRUCTURED_EXCEPTIONS // This is the private symbol we actually used. Depends on user setting, platform, and compiler.
+#endif
 #endif
 
 #endif /* vtypes_platform_h */

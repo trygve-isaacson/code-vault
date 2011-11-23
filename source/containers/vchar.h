@@ -31,15 +31,14 @@ replacement for using char values directly in source code.
 @see    VString
 */
 
-class VChar
-    {
+class VChar {
     public:
-    
+
         /**
         Returns a reference to the read-only null character value.
         */
         static const VChar& NULL_CHAR();
-    
+
         /**
         Constructs a character with value zero.
         */
@@ -66,7 +65,7 @@ class VChar
         @param    i    the integer value of the char
         */
         VChar& operator=(int i);
-        
+
         /**
         Returns true if the character is a lower case character.
         @return true if the character is a lower case character
@@ -120,7 +119,7 @@ class VChar
         @return    the char value
         */
         operator char() const;
-        
+
         // These utilities only make sense for simple ASCII parsing purposes;
         // they only look at values in the base ASCII range below 128.
         bool isAlpha() const;           ///< Returns true if the character is A-Z or a-z.
@@ -128,7 +127,7 @@ class VChar
         bool isAlphaNumeric() const;    ///< Returns true if the character is alpha or numeric.
         bool isWhitespace() const;      ///< Returns true if the character is non-printing.
         bool isHexadecimal() const;     ///< Returns true if the character is 0-9, A-F, or a-f.
-        
+
         static bool equalsIgnoreCase(const VChar& c1, const VChar& c2); ///< Returns true if two characters are equal regardless of case.
         static bool equalsIgnoreCase(const VChar& c1, char c2);         ///< Returns true if two characters are equal regardless of case.
         static bool equalsIgnoreCase(char c1, const VChar& c2);         ///< Returns true if two characters are equal regardless of case.
@@ -139,7 +138,7 @@ class VChar
         friend inline bool operator==(const VChar& lhs, char rhs);
         friend inline bool operator==(char lhs, const VChar& rhs);
 #endif
-    
+
         friend inline bool operator!=(const VChar& lhs, const VChar& rhs);
 #ifndef VPLATFORM_DISALLOW_VCHAR_OPERATOR_EQUALS_CHAR
         friend inline bool operator!=(const VChar& lhs, char rhs);
@@ -149,23 +148,23 @@ class VChar
         friend inline bool operator<(const VChar& lhs, const VChar& rhs);
         friend inline bool operator<(const VChar& lhs, char rhs);
         friend inline bool operator<(char lhs, const VChar& rhs);
-        
+
         friend inline bool operator<=(const VChar& lhs, const VChar& rhs);
         friend inline bool operator<=(const VChar& lhs, char rhs);
         friend inline bool operator<=(char lhs, const VChar& rhs);
-    
+
         friend inline bool operator>=(const VChar& lhs, const VChar& rhs);
         friend inline bool operator>=(const VChar& lhs, char rhs);
         friend inline bool operator>=(char lhs, const VChar& rhs);
-    
+
         friend inline bool operator>(const VChar& lhs, const VChar& rhs);
         friend inline bool operator>(const VChar& lhs, char rhs);
         friend inline bool operator>(char lhs, const VChar& rhs);
-    
+
     private:
-    
+
         char mValue;    ///< The character value.
-    };
+};
 
 inline bool operator==(const VChar& lhs, const VChar& rhs) { return lhs.mValue == rhs.mValue; } ///< Compares lhs and rhs. @param lhs a VChar @param rhs a VChar @return true if lhs == rhs
 #ifndef VPLATFORM_DISALLOW_VCHAR_OPERATOR_EQUALS_CHAR

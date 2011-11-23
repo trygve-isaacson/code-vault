@@ -189,7 +189,7 @@ typedef Vs64                VFSize;     ///< Container for file or stream sizes.
 typedef size_t              VSizeType;  ///< loop index variable of correct type for STL iteration
 
 #ifndef NULL
-    #define NULL 0  ///< Definition of NULL in compiler environments that don't already define it.
+#define NULL 0  ///< Definition of NULL in compiler environments that don't already define it.
 #endif
 
 /*
@@ -207,8 +207,8 @@ we must use:
 CONST_U64(12345678901234567890) or CONST_U64(0x0123456789ABCDEF)
 */
 #ifndef VCOMPILER_MSVC_6_CRIPPLED /* MSVC++ 6 hacks for this are defined in Win32 platform header */
-    #define CONST_S64(s) /*lint -save -e961*/ s##LL    /*lint -restore*/ ///< Macro to declare a Vs64 constant in a way that works even in VC++ 6.
-    #define CONST_U64(s) s##ULL    ///< Macro to declare a Vu64 constant in a way that works even in VC++ 6.
+#define CONST_S64(s) /*lint -save -e961*/ s##LL    /*lint -restore*/ ///< Macro to declare a Vs64 constant in a way that works even in VC++ 6.
+#define CONST_U64(s) s##ULL    ///< Macro to declare a Vu64 constant in a way that works even in VC++ 6.
 #endif
 
 // Limit constants.
@@ -235,8 +235,8 @@ This function always swaps the byte order of the value, regardless of
 whether native order matches network order. Its purpose is to perform
 a swap. The caller must have already decided that a swap is desirable.
 
-@param    a16BitValue    the original value
-@return    the swapped value
+@param  a16BitValue the original value
+@return the swapped value
 */
 extern Vu16 VbyteSwap16(Vu16 a16BitValue);
 
@@ -248,8 +248,8 @@ This function always swaps the byte order of the value, regardless of
 whether native order matches network order. Its purpose is to perform
 a swap. The caller must have already decided that a swap is desirable.
 
-@param    a32BitValue    the original value
-@return    the swapped value
+@param  a32BitValue the original value
+@return the swapped value
 */
 extern Vu32 VbyteSwap32(Vu32 a32BitValue);
 
@@ -261,8 +261,8 @@ This function always swaps the byte order of the value, regardless of
 whether native order matches network order. Its purpose is to perform
 a swap. The caller must have already decided that a swap is desirable.
 
-@param    a64BitValue    the original value
-@return    the swapped value
+@param  a64BitValue the original value
+@return the swapped value
 */
 extern Vu64 VbyteSwap64(Vu64 a64BitValue);
 
@@ -274,8 +274,8 @@ This function always swaps the byte order of the value, regardless of
 whether native order matches network order. Its purpose is to perform
 a swap. The caller must have already decided that a swap is desirable.
 
-@param    a32BitValue    the original value
-@return    the swapped value
+@param  a32BitValue the original value
+@return the swapped value
 */
 extern VFloat VbyteSwapFloat(VFloat a32BitValue);
 
@@ -287,8 +287,8 @@ This function always swaps the byte order of the value, regardless of
 whether native order matches network order. Its purpose is to perform
 a swap. The caller must have already decided that a swap is desirable.
 
-@param    a64BitValue    the original value
-@return    the swapped value
+@param  a64BitValue the original value
+@return the swapped value
 */
 extern VDouble VbyteSwapDouble(VDouble a64BitValue);
 
@@ -309,7 +309,9 @@ extern Vs64 VgetMemoryUsage();
 Wrapper for memcpy using more precise and convenient types used within
 Vault classes.
 */
-inline void Vmemcpy(Vu8* to, Vu8* from, int length) { ::memcpy(to, (char*) from, (VSizeType) length); }
+inline void Vmemcpy(Vu8* to, Vu8* from, int length) {
+    ::memcpy(to, (char*) from, (VSizeType) length);
+}
 
 /**
 Returns a pointer to a const static containing this platform's native
@@ -317,8 +319,7 @@ text file line ending bytes, and also sets the supplied byte count so the
 caller (@see VTextIOStream) does not have the scan the string to determine
 the length. The caller will use this information to write line endings
 to text streams when asked to use the native form.
-@param  numBytes to be filled in, will be the number of bytes of line
-                ending chars
+@param  numBytes    to be filled in, will be the number of bytes of line ending chars
 @return a pointer to the line ending string
 */
 extern const Vu8* VgetNativeLineEnding(int& numBytes);
@@ -330,13 +331,13 @@ contained objects held in a vector. The vector must hold pointers to
 objects. See VLogger::shutdown for an example use.
 */
 template <class T>
-void vectorDeleteAll(std::vector<T*>& v)
-    {
-    for (typename std::vector<T*>::iterator i = v.begin(); i != v.end(); ++i)
-        delete (*i);
+void vectorDeleteAll(std::vector<T*>& v) {
+    for (typename std::vector<T*>::iterator i = v.begin(); i != v.end(); ++i) {
+        delete(*i);
+    }
 
     v.clear();
-    }
+}
 
 /**
 A helper template function that both clears a map and deletes each
@@ -351,13 +352,13 @@ object is deleted twice). The keys are not deleted (presumed to not be pointers)
     called on each entry's v pointer.
 */
 template <class KEY_TYPE, class VALUE_TYPE>
-void mapDeleteAllValues(std::map<KEY_TYPE,VALUE_TYPE*>& m)
-    {
-    for (typename std::map<KEY_TYPE,VALUE_TYPE*>::const_iterator i = m.begin(); i != m.end(); ++i)
-        delete (*i).second;
+void mapDeleteAllValues(std::map<KEY_TYPE, VALUE_TYPE*>& m) {
+    for (typename std::map<KEY_TYPE, VALUE_TYPE*>::const_iterator i = m.begin(); i != m.end(); ++i) {
+        delete(*i).second;
+    }
 
     m.clear();
-    }
+}
 
 /**
 A helper template function that both erases a map entry for a value, and also
@@ -374,112 +375,110 @@ not be pointers).
     on the value pointer in the entry if found.
 */
 template <class KEY_TYPE, class VALUE_TYPE>
-void mapDeleteOneValue(std::map<KEY_TYPE,VALUE_TYPE*>& m, KEY_TYPE key)
-    {
-    typename std::map<KEY_TYPE,VALUE_TYPE*>::iterator position = m.find(key);
-    if (position != m.end())
-        {
+void mapDeleteOneValue(std::map<KEY_TYPE, VALUE_TYPE*>& m, KEY_TYPE key) {
+    typename std::map<KEY_TYPE, VALUE_TYPE*>::iterator position = m.find(key);
+    if (position != m.end()) {
         delete position->second; // Delete heap object pointed to by the value.
         (void) m.erase(position); // Remove the dead entry from the map.
-        }
     }
+}
 
 } // namespace vault
 
 // The vtypes_platform.h header decided whether VBYTESWAP_NEEDED is defined.
 #ifdef VBYTESWAP_NEEDED
 
-    // Signed 16-bit actual swapping:
-    #define V_BYTESWAP_HTON_S16_GET(x)      vault::VbyteSwap16((Vu16) x)
-    #define V_BYTESWAP_NTOH_S16_GET(x)      vault::VbyteSwap16((Vu16) x)
-    #define V_BYTESWAP_HTON_S16_IN_PLACE(x) ((x) = (vault::VbyteSwap16((Vu16) x)))
-    #define V_BYTESWAP_NTOH_S16_IN_PLACE(x) ((x) = (vault::VbyteSwap16((Vu16) x)))
-    // Unsigned 16-bit actual swapping:
-    #define V_BYTESWAP_HTON_U16_GET(x)      vault::VbyteSwap16(x)
-    #define V_BYTESWAP_NTOH_U16_GET(x)      vault::VbyteSwap16(x)
-    #define V_BYTESWAP_HTON_U16_IN_PLACE(x) ((x) = (vault::VbyteSwap16(x)))
-    #define V_BYTESWAP_NTOH_U16_IN_PLACE(x) ((x) = (vault::VbyteSwap16(x)))
+// Signed 16-bit actual swapping:
+#define V_BYTESWAP_HTON_S16_GET(x)      vault::VbyteSwap16((Vu16) x)
+#define V_BYTESWAP_NTOH_S16_GET(x)      vault::VbyteSwap16((Vu16) x)
+#define V_BYTESWAP_HTON_S16_IN_PLACE(x) ((x) = (vault::VbyteSwap16((Vu16) x)))
+#define V_BYTESWAP_NTOH_S16_IN_PLACE(x) ((x) = (vault::VbyteSwap16((Vu16) x)))
+// Unsigned 16-bit actual swapping:
+#define V_BYTESWAP_HTON_U16_GET(x)      vault::VbyteSwap16(x)
+#define V_BYTESWAP_NTOH_U16_GET(x)      vault::VbyteSwap16(x)
+#define V_BYTESWAP_HTON_U16_IN_PLACE(x) ((x) = (vault::VbyteSwap16(x)))
+#define V_BYTESWAP_NTOH_U16_IN_PLACE(x) ((x) = (vault::VbyteSwap16(x)))
 
-    // Signed 32-bit actual swapping:
-    #define V_BYTESWAP_HTON_S32_GET(x)      vault::VbyteSwap32((Vu32) x)
-    #define V_BYTESWAP_NTOH_S32_GET(x)      vault::VbyteSwap32((Vu32) x)
-    #define V_BYTESWAP_HTON_S32_IN_PLACE(x) ((x) = (vault::VbyteSwap32((Vu32) x)))
-    #define V_BYTESWAP_NTOH_S32_IN_PLACE(x) ((x) = (vault::VbyteSwap32((Vu32) x)))
-    // Unsigned 32-bit actual swapping:
-    #define V_BYTESWAP_HTON_U32_GET(x)      vault::VbyteSwap32(x)
-    #define V_BYTESWAP_NTOH_U32_GET(x)      vault::VbyteSwap32(x)
-    #define V_BYTESWAP_HTON_U32_IN_PLACE(x) ((x) = (vault::VbyteSwap32(x)))
-    #define V_BYTESWAP_NTOH_U32_IN_PLACE(x) ((x) = (vault::VbyteSwap32(x)))
+// Signed 32-bit actual swapping:
+#define V_BYTESWAP_HTON_S32_GET(x)      vault::VbyteSwap32((Vu32) x)
+#define V_BYTESWAP_NTOH_S32_GET(x)      vault::VbyteSwap32((Vu32) x)
+#define V_BYTESWAP_HTON_S32_IN_PLACE(x) ((x) = (vault::VbyteSwap32((Vu32) x)))
+#define V_BYTESWAP_NTOH_S32_IN_PLACE(x) ((x) = (vault::VbyteSwap32((Vu32) x)))
+// Unsigned 32-bit actual swapping:
+#define V_BYTESWAP_HTON_U32_GET(x)      vault::VbyteSwap32(x)
+#define V_BYTESWAP_NTOH_U32_GET(x)      vault::VbyteSwap32(x)
+#define V_BYTESWAP_HTON_U32_IN_PLACE(x) ((x) = (vault::VbyteSwap32(x)))
+#define V_BYTESWAP_NTOH_U32_IN_PLACE(x) ((x) = (vault::VbyteSwap32(x)))
 
-    // Signed 64-bit actual swapping:
-    #define V_BYTESWAP_HTON_S64_GET(x)      vault::VbyteSwap64((Vu64) x)
-    #define V_BYTESWAP_NTOH_S64_GET(x)      vault::VbyteSwap64((Vu64) x)
-    #define V_BYTESWAP_HTON_S64_IN_PLACE(x) ((x) = (vault::VbyteSwap64((Vu64) x)))
-    #define V_BYTESWAP_NTOH_S64_IN_PLACE(x) ((x) = (vault::VbyteSwap64((Vu64) x)))
-    // Unsigned 64-bit actual swapping:
-    #define V_BYTESWAP_HTON_U64_GET(x)      vault::VbyteSwap64(x)
-    #define V_BYTESWAP_NTOH_U64_GET(x)      vault::VbyteSwap64(x)
-    #define V_BYTESWAP_HTON_U64_IN_PLACE(x) ((x) = (vault::VbyteSwap64(x)))
-    #define V_BYTESWAP_NTOH_U64_IN_PLACE(x) ((x) = (vault::VbyteSwap64(x)))
+// Signed 64-bit actual swapping:
+#define V_BYTESWAP_HTON_S64_GET(x)      vault::VbyteSwap64((Vu64) x)
+#define V_BYTESWAP_NTOH_S64_GET(x)      vault::VbyteSwap64((Vu64) x)
+#define V_BYTESWAP_HTON_S64_IN_PLACE(x) ((x) = (vault::VbyteSwap64((Vu64) x)))
+#define V_BYTESWAP_NTOH_S64_IN_PLACE(x) ((x) = (vault::VbyteSwap64((Vu64) x)))
+// Unsigned 64-bit actual swapping:
+#define V_BYTESWAP_HTON_U64_GET(x)      vault::VbyteSwap64(x)
+#define V_BYTESWAP_NTOH_U64_GET(x)      vault::VbyteSwap64(x)
+#define V_BYTESWAP_HTON_U64_IN_PLACE(x) ((x) = (vault::VbyteSwap64(x)))
+#define V_BYTESWAP_NTOH_U64_IN_PLACE(x) ((x) = (vault::VbyteSwap64(x)))
 
-    // VFloat (float) actual swapping:
-    #define V_BYTESWAP_HTON_F_GET(x)        vault::VbyteSwapFloat(x)
-    #define V_BYTESWAP_NTOH_F_GET(x)        vault::VbyteSwapFloat(x)
-    #define V_BYTESWAP_HTON_F_IN_PLACE(x)   ((x) = (vault::VbyteSwapFloat(x)))
-    #define V_BYTESWAP_NTOH_F_IN_PLACE(x)   ((x) = (vault::VbyteSwapFloat(x)))
+// VFloat (float) actual swapping:
+#define V_BYTESWAP_HTON_F_GET(x)        vault::VbyteSwapFloat(x)
+#define V_BYTESWAP_NTOH_F_GET(x)        vault::VbyteSwapFloat(x)
+#define V_BYTESWAP_HTON_F_IN_PLACE(x)   ((x) = (vault::VbyteSwapFloat(x)))
+#define V_BYTESWAP_NTOH_F_IN_PLACE(x)   ((x) = (vault::VbyteSwapFloat(x)))
 
-    // VDouble (double) actual swapping:
-    #define V_BYTESWAP_HTON_D_GET(x)        vault::VbyteSwapDouble(x)
-    #define V_BYTESWAP_NTOH_D_GET(x)        vault::VbyteSwapDouble(x)
-    #define V_BYTESWAP_HTON_D_IN_PLACE(x)   ((x) = (vault::VbyteSwapDouble(x)))
-    #define V_BYTESWAP_NTOH_D_IN_PLACE(x)   ((x) = (vault::VbyteSwapDouble(x)))
+// VDouble (double) actual swapping:
+#define V_BYTESWAP_HTON_D_GET(x)        vault::VbyteSwapDouble(x)
+#define V_BYTESWAP_NTOH_D_GET(x)        vault::VbyteSwapDouble(x)
+#define V_BYTESWAP_HTON_D_IN_PLACE(x)   ((x) = (vault::VbyteSwapDouble(x)))
+#define V_BYTESWAP_NTOH_D_IN_PLACE(x)   ((x) = (vault::VbyteSwapDouble(x)))
 
 #else
 
-    // Signed 16-bit no-op non-swapping:
-    #define V_BYTESWAP_HTON_S16_GET(x)      (x)
-    #define V_BYTESWAP_NTOH_S16_GET(x)      (x)
-    #define V_BYTESWAP_HTON_S16_IN_PLACE(x) ((void)0)
-    #define V_BYTESWAP_NTOH_S16_IN_PLACE(x) ((void)0)
-    // Unsigned 16-bit no-op non-swapping:
-    #define V_BYTESWAP_HTON_U16_GET(x)      (x)
-    #define V_BYTESWAP_NTOH_U16_GET(x)      (x)
-    #define V_BYTESWAP_HTON_U16_IN_PLACE(x) ((void)0)
-    #define V_BYTESWAP_NTOH_U16_IN_PLACE(x) ((void)0)
+// Signed 16-bit no-op non-swapping:
+#define V_BYTESWAP_HTON_S16_GET(x)      (x)
+#define V_BYTESWAP_NTOH_S16_GET(x)      (x)
+#define V_BYTESWAP_HTON_S16_IN_PLACE(x) ((void)0)
+#define V_BYTESWAP_NTOH_S16_IN_PLACE(x) ((void)0)
+// Unsigned 16-bit no-op non-swapping:
+#define V_BYTESWAP_HTON_U16_GET(x)      (x)
+#define V_BYTESWAP_NTOH_U16_GET(x)      (x)
+#define V_BYTESWAP_HTON_U16_IN_PLACE(x) ((void)0)
+#define V_BYTESWAP_NTOH_U16_IN_PLACE(x) ((void)0)
 
-    // Signed 32-bit no-op non-swapping:
-    #define V_BYTESWAP_HTON_S32_GET(x)      (x)
-    #define V_BYTESWAP_NTOH_S32_GET(x)      (x)
-    #define V_BYTESWAP_HTON_S32_IN_PLACE(x) ((void)0)
-    #define V_BYTESWAP_NTOH_S32_IN_PLACE(x) ((void)0)
-    // Unsigned 32-bit no-op non-swapping:
-    #define V_BYTESWAP_HTON_U32_GET(x)      (x)
-    #define V_BYTESWAP_NTOH_U32_GET(x)      (x)
-    #define V_BYTESWAP_HTON_U32_IN_PLACE(x) ((void)0)
-    #define V_BYTESWAP_NTOH_U32_IN_PLACE(x) ((void)0)
+// Signed 32-bit no-op non-swapping:
+#define V_BYTESWAP_HTON_S32_GET(x)      (x)
+#define V_BYTESWAP_NTOH_S32_GET(x)      (x)
+#define V_BYTESWAP_HTON_S32_IN_PLACE(x) ((void)0)
+#define V_BYTESWAP_NTOH_S32_IN_PLACE(x) ((void)0)
+// Unsigned 32-bit no-op non-swapping:
+#define V_BYTESWAP_HTON_U32_GET(x)      (x)
+#define V_BYTESWAP_NTOH_U32_GET(x)      (x)
+#define V_BYTESWAP_HTON_U32_IN_PLACE(x) ((void)0)
+#define V_BYTESWAP_NTOH_U32_IN_PLACE(x) ((void)0)
 
-    // Signed 64-bit no-op non-swapping:
-    #define V_BYTESWAP_HTON_S64_GET(x)      (x)
-    #define V_BYTESWAP_NTOH_S64_GET(x)      (x)
-    #define V_BYTESWAP_HTON_S64_IN_PLACE(x) ((void)0)
-    #define V_BYTESWAP_NTOH_S64_IN_PLACE(x) ((void)0)
-    // Unsigned 64-bit no-op non-swapping:
-    #define V_BYTESWAP_HTON_U64_GET(x)      (x)
-    #define V_BYTESWAP_NTOH_U64_GET(x)      (x)
-    #define V_BYTESWAP_HTON_U64_IN_PLACE(x) ((void)0)
-    #define V_BYTESWAP_NTOH_U64_IN_PLACE(x) ((void)0)
+// Signed 64-bit no-op non-swapping:
+#define V_BYTESWAP_HTON_S64_GET(x)      (x)
+#define V_BYTESWAP_NTOH_S64_GET(x)      (x)
+#define V_BYTESWAP_HTON_S64_IN_PLACE(x) ((void)0)
+#define V_BYTESWAP_NTOH_S64_IN_PLACE(x) ((void)0)
+// Unsigned 64-bit no-op non-swapping:
+#define V_BYTESWAP_HTON_U64_GET(x)      (x)
+#define V_BYTESWAP_NTOH_U64_GET(x)      (x)
+#define V_BYTESWAP_HTON_U64_IN_PLACE(x) ((void)0)
+#define V_BYTESWAP_NTOH_U64_IN_PLACE(x) ((void)0)
 
-    // VFloat (float) no-op non-swapping:
-    #define V_BYTESWAP_HTON_F_GET(x)        (x)
-    #define V_BYTESWAP_NTOH_F_GET(x)        (x)
-    #define V_BYTESWAP_HTON_F_IN_PLACE(x)   ((void)0)
-    #define V_BYTESWAP_NTOH_F_IN_PLACE(x)   ((void)0)
+// VFloat (float) no-op non-swapping:
+#define V_BYTESWAP_HTON_F_GET(x)        (x)
+#define V_BYTESWAP_NTOH_F_GET(x)        (x)
+#define V_BYTESWAP_HTON_F_IN_PLACE(x)   ((void)0)
+#define V_BYTESWAP_NTOH_F_IN_PLACE(x)   ((void)0)
 
-    // VDouble (double) no-op non-swapping:
-    #define V_BYTESWAP_HTON_D_GET(x)        (x)
-    #define V_BYTESWAP_NTOH_D_GET(x)        (x)
-    #define V_BYTESWAP_HTON_D_IN_PLACE(x)   ((void)0)
-    #define V_BYTESWAP_NTOH_D_IN_PLACE(x)   ((void)0)
+// VDouble (double) no-op non-swapping:
+#define V_BYTESWAP_HTON_D_GET(x)        (x)
+#define V_BYTESWAP_NTOH_D_GET(x)        (x)
+#define V_BYTESWAP_HTON_D_IN_PLACE(x)   ((void)0)
+#define V_BYTESWAP_NTOH_D_IN_PLACE(x)   ((void)0)
 
 #endif
 
@@ -489,7 +488,7 @@ for defining static class constants such as "const static int kFoo = 1;"
 and doing something different in that compiler.
 */
 #ifndef VCOMPILER_MSVC_6_CRIPPLED /* MSVC++ 6 hacks for this are defined in Win32 platform header */
-    #define CLASS_CONST(type, name, init) static const type name = (init)    ///< Macro to declare a class static constant in a way that works even in VC++ 6.
+#define CLASS_CONST(type, name, init) static const type name = (init)    ///< Macro to declare a class static constant in a way that works even in VC++ 6.
 #endif
 
 /** @} */
@@ -523,36 +522,36 @@ The following values for classname are implemented:
 
 // Do the VASSERT macros do anything if called?
 #ifndef VAULT_ASSERTIONS_ENABLED
-    #define V_ASSERT_ACTIVE
+#define V_ASSERT_ACTIVE
 #else
-    #if VAULT_ASSERTIONS_ENABLED == 0
-        // don't define V_ASSERT_ACTIVE, thereby disabling the VASSERT macros
-    #else
-        #define V_ASSERT_ACTIVE
-    #endif
+#if VAULT_ASSERTIONS_ENABLED == 0
+// don't define V_ASSERT_ACTIVE, thereby disabling the VASSERT macros
+#else
+#define V_ASSERT_ACTIVE
+#endif
 #endif
 
 // Does a "failed assertion" (e.g., VASSERT(false)) throws a VStackTraceException in addition to logging an error?
 // Turned on by default here; define to 0 in vconfigure.h to turn it off.
 #ifndef VAULT_ASSERTIONS_THROW
-    #define V_ASSERT_THROWS_EXCEPTION
+#define V_ASSERT_THROWS_EXCEPTION
 #else
-    #if VAULT_ASSERTIONS_THROW == 0
-        // don't define V_ASSERT_THROWS_EXCEPTION, thereby disabling throwing upon assertion failure
-    #else
-        #define V_ASSERT_THROWS_EXCEPTION
-    #endif
+#if VAULT_ASSERTIONS_THROW == 0
+// don't define V_ASSERT_THROWS_EXCEPTION, thereby disabling throwing upon assertion failure
+#else
+#define V_ASSERT_THROWS_EXCEPTION
+#endif
 #endif
 
 // Does ASSERT_INVARIANT actually call this->_assertInvariant?
 #ifdef V_ASSERT_INVARIANT_ENABLED
-    #if V_ASSERT_INVARIANT_ENABLED == 1
-        #define V_ASSERT_INVARIANT_ACTIVE
-    #endif
+#if V_ASSERT_INVARIANT_ENABLED == 1
+#define V_ASSERT_INVARIANT_ACTIVE
+#endif
 #else
-    #ifdef V_ASSERT_ACTIVE
-        #define V_ASSERT_INVARIANT_ACTIVE
-    #endif
+#ifdef V_ASSERT_ACTIVE
+#define V_ASSERT_INVARIANT_ACTIVE
+#endif
 #endif
 
 /*
@@ -560,9 +559,9 @@ Now we can actually decide on the definition of ASSERT_INVARIANT().
 It either calls this->_assertInvariant() or does nothing.
 */
 #ifdef V_ASSERT_INVARIANT_ACTIVE
-    #define ASSERT_INVARIANT() this->_assertInvariant() ///< Macro to call this->_assertInvariant().
+#define ASSERT_INVARIANT() this->_assertInvariant() ///< Macro to call this->_assertInvariant().
 #else
-    #define ASSERT_INVARIANT() ((void) 0) ///< No-op.
+#define ASSERT_INVARIANT() ((void) 0) ///< No-op.
 #endif
 
 // This is useful in some _assertInvariant() methods, to detect when there is a
@@ -576,9 +575,9 @@ extern const void* const VCPP_DEBUG_BAD_POINTER_VALUE;
 
 extern int Vtrace(const char* fileName, int lineNumber);
 #ifdef V_DEBUG_STATIC_INITIALIZATION_TRACE
-    #define V_STATIC_INIT_TRACE static int staticVtrace = Vtrace(__FILE__, __LINE__);
+#define V_STATIC_INIT_TRACE static int staticVtrace = Vtrace(__FILE__, __LINE__);
 #else
-    #define V_STATIC_INIT_TRACE
+#define V_STATIC_INIT_TRACE
 #endif
 
 #define V_CONSTRAIN_MINMAX(n, minValue, maxValue) V_MAX(minValue, V_MIN(maxValue, n))
@@ -591,15 +590,14 @@ in those contexts. The constructor creates the pool and the destructor drains it
 If appropriate, you can drain the pool each time through a loop, while keeping the
 pool itself around for a longer lifecycle.
 */
-class VAutoreleasePool
-    {
+class VAutoreleasePool {
     public:
         VAutoreleasePool();
         ~VAutoreleasePool();
         void drain();
     private:
         void* mPool; // "void*" so as not to add a type dependency on includers.
-    };
+};
 
 /*
 Memory leak tracking facility. See implementation in vmemorytracker.cpp.
@@ -621,19 +619,18 @@ class VTextIOStream;
 class VString;
 class VDuration;
 
-class VMemoryTracker
-    {
+class VMemoryTracker {
     public:
-    
+
         /**
         You must disable memory tracking before main() ends; the easiest way is to
         declare one of these as a local variable in your main. The destructor disables
         memory tracking. You choose whether it's enabled at start as a constructor
         parameter. Tracking must not be enabled during static initialization.
         */
-        VMemoryTracker(bool enableAtStart=false);
+        VMemoryTracker(bool enableAtStart = false);
         ~VMemoryTracker();
-        
+
         static void enable();                           ///< Turns on tracking. Subsequent allocations will be tracked.
         static void disable();                          ///< Turns off tracking. Subsequent allocations will not be tracked.
         static void reset();                            ///< Resets tracking. Tracked items are discarded. Enable state is not changed.
@@ -663,7 +660,7 @@ class VMemoryTracker
                                 the "root" of a leaked graph of related objects
         */
         static void reportMemoryTracking(const VString& label, bool toLogger, bool toConsole, VTextIOStream* toStream, Vs64 bufferLengthLimit, bool showDetails, bool performAnalysis);
-    };
+};
 
 #endif /* VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT */
 #endif /* __OBJC__ */

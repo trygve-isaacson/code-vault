@@ -32,6 +32,7 @@ Removed obsolete/deprecated APIs and features:
 - Corrected VString::split() API to be const.
 - Streamlined comparison operators to always forward to operator== and operator< implementations.
 - Consolidated and corrected ambiguity in non-specific instant/duration comparisons and operations.
+- Bento attribute-not-found exceptions now include a stack trace.
 - Cast ::sscanf to void when ignoring return value.
 - Added #pragmas to silence static analysis warnings for includes of non-compliant Microsoft headers.
 - Re-order includes so Boost headers are first if they are used.

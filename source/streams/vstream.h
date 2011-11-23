@@ -16,15 +16,15 @@ http://www.bombaydigital.com/
     @defgroup vstreams Vault Streams
 
     <h3>Vault Streams Architecture</h3>
-    
+
     The stream facilities provided by the Vault are extremely easy to use,
     and provide a clean and simple architecture for stream i/o.
     There are two layers in the stream architecture. Usually you will
     talk to the upper layer, even if you have to instantiate lowerx
     layer objects to set up the stream.
-    
+
     <h4>Lower Layer: Raw Streams</h4>
-    
+
     The lower layer concerns the transport over which the stream is
     carried. The Vault supplies implementations for files, sockets,
     and memory. The base class is VStream, and its primary function is to read
@@ -41,9 +41,9 @@ http://www.bombaydigital.com/
     generally use VBufferedFileStream, unless you need the particular
     behavior of VDirectIOFileStream, because VBufferedFileStream uses the platform
     APIs that give better file i/o performance.
-    
+
     <h4>Upper Layer: Formatted Streams</h4>
-    
+
     The upper layer is the one you will most often use directly. This
     layer concerns the format of the data stream, independent of the
     lower layer transport that the stream is carried over. The Vault
@@ -59,9 +59,9 @@ http://www.bombaydigital.com/
     of how text file line endings differ across platforms, and the fact
     that you might be reading a file on one platform that was created
     on a different platform.
-    
+
     <h4>Stream Copying</h4>
-    
+
     Copying between streams is made trivial by the overloaded streamCopy
     methods of VStream and VIOStream. These methods allow you to copy
     data from one stream to another regardless of the type of stream, and
@@ -75,7 +75,7 @@ http://www.bombaydigital.com/
     perform the copy without requiring you to deal with the details (although
     you may specify the buffer size explicitly if the default size is not
     ideal).
-    
+
     The semantics of stream copying are simple: the source is read
     and the destination is written. So the stream position moves as
     you'd expect. If you need to copy without performing the entire
@@ -84,20 +84,20 @@ http://www.bombaydigital.com/
     thus be aware of the progress of the copy; an example of where this
     is useful is if you are copying a large amount of data and need to
     keep some UI feedback updated as the copy progresses.
-    
+
     <h3>Summary</h3>
-    
+
     - You'll use a class derived from VStream to specify what kind of
     transport the data is carried on: VBufferedFileStream, VSocketStream, or
     VMemoryStream. (Or in certain circumstances, VDirectIOFileStream or
     VWriteBufferedStream.)
-    
+
     - You'll most directly use a class derived from VIOStream to read
     and write your data. If you are
     working with text, use VTextIOStream. If you are working with binary
     data, use VBinaryIOStream. When you instantiate the object, you'll supply
     it the lower level stream object to use as a transport.
-    
+
 */
 
 // Allows us to declare our static streamCopy functions here.
@@ -116,7 +116,7 @@ class VIOStream;
     @{
 */
 
-/**    
+/**
 VStream is an abstract base class that defines a stream-oriented i/o API.
 
 You will generally use VSocketStream for socket i/o, VBufferedFileStream for file
@@ -195,10 +195,9 @@ indicating whether you could succesfully seek to the desired location.
 @see    VDirectIOFileStream
 @see    VSocketStream
 */
-class VStream
-    {
+class VStream {
     public:
-    
+
         /**
         Default constructor.
         */
@@ -211,7 +210,7 @@ class VStream
         Destructor.
         */
         virtual ~VStream() {}
-        
+
         /**
         Reads a specified number of bytes from the stream, and throws a
         VException if they cannot be read.
@@ -226,7 +225,7 @@ class VStream
         @return    the actual number of bytes that could be read
         */
         virtual Vs64 read(Vu8* targetBuffer, Vs64 numBytesToRead) = 0;
-        
+
         /**
         Writes bytes to the stream.
         @param    buffer            the buffer containing the data
@@ -240,7 +239,7 @@ class VStream
         written to the underlying physical stream.
         */
         virtual void flush() = 0;
-        
+
         /**
         Skips forward in the stream a specified number of bytes. For memory
         and file streams, this means advancing the i/o offset by the specified
@@ -253,7 +252,7 @@ class VStream
         Seeks in the stream using Unix seek() semantics. VSocketStream has
         some restrictions in the kinds of seek that are allowed; if you
         specify an illegal socket seek operation, a VException is thrown.
-        
+
         The following table shows the valid seek parameters for the different
         stream types:
 
@@ -287,7 +286,7 @@ class VStream
             <td>no</td>
         </tr>
         </table>
-        
+
         @param    offset    the offset, meaning depends on whence value
         @param    whence    SEEK_SET, SEEK_CUR, or SEEK_END
         @return true if the seek was successful
@@ -326,7 +325,7 @@ class VStream
         @return the number of bytes currently available for reading
         */
         virtual Vs64 available() const = 0;
-        
+
         /**
         Efficiently copies bytes from one stream to another, no matter which
         concrete stream types are being used. Some examples of using it
@@ -335,28 +334,28 @@ class VStream
         (fromStream is a VMemoryStream, toStream is a VSocketStream), and
         transferring a file to a socket (fromStream is VAbstractFileStream-derived,
         toStream is a VSocketStream).
-        
+
         If either of the streams is a VMemoryStream, the copy is made
         directly with no extra copying. If neither stream is a VMemoryStream,
         a temporary buffer is used to transfer the data with just a single
         copy.
-        
+
         Of course, this method does not actually know the stream classes,
         but simply asks the to and from streams about their capabilities.
-        
+
         @param    fromStream    the source stream that is read
         @param    toStream    the target stream that is written
         @param    numBytesToCopy    the number of bytes read from fromStream and write to toStream
         @param    tempBufferSize    the size of temporary buffer to create, if one is needed
         @return the actual number of bytes copied
         */
-        static Vs64 streamCopy(VStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize=16384);
-        static Vs64 streamCopy(VIOStream& fromStream, VIOStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize=16384);
-        static Vs64 streamCopy(VIOStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize=16384);
-        static Vs64 streamCopy(VStream& fromStream, VIOStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize=16384);
+        static Vs64 streamCopy(VStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize = 16384);
+        static Vs64 streamCopy(VIOStream& fromStream, VIOStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize = 16384);
+        static Vs64 streamCopy(VIOStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize = 16384);
+        static Vs64 streamCopy(VStream& fromStream, VIOStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize = 16384);
 
         friend class VWriteBufferedStream;
-        
+
         /**
         Returns the name of the stream that it was given when constructed.
         The name is just an arbitrary string that can be useful when debugging
@@ -411,14 +410,14 @@ class VStream
         static Vu8* mallocNewBuffer(Vs64 bufferSize);
 
     protected:
-        
+
         /*
         These methods are ONLY overridden by buffer-based subclasses,
         for example VMemoryStream. They are called by the friend function
         streamCopy() so that it can efficiently copy data directly to/from
         streams that have data buffers (namely, VMemoryStream).
         */
-        
+
         /**
         Returns a pointer to the current read i/o position in the stream's buffer,
         or NULL if the stream does not have a buffer or support direct copying
@@ -459,9 +458,9 @@ class VStream
         @param    numBytesWritten    the number of bytes that were previously written
         */
         virtual void    _finishWrite(Vs64 numBytesWritten);
-        
+
         VString mName; ///< A name for use when debugging stream.
-    };
+};
 
 /** @} */
 

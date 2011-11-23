@@ -33,8 +33,7 @@ being raised.
 
 @see VMutexLocker
 */
-class VMutex
-    {
+class VMutex {
     public:
 
         /**
@@ -45,12 +44,12 @@ class VMutex
                 must be set so that VMutex doesn't try to log information
                 about this mutex (avoids recursive locking deadlock)
         */
-        VMutex(const VString& name=VString::EMPTY(), bool suppressLogging=false);
+        VMutex(const VString& name = VString::EMPTY(), bool suppressLogging = false);
         /**
         Destructs the mutex.
         */
         virtual ~VMutex();
-        
+
         /**
         In some cases it's more convenient to name a mutex after constructing,
         in which case you can call setName(). The name is only used for
@@ -64,7 +63,7 @@ class VMutex
         @return    a pointer to the raw OS mutex handle
         */
         VMutex_Type* getMutex();
-        
+
         /**
         Returns true if the following conditions hold:
         - the mutex has been lock()'ed but not yet unlock()'ed
@@ -122,16 +121,16 @@ class VMutex
         The default delay threshold is 50ms. If you specify 0, every lock will log a message.
         You can set the log leve at which the output will be emitted.
         */
-        static void setLockDelayLoggingThreshold(const VDuration& threshold) { gVMutexLockDelayLoggingThreshold = threshold; }
-        static VDuration getLockDelayLoggingThreshold() { return gVMutexLockDelayLoggingThreshold; }
-        static void setLockDelayLoggingLevel(int logLevel) { gVMutexLockDelayLoggingLevel = logLevel; }
-        static int getLockDelayLoggingLevel() { return gVMutexLockDelayLoggingLevel; }
-    
+        static void setLockDelayLoggingThreshold(const VDuration& threshold)    { gVMutexLockDelayLoggingThreshold = threshold; }
+        static VDuration getLockDelayLoggingThreshold()                         { return gVMutexLockDelayLoggingThreshold; }
+        static void setLockDelayLoggingLevel(int logLevel)                      { gVMutexLockDelayLoggingLevel = logLevel; }
+        static int getLockDelayLoggingLevel()                                   { return gVMutexLockDelayLoggingLevel; }
+
     private:
-    
+
         VMutex(const VMutex&); // not copyable
         VMutex& operator=(const VMutex&); // not assignable
-        
+
         // _lock() and _unlock() are only accessible to the locker and unlocker classes, and unit test.
         friend class VMutexLocker;
         friend class VMutexUnlocker;
@@ -145,7 +144,7 @@ class VMutex
         to lock, for diagnostic purposes (the name is stored).
         @param lockerName the name of the caller, for diagnostic purposes
         */
-        void _lock(const VString& lockerName=VString::EMPTY());
+        void _lock(const VString& lockerName = VString::EMPTY());
         /**
         Releases the mutex lock; if one or more other threads is waiting on
         the mutex, one of them will unblock and acquire the mutex lock once
@@ -153,17 +152,17 @@ class VMutex
         */
         void _unlock();
 
-        VMutex_Type mMutex;             ///< The OS mutex handle.
-        VString mName;                  ///< The name of this mutex for diagnostic purposes.
-        bool mSuppressLogging;          ///< True if this VMutex must not call logger functions.
-        volatile VThreadID_Type mLastLockThread; ///< If locked, the thread that acquired the lock.
-        VString mLastLockerName;        ///< The name of the last (or current) caller of lock().
-        VInstant mLastLockTime;         ///< When the last acquisition of the lock occurred.
-        volatile bool mIsLocked;        ///< For use only by isLockedByCurrentThread(); value may change concurrently.
-        
+        VMutex_Type             mMutex;             ///< The OS mutex handle.
+        VString                 mName;              ///< The name of this mutex for diagnostic purposes.
+        bool                    mSuppressLogging;   ///< True if this VMutex must not call logger functions.
+        volatile VThreadID_Type mLastLockThread;    ///< If locked, the thread that acquired the lock.
+        VString                 mLastLockerName;    ///< The name of the last (or current) caller of lock().
+        VInstant                mLastLockTime;      ///< When the last acquisition of the lock occurred.
+        volatile bool           mIsLocked;          ///< For use only by isLockedByCurrentThread(); value may change concurrently.
+
         static VDuration gVMutexLockDelayLoggingThreshold;  ///< If >=0, lock delays are logged.
         static int gVMutexLockDelayLoggingLevel;            ///< Log level at which lock delays are logged.
-    };
+};
 
 #endif /* vmutex_h */
 

@@ -25,10 +25,9 @@ defines the pure virtual API that they must implement.
 @see VBufferedFileStream
 @see VDirectIOFileStream
 */
-class VAbstractFileStream : public VStream
-    {
+class VAbstractFileStream : public VStream {
     public:
-    
+
         /**
         Constructs an undefined stream (you will have to set it up
         with a subsequent call to setNode() or a method specific
@@ -78,14 +77,14 @@ class VAbstractFileStream : public VStream
         Closes the file stream.
         */
         virtual void close() = 0;
-        
+
         // In addition to the pure virtual methods defined above, the
         // concrete subclass must also implement the stream methods
         // defined by VStream (read, write, flush, skip, seek,
         // offset, available).
-        
+
     protected:
-    
+
         /**
         Called by the open methods after they attempt to open the stream;
         throws a VException if the stream is not open.
@@ -98,7 +97,7 @@ class VAbstractFileStream : public VStream
 
         VFSNode mNode;  ///< The node representing the file.
 
-    };
+};
 
 #endif /* vabstractfilestream_h */
 

@@ -20,10 +20,9 @@ VSocketFactory can be used as-is, or can be subclassed to create
 special kinds of sockets; normally every socket is just a VSocket,
 but it is conceivable to have things like VSecureSocket or such.
 */
-class VSocketFactory
-    {
+class VSocketFactory {
     public:
-    
+
         /**
         Constructor, declared for completeness.
         */
@@ -32,7 +31,7 @@ class VSocketFactory
         Destructor, declared for completeness.
         */
         virtual ~VSocketFactory() {}
-        
+
         /**
         Creates a VSocket object and calls its init() method with the
         specified socket id.
@@ -49,6 +48,6 @@ class VSocketFactory
         */
         virtual VSocket* createSocket(const VString& hostName, int portNumber);
 
-    };
+};
 
 #endif /* vsocketfactory_h */

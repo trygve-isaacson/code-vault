@@ -50,12 +50,11 @@ http://www.bombaydigital.com/
         } \
     }
 
-void runAllVUnitTests(bool logOnSuccess, bool throwOnError, bool& success, int& numSuccessfulTests, int& numFailedTests, VUnitOutputWriterList* writers)
-    {
+void runAllVUnitTests(bool logOnSuccess, bool throwOnError, bool& success, int& numSuccessfulTests, int& numFailedTests, VUnitOutputWriterList* writers) {
     numSuccessfulTests = 0;
     numFailedTests = 0;
     success = true;
-    
+
     // Use the macro above to declare each unit test and run it in a single line of boilerplate.
     UNIT_TEST(VPlatformUnit)
     UNIT_TEST(VAssertUnit)
@@ -74,5 +73,5 @@ void runAllVUnitTests(bool logOnSuccess, bool throwOnError, bool& success, int& 
     UNIT_TEST(VThreadsUnit)
     UNIT_TEST(VMessageUnit)
     UNIT_TEST(VLoggerUnit)
-    }
+}
 

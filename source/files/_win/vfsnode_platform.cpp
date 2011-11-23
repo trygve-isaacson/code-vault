@@ -17,7 +17,7 @@ http://www.bombaydigital.com/
 #include <shlobj.h>
 #ifdef VCOMPILER_MSVC
 #pragma warning(default: 6387)
-#endif 
+#endif
 
 /* Note: according to Microsoft KB article 177506, only the following characters
 are valid in file and folder names on their operating system. I should provide
@@ -45,91 +45,81 @@ $   Dollar sign
 .   Period
 +   Plus
 ~   Tilde
-_   Underscore 
+_   Underscore
 */
 
 // static
-void VFSNode::_platform_normalizePath(VString& path)
-    {
+void VFSNode::_platform_normalizePath(VString& path) {
     // For the moment, we get almost all the functionality we need by
     // simply converting backslash to slash if we are compiled for Windows.
     // Mac OS X support is free since it's Unix. Mac OS 9 support would
     // have to deal with ':'. DOS drive letters and Mac OS 9 root/relative
     // paths would complicate things a little for things like getParentPath.
     path.replace("\\", "/");
-    }
+}
 
 // static
-void VFSNode::_platform_denormalizePath(VString& path)
-    {
+void VFSNode::_platform_denormalizePath(VString& path) {
     // See comments above.
     path.replace("/", "\\");
-    }
+}
 
 // static
-VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName)
-    {
-    if (id == CURRENT_WORKING_DIRECTORY)
-        {
+VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName) {
+    if (id == CURRENT_WORKING_DIRECTORY) {
         char cwdPath[MAX_PATH];
         (void)/*char* pathPtr =*/ vault::getcwd(cwdPath, sizeof(cwdPath));
         VString cwdPathString(cwdPath);
         VFSNode::normalizePath(cwdPathString);
         VFSNode cwdNode(cwdPathString);
         return cwdNode;
-        }
-    
-    if (id == EXECUTABLE_DIRECTORY)
-        {
+    }
+
+    if (id == EXECUTABLE_DIRECTORY) {
         VFSNode executable = VFSNode::getExecutable();
         VFSNode executableDirectory;
         executable.getParentNode(executableDirectory);
         return executableDirectory;
-        }
-        
+    }
+
     char pathBuffer[MAX_PATH];
     HRESULT result = ::SHGetFolderPathA(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, static_cast<LPSTR>(pathBuffer));
-    
-    if (result != S_OK)
+
+    if (result != S_OK) {
         throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode: Unable to find current user Application Data folder. Error code %d.", (int) result));
+    }
 
     VString path(pathBuffer);
     VFSNode::_platform_normalizePath(path);
     VFSNode appDataFolder(path);
-    
+
     // User's folder is one level up from user's Application Data folder.
     VFSNode currentUserFolder;
     appDataFolder.getParentNode(currentUserFolder);
-    
-    if (id == USER_HOME_DIRECTORY)
+
+    if (id == USER_HOME_DIRECTORY) {
         return currentUserFolder;
+    }
 
     VFSNode companyFolder;
-    if (companyName.isEmpty())
-        {
+    if (companyName.isEmpty()) {
         companyFolder = appDataFolder;
-        }
-    else
-        {
+    } else {
         appDataFolder.getChildNode(companyName, companyFolder);
         companyFolder.mkdir();
-        }
-    
+    }
+
     VFSNode appFolder;
-    if (appName.isEmpty())
-        {
+    if (appName.isEmpty()) {
         appFolder = companyFolder;
-        }
-    else
-        {
+    } else {
         companyFolder.getChildNode(appName, appFolder);
         appFolder.mkdir();
-        }
+    }
 
     VFSNode resultNode;
-    
-    switch (id)
-        {
+
+    switch (id) {
         case USER_HOME_DIRECTORY:
             // handled earlier; we returned above
             break;
@@ -153,22 +143,21 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
         case EXECUTABLE_DIRECTORY:
             // handled earlier; we returned above
             break;
-            
+
         default:
             throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode: Requested invalid directory ID %d.", (int) id));
             break;
-        }
-
-    resultNode.mkdir();
-    
-    return resultNode;
     }
 
+    resultNode.mkdir();
+
+    return resultNode;
+}
+
 // static
-VFSNode VFSNode::_platform_getExecutable()
-    {
+VFSNode VFSNode::_platform_getExecutable() {
     VString exePath;
-    exePath.preflight(_MAX_PATH);	// preallocate buffer space
+    exePath.preflight(_MAX_PATH);   // preallocate buffer space
     DWORD result = ::GetModuleFileName(NULL, exePath.buffer(), _MAX_PATH);
 
     if (result == 0)
@@ -176,72 +165,63 @@ VFSNode VFSNode::_platform_getExecutable()
 
     exePath.postflight(result); // result is actual length of returned string data
     VFSNode::normalizePath(exePath); // must supply normalized form to VFSNode below
-    VFSNode	exeNode(exePath);
+    VFSNode exeNode(exePath);
     return exeNode;
-    }
-    
-bool VFSNode::_platform_getNodeInfo(VFSNodeInfo& info) const
-    {
+}
+
+bool VFSNode::_platform_getNodeInfo(VFSNodeInfo& info) const {
     struct stat statData;
     int result = VFileSystemAPI::wrap_stat(mPath, &statData);
-    
-    if (result >= 0)
-        {
+
+    if (result >= 0) {
         info.mCreationDate = CONST_S64(1000) * static_cast<Vs64>(statData.st_ctime);
         info.mModificationDate = CONST_S64(1000) * static_cast<Vs64>(statData.st_mtime);
         info.mFileSize = statData.st_size;
         info.mIsFile = ((GetFileAttributesA(mPath) & FILE_ATTRIBUTE_DIRECTORY) == 0);
         info.mIsDirectory = ((GetFileAttributesA(mPath) & FILE_ATTRIBUTE_DIRECTORY) != 0);
         info.mErrNo = 0;
-        }
-    else
-        {
+    } else {
         info.mErrNo = errno;
-        }
-
-    return (result >= 0);
     }
 
-void VFSNode::_platform_createDirectory() const
-    {
+    return (result >= 0);
+}
+
+void VFSNode::_platform_createDirectory() const {
     int result = VFileSystemAPI::wrap_mkdir(mPath, (S_IFDIR | S_IRWXO | S_IRWXG | S_IRWXU));
 
     if (result != 0)
         throw VException(result, VSTRING_FORMAT("VFSNode::_platform_createDirectory failed (error %d: %s) for '%s'.", errno, ::strerror(errno), mPath.chars()));
-    }
+}
 
-bool VFSNode::_platform_removeDirectory() const
-    {
+bool VFSNode::_platform_removeDirectory() const {
     int result = VFileSystemAPI::wrap_rmdir(mPath);
     return (result == 0);
-    }
+}
 
-bool VFSNode::_platform_removeFile() const
-    {
+bool VFSNode::_platform_removeFile() const {
     int result = VFileSystemAPI::wrap_unlink(mPath);
     return (result == 0);
-    }
+}
 
-void VFSNode::_platform_renameNode(const VString& newPath) const
-    {
+void VFSNode::_platform_renameNode(const VString& newPath) const {
     int result = VFileSystemAPI::wrap_rename(mPath, newPath);
-    
+
     if (result != 0)
         throw VException(result, VSTRING_FORMAT("VFSNode::_platform_renameNode failed (error %d: %s) renaming '%s' to '%s'.", errno, ::strerror(errno), mPath.chars(), newPath.chars()));
-    }
+}
 
 // This is the Windows implementation of directory iteration using
 // FindFirstFile(), FindNextFile(), FindClose() functions.
 
-void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) const
-    {
+void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) const {
     // FIXME: This code has not been made UNICODE/DBCS compatible.
     // The problem areas are in the strings, and for now we just
     // brute-force cast so that the compiler is happy.
-    
+
     VString nodeName;
     VString searchPath(VSTRING_ARGS("%s/*", mPath.chars()));
-    
+
     VFSNode::denormalizePath(searchPath);    // make it have DOS syntax
 
     // Note: we explicitly reference the "A"-suffix data type and APIs here, because
@@ -251,22 +231,20 @@ void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) 
     WIN32_FIND_DATAA data;
     HANDLE dir = ::FindFirstFileA((LPCSTR) searchPath.chars(), &data);
 
-    if (dir == INVALID_HANDLE_VALUE)
-        {
+    if (dir == INVALID_HANDLE_VALUE) {
         DWORD error = ::GetLastError();
-        
-        if (error == ERROR_NO_MORE_FILES)
+
+        if (error == ERROR_NO_MORE_FILES) {
             return;
-            
-        throw VException(VSTRING_FORMAT("VFSNode::_platform_getDirectoryList failed (error %d) for directory '%s'.", error , searchPath.chars()));
         }
-    
-    try
-        {
+
+        throw VException(VSTRING_FORMAT("VFSNode::_platform_getDirectoryList failed (error %d) for directory '%s'.", error , searchPath.chars()));
+    }
+
+    try {
         bool keepGoing = true;
 
-        do
-            {
+        do {
             VThread::yield(); // be nice if we're iterating over a huge directory
 
             nodeName = (char*) data.cFileName;
@@ -274,21 +252,18 @@ void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) 
             // Skip current and parent pseudo-entries. Otherwise client must
             // know too much detail in order to avoid traversal problems.
             if ((nodeName != ".") &&
-                (nodeName != ".."))
-                {
+                    (nodeName != "..")) {
                 VFSNode childNode;
                 this->getChildNode(nodeName, childNode);
                 keepGoing = callback.handleNextNode(childNode);
-                }
-            
-            } while (keepGoing && ::FindNextFileA(dir, &data)); // see Unicode comment above
-        }
-    catch (...)
-        {
+            }
+
+        } while (keepGoing && ::FindNextFileA(dir, &data)); // see Unicode comment above
+    } catch (...) {
         ::FindClose(dir);
         throw;
-        }
+    }
 
     ::FindClose(dir);
-    }
+}
 

@@ -15,52 +15,48 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 
 VHexUnit::VHexUnit(bool logOnSuccess, bool throwOnError) :
-VUnit("VHexUnit", logOnSuccess, throwOnError)
-    {
-    }
+    VUnit("VHexUnit", logOnSuccess, throwOnError) {
+}
 
-void VHexUnit::run()
-    {
+void VHexUnit::run() {
     // Construct a buffer and a string with all possible byte values.
     VMemoryStream    memoryStream;
     VBinaryIOStream    io(memoryStream);
-    
-    for (int i = 0; i < 256; ++i)
-        {
+
+    for (int i = 0; i < 256; ++i) {
         Vu8    byteValue = static_cast<Vu8>(i);
         io.writeU8(byteValue);
-        }
-    
+    }
+
     // Convert the byte values to hex and validate.
     VString    hexString;
     VHex::bufferToHexString(memoryStream.getBuffer(), CONST_S64(256), hexString);
-    
+
     VString    zeroTo255HexString;
     VString    temp;
-    for (int i = 0; i < 256; ++i)
-        {
+    for (int i = 0; i < 256; ++i) {
         Vu8    byteValue = static_cast<Vu8>(i);
         VHex::byteToHexString(byteValue, temp);
         zeroTo255HexString += temp;
-        }
-    
+    }
+
     this->test(hexString == zeroTo255HexString, "bufferToHexString");
-    
+
     // Convert the hex string back to bytes and validate.
     VMemoryStream    bytes(256);
     VHex::hexStringToBuffer(hexString, bytes.getBuffer());
     bytes.setEOF(CONST_S64(256));    // EOF equal required for VMemoryStream equality test
-    
+
     this->test(bytes == memoryStream, "hexStringToBuffer");
 
     // Call the hex dump function to print the data to a text stream.
     VMemoryStream    dumpBuffer;
     VTextIOStream    dumpStream(dumpBuffer);
     VHex            hexDump(&dumpStream);
-    
+
     hexDump.printHex(memoryStream.getBuffer(), 256, 0);
     dumpStream.writeLine(VString::EMPTY()); // blank line at end, so calling readHexDump() doesn't need to catch EOF
-    
+
     // Print the hex dump to the unit test output as status for review.
     dumpStream.seek0(); // back to start before reading
     VString dumpText;
@@ -72,9 +68,9 @@ void VHexUnit::run()
     VMemoryStream   reconstructedBuffer;
     VBinaryIOStream reconstructedStream(reconstructedBuffer);
     dumpStream.seek0(); // back to start before reading
-    
+
     VHex::readHexDump(dumpStream, reconstructedStream);
-    
+
     this->test(memoryStream == reconstructedBuffer, "VHex::readHexDump reconstructs data");
-    }
+}
 

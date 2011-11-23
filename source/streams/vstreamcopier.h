@@ -13,13 +13,13 @@ http://www.bombaydigital.com/
 
 /**
     @defgroup vstream_util Stream Utilities
-    
+
     These are the utility classes related to streams.
-    
+
     @ingroup vstreams
     @{
 */
-    
+
 /**
 VStreamCopier is a helper class for certain kinds of stream copy operations.
 
@@ -46,10 +46,9 @@ To check the actual byte count progress, call numBytesCopied().
 @see    VIOStream
 @see    VStream
 */
-class VStreamCopier
-    {
+class VStreamCopier {
     public:
-    
+
         /**
         Default constructor. You need to call init() later if you use
         this constructor.
@@ -87,7 +86,7 @@ class VStreamCopier
         Destructor.
         */
         virtual ~VStreamCopier() {}
-        
+
         /**
         Init function that takes two VStream objects.
         @param chunkSize    the number of bytes to copy in each chunk
@@ -116,7 +115,7 @@ class VStreamCopier
         @param to            the stream to copy to
         */
         void init(int chunkSize, VIOStream* from, VStream* to);
-        
+
         /**
         Copies a chunk between the streams, and returns false if less than a
         complete chunk was available to copy. That is, true indicates that
@@ -135,12 +134,12 @@ class VStreamCopier
 
         VStreamCopier(const VStreamCopier&); // not copyable
         VStreamCopier& operator=(const VStreamCopier&); // not assignable
-        
+
         int         mChunkSize;         ///< The number of bytes to copy per chunk.
         VStream*    mFrom;              ///< The underlying stream we are copying from.
         VStream*    mTo;                ///< The underlying stream we are copying to.
         Vs64        mNumBytesCopied;    ///< The total number of bytes copied so far.
-    };
+};
 
 /** @} */
 

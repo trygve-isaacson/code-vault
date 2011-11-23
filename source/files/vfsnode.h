@@ -16,14 +16,14 @@ http://www.bombaydigital.com/
     @defgroup vfilesystem Vault File System Access
 
     <h3>Overview</h3>
-    
+
     The Vault uses the term "node" to mean either a file or directory
     within the file system. The class VFSNode is what you use to
     specify or identify a particular node in the file system. Operations
     that are carried out on nodes without requiring i/o on file contents,
     are defined as methods of VFSNode; you invoke methods on the VFSNode
     object whose path represents the file or directory you want to act on.
-    
+
     A VFSNode can represent a file or directory that does not currently
     exist. Naturally, that's how you would create a new directory: you
     would create a VFSNode to point to the path of the directory you
@@ -32,35 +32,35 @@ http://www.bombaydigital.com/
     directories are created along the way, if you are creating a deep
     directory whose ancestory directory hierarchy does not yet exist.
     You can remove a directory or file by calling its rm() method.
-    
+
     Similarly, to create a new file, you'd make a VFSNode for the location
     where you want to create it, and then you'd use a VBufferedFileStream
     to create the file and write to it.
-    
+
     You can test the existence of a file or directory by calling exists().
     If you need to know the difference between a file and a directory,
     you can call isDirectory() and isFile(), both of which return false
     if the node is of the other type or simply does not exist at all.
-    
+
     You can also use VFSNode to traverse the directory hierarchy, walking
     down to subdirectories and files by calling getChildNode() or
     getChildPath(), and walking up to a parent directory by calling
     getParentNode() or getParentPath(). In each case you are invoking the
     method on a VFSNode that represents the node whose child or parent you
     wish to locate.
-    
-    You can get a directory node's list of files and subdirectories by 
+
+    You can get a directory node's list of files and subdirectories by
     calling list().
-    
+
     To perform i/o on a file, you will typically pass the VFSNode object
     that represents the file to a VBufferedFileStream object's constructor
     or setNode() method. Then you can call that object's methods to open
     the file stream in read-only, read-write, or write/create mode. From
     there you'll typically use a VBinaryIOStream or VTextIOStream object
     to actually format the file data correct (or to read it correctly).
-    
+
 */
-    
+
 /**
     @ingroup vfilesystem
 */
@@ -73,10 +73,9 @@ functions. We define the time fields using a raw Vs64 value
 object so that there is zero overhead in constructing one of
 these.
 */
-class VFSNodeInfo
-    {
+class VFSNodeInfo {
     public:
-    
+
         VFSNodeInfo();
         ~VFSNodeInfo() {}
 
@@ -86,27 +85,26 @@ class VFSNodeInfo
         bool    mIsFile;
         bool    mIsDirectory;
         int     mErrNo; // the value of errno if call failed, 0 otherwise
-    };
+};
 
 
 class VInstant;
 class VFSNode;
 class VBinaryIOStream;
 
-class VDirectoryIterationCallback
-    {
+class VDirectoryIterationCallback {
     public:
-    
+
         VDirectoryIterationCallback() {}
         virtual ~VDirectoryIterationCallback() {}
-        
+
         /**
         A callback implementation needs to implement this method; it should
         return false if no further iteration is desired, true if iteration
         should continue.
         */
         virtual bool handleNextNode(const VFSNode& node) = 0;
-    };
+};
 
 /**
 VFSNodeVector is simply a vector of VFSNode objects. Note that the vector
@@ -118,10 +116,9 @@ typedef std::vector<VFSNode> VFSNodeVector;
 A VFSNode represents a file or directory in the file system, whether it
 actually exists or not, and provides some methods for operating on it.
 */
-class VFSNode
-    {
+class VFSNode {
     public:
-    
+
         /**
         Takes a platform-specific directory path and modifies it to be
         int the normalized form necessary for use with VFSNode. If you
@@ -139,15 +136,14 @@ class VFSNode
         the normalization, turning it into a platform-specific path.
         */
         static void denormalizePath(VString& path);
-        
+
         /**
         These values identify different known folders whose location you can
         access by calling VFSNode::getKnownDirectoryNode(). These are useful
         as default locations to store or find data in a location that is
         appropriate to the platform.
         */
-        typedef enum
-            {
+        typedef enum {
             USER_HOME_DIRECTORY,        ///< The user's home directory.
             LOG_FILES_DIRECTORY,        ///< Where to write log files.
             USER_PREFERENCES_DIRECTORY, ///< Where to store user preferences files.
@@ -155,14 +151,14 @@ class VFSNode
             APPLICATION_DATA_DIRECTORY, ///< Where to find application data files other than user documents.
             CURRENT_WORKING_DIRECTORY,  ///< The application environment's "current working directory" by path (not as simply ".").
             EXECUTABLE_DIRECTORY        ///< The directory where the app executable lives. (See notes below.)
-            } KnownDirectoryIdentifier;
+        } KnownDirectoryIdentifier;
         /**
         Returns a node identifying an identified directory, creating it if it does not exist.(*)
         Below are the platform-specific path examples. Note that these are merely examples, because
         the OS may return something else as appropriate when we call the platform-specific APIs to
         locate the suitable directories.
         (* The user home directory is never created, because it is assumed to exist.)
-        
+
         Unix: (note that "~" denotes the user's home directory, wherever that may be, and does not actually appear in the path)
             Most of these we would prefer to locate under /var, but it is often not writable.
             USER_HOME_DIRECTORY:        ~ is typically /home/(user)
@@ -172,7 +168,7 @@ class VFSNode
             APPLICATION_DATA_DIRECTORY: ~/data/(company)/(app)
             CURRENT_WORKING_DIRECTORY:  the full path to the current working directory
             EXECUTABLE_DIRECTORY:       the full path to the directory containing the executable
-            
+
         Mac OS X: (note that "~" denotes the user's home directory, wherever that may be, and does not actually appear in the path)
             USER_HOME_DIRECTORY:        ~ is typically /Users/(user)
             LOG_FILES_DIRECTORY:        ~/Library/Logs/(company)/(app)
@@ -181,7 +177,7 @@ class VFSNode
             APPLICATION_DATA_DIRECTORY: ~/Library/(company)/(app)
             CURRENT_WORKING_DIRECTORY:  the full path to the current working directory
             EXECUTABLE_DIRECTORY:       the full path to the directory containing this app bundle or executable
-            
+
         iOS: (note that "@" here denotes the app install sandbox directory, and does not actually appear in the path)
             On iOS an app gets installed in its own sandbox at: /var/mobile/Applications/(random serial number for this install)
             USER_HOME_DIRECTORY:        @ (the same dir as the app install sandbox; it is thus different when queried by each installed app)
@@ -191,7 +187,7 @@ class VFSNode
             APPLICATION_DATA_DIRECTORY: @/Library/(company)/(app)
             CURRENT_WORKING_DIRECTORY:  / (obviously this is not a writeable directory in this environment)
             EXECUTABLE_DIRECTORY:       @
-            
+
         Windows: (note that the OS can return a different Application Data path, including a different
             drive letter, if so configured; these are just the typical case examples)
             USER_HOME_DIRECTORY:        C:/Documents and Settings/(user)
@@ -201,7 +197,7 @@ class VFSNode
             APPLICATION_DATA_DIRECTORY: C:/Documents and Settings/(user)/Application Data/(company)/(app)
             CURRENT_WORKING_DIRECTORY:  the full path to the current working directory
             EXECUTABLE_DIRECTORY:       the full path to the directory containing this app's .exe file
-        
+
         When asking for the user home directory, the supplied company and app names are not used.
 
         @param  id          the directory identifier
@@ -231,7 +227,7 @@ class VFSNode
         @throws may throw VException if there is an error attempting to locate the file
         */
         static VFSNode getExecutable();
-        
+
         /**
         This function safely overwrites an existing file using a temporary file, to ensure that the original
         file is intact if the write fails. Specifically, the sequence is:
@@ -246,7 +242,7 @@ class VFSNode
         @param  dataStream  the stream to be written to the file
         */
         static void safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinaryIOStream& dataStream);
-    
+
         /**
         Constructs an undefined VFSNode object (you will have to set its path
         with a subsequent call to setPath()).
@@ -263,8 +259,8 @@ class VFSNode
         VFSNode(const VString& path);
         /**
         Constructs a VFSNode with a parent directory node and a child directory or file name within it.
-        @param    directory    the parent directory of the node 
-        @param    childName    the name of the subdirectory or file within the parent 
+        @param    directory    the parent directory of the node
+        @param    childName    the name of the subdirectory or file within the parent
         */
         VFSNode(const VFSNode& directory, const VString& childName);
         /**
@@ -277,7 +273,7 @@ class VFSNode
         @param  other   the node to copy
         */
         VFSNode& operator=(const VFSNode& other);
-        
+
         /**
         Specifies the path of the node.
         @param    path    the path of the file or directory
@@ -305,7 +301,7 @@ class VFSNode
         @param    name    the string to set to the file or node name
         */
         VString getName() const;
-        
+
         /**
         Gets the path of the node's parent.
         @param    parentPath    the string to set
@@ -328,7 +324,7 @@ class VFSNode
         @param    child        the node to set
         */
         void getChildNode(const VString& childName, VFSNode& child) const;
-        
+
         /**
         Creates the directory the node represents, and all non-existent
         directories above it.
@@ -424,7 +420,7 @@ class VFSNode
         @param    newNode    a node whose path is the path to rename the node to
         */
         void renameToNode(const VFSNode& newNode) const;
-        
+
         /**
         Returns a vector of strings containing the names of the node's
         children (the node must be a directory).
@@ -458,7 +454,7 @@ class VFSNode
         @return true if a match was found and node contains the match
         */
         bool find(const VString& name, VFSNode& node) const;
-        
+
         /**
         This convenience function does the following in a single call:
         - Open the file read-only.
@@ -474,7 +470,7 @@ class VFSNode
                                         to be included in the string that is returned
         @throws VException if the file cannot be opened or read
         */
-        void readAll(VString& s, bool includeLineEndings=true);
+        void readAll(VString& s, bool includeLineEndings = true);
         /**
         This convenience function is like the other readAll, but it returns the
         file's contents as a vector of strings rather than a single giant string.
@@ -491,7 +487,7 @@ class VFSNode
                                         to be included in the string that is returned
         @throws VException if the file cannot be opened or read
         */
-        static VString readTextFile(const VString& path, bool includeLineEndings=true);
+        static VString readTextFile(const VString& path, bool includeLineEndings = true);
         /**
         The static version of readAll(VStringVector&), for more concise calling code.
         @param  path    the path of the VFSNode from which to read
@@ -508,9 +504,9 @@ class VFSNode
         friend inline bool operator<=(const VFSNode& lhs, const VFSNode& rhs);
         friend inline bool operator>=(const VFSNode& lhs, const VFSNode& rhs);
         friend inline bool operator> (const VFSNode& lhs, const VFSNode& rhs);
-        
+
     private:
-    
+
         // These are the key functions that typically peculiar to each platform,
         // and are implemented in the platform-specific vfsnode_platform.cpp
         // files.
@@ -591,10 +587,10 @@ class VFSNode
             iterate over
         */
         void _platform_directoryIterate(VDirectoryIterationCallback& callback) const;
-    
+
         VString mPath;  ///< The node's path.
 
-    };
+};
 
 inline bool operator< (const VFSNode& lhs, const VFSNode& rhs) { return lhs.mPath < rhs.mPath; }
 inline bool operator<=(const VFSNode& lhs, const VFSNode& rhs) { return !operator>(lhs, rhs); }

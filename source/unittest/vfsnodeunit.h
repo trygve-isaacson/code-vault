@@ -16,10 +16,9 @@ http://www.bombaydigital.com/
 /**
 Unit test class for validating VFSNode.
 */
-class VFSNodeUnit : public VUnit
-    {
+class VFSNodeUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -30,22 +29,22 @@ class VFSNodeUnit : public VUnit
         Destructor.
         */
         virtual ~VFSNodeUnit() {}
-        
+
         /**
         Executes the unit test.
         */
         virtual void run();
 
     private:
-    
+
         void _testTextFileIO(const VString& seriesLabel, VFSNode& node, VAbstractFileStream& fileStream);
         void _testTextFileReadAll(VFSNode& node);
         void _testBinaryFileIO(const VString& seriesLabel, VFSNode& node, VAbstractFileStream& fileStream);
         void _testDirectoryIteration(const VFSNode& dir);
         void _writeKnownDirectoryTestFile(VFSNode::KnownDirectoryIdentifier id, const VString& fileName);
-        
+
         VStringVector   mTextFileLines;
         VString         mTextFileContents;
-    };
+};
 
 #endif /* vfsnodeunit_h */

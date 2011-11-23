@@ -21,13 +21,12 @@ subclass must simply implement the _shutdown() function and
 do its cleanup there.
 @see VShutdownRegistry
 */
-class MShutdownHandler
-    {
+class MShutdownHandler {
     public:
-        
-        MShutdownHandler(bool deleteHandlerAfterShutdown=true) :
+
+        MShutdownHandler(bool deleteHandlerAfterShutdown = true) :
             mDeleteAfterShutdown(deleteHandlerAfterShutdown) {}
-        
+
         virtual ~MShutdownHandler() {}
 
     protected:
@@ -37,15 +36,15 @@ class MShutdownHandler
         as part of shutdown. The typical usage is to free any class
         static (global) data owned by some class. See the
         VSingletonShutdownHandler template class for an example.
-        */        
+        */
         virtual void _shutdown() = 0;
 
     private:
-    
+
         bool mDeleteAfterShutdown;
-        
+
         friend class VShutdownRegistry; // give it access to _shutdown() and mDeleteAfterShutdown
-    };
+};
 
 /** This type stores a list of shutdown handler pointers. */
 typedef std::vector<MShutdownHandler*> ShutdownHandlerList;
@@ -65,17 +64,16 @@ by the operating system as part of program termination. That is, it's
 for things like freeing memory that you want to not look like a memory leak
 by any diagnostics that check for unfreed memory on quit.
 */
-class VShutdownRegistry
-    {
+class VShutdownRegistry {
     public:
-    
+
         /**
         Returns the global shutdown registry instance, creating it if
         this is the first call to access it.
         @return a pointer to the global registry instance
         */
         static VShutdownRegistry* instance();
-        
+
         /**
         Invokes shutdown by deleting the registry. This is the better than
         simply deleting the registry instance because it's done in a threadsafe
@@ -83,33 +81,33 @@ class VShutdownRegistry
         from multiple places and multiple threads.
         */
         static void shutdown();
-        
+
         /**
         Registers a shutdown handler with the shutdown registry. The
         handler's _shutdown() will be called to shut down when the
         registry is told to shut down.
         */
         void registerHandler(MShutdownHandler* handler);
-    
+
         /**
         Registers a shutdown function with the shutdown registry. The
         function will be called to shut down when the registry is
         told to shut down.
         */
         void registerFunction(shutdownFunction func);
-    
+
     private:
-    
+
         // Declare our constructor and destructor private so that they
         // can only be called via our static functions (which are thread-safe).
         VShutdownRegistry() : mHandlers(), mFunctions() {}
         ~VShutdownRegistry();
-        
+
         static VShutdownRegistry* gInstance; ///< The registry as a singleton object.
-        
+
         ShutdownHandlerList     mHandlers;  ///< The handlers that have been registered with us.
         ShutdownFunctionList    mFunctions; ///< The functions that have been registered with us.
-    };
+};
 
 /**
 This template class allows you to easily register a singleton class T with the
@@ -124,7 +122,7 @@ static void deleteInstance();
 <li>When you create the instance, also create the shutdown handler; that is, you only
 create one shutdown handler, so you may as well do it when you create the singleton
 instance:<br>
-<code>    
+<code>
 gInstance = new MyClass(params);
 new VSingletonShutdownHandler<MyClass>();
 </code>
@@ -138,21 +136,20 @@ is safe to do.
 </ol>
 */
 template <class T>
-class VSingletonShutdownHandler : public MShutdownHandler
-    {
+class VSingletonShutdownHandler : public MShutdownHandler {
     public:
-    
+
         /**
         Constructs the handler.
         @param    deleteHandlerAfterShutdown    true if the handler (not the T instance)
             can be deleted after _shutdown() is called; this is true for
             heap objects, false for global variables
         */
-        VSingletonShutdownHandler(bool deleteHandlerAfterShutdown=true) :
-        MShutdownHandler(deleteHandlerAfterShutdown)
+        VSingletonShutdownHandler(bool deleteHandlerAfterShutdown = true)
+            : MShutdownHandler(deleteHandlerAfterShutdown)
             {
             VShutdownRegistry::instance()->registerHandler(this);
-            }
+        }
 
         virtual ~VSingletonShutdownHandler() {}
 
@@ -163,6 +160,6 @@ class VSingletonShutdownHandler : public MShutdownHandler
         To shut down the singleton means to delete the instance.
         */
         virtual void _shutdown() { T::deleteInstance(); }
-    };
+};
 
 #endif /* vshutdownregistry_h */

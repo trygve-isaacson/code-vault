@@ -12,11 +12,11 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vsocketfactory.h"
 
-VListenerSocket::VListenerSocket(int portNumber, const VString& bindAddress, VSocketFactory* factory, int backlog) :
-VSocket(VSTRING_FORMAT("listener(%d)", portNumber), portNumber),
-mBindAddress(bindAddress),
-mBacklog(backlog),
-mFactory(factory)
+VListenerSocket::VListenerSocket(int portNumber, const VString& bindAddress, VSocketFactory* factory, int backlog)
+    : VSocket(VSTRING_FORMAT("listener(%d)", portNumber), portNumber)
+    , mBindAddress(bindAddress)
+    , mBacklog(backlog)
+    , mFactory(factory)
     {
     /*
     We need to have our listen() calls timeout if we expect to allow
@@ -30,18 +30,15 @@ mFactory(factory)
     timeout.tv_usec = 0;
 
     VListenerSocket::setReadTimeOut(timeout);
-    }
+}
 
-VListenerSocket::~VListenerSocket()
-    {
-    }
+VListenerSocket::~VListenerSocket() {
+}
 
-VSocket* VListenerSocket::accept()
-    {
-    if (mSocketID == kNoSocketID)
-        {
+VSocket* VListenerSocket::accept() {
+    if (mSocketID == kNoSocketID) {
         throw VStackTraceException("VListenerSocket::accept called before socket is listening.");
-        }
+    }
 
     struct sockaddr_in  clientaddr;
     VSocklenT           clientaddrLength = sizeof(clientaddr);
@@ -50,8 +47,7 @@ VSocket* VListenerSocket::accept()
     bool                shouldAccept = true;
     int                 result = -1;
 
-    if (mReadTimeOutActive)
-        {
+    if (mReadTimeOutActive) {
         /* then we need to do a select call */
         struct timeval  timeout = mReadTimeOut;
         fd_set          readset;
@@ -62,35 +58,29 @@ VSocket* VListenerSocket::accept()
 
         result = ::select(static_cast<int>(mSocketID + 1), &readset, NULL, NULL, &timeout);
 
-        if (result == -1)
-            {
+        if (result == -1) {
             throw VException(VSTRING_FORMAT("VListenerSocket::accept select error, errno=%s", ::strerror(errno)));
-            }
+        }
 
         //lint -e573 Signed-unsigned mix with divide"
         shouldAccept = ((result > 0) && FD_ISSET(mSocketID, &readset));
-        }
+    }
 
-    if (shouldAccept)
-        {
-        ::memset(&clientaddr, 0, static_cast<Vu32> (clientaddrLength));
+    if (shouldAccept) {
+        ::memset(&clientaddr, 0, static_cast<Vu32>(clientaddrLength));
         handlerSockID = ::accept(mSocketID, (struct sockaddr*) &clientaddr, &clientaddrLength);
 
-        if (handlerSockID == kNoSocketID)
-            {
+        if (handlerSockID == kNoSocketID) {
             throw VException(VSTRING_FORMAT("VListenerSocket::accept accept error, errno=%s", ::strerror(errno)));
-            }
-        else
-            {
+        } else {
             handlerSocket = mFactory->createSocket(handlerSockID);
-            }
         }
+    }
 
     return handlerSocket;
-    }
+}
 
-void VListenerSocket::listen()
-    {
+void VListenerSocket::listen() {
     this->_listen(mBindAddress, mBacklog);
-    }
+}
 

@@ -28,10 +28,9 @@ useful due to lack of buffering), use VDirectIOFileStream.
 @see VAbstractFileStream
 @see VDirectIOFileStream
 */
-class VBufferedFileStream : public VAbstractFileStream
-    {
+class VBufferedFileStream : public VAbstractFileStream {
     public:
-    
+
         /**
         Constructs an undefined stream (you will have to set it up
         with a subsequent call to setNode()).
@@ -56,7 +55,7 @@ class VBufferedFileStream : public VAbstractFileStream
         a POSIX FILE handle and specified closeOnDestruct = FALSE.
         */
         virtual ~VBufferedFileStream();
-        
+
         /**
         Sets the file to an already-open standard POSIX file handle, so that
         you can use the empty constructor, and call this method after
@@ -147,9 +146,9 @@ class VBufferedFileStream : public VAbstractFileStream
         @return the number of bytes currently available for reading
         */
         virtual Vs64 available() const;
-    
+
     private:
-    
+
         // Prevent copy construction and assignment, since there is no provision for sharing the mFile pointer.
         VBufferedFileStream(const VBufferedFileStream& other);
         VBufferedFileStream& operator=(const VBufferedFileStream& other);
@@ -166,11 +165,11 @@ class VBufferedFileStream : public VAbstractFileStream
         static int      _wrap_fseek(FILE* f, long int offset, int whence);                          ///< Calls POSIX fseek in a way that is safe even if a signal is caught inside the function.
         static int      _wrap_fflush(FILE* f);                                                      ///< Calls POSIX fflush in a way that is safe even if a signal is caught inside the function.
         static long int _wrap_ftell(FILE* f);                                                       ///< Calls POSIX ftell in a way that is safe even if a signal is caught inside the function.
-    
+
         FILE*   mFile;              ///< The Unix API file handle.
         bool    mCloseOnDestruct;   ///< True if we'll close on destruct, set false on setFile.
-    
-    };
+
+};
 
 #endif /* vbufferedfilestream_h */
 

@@ -48,20 +48,19 @@ expand the buffer will cause a VEOFException to be thrown. You can tell
 VMemoryStream to relinquish ownership of the buffer by calling orphanBuffer();
 this means VMemoryStream will neither reallocate nor delete/free the buffer.
 */
-class VMemoryStream : public VStream
-    {
+class VMemoryStream : public VStream {
     public:
-    
+
         static const Vs64 kIncrement2x = 0;             ///< Special constant for resize increment, causes buffer to double when expanded.
         static const Vs64 kDefaultBufferSize = 32768;   ///< The default size of the buffer allocated on construction.
         typedef enum { kAllocatedByOperatorNew, kAllocatedByMalloc, kAllocatedOnStack, kAllocatedUnknown } BufferAllocationType;
-    
+
         /**
         Constructs the object with a specified buffer size and resizing increment.
         @param    initialBufferSize    the size of the buffer to allocate initially
         @param    resizeIncrement        the "chunk size" in which the buffer will expand when needed
         */
-        VMemoryStream(Vs64 initialBufferSize=kDefaultBufferSize, Vs64 resizeIncrement=kIncrement2x);
+        VMemoryStream(Vs64 initialBufferSize = kDefaultBufferSize, Vs64 resizeIncrement = kIncrement2x);
         /*
         Copy construction and assignment semantics: If the other stream owns its buffer, then
         the copy gets a brand new copied buffer; if the other stream doesn't own its buffer,
@@ -82,7 +81,7 @@ class VMemoryStream : public VStream
         @param    suppliedEOFOffset     the offset of the end of the "valid" data in the supplied buffer
         @param    resizeIncrement       the "chunk size" in which the buffer will expand when needed
         */
-        VMemoryStream(Vu8* buffer, BufferAllocationType allocationType, bool adoptsBuffer, Vs64 suppliedBufferSize, Vs64 suppliedEOFOffset, Vs64 resizeIncrement=kIncrement2x);
+        VMemoryStream(Vu8* buffer, BufferAllocationType allocationType, bool adoptsBuffer, Vs64 suppliedBufferSize, Vs64 suppliedEOFOffset, Vs64 resizeIncrement = kIncrement2x);
         /**
         Destructor.
         */
@@ -95,7 +94,7 @@ class VMemoryStream : public VStream
         @param other the other VMemoryStream that we are assigned from
         */
         VMemoryStream& operator=(const VMemoryStream& other);
-        
+
         // Required VStream method overrides:
         /**
         Attempts to read a specified number of bytes from the stream.
@@ -198,14 +197,14 @@ class VMemoryStream : public VStream
         friend bool operator==(const VMemoryStream& m1, const VMemoryStream& m2);
 
     protected:
-    
+
         /*
         These methods are ONLY overridden by buffer-based subclasses,
         for example VMemoryStream. They are called by the friend function
         streamCopy() so that it can efficiently copy data directly to/from
         streams that have data buffers (namely, VMemoryStream).
         */
-        
+
         /**
         Returns a pointer to the current read i/o position in the stream's buffer,
         or NULL if the stream does not have a buffer or support direct copying
@@ -246,10 +245,10 @@ class VMemoryStream : public VStream
         @param    numBytesWritten    the number of bytes that were previously written
         */
         virtual void _finishWrite(Vs64 numBytesWritten);
-        
+
         /** Asserts if any invariant is broken. */
         void _assertInvariant() const;
-    
+
         Vs64                    mBufferSize;        ///< The physical size of the buffer.
         Vs64                    mIOOffset;          ///< The offset in the buffer of the next read/write.
         Vs64                    mEOFOffset;         ///< The offset in the buffer of the end of the data.
@@ -259,10 +258,10 @@ class VMemoryStream : public VStream
         Vu8*                    mBuffer;            ///< The buffer itself.
 
     private:
-    
+
         Vu8* _createNewBuffer(Vs64 bufferSize, BufferAllocationType& newAllocationType);
         void _releaseBuffer();
-    };
+};
 
 /**
 VReadOnlyMemoryStream is a convenience class that lets you share a single buffer
@@ -275,10 +274,9 @@ readers. This facility even allows you to supply a pointer to a location inside
 an arbitrary actual buffer (heap or stack) because the VReadOnlyMemoryStream object
 will never use the pointer for memory managment purposes such as delete or free.
 */
-class VReadOnlyMemoryStream : public VMemoryStream
-    {
+class VReadOnlyMemoryStream : public VMemoryStream {
     public:
-    
+
         /**
         Constructs the object with an existing buffer.
         @param    buffer                the buffer that the VMemoryStream will work on
@@ -318,6 +316,6 @@ class VReadOnlyMemoryStream : public VMemoryStream
         Throws a VEOFException because this class is a read-only stream.
         */
         virtual void flush();
-    };
+};
 
 #endif /* vmemorystream_h */

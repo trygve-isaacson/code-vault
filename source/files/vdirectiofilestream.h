@@ -28,10 +28,9 @@ VBufferedFileStream.
 @see VAbstractFileStream
 @see VBufferedFileStream
 */
-class VDirectIOFileStream : public VAbstractFileStream
-    {
+class VDirectIOFileStream : public VAbstractFileStream {
     public:
-    
+
         /**
         Constructs an undefined stream (you will have to set it up
         with a subsequent call to setNode()).
@@ -147,16 +146,16 @@ class VDirectIOFileStream : public VAbstractFileStream
         @return the number of bytes currently available for reading
         */
         virtual Vs64 available() const;
-    
+
     private:
-    
+
         // Prevent copy construction and assignment, since there is no provision for sharing the mFile pointer.
         VDirectIOFileStream(const VDirectIOFileStream& other);
         VDirectIOFileStream& operator=(const VDirectIOFileStream& other);
 
         int     mFile;              ///< The Unix API file descriptor.
         bool    mCloseOnDestruct;   ///< True if we'll close on destruct, set false on setFile.
-    };
+};
 
 #endif /* vdirectiofilestream_h */
 

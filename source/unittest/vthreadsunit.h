@@ -14,10 +14,9 @@ http://www.bombaydigital.com/
 /**
 Unit test class for validating VThread, VMutex, VMutexLocker, VSemaphore.
 */
-class VThreadsUnit : public VUnit
-    {
+class VThreadsUnit : public VUnit {
     public:
-    
+
         /**
         Constructs a unit test object.
         @param    logOnSuccess    true if you want successful tests to be logged
@@ -28,13 +27,13 @@ class VThreadsUnit : public VUnit
         Destructor.
         */
         virtual ~VThreadsUnit() {}
-        
+
         /**
         Executes the unit test.
         */
         virtual void run();
 
         friend class TestThreadClass; // Our test uses this thread class and it needs to log status to unit test output.
-    };
+};
 
 #endif /* vthreadsunit_h */
