@@ -595,6 +595,12 @@ class VLogAppenderFactory {
 
 typedef boost::shared_ptr<const VLogAppenderFactory> VLogAppenderFactoryPtr;
 
+/**
+This class holds the constants defining the log levels. You can use other
+level values between these for more granular output filtering, but named
+macros are provided for logging at each of the key predefined levels from
+fatal to trace.
+*/
 class VLoggerLevel {
     public:
 
@@ -611,10 +617,10 @@ class VLoggerLevel {
         static VString getName(int level);
 };
 
-// Primary outward facing class for logging. All static methods. The other stuff is internal.
 /**
 The VLogger class provides the static APIs for configuring the logging system, adding, removing, and
-finding appenders and loggers, etc.
+finding appenders and loggers, etc. This is the primary outward facing class for logging beyond the
+use of the macros that generate output.
 */
 class VLogger {
     public:
