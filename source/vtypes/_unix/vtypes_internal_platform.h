@@ -22,9 +22,9 @@ does not need to be exposed to any of this.
 
 // Solaris-specific includes.
 #ifdef sun
-#include <strings.h>
-#include <netinet/in.h>
-#include <inttypes.h>
+    #include <strings.h>
+    #include <netinet/in.h>
+    #include <inttypes.h>
 #endif
 
 #define O_BINARY 0x8000 ///< Macro to define O_BINARY mode, which is not in the standard headers.

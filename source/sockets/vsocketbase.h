@@ -42,11 +42,11 @@ http://www.bombaydigital.com/
 
 // We have to define VSocketID here because we don't include platform (it includes us).
 #ifdef VPLATFORM_WIN
-typedef SOCKET VSocketID;    ///< The platform-dependent definition of a socket identifier.
-#define V_NO_SOCKET_ID_CONSTANT INVALID_SOCKET ///< Used internally to initialize kNoSocketID
+    typedef SOCKET VSocketID;    ///< The platform-dependent definition of a socket identifier.
+    #define V_NO_SOCKET_ID_CONSTANT INVALID_SOCKET ///< Used internally to initialize kNoSocketID
 #else
-typedef int VSocketID;    ///< The platform-dependent definition of a socket identifier.
-#define V_NO_SOCKET_ID_CONSTANT -1 ///< Used internally to initialize kNoSocketID
+    typedef int VSocketID;    ///< The platform-dependent definition of a socket identifier.
+    #define V_NO_SOCKET_ID_CONSTANT -1 ///< Used internally to initialize kNoSocketID
 #endif
 
 typedef Vu32 VNetAddr;    ///< A 32-bit IP address, in network byte order (think of it as an array of 4 bytes, not as a 32-bit integer).

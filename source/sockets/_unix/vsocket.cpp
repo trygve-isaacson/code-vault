@@ -26,11 +26,11 @@ V_STATIC_INIT_TRACE
 // On Mac OS X, we disable SIGPIPE in VSocketBase::setDefaultSockOpt().
 // For other Unix platforms, we specify it in the flags of each send()/recv() call via this parameter.
 #ifdef VPLATFORM_MAC
-#define VSOCKET_DEFAULT_SEND_FLAGS 0
-#define VSOCKET_DEFAULT_RECV_FLAGS 0
+    #define VSOCKET_DEFAULT_SEND_FLAGS 0
+    #define VSOCKET_DEFAULT_RECV_FLAGS 0
 #else
-#define VSOCKET_DEFAULT_SEND_FLAGS MSG_NOSIGNAL
-#define VSOCKET_DEFAULT_RECV_FLAGS MSG_NOSIGNAL
+    #define VSOCKET_DEFAULT_SEND_FLAGS MSG_NOSIGNAL
+    #define VSOCKET_DEFAULT_RECV_FLAGS MSG_NOSIGNAL
 #endif
 
 // This is to force our staticInit to be called at startup.

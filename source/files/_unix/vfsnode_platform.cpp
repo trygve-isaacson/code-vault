@@ -14,22 +14,22 @@ http://www.bombaydigital.com/
 #include <dirent.h>
 
 #ifdef VPLATFORM_MAC
-#ifndef VPLATFORM_MAC_IOS
-// There is a conflict between standard and OpenTransport definitions such as TCP_NODELAY. We don't use OT nor want it. This
-// only cropped up when turning on precompiled headers. Specifying MAC_OS_X_VERSION_MIN_REQUIRED to MAC_OS_X_VERSION_10_4
-// should suppress the OT includes at the end of OSServices.h, but I can't make that work. These three
-// defines have the same effect. CoreServices.h is the thing that includes OSServices.h which conditionall
-// includes the three OpenTransport*.h files. We need CoreServices.h to use FSFindFolder et al in our directory operations here.
-// We also need Carbon.h for GetCurrentProcess and GetProcessBundleLocation in _platform_getExecutable.
-#define __OPENTRANSPORT__
-#define __OPENTRANSPORTPROVIDERS__
-#define __OPENTRANSPORTPROTOCOL__
+    #ifndef VPLATFORM_MAC_IOS
+        // There is a conflict between standard and OpenTransport definitions such as TCP_NODELAY. We don't use OT nor want it. This
+        // only cropped up when turning on precompiled headers. Specifying MAC_OS_X_VERSION_MIN_REQUIRED to MAC_OS_X_VERSION_10_4
+        // should suppress the OT includes at the end of OSServices.h, but I can't make that work. These three
+        // defines have the same effect. CoreServices.h is the thing that includes OSServices.h which conditionally
+        // includes the three OpenTransport*.h files. We need CoreServices.h to use FSFindFolder et al in our directory operations here.
+        // We also need Carbon.h for GetCurrentProcess and GetProcessBundleLocation in _platform_getExecutable.
+        #define __OPENTRANSPORT__
+        #define __OPENTRANSPORTPROVIDERS__
+        #define __OPENTRANSPORTPROTOCOL__
 
-// Workaround problem on iOS SDK. Prevent inclusion of WebServicesCore, which presumes inclusion of CFXMLNode.h which does not exist.
-#define __WEBSERVICESCORE__
+        // Workaround problem on iOS SDK. Prevent inclusion of WebServicesCore, which presumes inclusion of CFXMLNode.h which does not exist.
+        #define __WEBSERVICESCORE__
 
-#include <CoreServices/CoreServices.h>
-#endif /* not VPLATFORM_MAC_IOS */
+        #include <CoreServices/CoreServices.h>
+    #endif /* not VPLATFORM_MAC_IOS */
 #endif /* VPLATFORM_MAC */
 
 // static

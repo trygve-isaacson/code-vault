@@ -12,11 +12,11 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 
 #ifdef VCOMPILER_MSVC
-#pragma warning(disable: 6386)  // the library file doesn't past muster
+    #pragma warning(disable: 6386)  // the library file doesn't past muster
 #endif
 #include <ws2tcpip.h> // For the WSA calls in enumerateNetworkInterfaces()
 #ifdef VCOMPILER_MSVC
-#pragma warning(default: 6386)
+    #pragma warning(default: 6386)
 #endif
 
 V_STATIC_INIT_TRACE

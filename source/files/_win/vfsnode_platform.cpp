@@ -12,11 +12,11 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vthread.h"
 #ifdef VCOMPILER_MSVC
-#pragma warning(disable: 6387)  // the library file doesn't past muster
+    #pragma warning(disable: 6387)  // the library file doesn't past muster
 #endif
 #include <shlobj.h>
 #ifdef VCOMPILER_MSVC
-#pragma warning(default: 6387)
+    #pragma warning(default: 6387)
 #endif
 
 /* Note: according to Microsoft KB article 177506, only the following characters

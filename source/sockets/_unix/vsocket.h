@@ -12,10 +12,10 @@ http://www.bombaydigital.com/
 #include "vsocketbase.h"
 
 #ifndef PP_Target_Carbon
-// Unix platform includes needed for platform socket implementation.
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
+    // Unix platform includes needed for platform socket implementation.
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <netinet/tcp.h>
 #endif
 
 #include "vmutex.h"
@@ -39,9 +39,9 @@ Well, on HP-UX the parameter is defined as an int. The cleanest way of dealing
 with this is to have our own conditionally-defined type here and use it there.
 */
 #ifdef VPLATFORM_UNIX_HPUX
-typedef int VSocklenT;
+    typedef int VSocklenT;
 #else
-typedef socklen_t VSocklenT;
+    typedef socklen_t VSocklenT;
 #endif
 
 /**

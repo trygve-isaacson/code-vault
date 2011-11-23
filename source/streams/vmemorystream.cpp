@@ -13,12 +13,12 @@ http://www.bombaydigital.com/
 
 // Is ASSERT_INVARIANT enabled/disabled specifically for VMemoryStream?
 #ifdef V_ASSERT_INVARIANT_VMEMORYSTREAM_ENABLED
-#undef ASSERT_INVARIANT
-#if V_ASSERT_INVARIANT_VMEMORYSTREAM_ENABLED == 1
-#define ASSERT_INVARIANT() this->_assertInvariant() ///< Macro to call this->_assertInvariant().
-#else
-#define ASSERT_INVARIANT() ((void) 0) ///< No-op.
-#endif
+    #undef ASSERT_INVARIANT
+    #if V_ASSERT_INVARIANT_VMEMORYSTREAM_ENABLED == 1
+        #define ASSERT_INVARIANT() this->_assertInvariant() ///< Macro to call this->_assertInvariant().
+    #else
+        #define ASSERT_INVARIANT() ((void) 0) ///< No-op.
+    #endif
 #endif
 
 // VMemoryStream --------------------------------------------------------------------------

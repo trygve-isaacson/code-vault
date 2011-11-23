@@ -913,12 +913,12 @@ bool VInstant::isTimeFrozen() {
 
 // Is ASSERT_INVARIANT enabled/disabled specifically for VDate and VTimeOfDay?
 #ifdef V_ASSERT_INVARIANT_VDATE_AND_TIME_ENABLED
-#undef ASSERT_INVARIANT
-#if V_ASSERT_INVARIANT_VDATE_AND_TIME_ENABLED == 1
-#define ASSERT_INVARIANT() this->_assertInvariant() ///< Macro to call this->_assertInvariant().
-#else
-#define ASSERT_INVARIANT() ((void) 0) ///< No-op.
-#endif
+    #undef ASSERT_INVARIANT
+    #if V_ASSERT_INVARIANT_VDATE_AND_TIME_ENABLED == 1
+        #define ASSERT_INVARIANT() this->_assertInvariant() ///< Macro to call this->_assertInvariant().
+    #else
+        #define ASSERT_INVARIANT() ((void) 0) ///< No-op.
+    #endif
 #endif
 
 const VChar VDate::kLocalDateSeparator('/');

@@ -51,13 +51,13 @@ class VMutex;
 */
 
 #ifdef VAULT_VSTRING_STRICT_FORMATTING
-#define VSTRING_FORMAT(format_string, ...) VString(0, format_string, __VA_ARGS__)
-#define VSTRING_ARGS(format_string, ...) true, format_string, __VA_ARGS__
-#define VSTRING_COPY(literal_string) VString(literal_string)
+    #define VSTRING_FORMAT(format_string, ...) VString(0, format_string, __VA_ARGS__)
+    #define VSTRING_ARGS(format_string, ...) true, format_string, __VA_ARGS__
+    #define VSTRING_COPY(literal_string) VString(literal_string)
 #else
-#define VSTRING_FORMAT(format_string, ...) VString(format_string, __VA_ARGS__)
-#define VSTRING_ARGS(format_string, ...) format_string, __VA_ARGS__
-#define VSTRING_COPY(literal_string) VString((char*)literal_string) // call non-formatting ctor
+    #define VSTRING_FORMAT(format_string, ...) VString(format_string, __VA_ARGS__)
+    #define VSTRING_ARGS(format_string, ...) format_string, __VA_ARGS__
+    #define VSTRING_COPY(literal_string) VString((char*)literal_string) // call non-formatting ctor
 #endif
 
 // The following macros define the proper formatting directives for the basic POD types,

@@ -12,12 +12,12 @@ http://www.bombaydigital.com/
 
 // Is ASSERT_INVARIANT enabled/disabled specifically for VException?
 #ifdef V_ASSERT_INVARIANT_VEXCEPTION_ENABLED
-#undef ASSERT_INVARIANT
-#if V_ASSERT_INVARIANT_VEXCEPTION_ENABLED == 1
-#define ASSERT_INVARIANT() this->_assertInvariant() ///< Macro to call this->_assertInvariant().
-#else
-#define ASSERT_INVARIANT() ((void) 0) ///< No-op.
-#endif
+    #undef ASSERT_INVARIANT
+    #if V_ASSERT_INVARIANT_VEXCEPTION_ENABLED == 1
+        #define ASSERT_INVARIANT() this->_assertInvariant() ///< Macro to call this->_assertInvariant().
+    #else
+        #define ASSERT_INVARIANT() ((void) 0) ///< No-op.
+    #endif
 #endif
 
 // enableWin32SEHandler(false) will clear this flag and therefore disable installWin32SEHandler() functionality.

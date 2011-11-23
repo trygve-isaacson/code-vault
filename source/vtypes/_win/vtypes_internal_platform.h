@@ -16,17 +16,17 @@ does not need to be exposed to any of this.
 */
 
 #ifdef VCOMPILER_CODEWARRIOR
-#include <unistd.h>
-#include <cassert> // used by Vassert
-#define __assert(cond, file, line) assert(cond) // used by Vassert
+    #include <unistd.h>
+    #include <cassert> // used by Vassert
+    #define __assert(cond, file, line) assert(cond) // used by Vassert
 #endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #ifdef VCOMPILER_MSVC
-#include <fcntl.h>  // open(), file mode constants
-#include <time.h>   // mktime() (for CodeWarrior, time.h must be included by vtypes_platform.h)
+    #include <fcntl.h>  // open(), file mode constants
+    #include <time.h>   // mktime() (for CodeWarrior, time.h must be included by vtypes_platform.h)
 #endif
 
 #include <errno.h>  // errno, error constants
@@ -43,15 +43,15 @@ typedef signed long ssize_t; // used by i/o APIs defined below
 #define SHUT_WR SD_SEND
 
 #ifdef VCOMPILER_MSVC
-typedef int mode_t;
-#define S_IRWXO    _S_IREAD | _S_IWRITE
-#define S_IRWXG    _S_IREAD | _S_IWRITE
-#define S_IRWXU    _S_IREAD | _S_IWRITE
+    typedef int mode_t;
+    #define S_IRWXO    _S_IREAD | _S_IWRITE
+    #define S_IRWXG    _S_IREAD | _S_IWRITE
+    #define S_IRWXU    _S_IREAD | _S_IWRITE
 #endif
 
 // On VC++ but not CodeWarrior, we implement snapshot using _ftime64(), which is UTC-based.
 #ifdef VCOMPILER_MSVC
-#define V_INSTANT_SNAPSHOT_IS_UTC    // platform_snapshot() gives us a UTC time suitable for platform_now()
+    #define V_INSTANT_SNAPSHOT_IS_UTC    // platform_snapshot() gives us a UTC time suitable for platform_now()
 #endif
 
 // We have to implement timegm() because there's no equivalent Win32 function.
