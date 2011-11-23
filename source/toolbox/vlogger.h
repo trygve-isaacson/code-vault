@@ -95,19 +95,22 @@ class VBentoNode;
     created.
 
     Here is a simple example configuration that sets up logging to log at DEBUG level to a file "my.log".
+    In this example, we show "<logging>" as the outer XML tag name; but in reality at runtime this can
+    be whatever you want because you must locate that node and then pass it into the configure() API,
+    and configure() only examines the attributes and children of that node.
 
     <pre>
-        <loggers>
+        <logging>
             <appender name="default" kind="file" file="my.log" />
             <logger name="default" level="80" appender="default" />
-        </loggers>
+        </logging>
     </pre>
 
     Here is a more complex configuration with two loggers and two appenders, where one of the loggers
     writes to both of the appenders.
 
     <pre>
-        <loggers>
+        <logging>
             <appender name="primary" kind="file" file="my.log" />
             <appender name="console" kind="console" />
             <logger name="default" level="60" appender="primary" />
@@ -115,7 +118,7 @@ class VBentoNode;
                 <appender name="primary" />
                 <appender name="console" />
             </logger>
-        </loggers>
+        </logging>
     </pre>
 
     For a given kind of appender, you can configure default property values to be applied to any
@@ -123,9 +126,9 @@ class VBentoNode;
     default value of the "format-output" boolean to false for all file loggers, you would include:
 
     <pre>
-        <loggers>
+        <logging>
             <appender-defaults kind="file" format-output="false" />
-        </loggers>
+        </logging>
     </pre>
 
     You can specify in that manner any property appropriate to the appender kind indicated.
