@@ -11,6 +11,7 @@ http://www.bombaydigital.com/
 #include "vsocketthread.h"
 #include "vmessagehandler.h"
 #include "vassert.h"
+#include "vlogger.h"
 
 // Is ASSERT_INVARIANT enabled/disabled specifically for VMessage?
 #ifdef V_ASSERT_INVARIANT_VMESSAGE_ENABLED
@@ -25,6 +26,16 @@ http://www.bombaydigital.com/
 // VMessage -------------------------------------------------------------------
 
 const VString VMessage::kMessageLoggerName("messages");
+const int VMessage::kMessageContentRecordingLevel  = VLoggerLevel::INFO;
+const int VMessage::kMessageHeaderLevel            = VLoggerLevel::DEBUG;
+const int VMessage::kMessageContentFieldsLevel     = VLoggerLevel::DEBUG + 1;
+const int VMessage::kMessageTrafficDetailsLevel    = VLoggerLevel::DEBUG + 2;
+const int VMessage::kMessageHandlerDispatchLevel   = VLoggerLevel::DEBUG + 3;
+const int VMessage::kMessageHandlerDetailLevel     = VLoggerLevel::DEBUG + 4;
+const int VMessage::kMessageContentHexDumpLevel    = VLoggerLevel::DEBUG + 5;
+const int VMessage::kMessageQueueOpsLevel          = VLoggerLevel::DEBUG + 6;
+const int VMessage::kMessageTraceDetailLevel       = VLoggerLevel::TRACE;
+const int VMessage::kMessageHandlerLifecycleLevel  = VLoggerLevel::TRACE;
 
 // static
 void VMessage::release(/* @Nullable */ VMessage* message) {
