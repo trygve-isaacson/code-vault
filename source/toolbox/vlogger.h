@@ -16,6 +16,11 @@ http://www.bombaydigital.com/
 #include "vtextiostream.h"
 #include <boost/shared_ptr.hpp>
 
+// Microsoft steals this symbol name globally. Take it back.
+#ifdef VPLATFORM_WIN
+    #undef ERROR
+#endif
+
 class VSettings;
 class VSettingsNode;
 class VBentoNode;

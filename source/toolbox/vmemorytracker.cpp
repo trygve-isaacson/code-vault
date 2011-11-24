@@ -412,9 +412,9 @@ static void* _allocateMemory(size_t size, const char* file, int line, bool isArr
         if ((gMaxNumAllocations < 1) || (gCurrentNumAllocations < gMaxNumAllocations)) {
             const char* stackCrawlInfo = NULL;
             if (_isCodeLocationCrawlEnabled(file, line)) {
-                VStringLogger logger(VString::EMPTY(), VLoggerLevel::TRACE);
-                VThread::logStackCrawl(VString::EMPTY(), VNamedLoggerPtr(&logger), false);
-                stackCrawlInfo = logger.orphanLines();
+                VStringLoggerPtr logger(new VStringLogger(VLoggerLevel::TRACE, VString::EMPTY(), false);
+                VThread::logStackCrawl(VString::EMPTY(), logger, false);
+                stackCrawlInfo = logger->orphanLines();
             }
             const AllocationRecord* r = new AllocationRecord(p, isArray, size, file, line, stackCrawlInfo);
             _putToMap(p, r);

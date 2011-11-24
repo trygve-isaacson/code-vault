@@ -243,9 +243,9 @@ static void _win32SEHandler(unsigned code, EXCEPTION_POINTERS* ep) {
         VLOGGER_FATAL(msg);
         ::ExitProcess(1);
     } else {
-        VStringLogger logger(VLoggerLevel::TRACE, VString::EMPTY(), VString::EMPTY());
-        VThread::logStackCrawl(_getExceptionLabel(*(ep->ExceptionRecord)), &logger, false);
-        throw VException((int) code, logger.getLines());
+        VStringLoggerPtr logger(new VStringLogger(VString::EMPTY(), VLoggerLevel::TRACE, false);
+        VThread::logStackCrawl(_getExceptionLabel(*(ep->ExceptionRecord)), logger, false);
+        throw VException((int) code, logger->getLines());
     }
 }
 

@@ -144,7 +144,7 @@ void VSocket::_listen(const VString& bindAddress, int backlog) {
 
     result = ::listen(listenSockID, backlog);
     if (result != 0) {
-        throw VException(VSTRING_FORMAT("VSocket::listen listen() for port %d failed -- socket id %d, result %d, errno=%d", mPortNumber, listenSockID, result, ::WSAGetLastError()))
+        throw VException(VSTRING_FORMAT("VSocket::listen listen() for port %d failed -- socket id %d, result %d, errno=%d", mPortNumber, listenSockID, result, ::WSAGetLastError()));
     }
 
     mSocketID = listenSockID;

@@ -211,7 +211,7 @@ void VThread::getThreadsInfo(VBentoNode& bento) {
         VThread* thread = (*i).second;
         VBentoNode* child = bento.addNewChildNode("thread");
         child->addString("name", thread->getName());
-        child->addS64("threadID", reinterpret_cast<Vs64>(thread->mThreadID));
+        child->addS64("threadID", reinterpret_cast<Vs64>((void*) thread->mThreadID)); // Convoluted casting to make all platforms happy showing different id types as a 64-bit number.
         child->addBool("isRunning", thread->mIsRunning);
         child->addBool("isDeleted", thread->mIsDeleted);
         child->addBool("deleteAtEnd", thread->mDeleteAtEnd);
