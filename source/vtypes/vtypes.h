@@ -665,5 +665,9 @@ class VMemoryTracker {
 #endif /* VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT */
 #endif /* __OBJC__ */
 
-#endif /* vtypes_h */
+// Give app a chance to configure after us as well as before.
+#define VCONFIGURE_AFTER_VTYPES
+#include "vconfigure.h"
+#undef VCONFIGURE_AFTER_VTYPES
 
+#endif /* vtypes_h */

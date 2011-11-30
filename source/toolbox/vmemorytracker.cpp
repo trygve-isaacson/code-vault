@@ -412,7 +412,7 @@ static void* _allocateMemory(size_t size, const char* file, int line, bool isArr
         if ((gMaxNumAllocations < 1) || (gCurrentNumAllocations < gMaxNumAllocations)) {
             const char* stackCrawlInfo = NULL;
             if (_isCodeLocationCrawlEnabled(file, line)) {
-                VStringLoggerPtr logger(new VStringLogger(VLoggerLevel::TRACE, VString::EMPTY(), false);
+                VStringLoggerPtr logger(new VStringLogger(VString::EMPTY(), VLoggerLevel::TRACE, false));
                 VThread::logStackCrawl(VString::EMPTY(), logger, false);
                 stackCrawlInfo = logger->orphanLines();
             }

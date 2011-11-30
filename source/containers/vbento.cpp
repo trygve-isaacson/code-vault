@@ -1620,7 +1620,7 @@ void VBentoNode::writeToBentoTextString(VString& s, bool lineWrap) const {
     this->writeToBentoTextStream(stream, lineWrap);
     stream.writeLineEnd();
     stream.seek0();
-    stream.readAll(s);
+    stream.readAll(s, lineWrap);
 }
 
 void VBentoNode::readFromStream(VBinaryIOStream& stream) {

@@ -170,7 +170,7 @@ void VExceptionUnit::_testCheckedDynamicCast() {
     this->test(V_CHECKED_DYNAMIC_CAST(VExceptionUnit_SubclassBranchA*, base) == NULL, "V_CHECKED_DYNAMIC_CAST base -> subclass => null");
     this->test(V_CHECKED_DYNAMIC_CAST(VExceptionUnit_SubclassBranchA*, branchB) == NULL, "V_CHECKED_DYNAMIC_CAST subclass A -> subclass B => null");
     this->test(V_CHECKED_DYNAMIC_CAST(VExceptionUnit_ExampleBase*, nullPtr) == NULL, "V_CHECKED_DYNAMIC_CAST null => null");
-#ifndef VPLATFORM_MAC /* The following junk can't sneak past the compiler on Mac GCC. */
+#ifdef VPLATFORM_WIN /* The following junk can't sneak past the compiler on Mac or Linux GCC. */
     this->test(V_CHECKED_DYNAMIC_CAST(VExceptionUnit_ExampleBase*, (VExceptionUnit*)this) == NULL, "V_CHECKED_DYNAMIC_CAST other hierarchy => null");
 #endif
 

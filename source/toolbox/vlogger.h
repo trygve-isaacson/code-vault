@@ -584,6 +584,9 @@ dynamically instantiated from settings, typically during a call to configure() a
 class VLogAppenderFactory {
     public:
 
+        VLogAppenderFactory() {}
+        virtual ~VLogAppenderFactory() {}
+
         /**
         Instantiates the concreted appender class from the specified settings.
         @param  settings    settings to use to configure the appender
@@ -1052,6 +1055,9 @@ class VStringLogger : public VNamedLogger {
 
 };
 
+typedef boost::shared_ptr<VStringLogger> VStringLoggerPtr;
+typedef boost::shared_ptr<const VStringLogger> VStringLoggerConstPtr;
+
 /**
 A special logger subclass meant to be declared on the stack (not "registered") and explicitly logged
 to, which uses an embedded VStringVectorLogAppender to capture the emitted messages to a string list.
@@ -1074,5 +1080,8 @@ class VStringVectorLogger : public VNamedLogger {
         VStringVectorLogAppender mAppender;
 
 };
+
+typedef boost::shared_ptr<VStringVectorLogger> VStringVectorLoggerPtr;
+typedef boost::shared_ptr<const VStringVectorLogger> VStringVectorLoggerConstPtr;
 
 #endif /* vlogger_h */

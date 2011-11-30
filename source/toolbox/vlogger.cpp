@@ -170,6 +170,9 @@ void VNamedLogger::_breakpointLocationForLog() {
 
 class VCoutLogAppenderFactory : public VLogAppenderFactory {
     public:
+        VCoutLogAppenderFactory() : VLogAppenderFactory() {}
+        virtual ~VCoutLogAppenderFactory() {}
+
         virtual VLogAppenderPtr instantiateLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults) const
             { return VLogAppenderPtr(new VCoutLogAppender(settings, defaults)); }
         virtual void addInfo(VBentoNode& infoNode) const
@@ -178,6 +181,9 @@ class VCoutLogAppenderFactory : public VLogAppenderFactory {
 
 class VFileLogAppenderFactory : public VLogAppenderFactory {
     public:
+        VFileLogAppenderFactory() : VLogAppenderFactory() {}
+        virtual ~VFileLogAppenderFactory() {}
+
         virtual VLogAppenderPtr instantiateLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults) const
             { return VLogAppenderPtr(new VFileLogAppender(settings, defaults)); }
         virtual void addInfo(VBentoNode& infoNode) const
@@ -186,6 +192,9 @@ class VFileLogAppenderFactory : public VLogAppenderFactory {
 
 class VRollingFileLogAppenderFactory : public VLogAppenderFactory {
     public:
+        VRollingFileLogAppenderFactory() : VLogAppenderFactory() {}
+        virtual ~VRollingFileLogAppenderFactory() {}
+
         virtual VLogAppenderPtr instantiateLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults) const
             { return VLogAppenderPtr(new VRollingFileLogAppender(settings, defaults)); }
         virtual void addInfo(VBentoNode& infoNode) const
@@ -194,6 +203,9 @@ class VRollingFileLogAppenderFactory : public VLogAppenderFactory {
 
 class VSilentLogAppenderFactory : public VLogAppenderFactory {
     public:
+        VSilentLogAppenderFactory() : VLogAppenderFactory() {}
+        virtual ~VSilentLogAppenderFactory() {}
+
         virtual VLogAppenderPtr instantiateLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults) const
             { return VLogAppenderPtr(new VSilentLogAppender(settings, defaults)); }
         virtual void addInfo(VBentoNode& infoNode) const
@@ -202,6 +214,9 @@ class VSilentLogAppenderFactory : public VLogAppenderFactory {
 
 class VStringLogAppenderFactory : public VLogAppenderFactory {
     public:
+        VStringLogAppenderFactory() : VLogAppenderFactory() {}
+        virtual ~VStringLogAppenderFactory() {}
+
         virtual VLogAppenderPtr instantiateLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults) const
             { return VLogAppenderPtr(new VStringLogAppender(settings, defaults)); }
         virtual void addInfo(VBentoNode& infoNode) const
@@ -210,6 +225,9 @@ class VStringLogAppenderFactory : public VLogAppenderFactory {
 
 class VStringVectorLogAppenderFactory : public VLogAppenderFactory {
     public:
+        VStringVectorLogAppenderFactory() : VLogAppenderFactory() {}
+        virtual ~VStringVectorLogAppenderFactory() {}
+
         virtual VLogAppenderPtr instantiateLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults) const
             { return VLogAppenderPtr(new VStringVectorLogAppender(settings, defaults)); }
         virtual void addInfo(VBentoNode& infoNode) const
