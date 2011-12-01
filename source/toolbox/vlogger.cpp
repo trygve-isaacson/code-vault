@@ -701,13 +701,24 @@ VString VLogger::_commandGetInfoString() {
 
 // static
 void VLogger::commandSetLogLevel(const VString& loggerName, int level) {
-    VMutexLocker locker(_mutexInstance(), "VLogger::commandSetLogLevel()");
-    const VNamedLoggerMap& loggers = _getLoggerMap();
-    for (VNamedLoggerMap::const_iterator i = loggers.begin(); i != loggers.end(); ++i) {
-        VNamedLoggerPtr logger = (*i).second;
-        if (loggerName.isEmpty() || (logger->getName() == loggerName)) {
-            logger->setLevel(level);
+    
+    std::vector<VNamedLoggerPtr> targetLoggers;
+
+    // First, get all the desired loggers, with required locking in place.
+    /* locker scope */ {
+        VMutexLocker locker(_mutexInstance(), "VLogger::commandSetLogLevel()");
+        const VNamedLoggerMap& loggers = _getLoggerMap();
+        for (VNamedLoggerMap::const_iterator i = loggers.begin(); i != loggers.end(); ++i) {
+            VNamedLoggerPtr logger = (*i).second;
+            if (loggerName.isEmpty() || (logger->getName() == loggerName)) {
+                targetLoggers.push_back(logger);
+            }
         }
+    }
+    
+    // Now, set each logger's level with the public API. It locks each time.
+    for (std::vector<VNamedLoggerPtr>::const_iterator i = targetLoggers.begin(); i != targetLoggers.end(); ++i) {
+        (*i)->setLevel(level);
     }
 }
 
