@@ -387,11 +387,17 @@ void VBentoAttribute::writeToStream(VBinaryIOStream& stream) const {
 
 static void _escapeString(VString& s) {
     // Insert a backslash in front of any special character.
-    s.replace("\\", "\\\\");
-    s.replace("{", "\\{");
-    s.replace("}", "\\}");
-    s.replace("\"", "\\\"");
-    s.replace("'", "\\'");
+    for (int i = 0; i < s.length(); ++i) {
+        char c = s[i];
+        if ((c == '\\') ||
+            (c == '{') ||
+            (c == '}') ||
+            (c == '"') ||
+            (c == '\'')) {
+            s.insert('\\', i);
+            ++i;
+        }
+    }
 }
 
 static void _unescapeString(VString& s) {
@@ -460,15 +466,18 @@ void VBentoAttribute::writeToBentoTextStream(VTextIOStream& stream) const {
     }
 }
 
+static const VString XML_NAME_VALUE_SEPARATOR("=\"");
+static const VString XML_VALUE_TERMINATOR("\"");
+
 void VBentoAttribute::writeToXMLTextStream(VTextIOStream& stream, bool /*lineWrap*/, int /*indentDepth*/) const {
     if (! this->xmlAppearsAsArray()) {
         // Simple attributes do not use line wrap nor indent. They appear inline in the node's tag.
         stream.writeString(mName);
-        stream.writeString("=\"");
+        stream.writeString(XML_NAME_VALUE_SEPARATOR);
         VString xmlText;
         this->getValueAsXMLText(xmlText);
         stream.writeString(xmlText);
-        stream.writeString("\"");
+        stream.writeString(XML_VALUE_TERMINATOR);
     }
 }
 
@@ -762,20 +771,56 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
     return result;
 }
 
+/**
+Replaces the single character at the specified index in the string, with the specified
+replacement string (which must not be empty). Returns the number of characters by which
+the string has grown, i.e.: replacement.length() - 1.
+@param  target      the string to modify
+@param  atIndex     the index of the char to replace
+@param  replacement the (non-empty) string that shall replace the char
+@return the number of characters by which the string has grown due to replacement
+*/
+static int _replaceCharWithString(VString& target, int atIndex, const VString& replacement) {
+    // Assumption: replacement is not empty.
+    target[atIndex] = replacement[0];
+    target.insert(replacement.chars() + 1, atIndex + 1);
+    return replacement.length() - 1;
+}
+
+static VString XML_AMPERSAND_ESCAPE("&amp;");
+static VString XML_APOSTROPHE_ESCAPE("&apos;");
+static VString XML_DOUBLEQUOTE_ESCAPE("&quot;");
+static VString XML_LESSTHAN_ESCAPE("&lt;");
+static VString XML_GREATERTHAN_ESCAPE("&gt;");
+
 // static
 void VBentoAttribute::_escapeXMLValue(VString& text) {
-    text.replace("&", "&amp;");
-    text.replace("'", "&apos;");
-    text.replace("\"", "&quot;");
-    text.replace("<", "&lt;");
-    text.replace(">", "&gt;");
-
-    // Escape any non-printing characters. 0x00 thru 0x1F, and 0x7F
-    for (int c = 0; c < 0x20; ++c) {
-        text.replace(VChar(c), VSTRING_FORMAT("\\u%04x", c));
+    // Post-Vault 3.3:
+    // Replaced naive series of calls to text.replace("f", "&foo;") with optimized one-pass
+    // in-place insertion replacement. Approximately 80x performance improvement for plain text,
+    // and 30x improvement for heavily escaped text.
+    
+    // Strategy:
+    // When we find a char requiring escape, replace it where it is:
+    // 1. Overwrite the char with the first char of the escape sequence.
+    // 2. Insert the rest of the escape sequence in front of the next char.
+    // 3. Advance our string/loop index past the newly inserted escape sequence.
+    for (int i = 0; i < text.length(); ++i) {
+        char c = text[i];
+        if (c == '&') {
+            i += _replaceCharWithString(text, i, XML_AMPERSAND_ESCAPE);     // & -> &amp;
+        } else if (c == '\'') {
+            i += _replaceCharWithString(text, i, XML_APOSTROPHE_ESCAPE);    // ' -> &apos;
+        } else if (c == '\"') {
+            i += _replaceCharWithString(text, i, XML_DOUBLEQUOTE_ESCAPE);   // " -> &quot;
+        } else if (c == '<') {
+            i += _replaceCharWithString(text, i, XML_LESSTHAN_ESCAPE);      // < -> &lt;
+        } else if (c == '>') {
+            i += _replaceCharWithString(text, i, XML_GREATERTHAN_ESCAPE);   // > -> &gt;
+        } else if (((int) c < 0x20) || ((int) c == 0x7F)) {
+            i += _replaceCharWithString(text, i, VSTRING_FORMAT("&#x%02X;", (Vu8) c)); // unprintable -> &#xNN; where NN is exactly 2 hex digits char code
+        }
     }
-
-    text.replace(VChar(0x7F), VSTRING_FORMAT("\\u%04x", 0x7F));
 }
 
 static VString _indent(int depth) {
@@ -1620,6 +1665,8 @@ void VBentoNode::writeToBentoTextString(VString& s, bool lineWrap) const {
     this->writeToBentoTextStream(stream, lineWrap);
     stream.writeLineEnd();
     stream.seek0();
+
+    s = VString::EMPTY();
     stream.readAll(s, lineWrap);
 }
 
@@ -1696,7 +1743,7 @@ bool VBentoNode::getBool(const VString& name) const {
     const VBentoBool* attribute = dynamic_cast<const VBentoBool*>(this->_findAttribute(name, VBentoBool::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoBool::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoBool::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1710,7 +1757,7 @@ const VString& VBentoNode::getString(const VString& name) const {
     const VBentoString* attribute = dynamic_cast<const VBentoString*>(this->_findAttribute(name, VBentoString::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoString::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoString::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1724,7 +1771,7 @@ const VChar& VBentoNode::getChar(const VString& name) const {
     const VBentoChar* attribute = dynamic_cast<const VBentoChar*>(this->_findAttribute(name, VBentoChar::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoChar::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoChar::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1738,7 +1785,7 @@ VDouble VBentoNode::getDouble(const VString& name) const {
     const VBentoDouble* attribute = dynamic_cast<const VBentoDouble*>(this->_findAttribute(name, VBentoDouble::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoDouble::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoDouble::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1752,7 +1799,7 @@ const VDuration& VBentoNode::getDuration(const VString& name) const {
     const VBentoDuration* attribute = dynamic_cast<const VBentoDuration*>(this->_findAttribute(name, VBentoDuration::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoDuration::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoDuration::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1766,7 +1813,7 @@ const VInstant& VBentoNode::getInstant(const VString& name) const {
     const VBentoInstant* attribute = dynamic_cast<const VBentoInstant*>(this->_findAttribute(name, VBentoInstant::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoInstant::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoInstant::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1780,7 +1827,7 @@ const VSize& VBentoNode::getSize(const VString& name) const {
     const VBentoSize* attribute = dynamic_cast<const VBentoSize*>(this->_findAttribute(name, VBentoSize::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoSize::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoSize::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1794,7 +1841,7 @@ const VISize& VBentoNode::getISize(const VString& name) const {
     const VBentoISize* attribute = dynamic_cast<const VBentoISize*>(this->_findAttribute(name, VBentoISize::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoISize::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoISize::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1808,7 +1855,7 @@ const VPoint& VBentoNode::getPoint(const VString& name) const {
     const VBentoPoint* attribute = dynamic_cast<const VBentoPoint*>(this->_findAttribute(name, VBentoPoint::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoPoint::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoPoint::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1822,7 +1869,7 @@ const VIPoint& VBentoNode::getIPoint(const VString& name) const {
     const VBentoIPoint* attribute = dynamic_cast<const VBentoIPoint*>(this->_findAttribute(name, VBentoIPoint::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoIPoint::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoIPoint::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1836,7 +1883,7 @@ const VPoint3D& VBentoNode::getPoint3D(const VString& name) const {
     const VBentoPoint3D* attribute = dynamic_cast<const VBentoPoint3D*>(this->_findAttribute(name, VBentoPoint3D::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoPoint3D::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoPoint3D::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1850,7 +1897,7 @@ const VIPoint3D& VBentoNode::getIPoint3D(const VString& name) const {
     const VBentoIPoint3D* attribute = dynamic_cast<const VBentoIPoint3D*>(this->_findAttribute(name, VBentoIPoint3D::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoIPoint3D::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoIPoint3D::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1864,7 +1911,7 @@ const VLine& VBentoNode::getLine(const VString& name) const {
     const VBentoLine* attribute = dynamic_cast<const VBentoLine*>(this->_findAttribute(name, VBentoLine::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoLine::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoLine::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1878,7 +1925,7 @@ const VILine& VBentoNode::getILine(const VString& name) const {
     const VBentoILine* attribute = dynamic_cast<const VBentoILine*>(this->_findAttribute(name, VBentoILine::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoILine::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoILine::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1892,7 +1939,7 @@ const VRect& VBentoNode::getRect(const VString& name) const {
     const VBentoRect* attribute = dynamic_cast<const VBentoRect*>(this->_findAttribute(name, VBentoRect::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoRect::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoRect::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1906,7 +1953,7 @@ const VIRect& VBentoNode::getIRect(const VString& name) const {
     const VBentoIRect* attribute = dynamic_cast<const VBentoIRect*>(this->_findAttribute(name, VBentoIRect::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoIRect::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoIRect::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1920,7 +1967,7 @@ const VPolygon& VBentoNode::getPolygon(const VString& name) const {
     const VBentoPolygon* attribute = dynamic_cast<const VBentoPolygon*>(this->_findAttribute(name, VBentoPolygon::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoPolygon::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoPolygon::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1934,7 +1981,7 @@ const VIPolygon& VBentoNode::getIPolygon(const VString& name) const {
     const VBentoIPolygon* attribute = dynamic_cast<const VBentoIPolygon*>(this->_findAttribute(name, VBentoIPolygon::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoIPolygon::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoIPolygon::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1948,7 +1995,7 @@ const VColor& VBentoNode::getColor(const VString& name) const {
     const VBentoColor* attribute = dynamic_cast<const VBentoColor*>(this->_findAttribute(name, VBentoColor::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoColor::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoColor::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1962,7 +2009,7 @@ Vs8 VBentoNode::getS8(const VString& name) const {
     const VBentoS8* attribute = dynamic_cast<const VBentoS8*>(this->_findAttribute(name, VBentoS8::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoS8::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoS8::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1976,7 +2023,7 @@ Vu8 VBentoNode::getU8(const VString& name) const {
     const VBentoU8* attribute = dynamic_cast<const VBentoU8*>(this->_findAttribute(name, VBentoU8::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoU8::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoU8::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -1990,7 +2037,7 @@ Vs16 VBentoNode::getS16(const VString& name) const {
     const VBentoS16* attribute = dynamic_cast<const VBentoS16*>(this->_findAttribute(name, VBentoS16::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoS16::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoS16::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2004,7 +2051,7 @@ Vu16 VBentoNode::getU16(const VString& name) const {
     const VBentoU16* attribute = dynamic_cast<const VBentoU16*>(this->_findAttribute(name, VBentoU16::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoU16::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoU16::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2018,7 +2065,7 @@ Vs32 VBentoNode::getS32(const VString& name) const {
     const VBentoS32* attribute = dynamic_cast<const VBentoS32*>(this->_findAttribute(name, VBentoS32::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoS32::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoS32::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2032,7 +2079,7 @@ Vu32 VBentoNode::getU32(const VString& name) const {
     const VBentoU32* attribute = dynamic_cast<const VBentoU32*>(this->_findAttribute(name, VBentoU32::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoU32::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoU32::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2046,7 +2093,7 @@ Vs64 VBentoNode::getS64(const VString& name) const {
     const VBentoS64* attribute = dynamic_cast<const VBentoS64*>(this->_findAttribute(name, VBentoS64::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoS64::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoS64::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2060,7 +2107,7 @@ Vu64 VBentoNode::getU64(const VString& name) const {
     const VBentoU64* attribute = dynamic_cast<const VBentoU64*>(this->_findAttribute(name, VBentoU64::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoU64::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoU64::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2074,7 +2121,7 @@ VFloat VBentoNode::getFloat(const VString& name) const {
     const VBentoFloat* attribute = dynamic_cast<const VBentoFloat*>(this->_findAttribute(name, VBentoFloat::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoFloat::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoFloat::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2093,7 +2140,7 @@ VReadOnlyMemoryStream VBentoNode::getBinary(const VString& name) const {
     const VBentoBinary* attribute = dynamic_cast<const VBentoBinary*>(this->_findAttribute(name, VBentoBinary::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoBinary::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoBinary::DATA_TYPE_ID(), name);
 
     return attribute->getReader();
 }
@@ -2107,7 +2154,7 @@ const Vs8Array& VBentoNode::getS8Array(const VString& name) const {
     const VBentoS8Array* attribute = dynamic_cast<const VBentoS8Array*>(this->_findAttribute(name, VBentoS8Array::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoS8Array::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoS8Array::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2121,7 +2168,7 @@ const Vs16Array& VBentoNode::getS16Array(const VString& name) const {
     const VBentoS16Array* attribute = dynamic_cast<const VBentoS16Array*>(this->_findAttribute(name, VBentoS16Array::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoS16Array::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoS16Array::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2135,7 +2182,7 @@ const Vs32Array& VBentoNode::getS32Array(const VString& name) const {
     const VBentoS32Array* attribute = dynamic_cast<const VBentoS32Array*>(this->_findAttribute(name, VBentoS32Array::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoS32Array::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoS32Array::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2149,7 +2196,7 @@ const Vs64Array& VBentoNode::getS64Array(const VString& name) const {
     const VBentoS64Array* attribute = dynamic_cast<const VBentoS64Array*>(this->_findAttribute(name, VBentoS64Array::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoS64Array::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoS64Array::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2167,7 +2214,7 @@ const VStringVector& VBentoNode::getStringArray(const VString& name) const {
     const VBentoStringArray* attribute = dynamic_cast<const VBentoStringArray*>(this->_findAttribute(name, VBentoStringArray::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoStringArray::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoStringArray::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2181,7 +2228,7 @@ const VBoolArray& VBentoNode::getBoolArray(const VString& name) const {
     const VBentoBoolArray* attribute = dynamic_cast<const VBentoBoolArray*>(this->_findAttribute(name, VBentoBoolArray::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoBoolArray::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoBoolArray::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2195,7 +2242,7 @@ const VDoubleArray& VBentoNode::getDoubleArray(const VString& name) const {
     const VBentoDoubleArray* attribute = dynamic_cast<const VBentoDoubleArray*>(this->_findAttribute(name, VBentoDoubleArray::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoDoubleArray::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoDoubleArray::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2209,7 +2256,7 @@ const VDurationVector& VBentoNode::getDurationArray(const VString& name) const {
     const VBentoDurationArray* attribute = dynamic_cast<const VBentoDurationArray*>(this->_findAttribute(name, VBentoDurationArray::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoDurationArray::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoDurationArray::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }
@@ -2223,7 +2270,7 @@ const VInstantVector& VBentoNode::getInstantArray(const VString& name) const {
     const VBentoInstantArray* attribute = dynamic_cast<const VBentoInstantArray*>(this->_findAttribute(name, VBentoInstantArray::DATA_TYPE_ID()));
 
     if (attribute == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", VBentoInstantArray::DATA_TYPE_ID().chars(), name.chars()));
+        throw VBentoNotFoundException(VBentoInstantArray::DATA_TYPE_ID(), name);
 
     return attribute->getValue();
 }

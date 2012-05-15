@@ -87,7 +87,7 @@ void VMessageHandler::logMessageContentRecord(const VString& details, VNamedLogg
         logger = this->_getMessageContentRecordLogger();
 
     if (logger != NULL)
-        logger->log(VMessage::kMessageContentRecordingLevel, NULL, 0, VSTRING_FORMAT("[%s] %s", mSessionName.chars(), details.chars()));
+        logger->log(VMessage::kMessageContentRecordingLevel, details);
 }
 
 void VMessageHandler::logMessageContentFields(const VString& details, VNamedLoggerPtr logger) const {
@@ -95,7 +95,7 @@ void VMessageHandler::logMessageContentFields(const VString& details, VNamedLogg
         logger = this->_getMessageContentFieldsLogger();
 
     if (logger != NULL)
-        logger->log(VMessage::kMessageContentFieldsLevel, NULL, 0, VSTRING_FORMAT("[%s] %s", mSessionName.chars(), details.chars()));
+        logger->log(VMessage::kMessageContentFieldsLevel, details);
 }
 
 void VMessageHandler::logMessageDetailsFields(const VString& details, VNamedLoggerPtr logger) const {
@@ -103,40 +103,40 @@ void VMessageHandler::logMessageDetailsFields(const VString& details, VNamedLogg
         logger = VLogger::findNamedLoggerForLevel(VMessage::kMessageLoggerName, VMessage::kMessageTrafficDetailsLevel);
 
     if (logger != NULL)
-        logger->log(VMessage::kMessageTrafficDetailsLevel, NULL, 0, VSTRING_FORMAT("[%s] %s", mSessionName.chars(), details.chars()));
+        logger->log(VMessage::kMessageTrafficDetailsLevel, details);
 }
 
 void VMessageHandler::logProcessMessageStart() const {
-    VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerDispatchLevel, VSTRING_FORMAT("[%s] %s start.", mSessionName.chars(), mName.chars()));
+    VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerDispatchLevel, VSTRING_FORMAT("%s start.", mName.chars()));
 }
 
 void VMessageHandler::logProcessMessageEnd() const {
     VDuration elapsed = VInstant(/*now*/) - mStartTime;
     if (mUnblockTime == mStartTime) {
-        VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerDispatchLevel, VSTRING_FORMAT("[%s] %s end. (Elapsed time: %s)", mSessionName.chars(), mName.chars(), elapsed.getDurationString().chars()));
+        VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerDispatchLevel, VSTRING_FORMAT("%s end. (Elapsed time: %s)", mName.chars(), elapsed.getDurationString().chars()));
     } else {
         // We were evidently blocked for at least 1ms during construction, waiting for the mutex to be released.
         // If the duration of blocked time exceeded a certain amount, emit this at info level so it is even more visible.
         VDuration blockedTime = mUnblockTime - mStartTime;
         VLOGGER_MESSAGE_LEVEL((blockedTime > 25 * VDuration::MILLISECOND()) ? VLoggerLevel::INFO : (int)VMessage::kMessageHandlerDispatchLevel, // strangely, gcc gave linker error w/o int cast
-                              VSTRING_FORMAT("[%s] %s end. (Elapsed time: %s. Blocked for: %s.)", mSessionName.chars(), mName.chars(), elapsed.getDurationString().chars(), blockedTime.getDurationString().chars()));
+                              VSTRING_FORMAT("%s end. (Elapsed time: %s. Blocked for: %s.)", mName.chars(), elapsed.getDurationString().chars(), blockedTime.getDurationString().chars()));
     }
 }
 
 void VMessageHandler::_logDetailedDispatch(const VString& dispatchInfo) const {
-    VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerDetailLevel, VSTRING_FORMAT("[%s] %s", mSessionName.chars(), dispatchInfo.chars()));
+    VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerDetailLevel, dispatchInfo);
 }
 
 void VMessageHandler::_logMessageContentRecord(const VString& contentInfo) const {
-    VLOGGER_MESSAGE_LEVEL(VMessage::kMessageContentRecordingLevel, VSTRING_FORMAT("[%s] %s", mSessionName.chars(), contentInfo.chars()));
+    VLOGGER_MESSAGE_LEVEL(VMessage::kMessageContentRecordingLevel, contentInfo);
 }
 
 void VMessageHandler::_logMessageContentFields(const VString& contentInfo) const {
-    VLOGGER_MESSAGE_LEVEL(VMessage::kMessageContentFieldsLevel, VSTRING_FORMAT("[%s] %s", mSessionName.chars(), contentInfo.chars()));
+    VLOGGER_MESSAGE_LEVEL(VMessage::kMessageContentFieldsLevel, contentInfo);
 }
 
 void VMessageHandler::_logMessageContentHexDump(const VString& info, const Vu8* buffer, Vs64 length) const {
-    VLOGGER_MESSAGE_HEXDUMP(VSTRING_FORMAT("[%s] %s", mSessionName.chars(), info.chars()), buffer, length);
+    VLOGGER_MESSAGE_HEXDUMP(info, buffer, length);
 }
 
 VNamedLoggerPtr VMessageHandler::_getMessageContentRecordLogger() const {

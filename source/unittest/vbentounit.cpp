@@ -156,6 +156,12 @@ void VBentoUnit::run() {
     rootFromText.readFromBentoTextString(rootText);
 
     this->_verifyContents(rootFromText, "text");
+    
+    // Test VBentoString with 0xb9 character
+    VBentoString b9("b9", "¹", VString::EMPTY());
+    VString xmlVal;
+    b9.getValueAsXMLText(xmlVal);
+    //VUNIT_ASSERT_EQUAL(xmlVal, "&#xB9;");
 
     // Test comparison operators, which should compare the node name.
     // This allows a list of named nodes to be sorted by STL with no extra work.
@@ -182,6 +188,35 @@ void VBentoUnit::run() {
     VUNIT_ASSERT_EQUAL(s3.getName(), "source.name");
     VUNIT_ASSERT_EQUAL(s3.getValue(), source.getValue());
     VUNIT_ASSERT_EQUAL(s3.getValue(), "source.value");
+    
+    /* subtest scope */ {
+        VBentoNode foo("foo");
+        // Test string conversion behavior. String should be replaced.
+        VString fooText("junk that should be replaced");
+        foo.writeToBentoTextString(fooText);
+        VUNIT_ASSERT_FALSE(fooText.startsWith("junk"));
+        
+        // Test stream conversion behavior. Stream should be appended to.
+        VMemoryStream fooBuffer;
+        VTextIOStream fooTextStream(fooBuffer);
+        fooTextStream.writeString("junk that should be appended to ");
+        foo.writeToBentoTextStream(fooTextStream);
+        (void) fooTextStream.seek0();
+        VString result;
+        fooTextStream.readLine(result);
+        VUNIT_ASSERT_TRUE(result.startsWith("junk"));
+    }
+    
+    /* subtest scope */ {
+        // Verify that escaping works as expected. Basically, characters in a node name (or other text attribute) that are
+        // also part of the Bento text syntax must be escaped. And recursively, the escape character (backslash) must itself be escaped.
+        VBentoNode nodeWithEscapeCharsInName("1:\\\\ 2:{ 3:} 4:\\ 5:'"); // Note: all those excess backslashes evaluate to this: 1:\\ 2:{ 3:} 4:\ 5:'
+        VString escapedNodeText;
+        nodeWithEscapeCharsInName.writeToBentoTextString(escapedNodeText);
+        // The node name should have escaped each of the special values. Verify that we got what we should:
+        VUNIT_ASSERT_EQUAL(escapedNodeText, "{ \"1:\\\\\\\\ 2:\\{ 3:\\} 4:\\\\ 5:\\'\" }"); // Note: all those excess backslashes evaluate to this: { "1:\\\\ 2:\{ 3:\} 4:\\ 5:\'" }
+    }
+
 }
 
 void VBentoUnit::_verifyDynamicLengths() {

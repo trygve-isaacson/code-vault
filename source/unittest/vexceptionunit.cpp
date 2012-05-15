@@ -332,40 +332,14 @@ void VExceptionUnit::_testWin32SEH() {
         this->logStatus(exceptionStack);
 #endif
 
-#ifdef VCOMPILER_MSVC
-#if _MSC_VER < 1600 // Visual C++ 2010 sees this code as improper (which it is, intentionally) and emits a compilation error. Only try to compile with earlier compiler versions.
-    try {
-        caughtException = false;
-        int things[4];
-        things[20] = 42;
-    } catch (const VException& ex) {
-        caughtException = true;
-        exceptionStack = ex.what();
-    }
+    // The tests cases that were here had become too unpredictable. We used to
+    // test that Windows SEH would convert certain array-out-of-bounds operations
+    // that would corrupt the stack into exceptions, but not only do modern compilers
+    // detect and yield errors for such code, but we can't even predict behavior of
+    // old compilers' code executing on newer versions of Windows -- a VC++ 2005
+    // compile when run on Windows 7 doesn't do what we were testing for. Enabling
+    // SEH is considered bad practice anyway, so there is only so far we can go to
+    // test its behavior. The above is how far for now.
 
-    this->test(caughtException, "Caught exception when writing to out of bounds stack array element. If caught, stack follows");
-    if (caughtException)
-        this->logStatus(exceptionStack);
-#endif
-#endif
-
-#ifdef VCOMPILER_MSVC
-#if _MSC_VER < 1600 // Visual C++ 2010 sees this code as improper (which it is, intentionally) and emits a compilation error. Only try to compile with earlier compiler versions.
-    // This negative test fails when running in the debugger, because the debugger catches it.
-    try {
-        caughtException = false;
-        int things[4];
-        things[-4] = 42;
-    } catch (const VException& ex) {
-        caughtException = true;
-        exceptionStack = ex.what();
-    }
-
-    this->test(caughtException, "Caught exception when writing to negative index stack array element. If caught, stack follows");
-    if (caughtException)
-        this->logStatus(exceptionStack);
-#endif
-#endif
-
-#endif
+#endif /* V_TRANSLATE_WIN32_STRUCTURED_EXCEPTIONS */
 }

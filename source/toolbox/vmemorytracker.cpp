@@ -169,7 +169,7 @@ static VMutex gAllocationMapMutex("gAllocationMapMutex", true); // 2nd param MUS
 static VString REPORT_LABEL("MEMORY REPORT");
 // Track large memory allocations
 static size_t gTrackAllocationssOver = 0;
-static size_t gTrackAllocationssUnder = V_MAX_S32;
+static size_t gTrackAllocationssUnder = V_MAX_SIZE;
 
 /**
 Puts an item to the map. The allocation record must not be null.
@@ -330,7 +330,7 @@ size_t VMemoryTracker::getOver() {
 
 // static
 void VMemoryTracker::setUnder(size_t newUnder) {
-    gTrackAllocationssUnder = newUnder == 0 ? V_MAX_S32 : newUnder;
+    gTrackAllocationssUnder = newUnder == 0 ? V_MAX_SIZE : newUnder;
 }
 
 // static

@@ -180,7 +180,7 @@ VBentoMessageInputThread::VBentoMessageInputThread(const VString& name, VSocket*
 void VBentoMessageInputThread::_handleNoMessageHandler(VMessage* message) {
     VBentoNode responseData("response");
     responseData.addInt("result", -1);
-    responseData.addString("error", VSTRING_FORMAT("Invalid message ID %d. No handler defined.", (int) message->getMessageID()));
+    responseData.addString("error-message", VSTRING_FORMAT("Invalid message ID %d. No handler defined.", (int) message->getMessageID()));
 
     VString bentoText;
     responseData.writeToBentoTextString(bentoText);
@@ -199,7 +199,7 @@ void VBentoMessageInputThread::_callProcessMessage(VMessageHandler* handler) {
     } catch (const std::exception& ex) {
         VBentoNode responseData("response");
         responseData.addInt("result", -1);
-        responseData.addString("error", VSTRING_FORMAT("An error occurred processing the message: %s", ex.what()));
+        responseData.addString("error-message", VSTRING_FORMAT("An error occurred processing the message: %s", ex.what()));
 
         VString bentoText;
         responseData.writeToBentoTextString(bentoText);

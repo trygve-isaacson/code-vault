@@ -132,7 +132,9 @@ void VBinaryIOStream::readString32(VString& s) {
     Vs32 length = this->readS32();
 
     if (length == 0) { // Avoid forced allocation of a buffer if none is needed.
-        s = VString::EMPTY();
+        if (s.isNotEmpty()) { // Avoid unnecessary do-nothing work if s is already empty.
+            s = VString::EMPTY();
+        }
     } else {
         s.preflight((int) length);
         this->readGuaranteed(s.getDataBuffer(), length);

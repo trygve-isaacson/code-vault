@@ -978,7 +978,12 @@ class VDate {
             kSaturday
         };
 
-        friend inline bool operator==(const VDate& d1, const VDate& d2);
+        friend inline bool operator==(const VDate& lhs, const VDate& rhs);    ///< Compares two dates.
+        friend inline bool operator!=(const VDate& lhs, const VDate& rhs);    ///< Compares two dates.
+        friend inline bool operator< (const VDate& lhs, const VDate& rhs);    ///< Compares two dates.
+        friend inline bool operator<=(const VDate& lhs, const VDate& rhs);    ///< Compares two dates.
+        friend inline bool operator>=(const VDate& lhs, const VDate& rhs);    ///< Compares two dates.
+        friend inline bool operator> (const VDate& lhs, const VDate& rhs);    ///< Compares two dates.
 
     private:
 
@@ -992,7 +997,18 @@ class VDate {
         static const VChar kLocalDateSeparator; ///< The character to separate M/D/Y
 };
 
-inline bool operator==(const VDate& d1, const VDate& d2) { return (d1.mYear == d2.mYear) && (d1.mMonth == d2.mMonth) && (d1.mDay == d2.mDay); }
+inline bool operator==(const VDate& lhs, const VDate& rhs) { return (lhs.mYear == rhs.mYear) && (lhs.mMonth == rhs.mMonth) && (lhs.mDay == rhs.mDay); }
+inline bool operator!=(const VDate& lhs, const VDate& rhs) { return !operator==(lhs, rhs); }
+inline bool operator< (const VDate& lhs, const VDate& rhs) {
+    if (lhs.mYear < rhs.mYear) return true;
+    if (lhs.mYear > rhs.mYear) return false;
+    if (lhs.mMonth < rhs.mMonth) return true;
+    if (lhs.mMonth > rhs.mMonth) return false;
+    return (lhs.mDay < rhs.mDay);
+}
+inline bool operator<=(const VDate& lhs, const VDate& rhs) { return !operator>(lhs, rhs); }
+inline bool operator>=(const VDate& lhs, const VDate& rhs) { return !operator<(lhs, rhs); }
+inline bool operator> (const VDate& lhs, const VDate& rhs) { return  operator<(rhs, lhs); }
 
 /**
 VTimeOfDay represents a time of day without understanding about

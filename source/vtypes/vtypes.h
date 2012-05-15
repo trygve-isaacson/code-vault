@@ -161,6 +161,7 @@ set up for this platform build.
 #include <iostream>
 #include <deque>
 #include <map>
+#include <limits>
 
 /*
 We choose to define just the basic specific-sized data types. Most
@@ -224,6 +225,7 @@ static const Vs64 V_MAX_U32 = CONST_S64(0x00000000FFFFFFFF); ///< Largest unsign
 static const Vs64 V_MIN_S64 = CONST_S64(0x8000000000000000); ///< Smallest signed 64-bit value
 static const Vs64 V_MAX_S64 = CONST_S64(0x7FFFFFFFFFFFFFFF); ///< Largest signed 64-bit value
 static const Vs64 V_MAX_U64 = CONST_S64(0xFFFFFFFFFFFFFFFF); ///< Largest unsigned 64-bit value
+static const size_t V_MAX_SIZE = std::numeric_limits<size_t>::max(); ///< Largest size_t value
 
 namespace vault {
 

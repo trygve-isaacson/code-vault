@@ -512,6 +512,8 @@ class VBentoNode {
         */
         const VBentoAttributePtrVector& getAttributes() const;
 
+        const VBentoAttribute* findAttribute(const VString& name, const VString& dataType) const { return this->_findAttribute(name, dataType); }
+
         /**
         Returns the node's name.
         @return    a reference to the name string
@@ -2282,6 +2284,27 @@ class VBentoInstantArray : public VBentoArray {
     private:
 
         VInstantVector mValue; ///< The attribute value.
+};
+
+/**
+This exception subclass is thrown by the throwing getters if they cannot find the requested
+attribute. It uses a specific error code (BENTO_ATTRIBUTE_NOT_FOUND_ERROR), and makes the
+particular attribute type and name available for examination.
+*/
+class VBentoNotFoundException : public VStackTraceException {
+    public:
+
+        static const int BENTO_ATTRIBUTE_NOT_FOUND_ERROR = -2; ///< Just to distinguish from a generic -1 error.
+
+        VBentoNotFoundException(const VString& dataTypeID, const VString& attributeName)
+            : VStackTraceException(BENTO_ATTRIBUTE_NOT_FOUND_ERROR, VSTRING_FORMAT("Attribute type '%s' name '%s' not found.", dataTypeID.chars(), attributeName.chars()))
+            , mDataTypeID(dataTypeID)
+            , mAttributeName(attributeName)
+            {}
+        virtual ~VBentoNotFoundException() throw() {}
+        
+        const VString mDataTypeID;
+        const VString mAttributeName;
 };
 
 #endif /* vbento_h */
