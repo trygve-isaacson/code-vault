@@ -40,6 +40,7 @@ class VLoggerUnit : public VUnit {
         void _testStringLoggers();
         void _testMaxActiveLogLevel();
         void _testLoggerPathNames();
+        void _testSmartPtrLifecycle();
         void _testOptimizationPerformance();
 
 };

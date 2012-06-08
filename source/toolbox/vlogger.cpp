@@ -25,7 +25,8 @@ VFSNode VLogger::gBaseLogDirectory(".");
 // VNamedLogger ---------------------------------------------------------------
 
 VNamedLogger::VNamedLogger(const VString& name, int level, const VStringVector& appenderNames, VLogAppenderPtr specificAppender)
-    : mName(name)
+    : boost::enable_shared_from_this<VNamedLogger>()
+    , mName(name)
     , mLevel(level)
     , mAppendersMutex(VSTRING_FORMAT("VNamedLogger[%s]", name.chars()), true/*suppress logging*/)
     , mAppenderNames(appenderNames)
@@ -70,7 +71,7 @@ void VNamedLogger::log(int level, const char* file, int line, const VString& mes
         this->_emitToAppenders(level, file, line, true, message, false, VString::EMPTY());
         if (mPrintStackConfig.shouldPrintStack(level, *this)) {
             locker.unlock(); // avoid recursive deadlock, we're done with our data until we recur
-            VThread::logStackCrawl(message, VNamedLoggerPtr(this), false);
+            VThread::logStackCrawl(message, VNamedLoggerPtr(shared_from_this()), false);
         }
     }
 }
@@ -650,6 +651,11 @@ VLogAppenderPtr VLogger::findAppender(const VString& name) {
 }
 
 // static
+const VFSNode& VLogger::getBaseLogDirectory() {
+    return gBaseLogDirectory;
+}
+
+// static
 VBentoNode* VLogger::commandGetInfo() {
     VMutexLocker locker(_mutexInstance(), "VLogger::commandGetInfo");
     return VLogger::_commandGetInfo();
@@ -1012,13 +1018,23 @@ VFileLogAppender::VFileLogAppender(const VString& name, bool formatOutput, const
 
 VFileLogAppender::VFileLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults)
     : VLogAppender(settings, defaults)
-    , mFileStream(VFSNode(_getStringInitSetting("path", settings, defaults, settings.getString("name"))))
+    , mFileStream()
     , mOutputStream(mFileStream)
     {
+    // If no path is specified, we'll use "<appendername>.log" in the base log directory, simply
+    // using the appender's "name" property as our base file name.
+    VString defaultPath;
+    VLogger::getBaseLogDirectory().getChildPath(settings.getString("name") + ".log", defaultPath);
+    mFileStream.setNode(VFSNode(_getStringInitSetting("path", settings, defaults, defaultPath)));
+    
     this->_openFile();
 }
 
 void VFileLogAppender::_openFile() {
+    VFSNode newLogFileDir;
+    mFileStream.getNode().getParentNode(newLogFileDir);
+    newLogFileDir.mkdirs();
+    
     mFileStream.openReadWrite();
     mFileStream.seek(CONST_S64(0), SEEK_END);
 
@@ -1047,8 +1063,8 @@ VRollingFileLogAppender::VRollingFileLogAppender(const VSettingsNode& settings, 
     : VLogAppender(settings, defaults)
     {
     /* todo: use these settings properties to construct, something like:
-        mDirPath = VLogAppender::_getStringInitSetting("dir-path", settings, defaults, ".");
-        mPrefix = VLogAppender::_getStringInitSetting("prefix", settings, defaults, "out");
+        mDirPath = VLogAppender::_getStringInitSetting("dir", settings, defaults, VLogger::getBaseLogDirectory().getPath());
+        mPrefix = VLogAppender::_getStringInitSetting("prefix", settings, defaults, settings.getString("name"));
         mMaxLines = VLogAppender::_getIntInitSetting("max-lines", settings, defaults, 10000);
     */
 }

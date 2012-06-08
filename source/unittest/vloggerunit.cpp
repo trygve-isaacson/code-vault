@@ -35,6 +35,7 @@ void VLoggerUnit::run() {
     this->_testStringLoggers();
     this->_testMaxActiveLogLevel();
     this->_testLoggerPathNames();
+    this->_testSmartPtrLifecycle();
 //    this->_testOptimizationPerformance();
 }
 
@@ -348,6 +349,15 @@ void VLoggerUnit::_testLoggerPathNames() {
 
     // Note: We just deleted the loggers in the loop above. The VLoggerUnitLoggerList (loggers) now contains garbage pointers.
     // Do not reference them after the loop. Destructing the list is OK.
+}
+
+void VLoggerUnit::_testSmartPtrLifecycle() {
+
+    // Regression test for bug in VNamedLogger::log() that incorrectly passed naked (this) to VNamedLoggerPtr() for VThread::logStackCrawl() parameter, causing premature destruction of logger on return.
+    VLogger::getDefaultLogger()->setPrintStackInfo(VLoggerLevel::WARN, 1 /*only 1 stack crawl, then disable*/, VDuration::POSITIVE_INFINITY() /*use count limit only, no time limit*/);
+    VLOGGER_WARN("This warning should appear as a [warn ] line in the logger, and also appear as the start of a stack trace on the next line (if stack trace is implemented).");
+    VLOGGER_WARN("This warning should appear as a [warn ] line in the logger, but should not generate a stack crawl on the next line."); // Previous smartptr crash regression will be detected here.
+
 }
 
 #define OLDEST_VLOGGER_NAMED_DEBUG(loggername, message) VLogger::getLogger(loggername)->log(VLoggerLevel::DEBUG, message)

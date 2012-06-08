@@ -15,6 +15,7 @@ http://www.bombaydigital.com/
 #include "vbufferedfilestream.h"
 #include "vtextiostream.h"
 #include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
 // Microsoft steals this symbol name globally. Take it back.
 #ifdef VPLATFORM_WIN
@@ -445,7 +446,7 @@ a message that has passed the level and repetition filters, to zero or more appe
     adds an empty string so the the logger will emit to the default appender.
 - It emits to all "global appenders".
 */
-class VNamedLogger {
+class VNamedLogger : public boost::enable_shared_from_this<VNamedLogger> {
     public:
 
         /**
@@ -855,6 +856,11 @@ class VLogger {
         @return an appender (@Nullable)
         */
         static VLogAppenderPtr findAppender(const VString& name);
+        /**
+        Returns the directory node specifying the base directory where file-oriented appenders
+        should create files (or a file hierarchy) unless a specific path is configured for the appender.
+        */
+        static const VFSNode& getBaseLogDirectory();
 
         // These functions whose name is prefixed with "command" are intended for use at runtime from
         // a command facility that allows reconfiguring logging on the fly.
