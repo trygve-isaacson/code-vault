@@ -13,13 +13,13 @@ http://www.bombaydigital.com/
 
 // VMessageOutputThread -------------------------------------------------------
 
-VMessageOutputThread::VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSession* session, VMessageInputThread* dependentInputThread, int maxQueueSize, Vs64 maxQueueDataSize, const VDuration& maxQueueGracePeriod)
+VMessageOutputThread::VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSessionPtr session, VMessageInputThread* dependentInputThread, int maxQueueSize, Vs64 maxQueueDataSize, const VDuration& maxQueueGracePeriod)
     : VSocketThread(name, socket, ownerThread)
     , mOutputQueue()
     , mSocketStream(socket, "VMessageOutputThread")
     , mOutputStream(mSocketStream)
     , mServer(server)
-    , mSessionReference(session)
+    , mSession(session)
     , mDependentInputThread(dependentInputThread)
     , mMaxQueueSize(maxQueueSize)
     , mMaxQueueDataSize(maxQueueDataSize)
@@ -79,8 +79,8 @@ void VMessageOutputThread::run() {
         }
     }
 
-    if (mSessionReference.getSession() != NULL) {
-        mSessionReference.getSession()->shutdown(this);
+    if (mSession != NULL) {
+        mSession->shutdown(this);
     }
 
     if (mDependentInputThread != NULL) {
@@ -93,11 +93,11 @@ void VMessageOutputThread::stop() {
     mOutputQueue.wakeUp(); // if it's blocked, this is needed to kick it back to its run loop
 }
 
-void VMessageOutputThread::attachSession(VClientSession* session) {
-    mSessionReference.setSession(session);
+void VMessageOutputThread::attachSession(VClientSessionPtr session) {
+    mSession = session;
 }
 
-bool VMessageOutputThread::postOutputMessage(VMessage* message, bool respectQueueLimits) {
+bool VMessageOutputThread::postOutputMessage(VMessagePtr message, bool respectQueueLimits) {
     if (respectQueueLimits) {
         int currentQueueSize = 0;
         Vs64 currentQueueDataSize = 0;
@@ -171,20 +171,18 @@ bool VMessageOutputThread::isOutputQueueOverLimit(int& currentQueueSize, Vs64& c
 }
 
 void VMessageOutputThread::_processNextOutboundMessage() {
-    VMessage* message = mOutputQueue.blockUntilNextMessage();
+    VMessagePtr message = mOutputQueue.blockUntilNextMessage();
 
     if (message == NULL) {
         // OK -- means we were awakened from block but w/o a message actually available
     } else {
-        if (mSessionReference.getSession() != NULL) {
-            mSessionReference.getSession()->sendMessageToClient(message, mName, mOutputStream);
+        if (mSession != NULL) {
+            mSession->sendMessageToClient(message, mName, mOutputStream);
         } else {
             // We are just a client. No "session". Just send.
-            VLOGGER_MESSAGE_LEVEL(VMessage::kMessageQueueOpsLevel, VSTRING_FORMAT("[%s] VMessageOutputThread::_processNextOutboundMessage: Sending message@0x%08X.", mName.chars(), message));
+            VLOGGER_MESSAGE_LEVEL(VMessage::kMessageQueueOpsLevel, VSTRING_FORMAT("[%s] VMessageOutputThread::_processNextOutboundMessage: Sending message@0x%08X.", mName.chars(), message.get()));
             message->send(mName, mOutputStream);
         }
-
-        VMessage::release(message);
     }
 }
 

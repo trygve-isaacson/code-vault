@@ -1,7 +1,20 @@
 CODE VAULT RELEASE NOTES
 
+---------- VERSION 4.0 ----------
+Trygve Isaacson, targeted for July 2012
+
+* Adoption of smart pointers in key components, in order to eliminate tricky
+code that was needed to deal with shared references to sessions and threads
+and messages, for careful tear-down of sessions and broadcasting a single
+message to multiple sessions.
+- VMessage, and its references on VMessageQueue for message broadcast/lifecycle.
+  V_ASSERT_INVARIANT_VMESSAGE_ENABLED is obsolete.
+- VClientSession, and its references by VServer for session management.
+- VThread, and its references as i/o threads and the global thread list/map.
+
 ---------- VERSION 3.3.1 ----------
-Trygve Isaacson, May 2012
+Trygve Isaacson, June 2012
+Revision #119.
 
 * Various tweaks from 3.3 deployment experience:
 - Improved performance of escaping Bento text.
@@ -15,6 +28,8 @@ Trygve Isaacson, May 2012
 - Added Bento escape handling unit tests.
 - Removed unreliable unit test that tried to exercise Win32 structured exceptions.
 - Defined V_MAX_SIZE for maximum value of size_t.
+- Fixed smart ptr bug that caused default logger deletion by setPrintStackInfo().
+- Fixed failure to respect user-specified base log directory by VFileLogAppender.
 
 ---------- VERSION 3.3 ----------
 Trygve Isaacson, November 2011

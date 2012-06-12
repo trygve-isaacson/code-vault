@@ -50,7 +50,7 @@ class VMessageOutputThread : public VSocketThread {
         @param maxQueueGracePeriod how long the maxQueueSize and maxQueueDataSize limits may be exceeded
                             before the socket is closed upon next posted message
         */
-        VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSession* session, VMessageInputThread* dependentInputThread, int maxQueueSize = 0, Vs64 maxQueueDataSize = 0, const VDuration& maxQueueGracePeriod = VDuration::ZERO());
+        VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSessionPtr session, VMessageInputThread* dependentInputThread, int maxQueueSize = 0, Vs64 maxQueueDataSize = 0, const VDuration& maxQueueGracePeriod = VDuration::ZERO());
         /**
         Virtual destructor.
         */
@@ -72,7 +72,7 @@ class VMessageOutputThread : public VSocketThread {
         thread can reference session state.
         @param  session the session on whose behalf we are running
         */
-        void attachSession(VClientSession* session);
+        void attachSession(VClientSessionPtr session);
 
         /**
         Posts a message to the output thread's output queue; the output thread
@@ -87,7 +87,7 @@ class VMessageOutputThread : public VSocketThread {
         @return true if the message was successfully posted; false means it was not, so
                 caller needs to free the message
         */
-        bool postOutputMessage(VMessage* message, bool respectQueueLimits = true);
+        bool postOutputMessage(VMessagePtr message, bool respectQueueLimits = true);
 
         /**
         Releases/destroys all queued messages. This is called when
@@ -124,7 +124,7 @@ class VMessageOutputThread : public VSocketThread {
         VSocketStream           mSocketStream;      ///< The underlying raw stream the message data is written to.
         VBinaryIOStream         mOutputStream;      ///< The formatted stream the message data is written to.
         VServer*                mServer;            ///< The server object.
-        VClientSessionReference mSessionReference;  ///< Reference to the session object.
+        VClientSessionPtr       mSession;           ///< The session object.
         VMessageInputThread*    mDependentInputThread;///< If non-null, the input thread we must notify before returning from our run().
         int                     mMaxQueueSize;      ///< If non-zero, if a message is posted when there are already this many messages queued, we close the socket.
         Vs64                    mMaxQueueDataSize;  ///< If non-zero, if a message is posted when there are already this many bytes queued, we close the socket.

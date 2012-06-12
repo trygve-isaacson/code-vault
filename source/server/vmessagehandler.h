@@ -63,7 +63,7 @@ class VMessageHandler {
         @param    thread    the thread processing the message (used to
                         correlate the message to a client session)
         */
-        static VMessageHandler* get(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread);
+        static VMessageHandler* get(VMessagePtr m, VServer* server, VClientSessionPtr session, VSocketThread* thread);
         /**
         Registers a message handler factory for a particular
         message ID. When a call is made to get(), the appropriate
@@ -87,7 +87,7 @@ class VMessageHandler {
         @param  mutex   if not null, a mutex that will be initially locked by the constructor
                         and unlocked by the destructor
         */
-        VMessageHandler(const VString& name, VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread, const VMessageFactory* messageFactory, VMutex* mutex);
+        VMessageHandler(const VString& name, VMessagePtr m, VServer* server, VClientSessionPtr session, VSocketThread* thread, const VMessageFactory* messageFactory, VMutex* mutex);
         /**
         Virtual destructor. VMessageHandler will delete the owned message (setting mMessage to NULL
         will obviously circumvent this).
@@ -99,19 +99,12 @@ class VMessageHandler {
         */
         virtual void processMessage() = 0;
         /**
-        Releases the mMessage. The subclass can prevent this
-        if needs to hang onto the message for longer, by either setting
-        mMessage to NULL before returning from processMessage() or by
-        overridding this method.
-        */
-        virtual void releaseMessage();
-        /**
         Returns a newly instantiated message, using the message factory associated with
         this message handler.
         @param    messageID        value with which to init the message's message ID
         @return a message object
         */
-        VMessage* getMessage(VMessageID messageID);
+        VMessagePtr getMessage(VMessageID messageID);
         /**
         Logs (at the appropriate log level) the supplied information about the
         message being handled. A message handler should call this to log the
@@ -199,9 +192,9 @@ class VMessageHandler {
         void _logMessageContentHexDump(const VString& info, const Vu8* buffer, Vs64 length) const;
 
         VString                 mName;          ///< The name to identify this handler type in log output.
-        VMessage*               mMessage;       ///< The message this handler is to process.
+        VMessagePtr             mMessage;       ///< The message this handler is to process.
         VServer*                mServer;        ///< The server in which we are running.
-        VClientSessionReference mSessionReference;  ///< The session reference for which we are running, which holds NULL if n/a.
+        VClientSessionPtr       mSession;       ///< The session reference for which we are running, which holds NULL if n/a.
         VSocketThread*          mThread;        ///< The thread in which we are running.
         const VMessageFactory*  mMessageFactory;///< Factory for instantiating new messages this handler wants to send.
         VInstant                mStartTime;     ///< The time at which this handler was instantiated (message receipt). MUST BE DECLARED BEFORE mLocker.
@@ -210,6 +203,8 @@ class VMessageHandler {
         VString                 mSessionName;   ///< The name to identify this handler's session in log output.
 
     private:
+
+        virtual void releaseMessage() {} // TEMPORARY VMessagePtr transition: Make sure no one uses this or overrides it. It is OBSOLETE.
 
         VMessageHandler(const VMessageHandler&); // not copyable
         VMessageHandler& operator=(const VMessageHandler&); // not assignable
@@ -240,7 +235,7 @@ class VMessageHandlerFactory {
         @param    session    the session to be passed thru to the handler constructor
         @param    thread    the thread to be passed thru to the handler constructor
         */
-        virtual VMessageHandler* createHandler(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread) = 0;
+        virtual VMessageHandler* createHandler(VMessagePtr m, VServer* server, VClientSessionPtr session, VSocketThread* thread) = 0;
 };
 
 // This macro goes in the handler's .h file to define the handler's factory.
@@ -251,7 +246,7 @@ class factoryclassname : public VMessageHandlerFactory { \
         factoryclassname() : VMessageHandlerFactory(), mName(VSTRING_ARGS("%s (%s)",#handlerclassname,descriptivename)) { VMessageHandler::registerHandlerFactory(messageid, this); } \
         virtual ~factoryclassname() {} \
         \
-        virtual VMessageHandler* createHandler(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread) \
+        virtual VMessageHandler* createHandler(VMessagePtr m, VServer* server, VClientSessionPtr session, VSocketThread* thread) \
             { return new handlerclassname(mName, m, server, session, thread); } \
     \
     private: \
@@ -280,12 +275,12 @@ session will know of its existence.
 class VMessageHandlerTask {
     public:
 
-        VMessageHandlerTask(VClientSession* session) : mSessionReference(session) {}
+        VMessageHandlerTask(VClientSessionPtr session) : mSession(session) {}
         virtual ~VMessageHandlerTask() {}
 
-    private:
+    protected:
 
-        VClientSessionReference mSessionReference;  ///< Reference to the session object we are associated with.
+        VClientSessionPtr mSession;  ///< The session object we are associated with.
 
 };
 

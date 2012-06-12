@@ -25,18 +25,10 @@ VMessageQueue::VMessageQueue()
 }
 
 VMessageQueue::~VMessageQueue() {
-    // Delete all messages remaining in the queue.
-
-    try {
-        VMutexLocker locker(&mMessageQueueMutex, "~VMessageQueue()");
-
-        for (VSizeType i = 0; i < mQueuedMessages.size(); ++i) {
-            delete mQueuedMessages[i];
-        }
-    } catch (...) { }  // block exceptions from propagating
+    // 4.0: VMessagePtr means no more need to manually release mQueuedMessages contents.
 }
 
-void VMessageQueue::postMessage(VMessage* message) {
+void VMessageQueue::postMessage(VMessagePtr message) {
     VMutexLocker locker(&mMessageQueueMutex, "VMessageQueue::postMessage()");
 
     mQueuedMessages.push_back(message);
@@ -50,22 +42,22 @@ void VMessageQueue::postMessage(VMessage* message) {
     mMessageQueueSemaphore.signal();
 }
 
-VMessage* VMessageQueue::blockUntilNextMessage() {
+VMessagePtr VMessageQueue::blockUntilNextMessage() {
     // If there is a message on the queue, we can simply return it.
-    VMessage* message = this->getNextMessage();
+    VMessagePtr message = this->getNextMessage();
     if (message != NULL) {
         return message;
     }
 
     // There is nothing on the queue, so wait until someone posts a message.
-    VMutex    dummy("VMessageQueue::blockUntilNextMessage() dummy");
+    VMutex dummy("VMessageQueue::blockUntilNextMessage() dummy");
     mMessageQueueSemaphore.wait(&dummy, 5 * VDuration::SECOND());
 
     return this->getNextMessage();
 }
 
-VMessage* VMessageQueue::getNextMessage() {
-    VMessage* message = NULL;
+VMessagePtr VMessageQueue::getNextMessage() {
+    VMessagePtr message;
 
     VMutexLocker locker(&mMessageQueueMutex, "VMessageQueue::getNextMessage()");
 
@@ -91,7 +83,7 @@ VMessage* VMessageQueue::getNextMessage() {
 }
 
 void VMessageQueue::wakeUp() {
-    this->postMessage(NULL);
+    mMessageQueueSemaphore.signal();
 }
 
 VSizeType VMessageQueue::getQueueSize() const {
@@ -105,17 +97,14 @@ Vs64 VMessageQueue::getQueueDataSize() const {
 }
 
 void VMessageQueue::releaseAllMessages() {
-    VMessage* message = NULL;
-
     VMutexLocker locker(&mMessageQueueMutex, "VMessageQueue::releaseAllMessages()");
 
     while (mQueuedMessages.size() > 0) {
-        message = mQueuedMessages.front();
+        VMessagePtr message = mQueuedMessages.front();
         mQueuedMessages.pop_front();
 
         if (message != NULL) {
             mQueuedMessagesDataSize -= message->getMessageDataLength();
-            VMessage::release(message);
         }
     }
 }

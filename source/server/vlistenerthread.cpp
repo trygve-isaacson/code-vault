@@ -146,7 +146,7 @@ void VListenerThread::_runListening() {
                         thread->start(); // throws if can't create OS thread
                         mSocketThreads.push_back(thread);
                     } else {
-                        VClientSession* session = mSessionFactory->createSession(theSocket, this); // throws if can't create OS thread(s)
+                        VClientSessionPtr session = mSessionFactory->createSession(theSocket, this); // throws if can't create OS thread(s)
                         VSocketThread* thread;
                         thread = session->getInputThread();
                         if (thread != NULL) {

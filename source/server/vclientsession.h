@@ -16,6 +16,9 @@ http://www.bombaydigital.com/
 #include "vsocketstream.h"
 #include "vbinaryiostream.h"
 
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+
 /**
     @ingroup vsocket
 */
@@ -41,7 +44,7 @@ functions are to manage the queue of outbound messages, and to ensure
 that it is not destructed until pending attached threaded tasks complete
 (see _selfDestruct() mechanism).
 */
-class VClientSession {
+class VClientSession : public boost::enable_shared_from_this<VClientSession> {
     public:
 
         /**
@@ -86,23 +89,11 @@ class VClientSession {
         it will be sent when the output thread wakes up; if the session is NOT
         using an output thread, the message is written to the output stream
         immediately.
-        @param  message         the message to be sent
-        @param  isForBroadcast  true if the message is marked for broadcast and therefore the caller
-            is taking responsibility for releasing the message if it fails to post; false is for
-            posting to a single session, where the caller is letting go of the message and expects
-            this function to take ownership of the message (whether it successfully posts or not)
-        @return true if the message was posted; when broadcasting, failure to post is the caller's
-            responsibility to maintain ownership of the message (may get posted to other sessions)
+        Vault 4.0 change: No longer any need to specify broadcast/non-broadcast
+        differences or for caller to handle posting failure.
+        @param  message the message to be sent
         */
-        bool postOutputMessage(VMessage* message, bool isForBroadcast = false);
-        /**
-        Convenience function for posting a message to the session that is being broadcast to other
-        sessions. Calls postOutputMessage() with isForBroadcast=true.
-        @param  message         the message to be sent
-        @return true if the message was posted; when broadcasting, failure to post is the caller's
-            responsibility to maintain ownership of the message (may get posted to other sessions)
-        */
-        bool postBroadcastOutputMessage(VMessage* message) { return this->postOutputMessage(message, true); }
+        void postOutputMessage(VMessagePtr message);
         /**
         Sends a message immediately to the supplied output stream, if the session
         is in a valid state (not in the middle of shutting down). The VMessageOutputThread
@@ -115,7 +106,7 @@ class VClientSession {
         @param    sessionLabel    a label to use in log output, to identify the session
         @param    out                the stream to write to
         */
-        void sendMessageToClient(VMessage* message, const VString& sessionLabel, VBinaryIOStream& out);
+        void sendMessageToClient(VMessagePtr message, const VString& sessionLabel, VBinaryIOStream& out);
         /**
         Returns a string containing the client's address in address:port form.
         @return obvious
@@ -143,7 +134,7 @@ class VClientSession {
         be posted (call inherited) or released. You can also fabricate a replacement
         message and post it instead of the supplied message.
         */
-        virtual void _postStandbyMessageToAsyncOutputQueue(VMessage* message);
+        virtual void _postStandbyMessageToAsyncOutputQueue(VMessagePtr message);
 
         VString                 mName;          ///< A name for the session to use in logging; built from supplied base name + IP address + port.
         VMutex                  mMutex;         ///< A mutex we use to enforce sequential processing of outbound messages, and to protect our task list.
@@ -174,15 +165,11 @@ class VClientSession {
         VSocket*        mSocket;        ///< The socket this session is using.
         VSocketStream   mSocketStream;  ///< The underlying raw socket stream over which this thread communicates.
         VBinaryIOStream mIOStream;      ///< The binary-format i/o stream over the raw socket stream.
-
-        // Reference counting of sessions:
-        int     mReferenceCount;        ///< The number of threads, tasks, etc. still referring to this session.
-        VMutex  mReferenceCountMutex;   ///< Protects reference count state.
-        friend class VClientSessionReference; // This class manages our reference count.
-        friend class VServer;                 // This class checks our reference count to do garbage collection, and deletes us when safe.
 };
 
-typedef std::vector<VClientSession*> VClientSessionList;
+typedef boost::shared_ptr<VClientSession> VClientSessionPtr;
+typedef boost::shared_ptr<const VClientSession> VClientSessionConstPtr;
+typedef std::vector<VClientSessionPtr> VClientSessionList;
 
 /**
 Implement a subclass of VClientSessionFactory (specifically, the createSession() method)
@@ -207,14 +194,14 @@ class VClientSessionFactory {
         @param  socket      the socket on which the client has connected
         @param  ownerThread the listener thread that accepted the connection
         */
-        virtual VClientSession* createSession(VSocket* socket, VListenerThread* ownerThread) = 0;
+        virtual VClientSessionPtr createSession(VSocket* socket, VListenerThread* ownerThread) = 0;
 
         /**
         Adds the specified session to the server; the server keeps track of
         its sessions for purposes of broadcasting, clean shutdown, etc.
         @param  session the session that has been created
         */
-        void addSessionToServer(VClientSession* session);
+        void addSessionToServer(VClientSessionPtr session);
 
         /**
         Sets the management interface to receive notifications. May be NULL if
@@ -231,31 +218,6 @@ class VClientSessionFactory {
 
         VManagementInterface*   mManager;   ///< The object that will be notified of session events.
         VServer*                mServer;    ///< The server that will be notified of session creation.
-};
-
-/**
-This class provides for reference-counted pointers to the VClientSession, in order to
-guarantee a safe tear-down of the session in the complex multi-threaded session environment.
-All classes other than the server itself must hold their pointers to sessions with one
-of these. Such classes include VMessageHandler, VMessageInputThread, and VMessageOutputThread.
-For convenience, you can use a VClientSessionReference if there is no session (session is NULL).
-This allows for VMessageHandler subclasses that work independent of any session context.
-*/
-class VClientSessionReference {
-    public:
-
-        VClientSessionReference(VClientSession* session);
-        ~VClientSessionReference(); // non-virtual, not intended to be subclassed
-
-        VClientSession* getSession() const { return mSession; }
-        void setSession(VClientSession* session);
-
-    private:
-
-        VClientSessionReference(const VClientSessionReference&); // not copyable
-        void operator=(const VClientSessionReference&); // not assignable
-
-        VClientSession* mSession;
 };
 
 #endif /* vclientsession_h */

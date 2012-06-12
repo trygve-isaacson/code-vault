@@ -10,9 +10,10 @@ http://www.bombaydigital.com/
 #include "vtypes.h"
 #include "vstring.h"
 #include "vbinaryiostream.h"
-#include "vmutex.h"
 #include "vmemorystream.h"
 #include "vlogger.h"
+
+#include <boost/shared_ptr.hpp>
 
 /** @file */
 
@@ -52,41 +53,7 @@ format (the wire protocol).
 */
 class VMessage : public VBinaryIOStream {
     public:
-
-        /**
-        Releases a message. For a non-broadcast message, it simply deletes the message.
-        For a broadcast message, it decrements the broadcast target count, and then if
-        the count is zero deletes the message. The caller must not refer to the message
-        after releasing it, because it may have been deleted.
-        @param  message the message to release; null is allowed
-        */
-        static void release(/* @Nullable */ VMessage* message);
-        /**
-        This helper function (also used by release) deletes the message after first
-        doing a sanity check on its broadcast count. The message is always deleted,
-        but if the broadcast count is non-zero, an error is logged; this is useful for
-        detecting flawed logic in the calling code's use of messages.
-        */
-        static void deleteMessage(/* @Nullable */ VMessage* message);
-
-        /**
-        Constructs an empty message with no message ID defined,
-        suitable for use with receive(). You can also set the
-        message ID afterwards with setMessageID().
-        */
-        VMessage();
-        /**
-        Constructs a message with a message ID, suitable for use
-        with send(), optionally writing message data first.
-        @param  messageID           the message ID
-        @param  initialBufferSize   if specified, the size of data buffer to preallocate
-        */
-        VMessage(VMessageID messageID, Vs64 initialBufferSize = 1024);
-        /**
-        Virtual destructor.
-        */
-        virtual ~VMessage() {}
-
+    
         /**
         Readies the message to be re-used with the existing message data intact,
         for posting to a session or client. The new message ID is applied, and
@@ -172,39 +139,6 @@ class VMessage : public VBinaryIOStream {
         @return the message data length
         */
         Vs64 getBufferSize() const;
-        /**
-        Returns true if this message is being broadcast.
-        @return true if this message is being broadcast
-        */
-        bool isBeingBroadcast() const { return mIsBeingBroadcast; }
-        /**
-        Marks this message as being for broadcast. This must be called by any broadcast
-        functions (i.e., bottlenecked in VServer::postBroadcastMessage) in
-        order to mark the message so that after a queued message is sent, we know to lock the
-        broadcast mutex and correctly delete the message only when the last broadcast
-        target is done with the message. This flag must be set before posting, and never altered.
-        @return true if this message is being broadcast
-        */
-        void markForBroadcast() { mIsBeingBroadcast = true; }
-        /**
-        Returns the number of outstanding broadcast targets; caller must lock mutex as appropriate.
-        @return the number of outstanding broadcast targets
-        */
-        int numBroadcastTargets() const { return mNumBroadcastTargets; }
-        /**
-        Returns a pointer to the broadcast mutex, which a caller can
-        lock while adding the set of broadcast targets to the message.
-        @return a pointer to the broadcast mutex
-        */
-        VMutex* getBroadcastMutex() { return &mBroadcastMutex; }
-        /**
-        Increments this message's broadcast target count; caller must lock mutex as appropriate.
-        */
-        void addBroadcastTarget();
-        /**
-        Decrements this message's broadcast target count; caller must lock mutex as appropriate.
-        */
-        void removeBroadcastTarget();
         /*
         These are the log level definitions used for consistent logging
         of message traffic, processing, and dispatch. Use these
@@ -237,6 +171,24 @@ class VMessage : public VBinaryIOStream {
 
     protected:
 
+        /**
+        Constructs an empty message with no message ID defined,
+        suitable for use with receive(). You can also set the
+        message ID afterwards with setMessageID().
+        */
+        VMessage();
+        /**
+        Constructs a message with a message ID, suitable for use
+        with send(), optionally writing message data first.
+        @param  messageID           the message ID
+        @param  initialBufferSize   if specified, the size of data buffer to preallocate
+        */
+        VMessage(VMessageID messageID, Vs64 initialBufferSize = 1024);
+        /**
+        Virtual destructor.
+        */
+        virtual ~VMessage() {}
+
         mutable VMemoryStream    mMessageDataBuffer;        ///< The buffer that holds the message data. Mutable because copyMessageData needs to touch it and restore it.
 
     private:
@@ -244,14 +196,11 @@ class VMessage : public VBinaryIOStream {
         VMessage(const VMessage&); // not copyable
         VMessage& operator=(const VMessage&); // not assignable
 
-        /** Asserts if any invariant is broken. */
-        void _assertInvariant() const;
-
         VMessageID      mMessageID;             ///< The message ID, either read during receive or to be written during send.
-        bool            mIsBeingBroadcast;      ///< True if this message is an outbound broadcast message.
-        int             mNumBroadcastTargets;   ///< Number of pending broadcast targets, if for broadcast.
-        VMutex          mBroadcastMutex;        ///< Mutex to control multiple threads using this message during broadcasting. This is declared public because the caller is responsible for locking this mutex via a VMutexLocker while posting for broadcast.
 };
+
+typedef boost::shared_ptr<VMessage> VMessagePtr;
+typedef boost::shared_ptr<const VMessage> VMessageConstPtr;
 
 /**
 VMessageFactory is an abstract base class that you must implement for purposes
@@ -271,7 +220,7 @@ class VMessageFactory {
         @param    messageID    the ID to supply to the message constructor
         @return    pointer to a new message object
         */
-        virtual VMessage* instantiateNewMessage(VMessageID messageID = 0) const = 0;
+        virtual VMessagePtr instantiateNewMessage(VMessageID messageID = 0) const = 0;
 };
 
 #endif /* vmessage_h */

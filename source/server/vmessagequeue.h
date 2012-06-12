@@ -11,6 +11,7 @@ http://www.bombaydigital.com/
 #include "vmutex.h"
 #include "vsemaphore.h"
 #include "vcompactingdeque.h"
+#include "vmessage.h"
 
 /** @file */
 
@@ -18,7 +19,7 @@ http://www.bombaydigital.com/
     @ingroup vsocket
 */
 
-class VMessage;
+//class VMessage;
 
 
 /**
@@ -52,21 +53,21 @@ class VMessageQueue {
         @param    message    the message object to be posted; the queue becomes
                         owner of the object while it is in the queue
         */
-        virtual void postMessage(VMessage* message);
+        virtual void postMessage(VMessagePtr message);
         /**
         Returns the message at the front of the queue, blocking if the queue
         is empty. May be safely called from any thread.
         @return the message at the front of the queue; the caller becomes
                         owner of the object
         */
-        VMessage* blockUntilNextMessage();
+        VMessagePtr blockUntilNextMessage();
         /**
         Returns the message at the front of the queue, or NULL if the queue
         is empty.
         @return the message at the front of the queue, or NULL; the caller
                 becomes owner of the object
         */
-        VMessage* getNextMessage();
+        VMessagePtr getNextMessage();
         /**
         Wakes up the thread in case it is necessary to let the thread cycle
         even though there are no messages and it is blocked. This is used
@@ -103,7 +104,7 @@ class VMessageQueue {
 
     private:
 
-        VCompactingDeque<VMessage*> mQueuedMessages;///< The actual queue of messages.
+        VCompactingDeque<VMessagePtr> mQueuedMessages;///< The actual queue of messages.
         Vs64            mQueuedMessagesDataSize;    ///< The number of bytes in the queued messages.
         VMutex          mMessageQueueMutex;         ///< The mutex used to synchronize.
         VSemaphore      mMessageQueueSemaphore;     ///< The semaphore used to block/awaken.

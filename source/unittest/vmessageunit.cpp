@@ -11,11 +11,14 @@ http://www.bombaydigital.com/
 #include "vmessage.h"
 #include "vcompactingdeque.h"
 
+class TestMessage;
+typedef boost::shared_ptr<TestMessage> TestMessagePtr;
+
 class TestMessage : public VMessage {
     public:
-
-        TestMessage();
-        TestMessage(VMessageID messageID);
+    
+        static TestMessagePtr factory();
+        static TestMessagePtr factory(VMessageID messageID);
         virtual ~TestMessage();
 
         virtual void send(const VString& /*sessionLabel*/, VBinaryIOStream& /*out*/) {}
@@ -24,6 +27,11 @@ class TestMessage : public VMessage {
         static int getNumMessagesConstructed() { return gNumMessagesConstructed; }
         static int getNumMessagesDestructed() { return gNumMessagesDestructed; }
         static void resetCounters() { gNumMessagesConstructed = 0; gNumMessagesDestructed = 0; }
+
+    protected:
+
+        TestMessage();
+        TestMessage(VMessageID messageID);
 
     private:
 
@@ -38,6 +46,16 @@ class TestMessage : public VMessage {
 int TestMessage::gNextMessageUniqueID = 1;
 int TestMessage::gNumMessagesConstructed = 0;
 int TestMessage::gNumMessagesDestructed = 0;
+
+// static
+TestMessagePtr TestMessage::factory() {
+    return TestMessagePtr(new TestMessage());
+}
+
+// static
+TestMessagePtr TestMessage::factory(VMessageID messageID) {
+    return TestMessagePtr(new TestMessage(messageID));
+}
 
 TestMessage::TestMessage() :
     VMessage(),
@@ -66,7 +84,7 @@ class TestMessageFactory : public VMessageFactory {
         new VMessage object of a concrete VMessage subclass type.
         @return    pointer to a new message object
         */
-        virtual VMessage* instantiateNewMessage(VMessageID messageID) const { return new TestMessage(messageID); }
+        virtual VMessagePtr instantiateNewMessage(VMessageID messageID) const { return TestMessage::factory(messageID); }
 };
 
 VMessageUnit::VMessageUnit(bool logOnSuccess, bool throwOnError) :

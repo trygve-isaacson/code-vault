@@ -15,7 +15,7 @@ http://www.bombaydigital.com/
 VMessageHandlerFactoryMap* VMessageHandler::gFactoryMap = NULL;
 
 // static
-VMessageHandler* VMessageHandler::get(VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread) {
+VMessageHandler* VMessageHandler::get(VMessagePtr m, VServer* server, VClientSessionPtr session, VSocketThread* thread) {
     VMessageHandlerFactory* factory = (*(VMessageHandler::mapInstance()))[m->getMessageID()];
 
     if (factory == NULL)
@@ -40,11 +40,11 @@ VMessageHandlerFactoryMap* VMessageHandler::mapInstance() {
     return gFactoryMap;
 }
 
-VMessageHandler::VMessageHandler(const VString& name, VMessage* m, VServer* server, VClientSession* session, VSocketThread* thread, const VMessageFactory* messageFactory, VMutex* mutex)
+VMessageHandler::VMessageHandler(const VString& name, VMessagePtr m, VServer* server, VClientSessionPtr session, VSocketThread* thread, const VMessageFactory* messageFactory, VMutex* mutex)
     : mName(name)
     , mMessage(m)
     , mServer(server)
-    , mSessionReference(session)
+    , mSession(session)
     , mThread(thread)
     , mMessageFactory(messageFactory)
     , mStartTime(/*now*/)
@@ -66,19 +66,13 @@ VMessageHandler::~VMessageHandler() {
         VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerLifecycleLevel, VSTRING_FORMAT("[%s] %s@0x%08X destructed.", mSessionName.chars(), mName.chars(), this));
     } catch (...) {} // prevent exception from propagating
 
-    mMessage = NULL;
     mServer = NULL;
     mThread = NULL;
     mMessageFactory = NULL;
 }
 
-void VMessageHandler::releaseMessage() {
-    VMessage::release(mMessage);
-    mMessage = NULL;
-}
-
-VMessage* VMessageHandler::getMessage(VMessageID messageID) {
-    VMessage* message = mMessageFactory->instantiateNewMessage(messageID);
+VMessagePtr VMessageHandler::getMessage(VMessageID messageID) {
+    VMessagePtr message = mMessageFactory->instantiateNewMessage(messageID);
     return message;
 }
 

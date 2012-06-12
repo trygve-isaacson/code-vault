@@ -36,13 +36,13 @@ class VServer {
         all other appropriate sessions when postBroadcastMessage is called.
         @param  session the session that has been created
         */
-        virtual void addClientSession(VClientSession* session) = 0;
+        virtual void addClientSession(VClientSessionPtr session);
         /**
         Notifies the server that it should no longer reference the specified
         session, presumably because it is about to be deleted.
         @param  session the session that is going away
         */
-        virtual void removeClientSession(VClientSession* session) = 0;
+        virtual void removeClientSession(VClientSessionPtr session);
         /**
         Posts a broadcast message to all specified client sessions' async output queues; the
         caller must not refer to the message after calling this function, because
@@ -51,37 +51,12 @@ class VServer {
         @param    omitSession    if not NULL, specifies a session the message will NOT
                             be posted to
         */
-        virtual void postBroadcastMessage(const VString& clientType, VMessage* message, const VClientSession* omitSession) = 0;
-        /**
-        Notifies the server that the client session is terminating, and should
-        be garbage collected as soon as its reference count goes to zero (meaning
-        that no i/o threads or message handlers are referring to it).
-        @param  session the session to put on the GC list
-        */
-        void clientSessionTerminating(VClientSession* session);
-        /**
-        Deletes any terminated sessions that are no longer referenced. This should
-        be called periodically from a background thread.
-        */
-        void garbageCollectTerminatedSessions();
-        /**
-        This method is intended for use in testing or diagnostic code; it returns true
-        if there are any terminated sessions that have not yet been garbage collected.
-        Of course, at any moment after return, the state can change.
-        @return true if there are currently any uncollected terminated sessions
-        */
-        bool hasUncollectedTerminatedSessions() const;
+        virtual void postBroadcastMessage(const VString& clientType, VMessagePtr message, VClientSessionConstPtr omitSession) = 0;
 
-    private:
+    protected:
 
-        /**
-        Deletes any of the terminated sessions that no longer have any references
-        to them.
-        */
-        void _garbageCollectTerminatedSessions();
-
-        VClientSessionList mTerminatedSessions; ///< Sessions to be garbage collected (deleted once no longer referenced).
-        mutable VMutex mTerminatedSessionsMutex;///< Mutex to protect operations on mTerminatedSessions
+        VClientSessionList mSessions; ///< Active sessions.
+        mutable VMutex mSessionsMutex;///< Mutex to protect operations on mSessions.
 };
 
 #endif /* vserver_h */

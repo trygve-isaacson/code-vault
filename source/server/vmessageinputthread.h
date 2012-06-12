@@ -58,7 +58,7 @@ class VMessageInputThread : public VSocketThread {
         thread can reference session state.
         @param  session the session on whose behalf we are running
         */
-        void attachSession(VClientSession* session);
+        void attachSession(VClientSessionPtr session);
 
         /**
         Sets or clears the mHasOutputThread that controls whether this input thread must
@@ -80,7 +80,7 @@ class VMessageInputThread : public VSocketThread {
         to process the message, returning when it's OK to read the next message.
         @param    message    the message to handle
         */
-        virtual void _dispatchMessage(VMessage* message);
+        virtual void _dispatchMessage(VMessagePtr message);
         /**
         This method is called by _dispatchMessage if it cannot find the handler
         for the message being handled. How to handle this is protocol-specific,
@@ -88,13 +88,13 @@ class VMessageInputThread : public VSocketThread {
         protocol allows that. The implementation must NOT release the message,
         and the message WILL be released by _dispatchMessage() upon return.
         */
-        virtual void _handleNoMessageHandler(VMessage* /*message*/) {}
+        virtual void _handleNoMessageHandler(VMessagePtr /*message*/) {}
         /**
         This method is intended for use by loopback testing, where the test code can
         see (and potentially preprocess) a message that it sent that is about to
         be handled in the normal fashion.
         */
-        virtual void _beforeProcessMessage(VMessageHandler* /*handler*/, VMessage* /*message*/) {}
+        virtual void _beforeProcessMessage(VMessageHandler* /*handler*/, VMessagePtr /*message*/) {}
         /**
         This method is where we actually call the message handler to process the
         message it was constructed with. A subclass might override this to wrap
@@ -112,7 +112,7 @@ class VMessageInputThread : public VSocketThread {
         VSocketStream           mSocketStream;      ///< The underlying raw stream from which data is read.
         VBinaryIOStream         mInputStream;       ///< The formatted stream from which data is directly read.
         bool                    mConnected;         ///< True if the client has completed the connection sequence.
-        VClientSessionReference mSessionReference;  ///< Reference to the session object we are associated with.
+        VClientSessionPtr       mSession;           ///< The session object we are associated with.
         VServer*                mServer;            ///< The server object that owns us.
         const VMessageFactory*  mMessageFactory;    ///< Factory for instantiating new messages to read from input stream.
         volatile bool           mHasOutputThread;   ///< True if we are dependent on an output thread completion before returning from run(). (see run() code)
@@ -136,7 +136,7 @@ class VBentoMessageInputThread : public VMessageInputThread {
 
     protected:
 
-        virtual void _handleNoMessageHandler(VMessage* message);
+        virtual void _handleNoMessageHandler(VMessagePtr message);
         virtual void _callProcessMessage(VMessageHandler* handler);
 
 };

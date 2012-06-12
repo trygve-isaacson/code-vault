@@ -19,7 +19,7 @@ VMessageInputThread::VMessageInputThread(const VString& name, VSocket* socket, V
     , mSocketStream(socket, "VMessageInputThread")
     , mInputStream(mSocketStream)
     , mConnected(false)
-    , mSessionReference(NULL)
+    , mSession()
     , mServer(server)
     , mMessageFactory(messageFactory)
     , mHasOutputThread(false)
@@ -30,7 +30,7 @@ VMessageInputThread::~VMessageInputThread() {
     // If we have a session, it is responsible for deleting the mSocket, not us.
     // This is because a session has input and output threads, the order of whose
     // destruction is unpredictable; so we cannot let our base class delete the mSocket.
-    if (mSessionReference.getSession() != NULL) {
+    if (mSession != NULL) {
         mSocket = NULL;
     }
 
@@ -74,8 +74,8 @@ void VMessageInputThread::run() {
         }
     }
 
-    if (mSessionReference.getSession() != NULL) {
-        mSessionReference.getSession()->shutdown(this);
+    if (mSession != NULL) {
+        mSession->shutdown(this);
     }
 
     // If we are dependent on an output thread, we must spin here until it clears the flag.
@@ -101,46 +101,41 @@ void VMessageInputThread::run() {
     }
 }
 
-void VMessageInputThread::attachSession(VClientSession* session) {
-    mSessionReference.setSession(session);
+void VMessageInputThread::attachSession(VClientSessionPtr session) {
+    mSession = session;
 }
 
 //lint -e429 "Custodial pointer 'message' has not been freed or returned" [OK: try or catch branches guarantee message is released.]
 void VMessageInputThread::_processNextRequest() {
-    VMessage* message = mMessageFactory->instantiateNewMessage();
+    VMessagePtr message = mMessageFactory->instantiateNewMessage();
 
     /*
     RULES FOR EXCEPTION HANDLING IN REQUEST PROCESSING FUNCTIONS.
     (This text is referenced from the other implementations of
     _processNextRequest().)
     Rules for exception handling here:
-    1. Receive may throw to us; we release and re-throw. This situation
-        indicates a serious stream error, and we should bail out and
-        shut down the socket (re-throwing does this).
+    1. Receive may throw to us. This situation indicates a serious stream error,
+        and we should bail out and shut down the socket (not catching achieves this).
     2. Dispatch may NOT throw to us unless the error is serious enough
         to warrant shutting down the socket; the implementation must catch
         all recoverable errors, so that we may continue processing
         subsequent incoming messages, under the assumption that the
         previous message was correctly formatted even if we encountered a
         problem while attempting to handle it.
+    3. Vault 4.0 uses VMessagePtr smart pointers, so we no longer need to
+        catch here in order to release the message we instantiated above
+        before re-throwing. So there is no longer a try/catch here at all.
     */
-    try {
-        message->receive(mName, mInputStream);
-        this->_dispatchMessage(message);
-    } catch (...) {
-        // If an exception reached us, we are responsible for releasing the message.
-        VMessage::release(message);
-        throw;
-    }
+    message->receive(mName, mInputStream);
+    this->_dispatchMessage(message);
 }
 
-void VMessageInputThread::_dispatchMessage(VMessage* message) {
-    VMessageHandler* handler = VMessageHandler::get(message, mServer, mSessionReference.getSession(), this);
+void VMessageInputThread::_dispatchMessage(VMessagePtr message) {
+    VMessageHandler* handler = VMessageHandler::get(message, mServer, mSession, this);
 
     if (handler == NULL) {
         VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: No message hander defined for message %d.", mName.chars(), (int) message->getMessageID()));
         this->_handleNoMessageHandler(message);
-        VMessage::release(message);
     } else {
         VInstant messageHandlerStart;
 
@@ -160,7 +155,6 @@ void VMessageInputThread::_dispatchMessage(VMessage* message) {
             VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: Caught unknown exception for message ID %d.", mName.chars(), (int) message->getMessageID()));
         }
 
-        handler->releaseMessage();    // handler might not actually release message (processMessage may have re-used it)
         delete handler;
     }
 }
@@ -177,7 +171,7 @@ VBentoMessageInputThread::VBentoMessageInputThread(const VString& name, VSocket*
     VMessageInputThread(name, socket, ownerThread, server, messageFactory) {
 }
 
-void VBentoMessageInputThread::_handleNoMessageHandler(VMessage* message) {
+void VBentoMessageInputThread::_handleNoMessageHandler(VMessagePtr message) {
     VBentoNode responseData("response");
     responseData.addInt("result", -1);
     responseData.addString("error-message", VSTRING_FORMAT("Invalid message ID %d. No handler defined.", (int) message->getMessageID()));
@@ -186,11 +180,10 @@ void VBentoMessageInputThread::_handleNoMessageHandler(VMessage* message) {
     responseData.writeToBentoTextString(bentoText);
     VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] Error Reply: %s", mName.chars(), bentoText.chars()));
 
-    VMessage* response = mMessageFactory->instantiateNewMessage();
+    VMessagePtr response = mMessageFactory->instantiateNewMessage();
     responseData.writeToStream(*response);
     VBinaryIOStream io(mSocketStream);
     response->send(mName, io);
-    VMessage::release(response);
 }
 
 void VBentoMessageInputThread::_callProcessMessage(VMessageHandler* handler) {
@@ -205,11 +198,10 @@ void VBentoMessageInputThread::_callProcessMessage(VMessageHandler* handler) {
         responseData.writeToBentoTextString(bentoText);
         VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] Error Reply: %s", mName.chars(), bentoText.chars()));
 
-        VMessage* response = mMessageFactory->instantiateNewMessage();
+        VMessagePtr response = mMessageFactory->instantiateNewMessage();
         responseData.writeToStream(*response);
         VBinaryIOStream io(mSocketStream);
         response->send(mName, io);
-        VMessage::release(response);
     }
 }
 

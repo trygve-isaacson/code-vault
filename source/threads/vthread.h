@@ -71,7 +71,7 @@ class VBentoNode;
 
     <h4>Signaling</h4>
 
-    VSemaphore is a mechanism for allowing threads to communicate by waiting
+    VSemaphore is a low-level mechanism for allowing threads to communicate by waiting
     for signals from each other; while a thread is waiting on a semaphore, it
     is blocked and does not consume the CPU. Another thread can signal the
     semaphore, causing exactly one of the waiting threads to wake up. A thread
@@ -79,7 +79,8 @@ class VBentoNode;
     often used as a way of threads posting messages to each other, such that
     a receiving thread sleeps if there are no messages for it to process, yet
     wakes up the moment a message is available. See the VSemaphore documentation
-    for details.
+    for details. VSemaphore is used by VMessageQueue and VMessageOutputThread to
+    provide a high-level facility for passing messages between threads.
 
 */
 
