@@ -157,11 +157,11 @@ void VBentoUnit::run() {
 
     this->_verifyContents(rootFromText, "text");
     
-    // Test VBentoString with 0xb9 character
-    VBentoString b9("b9", "¹", VString::EMPTY());
+    // Test VBentoString with 0xb9 character. Validates non-ASCII escaping behavior, with a specific use case.
+    VBentoString b9("b9", VString('\xB9'/*PI symbol in Mac Roman*/), VString::EMPTY());
     VString xmlVal;
     b9.getValueAsXMLText(xmlVal);
-    //VUNIT_ASSERT_EQUAL(xmlVal, "&#xB9;");
+    VUNIT_ASSERT_EQUAL(xmlVal, "&#xB9;");
 
     // Test comparison operators, which should compare the node name.
     // This allows a list of named nodes to be sorted by STL with no extra work.

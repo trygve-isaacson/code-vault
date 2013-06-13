@@ -50,6 +50,38 @@ class VMutex;
     @ingroup vstring
 */
 
+/*
+Best practices for VString creation:
+
+- To pass a temporary VString constructed with vararg formatting, use VSTRING_FORMAT:
+  functionThatTakesAString(VSTRING_FORMAT("my %s format %d string", "hey!", 42));
+
+- To construct a local or instance variable with vararg formatting, use VSTRING_ARGS:
+  VString s(VSTRING_ARGS("my %s format %d string", "hey!", 42));
+  ... mMyInstanceVar(VSTRING_ARGS("my %s format %d string", "hey!", 42)) ...
+
+- To simply construct a VString from a literal, you can just supply the literal, but
+  if you care about optimizing compatibility "non-strict" formatting, you may prefer
+  to use VSTRING_COPY. It depends whether you are assigning or initializing. Initializing
+  does not benefit from this.
+  VString x("my string literal");
+  VString y = VSTRING_COPY("my literal");
+
+- Where you may want to future-proof to distinguish between making a copy of a temporary
+  buffer vs. simply referring to a literal (a feature I have been expirimenting with to
+  determine feasibility), use VSTRING_COPY to indicate that a copy must be made. Notice
+  the difference between this and the simple literal constructor above; in theory, the
+  literal does not need to be copied, but here we do need to copy because the temp buffer
+  may live a shorter life than the string.
+  VString s = VSTRING_COPY(some_temp_buffer_returned_by_a_system_api);
+
+- So in fact the above is a good distinction:
+  If constructing with a literal, just pass it in unadorned.
+  If constructing with a temporary char* buffer, wrap it with VSTRING_COPY to ensure
+  copying if I later optimize away literal copying. (This is the dilemma; how do I know
+  what the pointer points to?)
+*/
+
 #ifdef VAULT_VSTRING_STRICT_FORMATTING
     #define VSTRING_FORMAT(format_string, ...) VString(0, format_string, __VA_ARGS__)
     #define VSTRING_ARGS(format_string, ...) true, format_string, __VA_ARGS__

@@ -1,5 +1,14 @@
 CODE VAULT RELEASE NOTES
 
+---------- VERSION 4.0a3 ----------
+Trygve Isaacson, November 2012
+
+VAULT-0020
+* Compatibility with Xcode 4 LLVM compiler, LLVM compiler warnings.
+- Fixed possible crash in vararg string formatting.
+- Fixed Bento unit test for non-ASCII character escaping.
+* Added comments on best practices for VString creation macros.
+
 ---------- VERSION 4.0a2 ----------
 Trygve Isaacson, September 2012
 

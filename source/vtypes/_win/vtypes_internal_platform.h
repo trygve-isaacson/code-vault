@@ -54,6 +54,13 @@ typedef signed long ssize_t; // used by i/o APIs defined below
     #define V_INSTANT_SNAPSHOT_IS_UTC    // platform_snapshot() gives us a UTC time suitable for platform_now()
 #endif
 
+// This is generally a VC++ issue but not necessarily. VString::vaFormat needs to call va_copy for correctness.
+// But VC++ doesn't define this API. Failing to call it on VC++ builds has not been a problem, but it is needed
+// on some other environments in that use case, and defining it as a simple assignment does OK on VC++ so far.
+#ifndef va_copy
+#define va_copy(dest,src) ((dest) = (src))
+#endif
+
 // We have to implement timegm() because there's no equivalent Win32 function.
 extern time_t timegm(struct tm* t);
 

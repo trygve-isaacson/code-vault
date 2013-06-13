@@ -1704,6 +1704,8 @@ void VString::vaFormat(const char* formatText, va_list args) {
     if (formatText == NULL) {
         this->_setLength(0);
     } else {
+		va_list argsCopy;
+		va_copy(argsCopy, args);
         int newStringLength = VString::_determineSprintfLength(formatText, args);
 
         if (newStringLength == -1) {
@@ -1716,7 +1718,7 @@ void VString::vaFormat(const char* formatText, va_list args) {
 
         this->preflight(newStringLength);
 
-        (void) vault::vsnprintf(mBuffer, static_cast<VSizeType>(mBufferLength), formatText, args);
+        (void) vault::vsnprintf(mBuffer, static_cast<VSizeType>(mBufferLength), formatText, argsCopy);
 
         this->_setLength(newStringLength); // could call postflight, but would do extra assertion check
     }
@@ -1877,8 +1879,6 @@ int VString::_determineSprintfLength(const char* formatText, va_list args) {
     VMutexLocker locker(VString::gSprintfBufferMutex, "VString::_determineSprintfLength");
     int theLength = vault::vsnprintf(gSprintfBuffer, kSprintfBufferSize, formatText, args);
 #endif
-
-    va_end(args);
 
     return theLength;
 }
