@@ -229,6 +229,7 @@ class VUnit {
         void assertTrue(bool b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(b, filePath, lineNumber, labelSuffix, VString("failed assertion: value is false but should be true")); }
         void assertEqual(int a, int b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %d == %d", a, b)); }
         void assertEqual(unsigned int a, unsigned int b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %ud == %ud", a, b)); }
+        void assertEqual(long a, long b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %ld == %ld", a, b)); }
         void assertEqual(bool a, bool b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %s == %s", (a ? "true" : "false"), (b ? "true" : "false"))); }
         void assertEqual(const VString& a, const VString& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: '%s' == '%s'", a.chars(), b.chars())); }
         void assertEqual(const VString& a, const char* b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: '%s' == '%s'", a.chars(), b)); }
@@ -242,10 +243,21 @@ class VUnit {
         void assertEqual(Vu8 a, Vu8 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %hhu == %hhu", a, b)); }
         void assertEqual(Vs16 a, Vs16 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %hd == %hd", a, b)); }
         void assertEqual(Vu16 a, Vu16 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %hu == %hu", a, b)); }
+
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
         void assertEqual(Vs32 a, Vs32 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %ld == %ld", a, b)); }
         void assertEqual(Vu32 a, Vu32 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %lu == %lu", a, b)); }
+#endif /* not Vx32_IS_xINT */
+
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
         void assertEqual(Vs64 a, Vs64 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %lld == %lld", a, b)); }
         void assertEqual(Vu64 a, Vu64 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %llu == %llu", a, b)); }
+#endif /* not Vx64_IS_xINT */
+
+#ifndef V_SIZE_T_IS_UNSIGNED_INT /* don't redefine if types are same */
+        void assertEqual(size_t a, size_t b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: " VSTRING_FORMATTER_SIZE " == " VSTRING_FORMATTER_SIZE, a, b)); }
+#endif /* not V_SIZE_T_IS_UNSIGNED_INT */
+
         void assertEqual(const VColor& a, const VColor& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %s == %s", a.getCSSColor().chars(), b.getCSSColor().chars())); }
         void assertEqual(const VColorPair& a, const VColorPair& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %s == %s", a.getCSSColor().chars(), b.getCSSColor().chars())); }
 #define VUNIT_ASSERT_NOT_EQUAL(a, b) this->assertNotEqual(a, b, VString::EMPTY(), __FILE__, __LINE__)
@@ -255,6 +267,7 @@ class VUnit {
         void assertFalse(bool b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(!b, filePath, lineNumber, labelSuffix, VString("failed assertion: value is true but should be false")); }
         void assertNotEqual(int a, int b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: %d != %d", a, b)); }
         void assertNotEqual(unsigned int a, unsigned int b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: %ud != %ud", a, b)); }
+        void assertNotEqual(long a, long b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: %ld != %ld", a, b)); }
         void assertNotEqual(bool a, bool b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: %s != %s", (a ? "true" : "false"), (b ? "true" : "false"))); }
         void assertNotEqual(const VString& a, const VString& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: '%s' != '%s'", a.chars(), b.chars())); }
         void assertNotEqual(const VString& a, const char* b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: '%s' != '%s'", a.chars(), b)); }
@@ -268,10 +281,21 @@ class VUnit {
         void assertNotEqual(Vu8 a, Vu8 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: %hhu != %hhu", a, b)); }
         void assertNotEqual(Vs16 a, Vs16 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: %hd != %hd", a, b)); }
         void assertNotEqual(Vu16 a, Vu16 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: %hu != %hu", a, b)); }
+
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
         void assertNotEqual(Vs32 a, Vs32 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: %ld != %ld", a, b)); }
         void assertNotEqual(Vu32 a, Vu32 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: %lu != %lu", a, b)); }
+#endif /* not Vx32_IS_xINT */
+
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
         void assertNotEqual(Vs64 a, Vs64 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: %lld != %lld", a, b)); }
         void assertNotEqual(Vu64 a, Vu64 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: %llu != %llu", a, b)); }
+#endif /* not Vx64_IS_xINT */
+
+#ifndef V_SIZE_T_IS_UNSIGNED_INT /* don't redefine if types are same */
+        void assertNotEqual(size_t a, size_t b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed inequality: " VSTRING_FORMATTER_SIZE " != " VSTRING_FORMATTER_SIZE, a, b)); }
+#endif /* not V_SIZE_T_IS_UNSIGNED_INT */
+
         void assertNotEqual(const VColor& a, const VColor& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %s != %s", a.getCSSColor().chars(), b.getCSSColor().chars())); }
         void assertNotEqual(const VColorPair& a, const VColorPair& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %s != %s", a.getCSSColor().chars(), b.getCSSColor().chars())); }
 

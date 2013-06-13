@@ -1,5 +1,13 @@
 CODE VAULT RELEASE NOTES
 
+---------- VERSION 4.0a4 ----------
+Trygve Isaacson, February 2013
+
+VAULT-0022
+* Added support for 64-bit compilation on all supported platforms.
+VAULT-0021
+* Added support for minor Qt 5.0 API changes.
+
 ---------- VERSION 4.0a3 ----------
 Trygve Isaacson, November 2012
 

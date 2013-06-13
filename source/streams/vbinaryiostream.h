@@ -61,12 +61,23 @@ class, is as follows:
     <td>4 bytes in network byte order (big endian)</td>
 </tr>
 <tr>
+    <td>int</td>
+    <td>The readInt32/writeInt32 APIs are provided for convenience with
+     the int data type, and use 4 bytes in network byte order (big endian)
+     exactly like Vs32; the API names are intended to be completely
+     clear about the number of bits used</td>
+</tr>
+<tr>
     <td>Vs64 and Vu64</td>
     <td>8 bytes in network byte order (big endian)</td>
 </tr>
 <tr>
+    <td>VFloat</td>
+    <td>4 bytes in network byte order (big endian)</td>
+</tr>
+<tr>
     <td>VDouble</td>
-    <td>A VString representation of the number (see VString below)</td>
+    <td>8 bytes in network byte order (big endian)</td>
 </tr>
 <tr>
     <td>bool</td>
@@ -76,11 +87,29 @@ class, is as follows:
     <td>VString</td>
     <td>A length indicator "n", followed by n bytes of text. The length
         indicator is dynamically sized to avoid wasting space for small
-        items, while allowing huge items. See below.</td>
+        items, while allowing huge items. For example, an empty string
+        takes 1 byte, and short strings have only 1 byte of overhead
+        to indicate the length. See below.</td>
+</tr>
+<tr>
+    <td>"String 32"</td>
+    <td>A Vs32 (4 bytes) length indicator "n", followed by n bytes of text.
+        Unlike VString described above, this form always has a length indicator
+        that is 4 bytes long, regardless of string length. Thus an empty string
+        takes 4 bytes, and every string has 4 bytes of overhead to indicate the
+        length.</td>
+</tr>
+<tr>
+    <td>VInstant</td>
+    <td>The VInstant's internal Vs64 value.</td>
+</tr>
+<tr>
+    <td>VDuration</td>
+    <td>The VDuration's internal Vs64 value.</td>
 </tr>
 </table>
 
-The dynamically sized length indicator for strings allows short strings
+The dynamically sized length indicator mode for VString allows short strings
 to have their length encoded in 1 byte, while still allowing for strings
 that exceed even 64K to still have their length encoded:
 

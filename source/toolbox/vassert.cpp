@@ -130,6 +130,7 @@ void VAssert::failedAssertEqual(Vu16 a, int b, const char* expressionA, const ch
     _failedAssertEqual(VSTRING_U16(a), VSTRING_INT(b), expressionA, expressionB, file, line);
 }
 
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
 // static
 void VAssert::failedAssertEqual(Vs32 a, Vs32 b, const char* expressionA, const char* expressionB, const char* file, int line) {
     _failedAssertEqual(VSTRING_S32(a), VSTRING_S32(b), expressionA, expressionB, file, line);
@@ -149,7 +150,9 @@ void VAssert::failedAssertEqual(Vu32 a, Vu32 b, const char* expressionA, const c
 void VAssert::failedAssertEqual(Vu32 a, int b, const char* expressionA, const char* expressionB, const char* file, int line) {
     _failedAssertEqual(VSTRING_U32(a), VSTRING_INT(b), expressionA, expressionB, file, line);
 }
+#endif /* not Vx32_IS_xINT */
 
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
 // static
 void VAssert::failedAssertEqual(Vs64 a, Vs64 b, const char* expressionA, const char* expressionB, const char* file, int line) {
     _failedAssertEqual(VSTRING_S64(a), VSTRING_S64(b), expressionA, expressionB, file, line);
@@ -169,6 +172,7 @@ void VAssert::failedAssertEqual(Vu64 a, Vu64 b, const char* expressionA, const c
 void VAssert::failedAssertEqual(Vu64 a, int b, const char* expressionA, const char* expressionB, const char* file, int line) {
     _failedAssertEqual(VSTRING_U64(a), VSTRING_INT(b), expressionA, expressionB, file, line);
 }
+#endif /* not Vx64_IS_xINT */
 
 // static
 void VAssert::failedAssertEqual(VDouble a, VDouble b, const char* expressionA, const char* expressionB, const char* file, int line) {
@@ -260,6 +264,7 @@ void VAssert::failedAssertNotEqual(Vu16 val, const char* expressionA, const char
     _failedAssertNotEqual(VSTRING_U16(val), expressionA, expressionB, file, line);
 }
 
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
 // static
 void VAssert::failedAssertNotEqual(Vs32 val, const char* expressionA, const char* expressionB, const char* file, int line) {
     _failedAssertNotEqual(VSTRING_S32(val), expressionA, expressionB, file, line);
@@ -269,7 +274,9 @@ void VAssert::failedAssertNotEqual(Vs32 val, const char* expressionA, const char
 void VAssert::failedAssertNotEqual(Vu32 val, const char* expressionA, const char* expressionB, const char* file, int line) {
     _failedAssertNotEqual(VSTRING_U32(val), expressionA, expressionB, file, line);
 }
+#endif /* not Vx32_IS_xINT */
 
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
 // static
 void VAssert::failedAssertNotEqual(Vs64 val, const char* expressionA, const char* expressionB, const char* file, int line) {
     _failedAssertNotEqual(VSTRING_S64(val), expressionA, expressionB, file, line);
@@ -279,6 +286,7 @@ void VAssert::failedAssertNotEqual(Vs64 val, const char* expressionA, const char
 void VAssert::failedAssertNotEqual(Vu64 val, const char* expressionA, const char* expressionB, const char* file, int line) {
     _failedAssertNotEqual(VSTRING_U64(val), expressionA, expressionB, file, line);
 }
+#endif /* not Vx64_IS_xINT */
 
 // static
 void VAssert::failedAssertNotEqual(VDouble val, const char* expressionA, const char* expressionB, const char* file, int line) {
@@ -370,6 +378,7 @@ void VAssert::failedLessGreaterComparison(bool comparingLessThan, bool comparing
     _failedLessOrGreaterThan(comparingLessThan, comparingOrEqualTo, VSTRING_U16(a), VSTRING_INT(b), expressionA, expressionB, file, line);
 }
 
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
 // static
 void VAssert::failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vs32 a, Vs32 b, const char* expressionA, const char* expressionB, const char* file, int line) {
     _failedLessOrGreaterThan(comparingLessThan, comparingOrEqualTo, VSTRING_S32(a), VSTRING_S32(b), expressionA, expressionB, file, line);
@@ -389,7 +398,9 @@ void VAssert::failedLessGreaterComparison(bool comparingLessThan, bool comparing
 void VAssert::failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vu32 a, int b, const char* expressionA, const char* expressionB, const char* file, int line) {
     _failedLessOrGreaterThan(comparingLessThan, comparingOrEqualTo, VSTRING_U32(a), VSTRING_INT(b), expressionA, expressionB, file, line);
 }
+#endif /* not Vx32_IS_xINT */
 
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
 // static
 void VAssert::failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vs64 a, Vs64 b, const char* expressionA, const char* expressionB, const char* file, int line) {
     _failedLessOrGreaterThan(comparingLessThan, comparingOrEqualTo, VSTRING_S64(a), VSTRING_S64(b), expressionA, expressionB, file, line);
@@ -409,6 +420,7 @@ void VAssert::failedLessGreaterComparison(bool comparingLessThan, bool comparing
 void VAssert::failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vu64 a, int b, const char* expressionA, const char* expressionB, const char* file, int line) {
     _failedLessOrGreaterThan(comparingLessThan, comparingOrEqualTo, VSTRING_U64(a), VSTRING_INT(b), expressionA, expressionB, file, line);
 }
+#endif /* not Vx64_IS_xINT */
 
 // static
 void VAssert::failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, VDouble a, VDouble b, const char* expressionA, const char* expressionB, const char* file, int line) {
@@ -465,6 +477,7 @@ void VAssert::failedRangeCheck(unsigned int val, int minVal, int maxVal, const c
     _failedAssertRangeCheck(VSTRING_UINT(val), VSTRING_INT(minVal), VSTRING_INT(maxVal), valExpression, minValExpression, maxValExpression, file, line);
 }
 
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
 // static
 void VAssert::failedRangeCheck(Vs32 val, Vs32 minVal, Vs32 maxVal, const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line) {
     _failedAssertRangeCheck(VSTRING_S32(val), VSTRING_S32(minVal), VSTRING_S32(maxVal), valExpression, minValExpression, maxValExpression, file, line);
@@ -484,7 +497,9 @@ void VAssert::failedRangeCheck(Vu32 val, Vu32 minVal, Vu32 maxVal, const char* v
 void VAssert::failedRangeCheck(Vu32 val, int minVal, int maxVal, const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line) {
     _failedAssertRangeCheck(VSTRING_U32(val), VSTRING_INT(minVal), VSTRING_INT(maxVal), valExpression, minValExpression, maxValExpression, file, line);
 }
+#endif /* not Vx32_IS_xINT */
 
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
 // static
 void VAssert::failedRangeCheck(Vs64 val, Vs64 minVal, Vs64 maxVal, const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line) {
     _failedAssertRangeCheck(VSTRING_S64(val), VSTRING_S64(minVal), VSTRING_S64(maxVal), valExpression, minValExpression, maxValExpression, file, line);
@@ -504,6 +519,7 @@ void VAssert::failedRangeCheck(Vu64 val, Vu64 minVal, Vu64 maxVal, const char* v
 void VAssert::failedRangeCheck(Vu64 val, int minVal, int maxVal, const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line) {
     _failedAssertRangeCheck(VSTRING_U64(val), VSTRING_INT(minVal), VSTRING_INT(maxVal), valExpression, minValExpression, maxValExpression, file, line);
 }
+#endif /* not Vx64_IS_xINT */
 
 // static
 void VAssert::failedRangeCheck(VDouble val, VDouble minVal, VDouble maxVal, const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line) {

@@ -66,6 +66,21 @@ Finally, proceed with everything else.
     #endif
 #endif
 
+// Set our standard symbol indicating a 32/64-bit compile.
+// If you need to set it manually in vconfigure.h, that will be respected.
+// You really should write code that works in either mode, but if you need to check, use this.
+#if !defined(VCOMPILER_32BIT) && !defined(VCOMPILER_64BIT)
+    #if __GNUC__
+        #if __x86_64__ || __ppc64__
+            #define VCOMPILER_64BIT
+        #else
+            #define VCOMPILER_32BIT
+        #endif
+    #else
+        #define VCOMPILER_32BIT /* something to fall back on for unknown compilers, may need more */
+    #endif
+#endif
+
 // Platform-specific definitions for types, byte order, min/max/abs/fabs, etc.
 
 /*

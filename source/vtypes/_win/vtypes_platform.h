@@ -101,6 +101,67 @@ Finally, proceed with everything else.
     #endif
 #endif
 
+// Set our standard symbol indicating a 32/64-bit compile.
+// If you need to set it manually in vconfigure.h, that will be respected.
+// You really should write code that works in either mode, but if you need to check, use this.
+#if !defined(VCOMPILER_32BIT) && !defined(VCOMPILER_64BIT)
+    #if (_WIN32 || _WIN64)
+        #if _WIN64
+            #define VCOMPILER_64BIT
+        #else
+            #define VCOMPILER_32BIT
+        #endif
+    #else
+        #define VCOMPILER_32BIT /* something to fall back on for unknown compilers, may need more */
+    #endif
+#endif
+
+// Only VC 2010 and later have stdint.h, so if necessary, define ourself what vtypes.h relies on from there.
+#if _MSC_VER >= 1600
+	#include <stdint.h>
+#else
+    typedef signed char         int8_t;
+    typedef unsigned char       uint8_t;
+    typedef short               int16_t;
+    typedef unsigned short      uint16_t;
+    typedef int                 int32_t;
+    typedef unsigned int        uint32_t;
+    typedef signed long long    int64_t;
+    typedef unsigned long long  uint64_t;
+
+    #define INT8_MAX         127
+    #define INT16_MAX        32767
+    #define INT32_MAX        2147483647
+    #define INT64_MAX        9223372036854775807LL
+
+    #define INT8_MIN          -128
+    #define INT16_MIN         -32768
+       /*
+          Note:  the literal "most negative int" cannot be written in C --
+          the rules in the standard (section 6.4.4.1 in C99) will give it
+          an unsigned type, so INT32_MIN (and the most negative member of
+          any larger signed type) must be written via a constant expression.
+       */
+    #define INT32_MIN        (-INT32_MAX-1)
+    #define INT64_MIN        (-INT64_MAX-1)
+
+    #define UINT8_MAX         255
+    #define UINT16_MAX        65535
+    #define UINT32_MAX        4294967295U
+    #define UINT64_MAX        18446744073709551615ULL
+
+    #ifndef SIZE_MAX
+        #ifdef _WIN64
+            #define SIZE_MAX    UINT64_MAX
+        #else
+            #define SIZE_MAX    UINT32_MAX
+        #endif
+    #endif
+
+#endif
+
+#define V_SIZE_T_IS_UNSIGNED_INT /* In MS headers, size_t is typedef of unsigned int. This define is used to avoid defining fn overloads that conflict. */
+
 // Minimal includes needed to compile against the Vault header files.
 
 #include <winsock2.h>

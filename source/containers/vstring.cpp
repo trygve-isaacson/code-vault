@@ -210,7 +210,7 @@ VString::VString(const boost::format& fmt)
     , mBufferLength(0)
     , mBuffer(NULL)
     {
-    this->copyFromBuffer(fmt.str().c_str(), 0, fmt.size());
+    this->copyFromBuffer(fmt.str().c_str(), 0, static_cast<int>(fmt.size()));
 
     ASSERT_INVARIANT();
 }
@@ -288,7 +288,7 @@ VString& VString::operator=(const QString& s) {
 VString& VString::operator=(const boost::format& fmt) {
     ASSERT_INVARIANT();
 
-    this->copyFromBuffer(fmt.str().c_str(), 0, fmt.size());
+    this->copyFromBuffer(fmt.str().c_str(), 0, static_cast<int>(fmt.size()));
 
     ASSERT_INVARIANT();
 
@@ -414,6 +414,7 @@ VString& VString::operator=(Vu32 i) {
     return *this;
 }
 
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
 VString& VString::operator=(Vs32 i) {
     ASSERT_INVARIANT();
 
@@ -423,6 +424,7 @@ VString& VString::operator=(Vs32 i) {
 
     return *this;
 }
+#endif /* not Vx32_IS_xINT */
 
 VString& VString::operator=(Vu64 i) {
     ASSERT_INVARIANT();
@@ -434,6 +436,7 @@ VString& VString::operator=(Vu64 i) {
     return *this;
 }
 
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
 VString& VString::operator=(Vs64 i) {
     ASSERT_INVARIANT();
 
@@ -443,6 +446,7 @@ VString& VString::operator=(Vs64 i) {
 
     return *this;
 }
+#endif /* not Vx64_IS_xINT */
 
 VString& VString::operator=(VDouble f) {
     ASSERT_INVARIANT();
@@ -615,6 +619,7 @@ VString& VString::operator+=(Vu32 i) {
     return *this;
 }
 
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
 VString& VString::operator+=(Vs32 i) {
     ASSERT_INVARIANT();
 
@@ -624,6 +629,7 @@ VString& VString::operator+=(Vs32 i) {
 
     return *this;
 }
+#endif /* not Vx32_IS_xINT */
 
 VString& VString::operator+=(Vu64 i) {
     ASSERT_INVARIANT();
@@ -635,6 +641,7 @@ VString& VString::operator+=(Vu64 i) {
     return *this;
 }
 
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
 VString& VString::operator+=(Vs64 i) {
     ASSERT_INVARIANT();
 
@@ -644,6 +651,7 @@ VString& VString::operator+=(Vs64 i) {
 
     return *this;
 }
+#endif /* not Vx64_IS_xINT */
 
 VString& VString::operator+=(VDouble d) {
     ASSERT_INVARIANT();

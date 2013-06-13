@@ -170,24 +170,46 @@ But if you need a specific size (such as when doing stream i/o or
 talking to an external API that uses a specific sized type, these
 are our official definitions.
 */
-typedef signed char         Vs8;    ///< Signed 8-bit integer.
-typedef unsigned char       Vu8;    ///< Unsigned 8-bit integer.
+typedef int8_t              Vs8;    ///< Signed 8-bit integer.
+typedef uint8_t             Vu8;    ///< Unsigned 8-bit integer.
 
-typedef signed short        Vs16;   ///< Signed 16-bit integer.
-typedef unsigned short      Vu16;   ///< Unsigned 16-bit integer.
+typedef int16_t             Vs16;   ///< Signed 16-bit integer.
+typedef uint16_t            Vu16;   ///< Unsigned 16-bit integer.
 
-typedef signed long         Vs32;   ///< Signed 32-bit integer.
-typedef unsigned long       Vu32;   ///< Unsigned 32-bit integer.
+typedef int32_t             Vs32;   ///< Signed 32-bit integer.
+typedef uint32_t            Vu32;   ///< Unsigned 32-bit integer.
 
-#ifndef VCOMPILER_MSVC_6_CRIPPLED /* MSVC++ 6 hacks for this are defined in Win32 platform header */
-typedef signed long long    Vs64;   ///< Signed 64-bit integer.
-typedef unsigned long long  Vu64;   ///< Unsigned 64-bit integer.
+#ifndef VCOMPILER_MSVC_6_CRIPPLED /* MSVC++ 6 hacks for this are defined in the _win platform header */
+typedef int64_t             Vs64;   ///< Signed 64-bit integer.
+typedef uint64_t            Vu64;   ///< Unsigned 64-bit integer.
 #endif
 
 typedef float               VFloat;     ///< Single-precision floating-point number.
 typedef double              VDouble;    ///< Double-precision floating-point number.
 typedef Vs64                VFSize;     ///< Container for file or stream sizes. The purpose is to prevent 32-bit limits from creeping into APIs and source code.
 typedef size_t              VSizeType;  ///< loop index variable of correct type for STL iteration
+
+/*
+These three defines are to future-proof against compile errors when overloading functions
+that take various integer types. Which overloads are actually identical (and thus duplicates)
+depends on the compile flags. Specifically, and in most 32- and 64-bit environments,
+Vs32 = int32_t = int, so you can't have an overloaded function with both int and Vs32 versions.
+But if you use an ILP64 model, then Vs64 = int64_t = int, in which case the error would be if
+you overload a function with both int and Vs64 versions. I don't yet have an example to know
+how to detect ILP64, and all others (e.g., 32-bit and LP64) have int32_t = int, so for now we
+just define the first one all the time (Vs32 / Vu32 are int / unsigned int), and therefore
+where we have int overloads (VString assignment and increment, VAssert variants) we don't define
+the 32-bit overloads. If you use ILP64, make this define conditional on something appropriate,
+and we'll avoid defining the 64-bit overloads. The definition of size_t can also conflict with
+unsigned int if, as Microsoft does, the headers declare it as such a typedef.
+An enhancement would be to auto-detect or more conditionally define these; for now all supported
+environments use the Vx32_IS_xINT model, and V_SIZE_T_IS_UNSIGNED_INT is handled in the platform
+header for Windows, so that's not necessary.
+@see http://en.wikipedia.org/wiki/LP64#64-bit_data_models
+*/
+#define Vx32_IS_xINT /* Vs32 is int32_t is typedef of int. Correct for 32-bit, as well as 64-bit when using LLP64/IL32P64 (e.g. Microsoft X64/IA-64) or LP64/I32LP64 (e.g. Unix; everyone but Microsoft). The norm. */
+//#define Vx64_IS_xINT /* Vs64 is int64_t is typedef of int. Correct for 64-bit when using ILP64 or SILP64. The oddball case. */
+//#define V_SIZE_T_IS_UNSIGNED_INT /* size_t is typedef of unsigned int. This is defined in _win/vtypes_platform.h because in MS defines size_t this way, so overloading a function signature both ways won't work. */
 
 #ifndef NULL
     #define NULL 0  ///< Definition of NULL in compiler environments that don't already define it.
@@ -404,8 +426,8 @@ void mapDeleteOneValue(std::map<KEY_TYPE, VALUE_TYPE*>& m, KEY_TYPE key) {
     // Signed 32-bit actual swapping:
     #define V_BYTESWAP_HTON_S32_GET(x)      vault::VbyteSwap32((Vu32) x)
     #define V_BYTESWAP_NTOH_S32_GET(x)      vault::VbyteSwap32((Vu32) x)
-    #define V_BYTESWAP_HTON_S32_IN_PLACE(x) ((x) = (vault::VbyteSwap32((Vu32) x)))
-    #define V_BYTESWAP_NTOH_S32_IN_PLACE(x) ((x) = (vault::VbyteSwap32((Vu32) x)))
+    #define V_BYTESWAP_HTON_S32_IN_PLACE(x) ((x) = (Vs32)(vault::VbyteSwap32((Vu32) x)))
+    #define V_BYTESWAP_NTOH_S32_IN_PLACE(x) ((x) = (Vs32)(vault::VbyteSwap32((Vu32) x)))
     // Unsigned 32-bit actual swapping:
     #define V_BYTESWAP_HTON_U32_GET(x)      vault::VbyteSwap32(x)
     #define V_BYTESWAP_NTOH_U32_GET(x)      vault::VbyteSwap32(x)

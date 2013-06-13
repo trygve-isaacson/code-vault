@@ -103,11 +103,14 @@ Best practices for VString creation:
 // VSTRING_FORMAT("Hello, %s.", p->getName().chars());                          <-- No need to avoid using %s for (char*) values.
 // VSTRING_FORMAT("Answer is %d.", 42);                                         <-- No need to avoid using %d for int values.
 // VSTRING_FORMAT("Vector size is " VSTRING_FORMATTER_SIZE, vec.size());        <-- Useful because size_t formatting is sketchy.
-// VSTRING_FORMAT("Jumbo 64-bit size is " VSTRING_FORMATTER_S64, myVs64Value);  <-- Useful because 64-bit int formatter is obscure compared to %d.
-// VSTRING_FORMAT("Result dimensions: %lld*%lld*%lld", x, y, z);                <-- Code would be less readable if VSTRING_FORMATTER_S64 were used 3x here.
+// VSTRING_FORMAT("My 32-bit value is " VSTRING_FORMATTER_S32, myVs32Value);    <-- Useful because 32-bit int formatter may depend on compiler mode.
+// VSTRING_FORMAT("Jumbo 64-bit size is " VSTRING_FORMATTER_S64, myVs64Value);  <-- Useful because 64-bit int formatter may depend on compiler mode.
+// VSTRING_FORMAT("Result dimensions: %lld*%lld*%lld", x, y, z);                <-- Code would be less readable if VSTRING_FORMATTER_S64 were used 3x here, but this is not totally correct on unusual 64-bit platforms.
 
 #define VSTRING_FORMATTER_INT       "%d"
-#define VSTRING_FORMATTER_UINT      "%ud"
+#define VSTRING_FORMATTER_UINT      "%u"
+#define VSTRING_FORMATTER_LONG      "%ld"
+#define VSTRING_FORMATTER_ULONG     "%lu"
 #ifdef VCOMPILER_MSVC
     #define VSTRING_FORMATTER_SIZE  "%Iu"   // VC++ libraries do not conform to IEEE1003.1 here.
 #else
@@ -117,10 +120,23 @@ Best practices for VString creation:
 #define VSTRING_FORMATTER_U8        "%hhu"  // Note: %hhu is not universally supported; converting value to other type may be better.
 #define VSTRING_FORMATTER_S16       "%hd"
 #define VSTRING_FORMATTER_U16       "%hu"
-#define VSTRING_FORMATTER_S32       "%ld"
-#define VSTRING_FORMATTER_U32       "%lu"
+
+#ifdef Vx32_IS_xINT /* Don't redefine if types are same; else form is untested environment. */
+#define VSTRING_FORMATTER_S32       VSTRING_FORMATTER_INT
+#define VSTRING_FORMATTER_U32       VSTRING_FORMATTER_UINT
+#else
+#define VSTRING_FORMATTER_S32       VSTRING_FORMATTER_LONG
+#define VSTRING_FORMATTER_U32       VSTRING_FORMATTER_ULONG
+#endif
+
+#ifdef Vx64_IS_xINT /* Don't redefine if types are same; else form is normal environment. */
+#define VSTRING_FORMATTER_S64       VSTRING_FORMATTER_INT
+#define VSTRING_FORMATTER_U64       VSTRING_FORMATTER_UINT
+#else
 #define VSTRING_FORMATTER_S64       "%lld"
 #define VSTRING_FORMATTER_U64       "%llu"
+#endif
+
 #define VSTRING_FORMATTER_FLOAT     "%f"
 #define VSTRING_FORMATTER_DOUBLE    "%lf"
 #define VSTRING_FORMATTER_PTR       "%p"
@@ -129,6 +145,8 @@ Best practices for VString creation:
 // of various sizes, etc. This is preferable to specifying the proper formatting directives manually.
 #define VSTRING_INT(n)      VSTRING_FORMAT(VSTRING_FORMATTER_INT, n)    ///< Creates a string by formatting an int value.
 #define VSTRING_UINT(n)     VSTRING_FORMAT(VSTRING_FORMATTER_UINT, n)   ///< Creates a string by formatting an unsigned int value.
+#define VSTRING_LONG(n)     VSTRING_FORMAT(VSTRING_FORMATTER_LONG, n)   ///< Creates a string by formatting a long value.
+#define VSTRING_ULONG(n)    VSTRING_FORMAT(VSTRING_FORMATTER_ULONG, n)  ///< Creates a string by formatting an unsigned long value.
 #define VSTRING_SIZE(z)     VSTRING_FORMAT(VSTRING_FORMATTER_SIZE, z)   ///< Creates a string by formatting a size_t value.
 #define VSTRING_S8(n)       VSTRING_FORMAT(VSTRING_FORMATTER_S8, n)     ///< Creates a string by formatting an 8-bit int value.
 #define VSTRING_U8(n)       VSTRING_FORMAT(VSTRING_FORMATTER_U8, n)     ///< Creates a string by formatting an unsigned 8-bit int value.
@@ -328,21 +346,29 @@ class VString {
         @param    i    the integer value to be formatted
         */
         VString& operator=(Vu32 i);
+
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
         /**
         Assigns the string from a Vs32.
         @param    i    the integer value to be formatted
         */
         VString& operator=(Vs32 i);
+#endif /* not Vx32_IS_xINT */
+
         /**
         Assigns the string from a Vu64.
         @param    i    the integer value to be formatted
         */
         VString& operator=(Vu64 i);
+
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
         /**
         Assigns the string from a Vs64.
         @param    i    the integer value to be formatted
         */
         VString& operator=(Vs64 i);
+#endif /* not Vx64_IS_xINT */
+
         /**
         Assigns the string from a VDouble.
         @param    d    the double value to be formatted
@@ -433,21 +459,25 @@ class VString {
         @param    i    the integer value to be formatted
         */
         VString& operator+=(Vu32 i);
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
         /**
         Appends to the string from a Vs32.
         @param    i    the integer value to be formatted
         */
         VString& operator+=(Vs32 i);
+#endif /* not Vx32_IS_xINT */
         /**
         Appends to the string from a Vu64.
         @param    i    the integer value to be formatted
         */
         VString& operator+=(Vu64 i);
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
         /**
         Appends to the string from a Vs64.
         @param    i    the integer value to be formatted
         */
         VString& operator+=(Vs64 i);
+#endif /* not Vx64_IS_xINT */
         /**
         Appends to the string from a VDouble.
         @param    f    the float value to be formatted
@@ -1129,9 +1159,17 @@ inline VString& operator<<(VString& s, Vs8 i) { s += i; return s; }     ///< App
 inline VString& operator<<(VString& s, Vu16 i) { s += i; return s; }    ///< Appends to the string by copying a Vu16 as string. @param    s    the string @param    i    the Vu16 to append @return the string
 inline VString& operator<<(VString& s, Vs16 i) { s += i; return s; }    ///< Appends to the string by copying a Vs16 as string. @param    s    the string @param    i    the Vs16 to append @return the string
 inline VString& operator<<(VString& s, Vu32 i) { s += i; return s; }    ///< Appends to the string by copying a Vu32 as string. @param    s    the string @param    i    the Vu32 to append @return the string
+
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
 inline VString& operator<<(VString& s, Vs32 i) { s += i; return s; }    ///< Appends to the string by copying a Vs32 as string. @param    s    the string @param    i    the Vs32 to append @return the string
+#endif /* not Vx32_IS_xINT */
+
 inline VString& operator<<(VString& s, Vu64 i) { s += i; return s; }    ///< Appends to the string by copying a Vu64 as string. @param    s    the string @param    i    the Vu64 to append @return the string
+
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
 inline VString& operator<<(VString& s, Vs64 i) { s += i; return s; }    ///< Appends to the string by copying a Vs64 as string. @param    s    the string @param    i    the Vs64 to append @return the string
+#endif /* not Vx64_IS_xINT */
+
 inline VString& operator<<(VString& s, VDouble f) { s += f; return s; } ///< Appends to the string by copying a VDouble as string. @param    s    the string @param    f    the VDouble to append @return the string
 
 #endif /* vstring_h */

@@ -140,7 +140,7 @@ Vs64 VStream::streamCopy(VStream& fromStream, VIOStream& toStream, Vs64 numBytes
 
 // static
 bool VStream::needSizeConversion(Vs64 sizeValue) {
-    return ((sizeof(Vs64) != sizeof(size_t)) && (sizeValue > V_MAX_S32)); // If static analyzer complains about constant comparison, disable it in the tool.
+    return ((sizeValue > V_MAX_S32) && (sizeof(Vs64) != sizeof(size_t)));
 }
 
 // static

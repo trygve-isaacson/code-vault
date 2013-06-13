@@ -65,6 +65,21 @@ Finally, proceed with everything else.
 
 #define V_HAVE_REENTRANT_TIME    // we can and should use the _r versions of time.h calls
 
+// Set our standard symbol indicating a 32/64-bit compile.
+// If you need to set it manually in vconfigure.h, that will be respected.
+// You really should write code that works in either mode, but if you need to check, use this.
+#if !defined(VCOMPILER_32BIT) && !defined(VCOMPILER_64BIT)
+    #if __GNUC__
+        #if __x86_64__ || __ppc64__
+            #define VCOMPILER_64BIT
+        #else
+            #define VCOMPILER_32BIT
+        #endif
+    #else
+        #define VCOMPILER_32BIT /* something to fall back on for unknown compilers, may need more */
+    #endif
+#endif
+
 // For Linux at least, we need endian.h explicitly, and the __USE_BSD symbol gets the endian
 // symbol BYTE_ORDER defined as appropriate for the processor architecture.
 #define USE_BSD

@@ -19,6 +19,17 @@ http://www.bombaydigital.com/
     #pragma warning(default: 6387)
 #endif
 
+/*
+Note: We explicitly reference several the "A"-suffix data type and APIs here, because
+we are using a non-Unicode path string, and even if this version of Windows supports
+and is configured for Unicode, we must reference the non-Unicode APIs here. Examples:
+    ::SHGetFolderPathA()
+    ::GetModuleFileNameA()
+    ::GetFileAttributesA()
+    ::FindFirstFileA()
+    ::FindNextFileA()
+*/
+
 /* Note: according to Microsoft KB article 177506, only the following characters
 are valid in file and folder names on their operating system. I should provide
 some way of filtering out bad stuff for the particular platform.
@@ -158,7 +169,7 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
 VFSNode VFSNode::_platform_getExecutable() {
     VString exePath;
     exePath.preflight(_MAX_PATH);   // preallocate buffer space
-    DWORD result = ::GetModuleFileName(HMODULE(NULL), LPSTR(exePath.buffer()), DWORD(_MAX_PATH));
+    DWORD result = ::GetModuleFileNameA(HMODULE(NULL), LPSTR(exePath.buffer()), DWORD(_MAX_PATH));
 
     if (result == 0)
         throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getExecutable: Unable to determine exe path. Error %d.", (int) ::GetLastError()));
@@ -224,10 +235,6 @@ void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) 
 
     VFSNode::denormalizePath(searchPath);    // make it have DOS syntax
 
-    // Note: we explicitly reference the "A"-suffix data type and APIs here, because
-    // we are using a non-Unicode path string, and even if this version of Windows
-    // supports and is configured for Unicode, we must reference the non-Unicode
-    // APIs here.
     WIN32_FIND_DATAA data;
     HANDLE dir = ::FindFirstFileA((LPCSTR) searchPath.chars(), &data);
 

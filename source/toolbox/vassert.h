@@ -131,14 +131,21 @@ class VAssert {
         static void failedAssertEqual(Vs16 a, int b,                            const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertEqual(Vu16 a, Vu16 b,                           const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertEqual(Vu16 a, int b,                            const char* expressionA, const char* expressionB, const char* file, int line);
+
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
         static void failedAssertEqual(Vs32 a, Vs32 b,                           const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertEqual(Vs32 a, int b,                            const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertEqual(Vu32 a, Vu32 b,                           const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertEqual(Vu32 a, int b,                            const char* expressionA, const char* expressionB, const char* file, int line);
+#endif /* not Vx32_IS_xINT */
+
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
         static void failedAssertEqual(Vs64 a, Vs64 b,                           const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertEqual(Vs64 a, int b,                            const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertEqual(Vu64 a, Vu64 b,                           const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertEqual(Vu64 a, int b,                            const char* expressionA, const char* expressionB, const char* file, int line);
+#endif /* not Vx64_IS_xINT */
+
         static void failedAssertEqual(VDouble a, VDouble b,                     const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertEqual(const VString& a, const VString& b,       const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertEqual(const VString& a, const char* b,          const char* expressionA, const char* expressionB, const char* file, int line);
@@ -158,10 +165,17 @@ class VAssert {
         static void failedAssertNotEqual(Vu8 val,               const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertNotEqual(Vs16 val,              const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertNotEqual(Vu16 val,              const char* expressionA, const char* expressionB, const char* file, int line);
+
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
         static void failedAssertNotEqual(Vs32 val,              const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertNotEqual(Vu32 val,              const char* expressionA, const char* expressionB, const char* file, int line);
+#endif /* not Vx32_IS_xINT */
+
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
         static void failedAssertNotEqual(Vs64 val,              const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertNotEqual(Vu64 val,              const char* expressionA, const char* expressionB, const char* file, int line);
+#endif /* not Vx64_IS_xINT */
+
         static void failedAssertNotEqual(VDouble val,           const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertNotEqual(const VString& val,    const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedAssertNotEqual(const VChar& val,      const char* expressionA, const char* expressionB, const char* file, int line);
@@ -181,14 +195,21 @@ class VAssert {
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vs16 a, int b,                             const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vu16 a, Vu16 b,                            const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vu16 a, int b,                             const char* expressionA, const char* expressionB, const char* file, int line);
+
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vs32 a, Vs32 b,                            const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vs32 a, int b,                             const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vu32 a, Vu32 b,                            const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vu32 a, int b,                             const char* expressionA, const char* expressionB, const char* file, int line);
+#endif /* not Vx32_IS_xINT */
+
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vs64 a, Vs64 b,                            const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vs64 a, int b,                             const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vu64 a, Vu64 b,                            const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, Vu64 a, int b,                             const char* expressionA, const char* expressionB, const char* file, int line);
+#endif /* not Vx64_IS_xINT */
+
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, VDouble a, VDouble b,                      const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, const VString& a, const VString& b,        const char* expressionA, const char* expressionB, const char* file, int line);
         static void failedLessGreaterComparison(bool comparingLessThan, bool comparingOrEqualTo, const VString& a, const char* b,           const char* expressionA, const char* expressionB, const char* file, int line);
@@ -202,14 +223,21 @@ class VAssert {
         static void failedRangeCheck(unsigned int val, unsigned int minVal, unsigned int maxVal,                const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
         static void failedRangeCheck(unsigned int val, int minVal, int maxVal,                                  const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
         // Note: 8- and 16-bit overloads seem to be unnecessary due to up-conversion.
+
+#ifndef Vx32_IS_xINT /* don't redefine if types are same */
         static void failedRangeCheck(Vs32 val, Vs32 minVal, Vs32 maxVal,                                        const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
         static void failedRangeCheck(Vs32 val, int minVal, int maxVal,                                          const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
         static void failedRangeCheck(Vu32 val, Vu32 minVal, Vu32 maxVal,                                        const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
         static void failedRangeCheck(Vu32 val, int minVal, int maxVal,                                          const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
+#endif /* not Vx32_IS_xINT */
+
+#ifndef Vx64_IS_xINT /* don't redefine if types are same */
         static void failedRangeCheck(Vs64 val, Vs64 minVal, Vs64 maxVal,                                        const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
         static void failedRangeCheck(Vs64 val, int minVal, int maxVal,                                          const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
         static void failedRangeCheck(Vu64 val, Vu64 minVal, Vu64 maxVal,                                        const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
         static void failedRangeCheck(Vu64 val, int minVal, int maxVal,                                          const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
+#endif /* not Vx64_IS_xINT */
+
         static void failedRangeCheck(VDouble val, VDouble minVal, VDouble maxVal,                               const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
         static void failedRangeCheck(const VString& val, const VString& minVal, const VString& maxVal,          const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
         static void failedRangeCheck(const VChar& val, const VChar& minVal, const VChar& maxVal,                const char* valExpression, const char* minValExpression, const char* maxValExpression, const char* file, int line);
