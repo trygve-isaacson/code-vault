@@ -681,7 +681,7 @@ class VRectT {
 
 #ifdef VAULT_QT_SUPPORT
         void setQRect(const QRect& r) { mLeftTop = r.topLeft(); mSize = r.size(); }
-        QRect getQRect() const { return QRect(static_cast<int>(mLeftTop), static_cast<int>(mSize)); }
+        QRect getQRect() const { return QRect(static_cast<int>(mLeftTop.getX()), static_cast<int>(mLeftTop.getY()), static_cast<int>(mSize.getWidth()), static_cast<int>(mSize.getHeight())); }
         void setQRectF(const QRectF& r) { mLeftTop = static_cast<T>(r.topLeft()); mSize = static_cast<T>(r.size()); }
         QRectF getQRectF() const { return QRectF(mLeftTop, mSize); }
 #endif
