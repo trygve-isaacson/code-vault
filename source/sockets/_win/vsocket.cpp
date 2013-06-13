@@ -204,26 +204,27 @@ int VSocket::read(Vu8* buffer, int numBytesToRead) {
     fd_set  readset;
 
     while (bytesRemainingToRead > 0) {
-        if (mSocketID <= FD_SETSIZE) { // FD_SETSIZE is max num open sockets, sockid over that is sign of a big problem
-            FD_ZERO(&readset);
-            FD_SET(mSocketID, &readset);
-            result = ::select((int)(mSocketID + 1), &readset, NULL, NULL, (mReadTimeOutActive ? &mReadTimeOut : NULL));
+        // Note that unlike on Unix, verifying mSocketID <= FD_SETSIZE here is inappropriate because
+        // of different Winsock fd_set internals, ID range, and select() API behavior. mSocketID may well be
+        // larger than FD_SETSIZE, and that is OK.
 
-            if (result < 0) {
-                if (errno == EINTR) {
-                    // Debug message: read was interrupted but we will cycle around and try again...
-                    continue;
-                }
+        FD_ZERO(&readset);
+        FD_SET(mSocketID, &readset);
+        result = ::select((int)(mSocketID + 1), &readset, NULL, NULL, (mReadTimeOutActive ? &mReadTimeOut : NULL));
 
-                throw VException(VSTRING_FORMAT("VSocket::read select failed on socket %d, result=%d, error=%s.", mSocketID, result, ::strerror(errno)));
-            } else if (result == 0) {
-                throw VException(VSTRING_FORMAT("VSocket::read select timed out on socket %d.", mSocketID));
+        if (result < 0) {
+            if (errno == EINTR) {
+                // Debug message: read was interrupted but we will cycle around and try again...
+                continue;
             }
 
-            if (!FD_ISSET(mSocketID, &readset)) {
-                throw VException(VSTRING_FORMAT("VSocket::read select got FD_ISSET false on socket %d, errno=%s.", mSocketID, ::strerror(errno)));
-            }
+            throw VException(VSTRING_FORMAT("VSocket::read select failed on socket %d, result=%d, error=%s.", mSocketID, result, ::strerror(errno)));
+        } else if (result == 0) {
+            throw VException(VSTRING_FORMAT("VSocket::read select timed out on socket %d.", mSocketID));
+        }
 
+        if (!FD_ISSET(mSocketID, &readset)) {
+            throw VException(VSTRING_FORMAT("VSocket::read select got FD_ISSET false on socket %d, errno=%s.", mSocketID, ::strerror(errno)));
         }
 
         numBytesRead = ::recv(mSocketID, (char*) nextBufferPositionPtr, bytesRemainingToRead, 0);
@@ -261,22 +262,21 @@ int VSocket::write(const Vu8* buffer, int numBytesToWrite) {
     fd_set      writeset;
 
     while (bytesRemainingToWrite > 0) {
-        if (mSocketID <= FD_SETSIZE) { // FD_SETSIZE is max num open sockets, sockid over that is sign of a big problem
-            FD_ZERO(&writeset);
-            FD_SET(mSocketID, &writeset);
-            result = ::select((int)(mSocketID + 1), NULL, &writeset, NULL, (mWriteTimeOutActive ? &mWriteTimeOut : NULL));
+        // See comment at same location in read() above, regarding mSocketID and FD_SETSIZE.
 
-            if (result < 0) {
-                if (errno == EINTR) {
-                    // Debug message: write was interrupted but we will cycle around and try again...
-                    continue;
-                }
+        FD_ZERO(&writeset);
+        FD_SET(mSocketID, &writeset);
+        result = ::select((int)(mSocketID + 1), NULL, &writeset, NULL, (mWriteTimeOutActive ? &mWriteTimeOut : NULL));
 
-                throw VException(::WSAGetLastError(), VSTRING_FORMAT("VSocket::write select failed on socket %d, result=%d, errno=%d.", mSocketID, result, ::WSAGetLastError() ));
-            } else if (result == 0) {
-                throw VException(VSTRING_FORMAT("VSocket::write select timed out on socket %d", mSocketID));
+        if (result < 0) {
+            if (errno == EINTR) {
+                // Debug message: write was interrupted but we will cycle around and try again...
+                continue;
             }
 
+            throw VException(::WSAGetLastError(), VSTRING_FORMAT("VSocket::write select failed on socket %d, result=%d, errno=%d.", mSocketID, result, ::WSAGetLastError() ));
+        } else if (result == 0) {
+            throw VException(VSTRING_FORMAT("VSocket::write select timed out on socket %d", mSocketID));
         }
 
         numBytesWritten = ::send(mSocketID, (const char*) nextBufferPositionPtr, bytesRemainingToWrite, 0);
