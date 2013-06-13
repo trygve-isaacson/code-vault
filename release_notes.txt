@@ -1,5 +1,17 @@
 CODE VAULT RELEASE NOTES
 
+---------- VERSION 4.0a2 ----------
+Trygve Isaacson, September 2012
+
+VAULT-0019
+* Navis update pull based on r139692.
+- Static code evaluation tweaks.
+- VLogger format changes. I plan to revert hardcoded timestamp format changes in 4.0 final release.
+- VFSNode::setName() API to update a node internally, different from rename().
+- Throws an exception if VInstant::getDateAndTime() is called on a non-specific time.
+- Improved error code reporting in Windows version of VSocket::available() and write().
+Thanks to Jay Hamilton-Roth.
+
 ---------- VERSION 4.0a1 ----------
 Trygve Isaacson, July 2012
 

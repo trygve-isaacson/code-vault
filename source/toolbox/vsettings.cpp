@@ -824,7 +824,7 @@ void VSettingsTag::writeToStream(VTextIOStream& outputStream, int indentLevel) c
     VString beginTag(VSTRING_ARGS("<%s", mName.chars()));
     outputStream.writeString(beginTag);
 
-    if (mAttributes.size() > 0) {
+    if (!mAttributes.empty()) {
         // Write each attribute
         for (VSizeType i = 0; i < mAttributes.size(); ++i) {
             outputStream.writeString(" ");
@@ -858,7 +858,7 @@ void VSettingsTag::writeToStream(VTextIOStream& outputStream, int indentLevel) c
 VBentoNode* VSettingsTag::writeToBento() const {
     VBentoNode* tagNode = new VBentoNode(mName);
 
-    if (mAttributes.size() > 0) {
+    if (!mAttributes.empty()) {
         // Write each attribute
         for (VSizeType i = 0; i < mAttributes.size(); ++i) {
             tagNode->addString(mAttributes[i]->getName(), mAttributes[i]->getStringValue());

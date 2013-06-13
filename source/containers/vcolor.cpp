@@ -1,3 +1,4 @@
+
 /*
 Copyright c1997-2011 Trygve Isaacson. All rights reserved.
 This file is part of the Code Vault version 3.3
@@ -623,7 +624,7 @@ void VStringRangeColorMapper::readColors(const VSettingsNode& mapperNode, VStrin
 }
 
 VColorPair VStringRangeColorMapper::getColors(const VString& stringValue) const {
-    if (mColorRanges.size() == 0)
+    if (mColorRanges.empty())
         return mDefaultColors;
 
     VString caseAdjustedValue(stringValue);
@@ -716,7 +717,7 @@ VColorPair VIntegerRangeColorMapper::getColors(int intValue) const {
 }
 
 VColorPair VIntegerRangeColorMapper::getColors(Vs64 int64Value) const {
-    if (mColorRanges.size() == 0)
+    if (mColorRanges.empty())
         return mDefaultColors;
 
     // lower_bound() uses binary search, should be the fastest way.
@@ -783,7 +784,7 @@ VColorPair VDoubleRangeColorMapper::getColors(Vs64 int64Value) const {
 }
 
 VColorPair VDoubleRangeColorMapper::getColors(VDouble doubleValue) const {
-    if (mColorRanges.size() == 0)
+    if (mColorRanges.empty())
         return mDefaultColors;
 
     // lower_bound() uses binary search, should be the fastest way.

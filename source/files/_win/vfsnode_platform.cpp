@@ -158,7 +158,7 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
 VFSNode VFSNode::_platform_getExecutable() {
     VString exePath;
     exePath.preflight(_MAX_PATH);   // preallocate buffer space
-    DWORD result = ::GetModuleFileName(NULL, exePath.buffer(), _MAX_PATH);
+    DWORD result = ::GetModuleFileName(HMODULE(NULL), LPSTR(exePath.buffer()), DWORD(_MAX_PATH));
 
     if (result == 0)
         throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getExecutable: Unable to determine exe path. Error %d.", (int) ::GetLastError()));

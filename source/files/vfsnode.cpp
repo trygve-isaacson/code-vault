@@ -278,6 +278,14 @@ VString VFSNode::getName() const {
     return name;
 }
 
+void VFSNode::setName(const VString& name) {
+    VString parentPath;
+    this->getParentPath(parentPath);
+
+    VString newPath(VSTRING_ARGS("%s/%s", parentPath.chars(), name.chars()));
+    this->setPath(newPath);
+}
+
 void VFSNode::getParentPath(VString& parentPath) const {
     parentPath.copyFromBuffer(mPath.chars(), 0, mPath.lastIndexOf('/'));
 }

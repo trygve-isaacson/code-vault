@@ -228,7 +228,7 @@ Returns true if the specified file+line are enabled for stack crawl tracking.
 */
 static bool _isCodeLocationCrawlEnabled(const char* file, int line) {
     // Fast exit if no code locations are crawl-enabled.
-    if (gStackCrawlCodeLocations.size() == 0) {
+    if (gStackCrawlCodeLocations.empty()) {
         return false;
     }
 

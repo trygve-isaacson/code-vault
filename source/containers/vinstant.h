@@ -463,6 +463,11 @@ class VInstant {
         */
         VString getLocalString(bool fileNameSafe = false, bool wantMilliseconds = true) const;
         /**
+        formats an instant for logging, is not fileSafe, includes miliseconds
+        @param    s                the string to be formatted
+        */
+        void getLocalLogString(VString& s) const;
+        /**
         Sets the instant from a local string representation.
         You must use the same string format as returned by getLocalString.
         @param    s    the local string representation of the instant

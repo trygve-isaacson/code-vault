@@ -82,7 +82,7 @@ int vault::open(const char* path, int flags, mode_t mode) {
 #endif
 
 // VAutoreleasePool is a no-op on Windows.
-VAutoreleasePool::VAutoreleasePool() {}
+VAutoreleasePool::VAutoreleasePool() { mPool = NULL; }
 void VAutoreleasePool::drain() {}
 VAutoreleasePool::~VAutoreleasePool() {}
 

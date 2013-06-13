@@ -156,7 +156,7 @@ int VSocket::available() {
     int result = ::ioctlsocket(mSocketID, FIONREAD, &numBytesAvailable);
 
     if (result != 0) {
-        throw VException(VSTRING_FORMAT("VSocket::available failed on socket %d, result=%d, error=%s.", mSocketID, result, ::strerror(errno)));
+        throw VException(::WSAGetLastError(), VSTRING_FORMAT("VSocket::available failed on socket %d, result=%d, error=%s.", mSocketID, result, ::strerror(errno)));
     }
 
     if (numBytesAvailable == 0) {
@@ -167,6 +167,7 @@ int VSocket::available() {
         //See if there is any data in the buffer.
         char recvBuffer[4]; // It's unclear if NULL buffer parameter is runtime safe, even with 0 length parameter. Provide valid buffer pointer to be sure.
         result = ::recv(mSocketID, recvBuffer, 0 , MSG_PEEK);
+        int theSocketError = ::WSAGetLastError();
 
         //restore the blocking
         argp = 1;
@@ -174,13 +175,16 @@ int VSocket::available() {
 
         switch (result) {
             case 0:
-            case WSAECONNRESET:
-                throw VEOFException("VSocket::available: socket is now available.");
+                throw VEOFException("VSocket::available: Peer closed connection gracefully.");
                 break;
             case SOCKET_ERROR:
-                throw VException(VSTRING_FORMAT("VSocket::available failed on socket %d, result=%d, error=%s.", mSocketID, result, ::strerror(errno)));
+                if (theSocketError == WSAECONNRESET)
+                    throw VEOFException("VSocket::available: WSAECONNRESET: socket is no longer available.");
+                else
+                    throw VException(theSocketError, VSTRING_FORMAT("VSocket::available failed on socket %d, result=%d, error=%d.", mSocketID, result, theSocketError));
                 break;
             default:
+                numBytesAvailable = result;
                 break;
         }
     }
@@ -268,7 +272,7 @@ int VSocket::write(const Vu8* buffer, int numBytesToWrite) {
                     continue;
                 }
 
-                throw VException(VSTRING_FORMAT("VSocket::write select failed on socket %d, result=%d, errno=%s.", mSocketID, result, ::strerror(errno)));
+                throw VException(::WSAGetLastError(), VSTRING_FORMAT("VSocket::write select failed on socket %d, result=%d, errno=%d.", mSocketID, result, ::WSAGetLastError() ));
             } else if (result == 0) {
                 throw VException(VSTRING_FORMAT("VSocket::write select timed out on socket %d", mSocketID));
             }
@@ -278,7 +282,7 @@ int VSocket::write(const Vu8* buffer, int numBytesToWrite) {
         numBytesWritten = ::send(mSocketID, (const char*) nextBufferPositionPtr, bytesRemainingToWrite, 0);
 
         if (numBytesWritten <= 0) {
-            throw VException(VSTRING_FORMAT("VSocket::write send failed on socket %d, errno=%s.", mSocketID, ::strerror(errno)));
+            throw VException(::WSAGetLastError(), VSTRING_FORMAT("VSocket::write send failed on socket %d, errno=%d.", mSocketID, ::WSAGetLastError()));
         } else if (numBytesWritten != bytesRemainingToWrite) {
             // Debug message: write was only partially completed so we will cycle around and write the rest...
         } else {

@@ -45,7 +45,6 @@ VSocket* VListenerSocket::accept() {
     VSocketID           handlerSockID = kNoSocketID;
     VSocket*            handlerSocket = NULL;
     bool                shouldAccept = true;
-    int                 result = -1;
 
     if (mReadTimeOutActive) {
         /* then we need to do a select call */
@@ -56,7 +55,7 @@ VSocket* VListenerSocket::accept() {
         //lint -e573 Signed-unsigned mix with divide"
         FD_SET(mSocketID, &readset);
 
-        result = ::select(static_cast<int>(mSocketID + 1), &readset, NULL, NULL, &timeout);
+        int result = ::select(static_cast<int>(mSocketID + 1), &readset, NULL, NULL, &timeout);
 
         if (result == -1) {
             throw VException(VSTRING_FORMAT("VListenerSocket::accept select error, errno=%s", ::strerror(errno)));

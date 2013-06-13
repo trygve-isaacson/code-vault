@@ -472,6 +472,7 @@ void VInstant::setTrueNow() {
 #define FORMAT_UTC_WITH_MILLISECONDS                "%d-%02d-%02d %02d:%02d:%02d.%03d UTC"
 #define FORMAT_UTC_WITHOUT_MILLISECONDS             "%d-%02d-%02d %02d:%02d:%02d UTC"
 #define FORMAT_LOCAL_WITH_MILLISECONDS              "%d-%02d-%02d %02d:%02d:%02d.%03d"
+#define FORMAT_LOG_LOCAL_WITH_MILLISECONDS          "%d-%02d-%02d %02d:%02d:%02d,%03d"
 #define FORMAT_LOCAL_WITHOUT_MILLISECONDS           "%d-%02d-%02d %02d:%02d:%02d"
 
 static void _formatInstantString(const VInstantStruct& when, bool isUTC, VString& s, bool fileNameSafe, bool wantMilliseconds) {
@@ -532,6 +533,20 @@ void VInstant::setUTCString(const VString& s) {
         (void) ::sscanf(s, FORMAT_UTC_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
 
         mValue = VInstant::_platform_offsetFromUTCStruct(when);
+    }
+}
+
+void VInstant::getLocalLogString(VString& s) const {
+    if (this->isSpecific()) {
+        VInstantStruct    when;
+        VInstant::_platform_offsetToLocalStruct(mValue, when);
+        s.format(FORMAT_LOG_LOCAL_WITH_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
+    } else if (*this == VInstant::INFINITE_PAST()) {
+        s = "PAST";
+    } else if (*this == VInstant::INFINITE_FUTURE()) {
+        s = "FUTURE";
+    } else { /* NEVER_OCCURRED */
+        s = "NEVER";
     }
 }
 
@@ -635,7 +650,11 @@ VDateAndTime VInstant::getLocalDateAndTime() const {
 VDateAndTime VInstant::getDateAndTime(const VString& timeZoneID) const {
     VInstantStruct when;
 
-    if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
+    if (*this == VInstant::INFINITE_PAST() ||
+        *this == VInstant::INFINITE_FUTURE() ||
+        *this == VInstant::NEVER_OCCURRED())
+        throw VStackTraceException(VSTRING_FORMAT("Request for specific time values with non-specific time '%s'.", this->getLocalString().chars()));
+    else if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
         VInstant::_platform_offsetToLocalStruct(mValue, when);
     else if (timeZoneID == VInstant::UTC_TIME_ZONE_ID())
         VInstant::_platform_offsetToUTCStruct(mValue, when);

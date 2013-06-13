@@ -273,25 +273,25 @@ VString VLoggerLevel::getName(int level) {
     // We make all strings 5 characters long for clean layout in the log output.
 
     if (level == FATAL)
-        return VSTRING_COPY("fatal");
+        return VSTRING_COPY("FATAL");
     else if (level == ERROR)
-        return VSTRING_COPY("error");
+        return VSTRING_COPY("ERROR");
     else if (level == WARN)
-        return VSTRING_COPY("warn ");
+        return VSTRING_COPY("WARN ");
     else if (level == INFO)
-        return VSTRING_COPY("info ");
+        return VSTRING_COPY("INFO ");
     else if (level == DEBUG)
-        return VSTRING_COPY("debug");
+        return VSTRING_COPY("DEBUG");
     else if (level == TRACE)
-        return VSTRING_COPY("trace");
+        return VSTRING_COPY("TRACE");
     else if (level > DEBUG)
-        return VSTRING_FORMAT("dbg%2d", level);
+        return VSTRING_FORMAT("DBG%2d", level);
     else if (level > INFO)
-        return VSTRING_FORMAT("inf%2d", level);
+        return VSTRING_FORMAT("INF%2d", level);
     else if (level > WARN)
-        return VSTRING_FORMAT("wrn%2d", level);
+        return VSTRING_FORMAT("WRN%2d", level);
     else if (level > ERROR)
-        return VSTRING_FORMAT("err%2d", level);
+        return VSTRING_FORMAT("ERR%2d", level);
     else
         return VSTRING_FORMAT("%5d", level);
 }
@@ -950,7 +950,7 @@ void VLogAppender::_emitMessage(int level, const char* file, int line, const VSt
 VString VLogAppender::_formatMessage(int level, const char* file, int line, const VString& message) {
     VInstant    now;
     VString     timeStampString;
-    now.getLocalString(timeStampString);
+    now.getLocalLogString(timeStampString);
 
     // If we are running in simulated time, display both the current and simulated time.
     if ((VInstant::getSimulatedClockOffset() != VDuration::ZERO()) || VInstant::isTimeFrozen()) {
@@ -966,9 +966,9 @@ VString VLogAppender::_formatMessage(int level, const char* file, int line, cons
 
     // If there's file/line number info, then always show it.
     if (file == NULL) {
-        return VSTRING_FORMAT("%s [%s] [%s] %s", timeStampString.chars(), levelName.chars(), threadName.chars(), message.chars());
+        return VSTRING_FORMAT("%s %s | %s | %s", timeStampString.chars(), levelName.chars(), threadName.chars(), message.chars());
     } else {
-        return VSTRING_FORMAT("%s [%s] [%s] @ %s:%d: %s", timeStampString.chars(), levelName.chars(), threadName.chars(), file, line, message.chars());
+        return VSTRING_FORMAT("%s %s | %s | @ %s:%d: %s", timeStampString.chars(), levelName.chars(), threadName.chars(), file, line, message.chars());
     }
 }
 

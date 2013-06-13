@@ -298,10 +298,16 @@ class VFSNode {
         /**
         Alternate convenience function for getName(). May require an
         extra string copy.
-        @param    name    the string to set to the file or node name
+        @return    the node name
         */
         VString getName() const;
-
+        /**
+        Specifies the name of the node, without changing the parent path
+        nor actually renaming anything on disk (as one of the renameXXX()
+        methods would do).
+        @param    name    the name of the file or directory
+        */
+        void setName(const VString& name);
         /**
         Gets the path of the node's parent.
         @param    parentPath    the string to set
