@@ -64,7 +64,7 @@ VNetworkInterfaceList VSocketBase::enumerateNetworkInterfaces() {
         if (intfPtr->ifa_addr != NULL) {
             VNetworkInterfaceInfo info;
             info.mFamily = intfPtr->ifa_addr->sa_family;
-            info.mName = intfPtr->ifa_name;
+            info.mName.copyFromCString(intfPtr->ifa_name);
             // AF_INET6 will work just fine here, too. But hold off until we can verify callers can successfully use IPV6 address strings to listen, connect, etc.
             if ((info.mFamily == AF_INET) && (info.mName != "lo0")) { // Internet interfaces only, and skip the loopback address.
                 info.mAddress.preflight(255);
@@ -84,6 +84,31 @@ VNetworkInterfaceList VSocketBase::enumerateNetworkInterfaces() {
 
     ::freeifaddrs(interfacesDataPtr);
     return interfaces;
+}
+
+static const int MAX_ADDRSTRLEN = V_MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
+// Another platform-specific implementation of a function defined by the base class API.
+// static
+VString VSocketBase::addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info) {
+    void* addr;
+    if (info->ai_family == AF_INET) {
+        addr = (void*)&(((struct sockaddr_in *)info->ai_addr)->sin_addr);
+    } else if (info->ai_family == AF_INET6) {
+        addr = (void*)&(((struct sockaddr_in6 *)info->ai_addr)->sin6_addr);
+    } else {
+        // We don't know how to access the addr for other family types. They could conceivably be added.
+        throw VException(VSTRING_FORMAT("VSocketBase::addrinfoToIPAddressString(%s): An invalid family (%d) other than AF_INET or AF_INET6 was specified.", hostName.chars(), info->ai_family));
+    }
+    
+    VString result;
+    result.preflight(MAX_ADDRSTRLEN);
+    const char* buf = ::inet_ntop(info->ai_family, addr, result.buffer(), MAX_ADDRSTRLEN);
+    if (buf == NULL) {
+        throw VException(errno, VSTRING_FORMAT("VSocketBase::addrinfoToIPAddressString(%s): inet_ntop() failed. Error='%s'.", hostName.chars(), ::strerror(errno)));
+    }
+    result.postflight(::strlen(buf));
+
+    return result;
 }
 
 VSocket::VSocket(VSocketID id)

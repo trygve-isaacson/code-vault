@@ -354,7 +354,7 @@ void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) 
         while (keepGoing && (entry != NULL)) {
             VThread::yield(); // be nice if we're iterating over a huge directory
 
-            nodeName = entry->d_name;
+            nodeName.copyFromCString(entry->d_name);
 
             // Skip current and parent pseudo-entries. Otherwise client must
             // know too much detail in order to avoid traversal problems.

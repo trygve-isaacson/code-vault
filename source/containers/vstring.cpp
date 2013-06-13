@@ -1519,6 +1519,10 @@ void VString::copyFromBuffer(const char* fromBuffer, int startIndex, int endInde
     ASSERT_INVARIANT();
 }
 
+void VString::copyFromCString(const char* fromBuffer) {
+    this->copyFromBuffer(fromBuffer, 0, (int) ::strlen(fromBuffer));
+}
+
 void VString::copyToPascalString(char* pascalBuffer) const {
     ASSERT_INVARIANT();
 

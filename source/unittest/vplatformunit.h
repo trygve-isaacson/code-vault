@@ -41,6 +41,10 @@ class VPlatformUnit : public VUnit {
         void _runMinMaxAbsCheck();
         void _runTimeCheck();
         void _runUtilitiesTest();
+        void _runSocketTests();
+        
+        void _runResolveHostNameTest(const VString& hostName);
+        void _assertStringIsNumericIPAddressString(const VString& hostName, const VString& value);
 
 };
 

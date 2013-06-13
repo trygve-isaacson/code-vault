@@ -201,6 +201,35 @@ class VSocketBase {
                                 version of the address
         */
         static void netAddrToIPAddressString(VNetAddr netAddr, VString& ipAddress);
+        /**
+        Resolves a internet host name to one or more numeric IP address strings.
+        Typically you will use this for a user-entered address that you want to
+        then open a socket to. If multiple addresses are returned, you have to
+        decide what strategy to use when connecting: a) use the first address only,
+        b) try each one in sequence until you succeed, or c) try all or several in
+        parallel and go with the fastest one to succed. Note that the returned
+        strings may be in IPv4 dotted decimal format (n.n.n.n) or IPv6 hexadecimal
+        format (x:x:x:x::n). If there is an error, or if no addresses are resolved,
+        this function will throw a VException. It will never return an empty vector.
+        @param  hostName    the host name to resolve; a numeric IP address is allowed
+                            and will presumably resolve to itself
+        @return one or more numeric IP address strings that the OS has resolved the
+                host name to; if there are none, a VException is thrown instead of
+                returning an empty vector
+        */
+        static VStringVector resolveHostName(const VString& hostName);
+        /**
+        Returns a string representation of the specified addrinfo internet address.
+        It may be an IPv4 dotted decimal format (n.n.n.n) or IPv6 format
+        hexadecimal format (x:x:x:x::n).
+        This function is used by resolveHostName() to convert each address it resolves.
+        @param  hostName    optional value to be used in an error message if we need to throw an exception
+        @param  info        the addrinfo containing the low-level information about the address;
+                            you must only pass IPv4 (AF_INET) or IPv6 (AF_INET6) values; other types
+                            will result in an exception being thrown
+        @return a string in IPv4 dotted decimal format (n.n.n.n) or IPv6 hexadecimal format (x:x:x:x::n)
+        */
+        static VString addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info);
 
         /**
         Constructs the object with an already-opened low-level

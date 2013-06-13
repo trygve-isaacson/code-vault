@@ -19,6 +19,27 @@ does not need to be exposed to any of this.
     #include <unistd.h>
     #include <cassert> // used by Vassert
     #define __assert(cond, file, line) assert(cond) // used by Vassert
+	#define _MSL_MATH_X87_H
+	#define __MACTYPES__
+	
+	// CW old #includes don't define
+	#define INET_ADDRSTRLEN  22		// CW old #includes doesn't define this
+	#define INET6_ADDRSTRLEN 65
+	typedef struct addrinfo
+	{
+    	int                 ai_flags;       // AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST
+    	int                 ai_family;      // PF_xxx
+    	int                 ai_socktype;    // SOCK_xxx
+    	int                 ai_protocol;    // 0 or IPPROTO_xxx for IPv4 and IPv6
+    	size_t              ai_addrlen;     // Length of ai_addr
+    	char *              ai_canonname;   // Canonical name for nodename
+//    	__field_bcount(ai_addrlen)
+		struct sockaddr *   ai_addr;        // Binary address
+    	struct addrinfo *   ai_next;        // Next structure in linked list
+	} ADDRINFOA, *PADDRINFOA;	
+	
+	WINSOCK_API_LINKAGE VOID WSAAPI freeaddrinfo(struct addrinfo*);
+	WINSOCK_API_LINKAGE INT WSAAPI getaddrinfo( PCSTR, PCSTR, const ADDRINFOA *, PADDRINFOA *);	
 #endif
 
 #include <sys/types.h>
@@ -33,6 +54,14 @@ does not need to be exposed to any of this.
 #include <io.h>     // _read(), etc.
 #include <direct.h> // _mkdir(), _rmdir()
 #include <assert.h> // assert()
+
+#ifdef VCOMPILER_MSVC
+    #pragma warning(disable: 6386)  // the library file doesn't past muster
+#endif
+#include <ws2tcpip.h> // For the WSA calls in enumerateNetworkInterfaces(), and addrinfo in vsocketbase.cpp when on Windows.
+#ifdef VCOMPILER_MSVC
+    #pragma warning(default: 6386)
+#endif
 
 #undef FD_ZERO
 #define FD_ZERO(p) memset(p, 0, sizeof(*(p)))
@@ -82,18 +111,19 @@ namespace vault {
 
 inline int putenv(char* env) { return ::_putenv(env); }
 inline char* getenv(const char* name) { return ::getenv(name); }
-inline int strcasecmp(const char* s1, const char* s2) { return ::_stricmp(s1, s2); }
-inline int strncasecmp(const char* s1, const char* s2, size_t length) { return ::_strnicmp(s1, s2, length); }
-inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args) { return ::vsnprintf(buffer, length, format, args); }
+inline char* getcwd(char* buf, size_t size) { return ::_getcwd(buf, static_cast<int>(size)); }
 inline ssize_t read(int fd, void* buffer, size_t numBytes) { return ::_read(fd, buffer, static_cast<unsigned int>(numBytes)); }
 inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::_write(fd, buffer, static_cast<unsigned int>(numBytes)); }
 inline off_t lseek(int fd, off_t offset, int whence) { return ::_lseek(fd, offset, whence); }
 inline int close(int fd) { return ::_close(fd); }
 inline int mkdir(const char* path, mode_t /*mode*/) { return ::_mkdir(path); }
 inline int rename(const char* oldName, const char* newName) { return ::rename(oldName, newName); }
-inline int stat(const char* path, struct stat* buf) { return ::stat(path, buf); }
 inline int unlink(const char* path) { return ::_unlink(path); }
 inline int rmdir(const char* path) { return ::_rmdir(path); }
+inline int stat(const char* path, struct stat* buf) { return ::stat(path, buf); }
+inline int strcasecmp(const char* s1, const char* s2) { return ::_stricmp(s1, s2); }
+inline int strncasecmp(const char* s1, const char* s2, size_t length) { return ::_strnicmp(s1, s2, length); }
+inline int vsnprintf(char* buffer, size_t length, const char* format, va_list args) { return ::vsnprintf(buffer, length, format, args); }
 
 // The POSIX open() API (or _open() on newer VC++ runtimes) is not available on
 // CW+Win32. It's painful to code around, so we just throw an exception if anyone

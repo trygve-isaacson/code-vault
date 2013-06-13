@@ -952,6 +952,11 @@ class VString {
         */
         void copyFromBuffer(const char* fromBuffer, int startIndex, int endIndex);
         /**
+        Sets the string by copying a C string from the source buffer. Same as copyFromBuffer(b, 0, strlen(b));
+        @param  fromBuffer  the char buffer to copy from
+        */
+        void copyFromCString(const char* fromBuffer);
+        /**
         Copies the string's chars to the specified Pascal string buffer, using
         the Pascal string format (length byte plus data). The caller is responsible
         for making sure that the buffer is big enough to hold 1 + this->length()

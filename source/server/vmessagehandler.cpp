@@ -50,13 +50,14 @@ VMessageHandler::VMessageHandler(const VString& name, VMessagePtr m, VServer* se
     , mStartTime(/*now*/)
     , mLocker(mutex, VSTRING_FORMAT("VMessageHandler(%s)", name.chars()))
     , mUnblockTime(/*now*/) // Note that if we block locking the mutex, mUnblockTime - mStartTime will indicate how long we were blocked here.
-    , mSessionName() // initialized below
+    , mSessionName() // initialized below if session or thread was supplied
     {
 
-    if (session == NULL)
-        mSessionName = (mThread == NULL) ? "" : mThread->getName(); // Allow thread to be null for test case or other purposes.
-    else
+    if (session != NULL) { // A message handler doesn't need to be related to a session object.
         mSessionName = session->getName();
+    } else if (mThread != NULL) { // Thread may be null for test case or other purposes.
+        mSessionName = mThread->getName();
+    }
 
     VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerLifecycleLevel, VSTRING_FORMAT("[%s] %s@0x%08X for message ID=%d constructed.", mSessionName.chars(), mName.chars(), this, (int) m->getMessageID()));
 }

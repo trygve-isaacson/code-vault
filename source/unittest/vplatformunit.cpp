@@ -20,6 +20,7 @@ void VPlatformUnit::run() {
     this->_runMinMaxAbsCheck();
     this->_runTimeCheck();
     this->_runUtilitiesTest();
+    this->_runSocketTests();
 }
 
 void VPlatformUnit::_reportEnvironment() {
@@ -411,3 +412,53 @@ void VPlatformUnit::_runUtilitiesTest() {
     VUNIT_ASSERT_EQUAL(objMap.size(), (size_t) 0);
 }
 
+#include "vsocket.h"
+
+// There may be more exotic forms, but n.n.n.n where the n's are numeric values is what we get.
+static bool _isIPv4NumericString(const VString& s) {
+    for (int i = 0; i < s.length(); ++i) {
+        if (! ((s[i] == '.') || s[i].isNumeric())) {
+            return false;
+        }
+    }
+
+    return (s.length() >= 7); // A minimum of 4 digits separated by dots: "1.2.3.4"
+}
+
+// There may be more exotic forms, but x:x:x:x::n where the x's are hex strings and the n is a numeric value is what we get.
+static bool _isIPv6NumericString(const VString& s) {
+    for (int i = 0; i < s.length(); ++i) {
+        if (! ((s[i] == ':') || s[i].isHexadecimal() || s[i].isNumeric())) {
+            return false;
+        }
+    }
+
+    return (s.length() >= 10); // A minimum of: "x:x:x:x::n" -- don't assume 4 hex digits in each segment
+}
+
+void VPlatformUnit::_runSocketTests() {
+
+    // See if we can successfully resolve a couple of well-known host names.
+    // Caveats:
+    // - We are assume we can connect to the network. Perhaps trying this should be configurable.
+    // - I originally tested against known IP addresses for apple.com, microsoft.com, google.com, but then found that
+    //  they were liable to change more than I expected. So instead I now just test that names do resolve, and resolve
+    //  to valid IPv4 or IPv6 numeric address strings.
+    
+    this->_runResolveHostNameTest("apple.com");
+    this->_runResolveHostNameTest("microsoft.com");
+    this->_runResolveHostNameTest("google.com");
+}
+
+void VPlatformUnit::_runResolveHostNameTest(const VString& hostName) {
+    VStringVector names = VSocketBase::resolveHostName(hostName);
+    VUNIT_ASSERT_FALSE(names.empty());
+    for (VStringVector::const_iterator i = names.begin(); i != names.end(); ++i) {
+        this->_assertStringIsNumericIPAddressString(hostName, (*i));
+    }
+}
+
+void VPlatformUnit::_assertStringIsNumericIPAddressString(const VString& hostName, const VString& value) {
+    VUNIT_ASSERT_TRUE_LABELED(_isIPv4NumericString(value) || _isIPv6NumericString(value),
+        VSTRING_FORMAT("'%s' -> '%s' is an IPv4 or IPv6 numeric address", hostName.chars(), value.chars()));
+}

@@ -11,14 +11,6 @@ http://www.bombaydigital.com/
 
 #include "vexception.h"
 
-#ifdef VCOMPILER_MSVC
-    #pragma warning(disable: 6386)  // the library file doesn't past muster
-#endif
-#include <ws2tcpip.h> // For the WSA calls in enumerateNetworkInterfaces()
-#ifdef VCOMPILER_MSVC
-    #pragma warning(default: 6386)
-#endif
-
 V_STATIC_INIT_TRACE
 
 // This is to force our staticInit to be called at startup.
@@ -68,6 +60,23 @@ VNetworkInterfaceList VSocketBase::enumerateNetworkInterfaces() {
     }
 
     return interfaces;
+}
+
+static const int MAX_ADDRSTRLEN = V_MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
+// static
+VString VSocketBase::addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info) {
+    VString result;
+    result.preflight(MAX_ADDRSTRLEN);
+    
+    // WSAAddressToString() works for both IPv4 and IPv6 and is available on "older" versions of Windows.
+    DWORD bufferLength = MAX_ADDRSTRLEN;
+    int resultCode = ::WSAAddressToStringA(info->ai_addr, (DWORD) info->ai_addrlen, NULL, result.buffer(), &bufferLength);
+    if (resultCode != 0) {
+        throw VException(::WSAGetLastError(), VSTRING_FORMAT("VSocketBase::addrinfoToIPAddressString(%s): WSAAddressToString() failed. Error=%d.", hostName.chars(), ::WSAGetLastError()));
+    }
+    result.postflight(bufferLength-1);
+
+    return result;
 }
 
 VSocket::VSocket(VSocketID id)

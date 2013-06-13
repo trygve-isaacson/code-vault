@@ -1,5 +1,13 @@
 CODE VAULT RELEASE NOTES
 
+---------- VERSION 4.0a5 ----------
+Trygve Isaacson, May 2013
+
+VAULT-0023
+* Fixed bug relating to Winsock timeouts for large socket IDs.
+VAULT-0024
+* Implemented DNS resolve APIs to VSocket.
+
 ---------- VERSION 4.0a4 ----------
 Trygve Isaacson, February 2013
 

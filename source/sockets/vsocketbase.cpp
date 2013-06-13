@@ -57,7 +57,54 @@ void VSocketBase::netAddrToIPAddressString(VNetAddr netAddr, VString& ipAddress)
 
     addr.s_addr = (in_addr_t) netAddr;
 
-    ipAddress = ::inet_ntoa(addr);
+    ipAddress.copyFromCString(::inet_ntoa(addr));
+}
+
+class AddrInfoLifeCycleHelper {
+    public:
+        AddrInfoLifeCycleHelper() : mInfo(NULL) {}
+        ~AddrInfoLifeCycleHelper() { ::freeaddrinfo(mInfo); }
+        struct addrinfo* mInfo;
+};
+
+class AddrInfoHintsHelper {
+    public:
+        AddrInfoHintsHelper(int family, int socktype, int flags, int protocol) : mHints() {
+            ::memset(&mHints, 0, sizeof(mHints));
+            mHints.ai_family = family;
+            mHints.ai_socktype = socktype;
+            mHints.ai_flags = flags;
+            mHints.ai_protocol = protocol;
+        }
+        ~AddrInfoHintsHelper() {}
+        struct addrinfo mHints;
+};
+
+// static
+VStringVector VSocketBase::resolveHostName(const VString& hostName) {
+    VStringVector resolvedAddresses;
+
+    AddrInfoHintsHelper     hints(AF_UNSPEC, SOCK_STREAM, 0, 0); // accept IPv4 or IPv6, we'll skip any others on receipt; stream connections only, not udp.
+    AddrInfoLifeCycleHelper info;
+    int result = ::getaddrinfo(hostName.chars(), NULL, &hints.mHints, &info.mInfo); // TODO: iOS solution. If WWAN is asleep, calling getaddrinfo() in isolation may return an error. See CFHost API.
+    
+    if (result == 0) {
+        for (const struct addrinfo* item = info.mInfo; item != NULL; item = item->ai_next) {
+            if ((item->ai_family == AF_INET) || (item->ai_family == AF_INET6)) {
+                resolvedAddresses.push_back(VSocket::addrinfoToIPAddressString(hostName, item));
+            }
+        }
+    }
+
+    if (result != 0) {
+        throw VException(errno, VSTRING_FORMAT("VSocketBase::resolveHostName(%s): getaddrinfo failed. Result=%d. Error='%s'.", hostName.chars(), result, ::strerror(errno)));
+    }
+    
+    if (resolvedAddresses.empty()) {
+        throw VException(VSTRING_FORMAT("VSocketBase::resolveHostName(%s): getaddrinfo did not resolve any addresses.", hostName.chars()));
+    }
+    
+    return resolvedAddresses;
 }
 
 VSocketBase::VSocketBase(VSocketID id)
