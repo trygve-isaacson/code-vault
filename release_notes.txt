@@ -1,8 +1,9 @@
 CODE VAULT RELEASE NOTES
 
----------- VERSION 4.0 ----------
-Trygve Isaacson, targeted for July 2012
+---------- VERSION 4.0a1 ----------
+Trygve Isaacson, July 2012
 
+VAULT-0018
 * Adoption of smart pointers in key components, in order to eliminate tricky
 code that was needed to deal with shared references to sessions and threads
 and messages, for careful tear-down of sessions and broadcasting a single
