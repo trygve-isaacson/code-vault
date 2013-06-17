@@ -75,6 +75,8 @@ class VNetworkInterfaceInfo {
 };
 typedef std::vector<VNetworkInterfaceInfo> VNetworkInterfaceList;
 
+class VSocketConnectionStrategy;
+
 /**
 VSocketBase is the abstract base class from which each platform's VSocket
 implementation is derived. So you instantiate VSocket objects, but you
@@ -283,15 +285,32 @@ class VSocketBase {
         cannot be opened, a VException is thrown. This is also the API that the strategy object
         used by connectToHostName() will call (possibly on a temporary VSocket object) in
         order to establish a connection on a particular resolved IP address.
+        @param  ipAddress   the IPv4 or IPv6 numeric address to connect to
+        @param  portNumber  the port number to connect to
         */
         virtual void connectToIPAddress(const VString& ipAddress, int portNumber);
         /**
         Connects to the server using the specified host name and port; DNS resolution is performed
-        on the host name to determine the IP address. If the connection cannot be opened, a VException
-        is thrown. For this initial commit, only the first resolved name is used; next commit will
-        allow a choice of connection strategies.
+        on the host name to determine the IP addresses; the first resolved address is used. To
+        choose a specific strategy for connecting to multiple resolved addresses, use the overloaded
+        version of this API that takes a VSocketConnectionStrategy object. This version is
+        equivalent to supplying a VSocketConnectionStrategySingle object.
+        If the connection cannot be opened, a VException is thrown.
+        @param  hostName    the name to resolve and then connect to
+        @param  portNumber  the port number to connect to
         */
         virtual void connectToHostName(const VString& hostName, int portNumber);
+        /**
+        Connects to the server using the specified host name and port; DNS resolution is performed
+        on the host name to determine the IP address. The supplied strategy determines how we
+        connect when multiple addresses are returned by DNS resolution.
+        If the connection cannot be opened, a VException is thrown.
+        @param  hostName            the name to resolve and then connect to
+        @param  portNumber          the port number to connect to
+        @param  connectionStrategy  a strategy for connecting to a host name that resolves to multiple IP addresses
+                                    (@see VSocketConnectionStrategySingle, VSocketConnectionStrategyLinear, VSocketConnectionStrategyThreaded)
+        */
+        virtual void connectToHostName(const VString& hostName, int portNumber, const VSocketConnectionStrategy& connectionStrategy);
 
         /**
         Associates this socket object with the specified socket id. This is
@@ -519,6 +538,96 @@ class VSocketInfo {
 VSocketInfoVector is simply a vector of VSocketInfo objects.
 */
 typedef std::vector<VSocketInfo> VSocketInfoVector;
+
+/**
+A socket connection strategy determines how to connect a socket in the face of DNS resolution,
+when an IP may resolve to more than one IP address. Provided concrete classes handle single,
+multiple+synchronous, and multiple+multithreaded approaches.
+*/
+class VSocketConnectionStrategy {
+
+    public:
+        VSocketConnectionStrategy() : mDebugIPAddresses() {}
+        virtual ~VSocketConnectionStrategy() {}
+
+        /**
+        The VSocketConnectionStrategy interface to be implemented by concrete subclasses.
+        Connects to the host name by resolving it and then applying the strategy to the resolved
+        IP addresses. If the strategy fails (for whatever reason, be it a connect failure or a
+        timeout) it shall throw a VException.
+        @param  hostName        the name to resolve and connect to
+        @param  portNumber      the port number to connect to
+        @param  socketToConnect if successful, this Vault socket object is to be mutated upon
+                                return to have the connected socket's host IP address and low-level
+                                VSocketID; for simple non-threaded strategies it is acceptable to
+                                simply call this object's connectToIPAddress() and leave the results
+                                in place if successful
+        */
+        virtual void connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const = 0;
+        
+        // For testing purposes, you can inject a specific set of IP addresses, which
+        // will cause the hostName supplied with connect() to be ignored. You could supply
+        // specific bad IP addresses or slow-to-succeed IP addresses, in order to see
+        // what happens. Our unit tests do this.
+        void injectDebugIPAddresses(const VStringVector debugIPAddresses) { mDebugIPAddresses = debugIPAddresses; }
+
+    protected:
+    
+        VStringVector mDebugIPAddresses; ///< If non-empty, use instead of resolving hostName in connect().
+};
+
+/**
+Connects to the first DNS resolved IP address for a host name. Others are ignored.
+*/
+class VSocketConnectionStrategySingle : public VSocketConnectionStrategy {
+
+    public:
+        VSocketConnectionStrategySingle() {}
+        virtual ~VSocketConnectionStrategySingle() {}
+
+        // VSocketConnectionStrategy implementation:
+        virtual void connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const;
+};
+
+/**
+Connects to  each DNS resolved IP address for a host name, in order, until one succeeds
+or a specified timeout is reached. This strategy makes most sense with IPv4 where DNS is
+supposed to return a randomized list of resolved addresses, thus achieving a form of round-robin
+connection balancing by always using the first address.
+*/
+class VSocketConnectionStrategyLinear : public VSocketConnectionStrategy {
+
+    public:
+        VSocketConnectionStrategyLinear(const VDuration& timeout);
+        virtual ~VSocketConnectionStrategyLinear() {}
+
+        // VSocketConnectionStrategy implementation:
+        virtual void connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const;
+
+    private:
+        const VDuration mTimeout;
+};
+
+/**
+Connects to the all DNS resolved IP addresses for a host name, in parallel batches,
+until one succeeds or a specified timeout is reached. This strategy makes most sense with IPv6
+where DNS is supposed to return a preferred-order list of resolved names (rather than round-
+robining) but where we have an opportunity to use the one that responds fastest.
+*/
+class VSocketConnectionStrategyThreaded : public VSocketConnectionStrategy {
+
+    public:
+        VSocketConnectionStrategyThreaded(const VDuration& timeoutInterval, int maxNumThreads=4);
+        virtual ~VSocketConnectionStrategyThreaded() {}
+
+        // VSocketConnectionStrategy implementation:
+        virtual void connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const;
+
+    private:
+        
+        VDuration   mTimeoutInterval;
+        int         mMaxNumThreads;
+};
 
 #endif /* vsocketbase_h */
 

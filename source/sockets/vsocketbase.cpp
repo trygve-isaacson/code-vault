@@ -10,6 +10,9 @@ http://www.bombaydigital.com/
 #include "vtypes_internal.h"
 
 #include "vexception.h"
+#include "vmutexlocker.h"
+
+// VSocketBase ----------------------------------------------------------------
 
 VString VSocketBase::gPreferredNetworkInterfaceName("en0");
 VString VSocketBase::gPreferredLocalIPAddressPrefix;
@@ -256,8 +259,11 @@ void VSocketBase::connectToIPAddress(const VString& ipAddress, int portNumber) {
 }
 
 void VSocketBase::connectToHostName(const VString& hostName, int portNumber) {
-    VStringVector ipAddresses = VSocketBase::resolveHostName(hostName);
-    this->connectToIPAddress(ipAddresses[0], portNumber);
+    this->connectToHostName(hostName, portNumber, VSocketConnectionStrategySingle());
+}
+
+void VSocketBase::connectToHostName(const VString& hostName, int portNumber, const VSocketConnectionStrategy& connectionStrategy) {
+    connectionStrategy.connect(hostName, portNumber, *this);
 }
 
 VString VSocketBase::getHostIPAddress() const {
@@ -361,6 +367,8 @@ void VSocketBase::setSockID(VSocketID id) {
     mSocketID = id;
 }
 
+// VSocketInfo ----------------------------------------------------------------
+
 VSocketInfo::VSocketInfo(const VSocket& socket)
     : mSocketID(socket.getSockID())
     , mHostIPAddress(socket.getHostIPAddress())
@@ -371,3 +379,356 @@ VSocketInfo::VSocketInfo(const VSocket& socket)
     {
 }
 
+// VSocketConnectionStrategySingle --------------------------------------------
+
+void VSocketConnectionStrategySingle::connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const {
+    VStringVector ipAddresses = (mDebugIPAddresses.empty() ? VSocketBase::resolveHostName(hostName) : mDebugIPAddresses);
+    socketToConnect.connectToIPAddress(ipAddresses[0], portNumber);
+}
+
+// VSocketConnectionStrategyLinear --------------------------------------------
+
+VSocketConnectionStrategyLinear::VSocketConnectionStrategyLinear(const VDuration& timeout)
+    : VSocketConnectionStrategy()
+    , mTimeout(timeout)
+    {
+}
+
+void VSocketConnectionStrategyLinear::connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const {
+    // Timeout should never cause expiration before we do DNS resolution or try the first IP address.
+    // Therefore, we calculate the expiration time, but then to DNS first, and check timeout after each failed connect.
+    VInstant expirationTime = VInstant() + mTimeout;
+    VStringVector ipAddresses = (mDebugIPAddresses.empty() ? VSocketBase::resolveHostName(hostName) : mDebugIPAddresses);
+    for (VStringVector::const_iterator i = ipAddresses.begin(); i != ipAddresses.end(); ++i) {
+        try {
+            socketToConnect.connectToIPAddress(*i, portNumber);
+            return; // As soon as we succeed, return.
+        } catch (const VException& ex) {
+            VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyLinear::connect(%s): Failed to connect to '%s'. %s", hostName.chars(), (*i).chars(), ex.what()));
+            if (VInstant(/*now*/) >= expirationTime) {
+                throw;
+            }
+        }
+    }
+    
+    throw VException("VSocketConnectionStrategyLinear::connect: Failed to connect to all resolved names.");
+}
+
+// VSocketConnectionStrategyThreadedWorker ------------------------------------
+
+class VSocketConnectionStrategyThreadedRunner;
+
+class VSocketConnectionStrategyThreadedWorker : public VThread {
+    public:
+
+        VSocketConnectionStrategyThreadedWorker(VSocketConnectionStrategyThreadedRunner* ownerRunner, const VString& ipAddressToConnect, int portNumberToConnect);
+        virtual ~VSocketConnectionStrategyThreadedWorker();
+
+        // VThread implementation:
+        virtual void run();
+        
+    private:
+
+        // These contain the code to communicate safely with the owner (which is running in another thread),
+        // to let it know (if it's still around!) that we are done in either fashion.
+        void _handleSuccess(VSocket& openedSocket);
+        void _handleFailure(const VException& ex);
+
+        VMutex                                      mMutex;
+        VSocketConnectionStrategyThreadedRunner*    mOwnerRunner;
+        VString                                     mIPAddressToConnect;
+        int                                         mPortNumberToConnect;
+};
+
+// VSocketConnectionStrategyThreadedRunner ------------------------------------
+
+/**
+Because the strategy involves creating multiple threads but wanting to proceed as
+soon as 1 of them succeeds, we need an intermediary thread object that can live
+longer and wait around for all of the workers to complete and properly bookkeep
+them. This "runner" class manages all communication with the workers, pokes the
+strategy object back immediately upon success (at which point the strategy can
+let go of the runner and proceed), and hangs around until all worker threads have
+communicated their completion.
+*/
+class VSocketConnectionStrategyThreadedRunner : public VThread {
+    public:
+        VSocketConnectionStrategyThreadedRunner(const VDuration& timeoutInterval, int maxNumThreads, const VString& hostName, int portNumber, const VStringVector& debugIPAddresses);
+        virtual ~VSocketConnectionStrategyThreadedRunner();
+
+        // VThread implementation:
+        virtual void run();
+        
+        // Caller should start() this thread, and then aggressively check for completion via hasAnswer().
+        // Once done, call getConnectedSockID(), and if it's not kNoSockID, it's a connected sockid to take over.
+        // Call getConnectedIPAddress() to find out where we got connected to.
+        // Finally, call detachFromStrategy() to signal that you will no longer refer to the runner,
+        // so that it can self-destruct.
+        bool        hasAnswer() const;
+        VSocketID   getConnectedSockID() const;
+        VString     getConnectedIPAddress() const;
+        void        detachFromStrategy();
+
+    private:
+
+        bool _isDone() const;
+        bool _isDetachedFromStrategy() const;
+        void _lockedStartWorker(const VString& ipAddressToConnect);
+        void _lockedForgetOneWorker(VSocketConnectionStrategyThreadedWorker* worker); // forgets one worker but assumes that worker will no longer reference us
+        void _lockedForgetAllWorkers(); // forgets all workers and tells them to stop referring to us
+
+        const VInstant      mExpiry;    // Construction time plus timeout interval. After this instant, we stop creating new threads.
+        const int           mMaxNumThreads;
+        const VString       mHostNameToConnect;
+        const int           mPortNumberToConnect;
+        const VStringVector mDebugIPAddresses;
+
+        bool            mDetachedFromStrategy;
+        mutable VMutex  mMutex;
+        VStringVector   mIPAddressesYetToTry;
+        
+        bool            mConnectionCompleted;
+        bool            mAllWorkersFailed;
+        VSocketID       mConnectedSocketID;
+        VString         mConnectedSocketIPAddress;
+
+        typedef std::deque<VSocketConnectionStrategyThreadedWorker*> WorkerList;
+        WorkerList      mWorkers;
+
+        // Private functions called only by our worker friend class.
+        friend class VSocketConnectionStrategyThreadedWorker;
+        void _workerSucceeded(VSocketConnectionStrategyThreadedWorker* worker, VSocket& openedSocket);
+        void _workerFailed(VSocketConnectionStrategyThreadedWorker* worker, const VException& ex);
+
+};
+
+// VSocketConnectionStrategyThreadedWorker ------------------------------------
+
+VSocketConnectionStrategyThreadedWorker::VSocketConnectionStrategyThreadedWorker(VSocketConnectionStrategyThreadedRunner* ownerRunner, const VString& ipAddressToConnect, int portNumberToConnect)
+    : VThread(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker.%s:%d", ipAddressToConnect.chars(), portNumberToConnect), kDeleteSelfAtEnd, kCreateThreadDetached, NULL)
+    , mMutex(mName)
+    , mOwnerRunner(ownerRunner)
+    , mIPAddressToConnect(ipAddressToConnect)
+    , mPortNumberToConnect(portNumberToConnect)
+    {
+    VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker %s:%d constructor.", mIPAddressToConnect.chars(), mPortNumberToConnect));
+}
+
+VSocketConnectionStrategyThreadedWorker::~VSocketConnectionStrategyThreadedWorker() {
+    VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker %s:%d destructor.", mIPAddressToConnect.chars(), mPortNumberToConnect));
+}
+
+void VSocketConnectionStrategyThreadedWorker::run() {
+    VInstant connectStart;
+    try {
+        VSocket tempSocket;
+        tempSocket.connectToIPAddress(mIPAddressToConnect, mPortNumberToConnect);
+        VDuration duration(connectStart);
+        VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker %s:%d run() succeeded with sockid %d in %s.", mIPAddressToConnect.chars(), mPortNumberToConnect, (int) tempSocket.getSockID(), duration.getDurationString().chars()));
+        this->_handleSuccess(tempSocket);
+    } catch (const VException& ex) {
+        VDuration duration(connectStart);
+        VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker %s:%d run() failed in %s.", mIPAddressToConnect.chars(), mPortNumberToConnect, duration.getDurationString().chars()));
+        this->_handleFailure(ex);
+    }
+}
+
+void VSocketConnectionStrategyThreadedWorker::_handleSuccess(VSocket& openedSocket) {
+    VMutexLocker locker(&mMutex, "VSocketConnectionStrategyThreadedWorker::_handleSuccess");
+    if (mOwnerRunner != NULL) {
+        mOwnerRunner->_workerSucceeded(this, openedSocket);
+        mOwnerRunner = NULL;
+    }
+}
+
+void VSocketConnectionStrategyThreadedWorker::_handleFailure(const VException& ex) {
+    VMutexLocker locker(&mMutex, "VSocketConnectionStrategyThreadedWorker::_handleFailure");
+    if (mOwnerRunner != NULL) {
+        mOwnerRunner->_workerFailed(this, ex);
+        mOwnerRunner = NULL;
+    }
+}
+
+// VSocketConnectionStrategyThreadedRunner ------------------------------------
+
+VSocketConnectionStrategyThreadedRunner::VSocketConnectionStrategyThreadedRunner(const VDuration& timeoutInterval, int maxNumThreads, const VString& hostName, int portNumber, const VStringVector& debugIPAddresses)
+    : VThread(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner.%s:%d", hostName.chars(), portNumber), kDeleteSelfAtEnd, kCreateThreadDetached, NULL)
+    , mExpiry(VInstant() + timeoutInterval)
+    , mMaxNumThreads(maxNumThreads)
+    , mHostNameToConnect(hostName)
+    , mPortNumberToConnect(portNumber)
+    , mDebugIPAddresses(debugIPAddresses)
+    , mDetachedFromStrategy(false)
+    , mMutex(mName)
+    , mIPAddressesYetToTry()
+    , mConnectionCompleted(false)
+    , mAllWorkersFailed(false)
+    , mConnectedSocketID(VSocketBase::kNoSocketID)
+    , mConnectedSocketIPAddress()
+    , mWorkers()
+    {
+    VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner %s:%d constructor.", mHostNameToConnect.chars(), mPortNumberToConnect));
+}
+
+VSocketConnectionStrategyThreadedRunner::~VSocketConnectionStrategyThreadedRunner() {
+    VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner %s:%d destructor.", mHostNameToConnect.chars(), mPortNumberToConnect));
+}
+
+void VSocketConnectionStrategyThreadedRunner::run() {
+
+    /* locking scope */ {
+        VMutexLocker locker(&mMutex, "VSocketConnectionStrategyThreadedRunner::run() starting initial workers");
+        VStringVector ipAddresses = (mDebugIPAddresses.empty() ? VSocketBase::resolveHostName(mHostNameToConnect) : mDebugIPAddresses);
+        int numWorkersRemaining = mMaxNumThreads;
+        for (size_t i = 0; i < ipAddresses.size(); ++i) {
+        //for (size_t i1 = ipAddresses.size(); i1 > 0; --i1) { int i = i1-1; // try backwards to get that google.com IPv6 address
+            if (numWorkersRemaining == 0) {
+                mIPAddressesYetToTry.push_back(ipAddresses[i]);
+            } else {
+                this->_lockedStartWorker(ipAddresses[i]);
+                --numWorkersRemaining;
+            }
+        }
+    }
+    
+    // More workers will be created when and if others complete unsuccessfully.
+    
+    while (! this->_isDone()) {
+        VThread::sleep(VDuration::MILLISECOND());
+    }
+    
+    while (! this->_isDetachedFromStrategy()) {
+        VThread::sleep(VDuration::MILLISECOND());
+    }
+    
+}
+
+bool VSocketConnectionStrategyThreadedRunner::hasAnswer() const {
+    VMutexLocker locker(&mMutex, "hasAnswer");
+    return mConnectionCompleted || mAllWorkersFailed || (VInstant() > mExpiry);
+}
+
+VSocketID VSocketConnectionStrategyThreadedRunner::getConnectedSockID() const {
+    VMutexLocker locker(&mMutex, "getConnectedSockID");
+    return mConnectedSocketID;
+}
+
+VString VSocketConnectionStrategyThreadedRunner::getConnectedIPAddress() const {
+    VMutexLocker locker(&mMutex, "getConnectedIPAddress");
+    return mConnectedSocketIPAddress;
+}
+
+void VSocketConnectionStrategyThreadedRunner::detachFromStrategy() {
+    VMutexLocker locker(&mMutex, "detachFromStrategy");
+    mDetachedFromStrategy = true;
+}
+
+bool VSocketConnectionStrategyThreadedRunner::_isDone() const {
+    VMutexLocker locker(&mMutex, "_done");
+    return mWorkers.empty();
+}
+
+bool VSocketConnectionStrategyThreadedRunner::_isDetachedFromStrategy() const {
+    VMutexLocker locker(&mMutex, "_isDetachedFromStrategy");
+    return mDetachedFromStrategy;
+}
+
+void VSocketConnectionStrategyThreadedRunner::_lockedStartWorker(const VString& ipAddressToConnect) {
+    VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner starting worker %s:%d.", ipAddressToConnect.chars(), mPortNumberToConnect));
+    VSocketConnectionStrategyThreadedWorker* worker = new VSocketConnectionStrategyThreadedWorker(this, ipAddressToConnect, mPortNumberToConnect);
+    mWorkers.push_back(worker);
+    worker->start();
+}
+
+void VSocketConnectionStrategyThreadedRunner::_workerSucceeded(VSocketConnectionStrategyThreadedWorker* worker, VSocket& openedSocket) {
+    VMutexLocker locker(&mMutex, VSTRING_FORMAT("_workerSucceeded(%s)", worker->getName().chars()));
+    if (mConnectionCompleted) {
+        VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner %s:%d _workerSucceeded(sockid %d) ignored because another worker has already won.", openedSocket.getHostIPAddress().chars(), mPortNumberToConnect, (int) openedSocket.getSockID()));
+    } else {
+        VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner %s:%d _workerSucceeded(sockid %d) wins.", openedSocket.getHostIPAddress().chars(), mPortNumberToConnect, (int) openedSocket.getSockID()));
+
+        mConnectedSocketID = openedSocket.getSockID();
+        mConnectedSocketIPAddress = openedSocket.getHostIPAddress();
+        openedSocket.setSockID(VSocketBase::kNoSocketID); // So when it destructs on return from this function, it will NOT close the adopted socket ID.
+    
+        mConnectionCompleted = true;
+    }
+
+    this->_lockedForgetOneWorker(worker);
+}
+
+void VSocketConnectionStrategyThreadedRunner::_workerFailed(VSocketConnectionStrategyThreadedWorker* worker, const VException& ex) {
+    VMutexLocker locker(&mMutex, VSTRING_FORMAT("_workerFailed(%s)", worker->getName().chars()));
+    this->_lockedForgetOneWorker(worker);
+    
+    VLOGGER_ERROR(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner::_workerFailed: %s", ex.what()));
+
+    // If we have yet to succeed, start another worker thread if we have more addresses to try.
+    if (!mConnectionCompleted) {
+        if (mIPAddressesYetToTry.empty()) {
+            // Nothing left to try.
+        } else if (VInstant() > mExpiry) {
+            // Too much time has elapsed. Give up. Don't start a new worker. Clear the "to do" list.
+            // Mark failure so that the caller can immediately proceed, not waiting for any other
+            // outstanding workers to complete. The presence of an overdue expiry means we failed.
+            mIPAddressesYetToTry.clear();
+            mAllWorkersFailed = true;
+        } else {
+            // Pop the next address off and start a worker for it.
+            VString nextIPAddressToTry = mIPAddressesYetToTry[0];
+            mIPAddressesYetToTry.erase(mIPAddressesYetToTry.begin());
+            this->_lockedStartWorker(nextIPAddressToTry);
+        }
+    }
+    
+    // If that failure was the last worker, then now that it's gone there are no more workers,
+    // because we didn't just start another one in its place, then we failed.
+    if (mWorkers.empty()) {
+        mAllWorkersFailed = true;
+    }
+}
+
+void VSocketConnectionStrategyThreadedRunner::_lockedForgetOneWorker(VSocketConnectionStrategyThreadedWorker* worker) {
+    WorkerList::iterator position = std::find(mWorkers.begin(), mWorkers.end(), worker);
+    if (position != mWorkers.end()) {
+        mWorkers.erase(position);
+    }
+}
+
+void VSocketConnectionStrategyThreadedRunner::_lockedForgetAllWorkers() {
+    mWorkers.clear();
+}
+
+// VSocketConnectionStrategyThreaded ------------------------------------------
+
+VSocketConnectionStrategyThreaded::VSocketConnectionStrategyThreaded(const VDuration& timeoutInterval, int maxNumThreads)
+    : VSocketConnectionStrategy()
+    , mTimeoutInterval(timeoutInterval)
+    , mMaxNumThreads(maxNumThreads)
+    {
+}
+
+void VSocketConnectionStrategyThreaded::connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const {
+
+    VSocketConnectionStrategyThreadedRunner* runner = new VSocketConnectionStrategyThreadedRunner(mTimeoutInterval, mMaxNumThreads, hostName, portNumber, mDebugIPAddresses);
+    runner->start();
+    
+    while (! runner->hasAnswer()) {
+        VThread::sleep(VDuration::MILLISECOND());
+    }
+
+    VSocketID sockID = runner->getConnectedSockID();
+    if (sockID == VSocketBase::kNoSocketID) {
+        throw VException("VSocketConnectionStrategyThreaded::connect: Failed to connect to all addresses.");
+    } else {
+        socketToConnect.setSockID(sockID);
+        socketToConnect.setHostIPAddressAndPort(runner->getConnectedIPAddress(), portNumber);
+    }
+    
+    // Finally, let the runner know that it is safe for it to end because we are no longer referring to it.
+    // It may still need to bookkeep worker threads that have not yet completed. It will self-delete later.
+    runner->detachFromStrategy();
+    runner = NULL;
+
+    VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreaded::connect(%s, %d) completed successfully at %s.", hostName.chars(), portNumber, socketToConnect.getHostIPAddress().chars()));
+}

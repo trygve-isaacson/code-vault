@@ -19,9 +19,9 @@ VSocket* VSocketFactory::createSocket(VSocketID socketID) {
     return theSocket;
 }
 
-VSocket* VSocketFactory::createSocket(const VString& hostName, int portNumber) {
+VSocket* VSocketFactory::createSocket(const VString& hostName, int portNumber, const VSocketConnectionStrategy& connectionStrategy) {
     VSocket* theSocket = new VSocket();
-    theSocket->connectToHostName(hostName, portNumber);
+    theSocket->connectToHostName(hostName, portNumber, connectionStrategy);
 
     return theSocket;
 }

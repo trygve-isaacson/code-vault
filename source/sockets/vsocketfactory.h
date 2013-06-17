@@ -41,12 +41,13 @@ class VSocketFactory {
         virtual VSocket* createSocket(VSocketID socketID);
         /**
         Creates a VSocket object and calls its init() method with the
-        specified host name and port number.
-        @param    hostName    the host name to pass to init()
-        @param    portNumber    the port number to pass to init()
-        @return    the new VSocket object
+        specified host name, port number, and connection strategy.
+        @param    hostName              the host name to pass to connectToHostName()
+        @param    portNumber            the port number to pass to connectToHostName()
+        @param    connectionStrategy    the strategy object to pass to connectToHostName() (VSocketConnectionStrategySingle is simplest)
+        @return the new VSocket object
         */
-        virtual VSocket* createSocket(const VString& hostName, int portNumber);
+        virtual VSocket* createSocket(const VString& hostName, int portNumber, const VSocketConnectionStrategy& connectionStrategy);
 
 };
 

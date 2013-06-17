@@ -13,6 +13,11 @@ VAULT-0026
 - DNS resolve and socket connect now work with both IPv4 and IPv6 address family APIs.
 - Fixed error handling bug in listener creation.
 - Removed obsolete BSD-specific code.
+VAULT-0027
+* Added support for multi-threaded socket connection attempts.
+- Simplest strategy just uses first address as you probably did before expecting 1 resolved address.
+- Better strategy iterates over all resolved addresses until one connects.
+- Complicated strategy multi-threads in an attempt to use the fastest server to respond to connection request.
 VAULT-0029
 * Miscellaneous
 - Change copyright dates and version strings.

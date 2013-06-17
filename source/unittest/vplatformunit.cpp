@@ -428,18 +428,6 @@ static bool _isIPv6NumericString(const VString& s) {
 
 void VPlatformUnit::_runSocketTests() {
 
-    // See if we can successfully resolve a couple of well-known host names.
-    // Caveats:
-    // - We are assume we can connect to the network. Perhaps trying this should be configurable.
-    // - I originally tested against known IP addresses for apple.com, microsoft.com, google.com, but then found that
-    //  they were liable to change more than I expected. So instead I now just test that names do resolve, and resolve
-    //  to valid IPv4 or IPv6 numeric address strings.
-    
-    this->_runResolveAndConnectHostNameTest("bombaydigital.com");
-    this->_runResolveAndConnectHostNameTest("apple.com");
-    this->_runResolveAndConnectHostNameTest("microsoft.com");
-    this->_runResolveAndConnectHostNameTest("google.com");
-
     VUNIT_ASSERT_TRUE(_isIPv4NumericString("1.2.3.4"));
     VUNIT_ASSERT_TRUE(_isIPv4NumericString("11.22.33.44"));
     VUNIT_ASSERT_TRUE(_isIPv4NumericString("111.222.333.444"));
@@ -469,6 +457,45 @@ void VPlatformUnit::_runSocketTests() {
     VUNIT_ASSERT_FALSE(_isIPv6NumericString("1.2.3.4"));    // IPv4
     VUNIT_ASSERT_FALSE(_isIPv6NumericString("Z:A:B:C"));    // non-hexadecimal component
     VUNIT_ASSERT_FALSE(_isIPv6NumericString("A:B:C:D/0"));  // prefix indicators (appended slash+digits) are not part of the address proper
+
+    // See if we can successfully resolve a couple of well-known host names.
+    // Caveats:
+    // - We are assume we can connect to the network. Perhaps trying this should be configurable.
+    // - I originally tested against known IP addresses for apple.com, microsoft.com, google.com, but then found that
+    //  they were liable to change more than I expected. So instead I now just test that names do resolve, and resolve
+    //  to valid IPv4 or IPv6 numeric address strings.
+    
+    this->_runResolveAndConnectHostNameTest("bombaydigital.com");
+    this->_runResolveAndConnectHostNameTest("apple.com");
+    this->_runResolveAndConnectHostNameTest("microsoft.com");
+    this->_runResolveAndConnectHostNameTest("google.com");
+
+    /* connection scope */ {
+        VString hostName("use-debug-addresses-instead");
+        VStringVector debugIPAddresses;
+        debugIPAddresses.push_back("0.2.3.4");
+        debugIPAddresses.push_back("0.2.3.5");
+        debugIPAddresses.push_back("0.2.3.6");
+        debugIPAddresses.push_back("0.2.3.7");
+        //debugIPAddresses.push_back("17.149.160.49"); // apple IP, use for testing success case
+        //debugIPAddresses.push_back("2607:f8b0:4009:804::1001"); // google IPv6 IP, use for testing success case
+        debugIPAddresses.push_back("0.2.3.8");
+        debugIPAddresses.push_back("0.2.3.9");
+
+        VSocket sock;
+        VInstant start;
+        VSocketConnectionStrategyThreaded debugStrategy(45 * VDuration::SECOND());
+        debugStrategy.injectDebugIPAddresses(debugIPAddresses);
+        
+        try {
+            sock.connectToHostName(hostName, 80, debugStrategy);
+            VUNIT_ASSERT_TRUE_LABELED(false, "Connecting to known bad addresses incorrectly succeeded");
+        } catch (const VException& ex) {
+            VUNIT_ASSERT_TRUE_LABELED(true, "Connecting to known bad addresses correctly failed");
+            this->logStatus(VSTRING_FORMAT("Expected connection failure. The exception reported was: (%d) '%s'", ex.getError(), ex.what()));
+        }
+    }
+    
 }
 
 void VPlatformUnit::_runResolveAndConnectHostNameTest(const VString& hostName) {
@@ -478,7 +505,7 @@ void VPlatformUnit::_runResolveAndConnectHostNameTest(const VString& hostName) {
         this->_assertStringIsNumericIPAddressString("Returned resolved address", hostName, (*i));
     }
 
-    /* connection scope */ {
+    /* connection scope for connecting to first resolved address explicitly */ {
         VSocket sock;
         VInstant start;
         sock.connectToHostName(names[0], 80);
@@ -486,9 +513,39 @@ void VPlatformUnit::_runResolveAndConnectHostNameTest(const VString& hostName) {
         VUNIT_ASSERT_EQUAL_LABELED(80, sock.getPortNumber(), VSTRING_FORMAT("_runResolveAndConnectHostNameTest connected to %s at %s port 80 in %s", hostName.chars(), sock.getHostIPAddress().chars(), duration.getDurationString().chars()));
         this->_assertStringIsNumericIPAddressString("_runResolveAndConnectHostNameTest connected", hostName.chars(), sock.getHostIPAddress());
     }
+
+    /* connection scope for using single address strategy */ {
+        VSocket sock;
+        VInstant start;
+        sock.connectToHostName(hostName, 80, VSocketConnectionStrategySingle());
+        VDuration duration(start);
+        VUNIT_ASSERT_EQUAL_LABELED(80, sock.getPortNumber(), VSTRING_FORMAT("VSocketConnectionStrategySingle connected to %s at %s port 80 in %s", hostName.chars(), sock.getHostIPAddress().chars(), duration.getDurationString().chars()));
+        this->_assertStringIsNumericIPAddressString("VSocketConnectionStrategySingle connected", hostName.chars(), sock.getHostIPAddress());
+    }
+
+    /* connection scope for using linear iteration strategy */ {
+        VSocket sock;
+        VInstant start;
+        sock.connectToHostName(hostName, 80, VSocketConnectionStrategyLinear(VDuration::POSITIVE_INFINITY()));
+        VDuration duration(start);
+        VUNIT_ASSERT_EQUAL_LABELED(80, sock.getPortNumber(), VSTRING_FORMAT("VSocketConnectionStrategyLinear connected to %s at %s port 80 in %s", hostName.chars(), sock.getHostIPAddress().chars(), duration.getDurationString().chars()));
+        this->_assertStringIsNumericIPAddressString("VSocketConnectionStrategyLinear connected", hostName.chars(), sock.getHostIPAddress());
+    }
+    
+    /* connection scope for using threaded parallel strategy */ {
+        VSocket sock;
+        VInstant start;
+        sock.connectToHostName(hostName, 80, VSocketConnectionStrategyThreaded(VDuration::POSITIVE_INFINITY()));
+        VDuration duration(start);
+        VUNIT_ASSERT_EQUAL_LABELED(80, sock.getPortNumber(), VSTRING_FORMAT("VSocketConnectionStrategyThreaded connected to %s at %s port 80 in %s", hostName.chars(), sock.getHostIPAddress().chars(), duration.getDurationString().chars()));
+        this->_assertStringIsNumericIPAddressString("VSocketConnectionStrategyLinear connected", hostName.chars(), sock.getHostIPAddress());
+    }
+    
 }
 
 void VPlatformUnit::_assertStringIsNumericIPAddressString(const VString& label, const VString& hostName, const VString& value) {
-    VUNIT_ASSERT_TRUE_LABELED(VSocketBase::isIPv4NumericString(value) || VSocketBase::isIPv6NumericString(value),
-        VSTRING_FORMAT("%s: '%s' -> '%s' is an IPv4 or IPv6 numeric address", label.chars(), hostName.chars(), value.chars()));
+    bool isIPv4 = VSocketBase::isIPv4NumericString(value);
+    bool isIPv6 = VSocketBase::isIPv6NumericString(value);
+    VUNIT_ASSERT_TRUE_LABELED(isIPv4 || isIPv6,
+        VSTRING_FORMAT("%s: '%s' -> '%s' is an %s numeric address", label.chars(), hostName.chars(), value.chars(), (isIPv4 ? "IPv4":"IPv6")));
 }
