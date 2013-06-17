@@ -1,7 +1,7 @@
 
 /*
-Copyright c1997-2011 Trygve Isaacson. All rights reserved.
-This file is part of the Code Vault version 3.3
+Copyright c1997-2013 Trygve Isaacson. All rights reserved.
+This file is part of the Code Vault version 4.0
 http://www.bombaydigital.com/
 */
 
