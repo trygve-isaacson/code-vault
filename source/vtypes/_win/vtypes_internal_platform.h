@@ -83,6 +83,9 @@ typedef signed long ssize_t; // used by i/o APIs defined below
     #define V_INSTANT_SNAPSHOT_IS_UTC    // platform_snapshot() gives us a UTC time suitable for platform_now()
 #endif
 
+// Redundant definition from vsocketbase.h, but needed below, and this is an internal platform-specific header.
+typedef SOCKET VSocketID;    ///< The platform-dependent definition of a socket identifier.
+
 // This is generally a VC++ issue but not necessarily. VString::vaFormat needs to call va_copy for correctness.
 // But VC++ doesn't define this API. Failing to call it on VC++ builds has not been a problem, but it is needed
 // on some other environments in that use case, and defining it as a simple assignment does OK on VC++ so far.
@@ -116,6 +119,7 @@ inline ssize_t read(int fd, void* buffer, size_t numBytes) { return ::_read(fd, 
 inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::_write(fd, buffer, static_cast<unsigned int>(numBytes)); }
 inline off_t lseek(int fd, off_t offset, int whence) { return ::_lseek(fd, offset, whence); }
 inline int close(int fd) { return ::_close(fd); }
+inline int closeSocket(VSocketID fd) { return ::closesocket(fd); }
 inline int mkdir(const char* path, mode_t /*mode*/) { return ::_mkdir(path); }
 inline int rename(const char* oldName, const char* newName) { return ::rename(oldName, newName); }
 inline int unlink(const char* path) { return ::_unlink(path); }
@@ -148,6 +152,7 @@ inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::_wr
 inline off_t lseek(int fd, off_t offset, int whence) { return ::_lseek(fd, offset, whence); }
 inline int open(const char* path, int flags, mode_t mode) { return ::_open(path, flags, mode); }
 inline int close(int fd) { return ::_close(fd); }
+inline int closeSocket(VSocketID fd) { return ::closesocket(fd); }
 inline int mkdir(const char* path, mode_t /*mode*/) { return ::_mkdir(path); }
 inline int rmdir(const char* path) { return ::_rmdir(path); }
 inline int unlink(const char* path) { return ::_unlink(path); }
@@ -168,6 +173,7 @@ inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::wri
 inline off_t lseek(int fd, off_t offset, int whence) { return ::lseek(fd, offset, whence); }
 inline int open(const char* path, int flags, mode_t mode) { return ::_open(path, flags, mode); }
 inline int close(int fd) { return ::close(fd); }
+inline int closeSocket(VSocketID fd) { return ::closesocket(fd); }
 inline int mkdir(const char* path, mode_t /*mode*/) { return ::mkdir(path); }
 inline int rmdir(const char* path) { return ::_rmdir(path); }
 inline int unlink(const char* path) { return ::unlink(path); }

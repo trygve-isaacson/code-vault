@@ -183,21 +183,24 @@ class VSocketBase {
         */
         static VNetworkInterfaceList enumerateNetworkInterfaces();
         /**
-        Converts an IP address string in dot notation to a 4-byte value
-        that can be stored in a stream as an int. Note that the return
-        value is in network byte order by definition--think of it as
-        an array of 4 bytes, not a 32-bit integer.
+        Converts an IPv4 address string in dot notation to a 4-byte binary value
+        that can be stored in a stream. Note that the return value is in network
+        byte order by definition--think of it as an array of 4 bytes, not a
+        32-bit integer. Note that the VNetAddr data type should be avoided as
+        much as possible, since it is IPv4 only.
         @param    ipAddress    the string to convert (must be in x.x.x.x
                                 notation)
-        @return a 4-byte IP address
+        @return a 4-byte binary IPv4 address
         */
         static VNetAddr ipAddressStringToNetAddr(const VString& ipAddress);
         /**
-        Converts a 4-byte IP address value into a string in the dot notation
-        format. Note that the input value is in network byte order by
+        Converts a 4-byte binary IPv4 address value into a string in the dot
+        notation format. Note that the input value is in network byte order by
         definition--think of it as an array of 4 bytes, not a 32-bit integer.
-        @param    netAddr        the 4-byte IP address
-        @param    ipAddress    the string in which to place the dot notation
+        Note that the VNetAddr data type should be avoided as much as possible,
+        since it is IPv4 only.
+        @param    netAddr       the 4-byte binary IPv4 address
+        @param    ipAddress     the string in which to place the dot notation
                                 version of the address
         */
         static void netAddrToIPAddressString(VNetAddr netAddr, VString& ipAddress);
@@ -208,9 +211,10 @@ class VSocketBase {
         decide what strategy to use when connecting: a) use the first address only,
         b) try each one in sequence until you succeed, or c) try all or several in
         parallel and go with the fastest one to succed. Note that the returned
-        strings may be in IPv4 dotted decimal format (n.n.n.n) or IPv6 hexadecimal
-        format (x:x:x:x::n). If there is an error, or if no addresses are resolved,
-        this function will throw a VException. It will never return an empty vector.
+        strings may be in IPv4 dotted decimal format (n.n.n.n) or IPv6 format
+        (x:x:x:x::n for example; there are several related forms, see RFC 2373).
+        If there is an error, or if no addresses are resolved, this function will
+        throw a VException. It will never return an empty vector.
         @param  hostName    the host name to resolve; a numeric IP address is allowed
                             and will presumably resolve to itself
         @return one or more numeric IP address strings that the OS has resolved the
@@ -220,32 +224,74 @@ class VSocketBase {
         static VStringVector resolveHostName(const VString& hostName);
         /**
         Returns a string representation of the specified addrinfo internet address.
-        It may be an IPv4 dotted decimal format (n.n.n.n) or IPv6 format
-        hexadecimal format (x:x:x:x::n).
+        It may be an IPv4 dotted decimal format (n.n.n.n) or IPv6 format.
         This function is used by resolveHostName() to convert each address it resolves.
         @param  hostName    optional value to be used in an error message if we need to throw an exception
         @param  info        the addrinfo containing the low-level information about the address;
                             you must only pass IPv4 (AF_INET) or IPv6 (AF_INET6) values; other types
                             will result in an exception being thrown
-        @return a string in IPv4 dotted decimal format (n.n.n.n) or IPv6 hexadecimal format (x:x:x:x::n)
+        @return a string in IPv4 dotted decimal format (n.n.n.n) or IPv6 format
         */
         static VString addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info);
+        /**
+        Returns true if the supplied numeric IP address string appears to be in IPv4
+        dotted decimal format (n.n.n.n). We just check basic contents: dots, decimals,
+        and minimum length. RFC 2373 describes all the possible variants.
+        @param  ipAddress   a string to examine
+        @return obvious
+        */
+        static bool isIPv4NumericString(const VString& ipAddress);
+        /**
+        Returns true if the supplied numeric IP address string appears to be in IPv6
+        format. We just check basic contents: colons, dots, hexadecimals, and minimum length.
+        @param  ipAddress   a string to examine
+        @return obvious
+        */
+        static bool isIPv6NumericString(const VString& ipAddress);
+        /**
+        Returns true if the supplied numeric IP address string appears to be in IPv6
+        or IPv4 format. This is a combined check that is more efficient than calling
+        both of the above checks separately since it only has to scan the string once.
+        Use this to distinguish from a host name.
+        @param  ipAddress   a string to examine
+        @return obvious
+        */
+        static bool isIPNumericString(const VString& ipAddress);
 
         /**
+        The usual way to construct a VSocket is with the default constructor. You then subsequently
+        call one of the connect() functions to cause it to connect using the appropriate strategy.
+        You could also call setSockID() with an already-open low-level socket ID.
+        */
+        VSocketBase();
+        /**
+        The other way to construct a VSocket is to supply it an already-opened low-level socket ID.
+        The VSocket will take ownership of the socket, and unless you later call setSockID(kNoSocketID),
+        it will close the underlying socket upon destruction or a call to close().
         Constructs the object with an already-opened low-level
         socket connection identified by its ID.
+        @param  id  an existing already-opened low-level socket ID
         */
         VSocketBase(VSocketID id);
-        /**
-        Constructs the object to use the specified host and port, but
-        does NOT open a connection yet (you must call connect() later to
-        establish the connection).
-        */
-        VSocketBase(const VString& hostName, int portNumber);
         /**
         Destructor, cleans up by closing the socket.
         */
         virtual ~VSocketBase();
+
+        /**
+        Connects to the server using the specified numeric IP address and port. If the connection
+        cannot be opened, a VException is thrown. This is also the API that the strategy object
+        used by connectToHostName() will call (possibly on a temporary VSocket object) in
+        order to establish a connection on a particular resolved IP address.
+        */
+        virtual void connectToIPAddress(const VString& ipAddress, int portNumber);
+        /**
+        Connects to the server using the specified host name and port; DNS resolution is performed
+        on the host name to determine the IP address. If the connection cannot be opened, a VException
+        is thrown. For this initial commit, only the first resolved name is used; next commit will
+        allow a choice of connection strategies.
+        */
+        virtual void connectToHostName(const VString& hostName, int portNumber);
 
         /**
         Associates this socket object with the specified socket id. This is
@@ -261,13 +307,11 @@ class VSocketBase {
         */
         void setSockID(VSocketID id);
         /**
-        Initializes the socket object by opening a connection to a server at the
-        specified host and port.
-        If the connection cannot be opened, a VException is thrown.
-        @param    hostName    the host name, numeric or not is fine
+        Sets the host IP address and port for a subsequent connect() call.
+        @param    hostIPAddress the host IP address, an IPv4 or IPv6 numeric string
         @param    portNumber    the port number to connect to on the host
         */
-        virtual void setHostAndPort(const VString& hostName, int portNumber);
+        virtual void setHostIPAddressAndPort(const VString& hostIPAddress, int portNumber);
 
         // --------------- These are the various utility and accessor methods.
 
@@ -277,11 +321,11 @@ class VSocketBase {
         */
         VSocketID getSockID() const;
         /**
-        Returns the name or address of the host to which this socket is
-        connected.
-        @param    hostName    the string to format
+        Returns the IP address of the host to which this socket is connected or has
+        been set via setHostIPAddressAndPort().
+        @return the host IP address; either an IPv4 or IPv6 numeric string
         */
-        void getHostName(VString& hostName) const;
+        VString getHostIPAddress() const;
         /**
         Returns the port number on the host to which this socket is
         connected.
@@ -344,12 +388,6 @@ class VSocketBase {
         // --------------- These are the pure virtual methods that only a platform
         // subclass can implement.
 
-        /**
-        Connects to the server; only valid for a newly created VSocket that
-        was initialized with host and port in the constructor or with a
-        call to setHostAndPort().
-        */
-        virtual void connect();
         /**
         Returns the number of bytes that are available to be read on this
         socket. If you do a read() on that number of bytes, you know that
@@ -422,7 +460,7 @@ class VSocketBase {
         /**
         Connects to the server.
         */
-        virtual void _connect() = 0;
+        virtual void _connectToIPAddress(const VString& ipAddress, int portNumber) = 0;
         /**
         Starts listening for incoming connections. Only useful to call
         from a VListenerSocket subclass that exposes a public listen() API.
@@ -434,7 +472,7 @@ class VSocketBase {
         virtual void _listen(const VString& bindAddress, int backlog) = 0;
 
         VSocketID       mSocketID;              ///< The socket id.
-        VString         mHostName;              ///< The name of the host to which the socket is connected.
+        VString         mHostIPAddress;         ///< The IP address of the host to which the socket is connected.
         int             mPortNumber;            ///< The port number on the host to which the socket is connected.
         bool            mReadTimeOutActive;     ///< True if reads should time out.
         struct timeval  mReadTimeOut;           ///< The read timeout value, if used.
@@ -470,7 +508,7 @@ class VSocketInfo {
         virtual ~VSocketInfo() {}
 
         VSocketID   mSocketID;          ///< The sock id.
-        VString     mHostName;          ///< The name of the host to which the socket is connected.
+        VString     mHostIPAddress;     ///< The IP address of the host to which the socket is connected.
         int         mPortNumber;        ///< The port number on the host to which the socket is connected.
         Vs64        mNumBytesRead;      ///< Number of bytes read from this socket.
         Vs64        mNumBytesWritten;   ///< Number of bytes written to this socket.

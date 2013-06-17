@@ -13,11 +13,13 @@ http://www.bombaydigital.com/
 #include "vsocketfactory.h"
 
 VListenerSocket::VListenerSocket(int portNumber, const VString& bindAddress, VSocketFactory* factory, int backlog)
-    : VSocket(VSTRING_FORMAT("listener(%d)", portNumber), portNumber)
+    : VSocket()
     , mBindAddress(bindAddress)
     , mBacklog(backlog)
     , mFactory(factory)
     {
+    this->setHostIPAddressAndPort(VSTRING_FORMAT("listener(%s:%d)", bindAddress.chars(), portNumber), portNumber);
+
     /*
     We need to have our listen() calls timeout if we expect to allow
     other threads (e.g., a thread that is handling a remote server

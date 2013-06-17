@@ -20,8 +20,8 @@ VSocket* VSocketFactory::createSocket(VSocketID socketID) {
 }
 
 VSocket* VSocketFactory::createSocket(const VString& hostName, int portNumber) {
-    VSocket* theSocket = new VSocket(hostName, portNumber);
-    theSocket->connect();
+    VSocket* theSocket = new VSocket();
+    theSocket->connectToHostName(hostName, portNumber);
 
     return theSocket;
 }

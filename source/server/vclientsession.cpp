@@ -24,8 +24,8 @@ VClientSession::VClientSession(const VString& sessionBaseName, VServer* server, 
     , mMutex(VString::EMPTY()/*name will be set in body*/)
     , mServer(server)
     , mClientType(clientType)
-    , mClientIP()
-    , mClientPort(0)
+    , mClientIP(socket->getHostIPAddress())
+    , mClientPort(socket->getPortNumber())
     , mClientAddress()
     , mInputThread(NULL)
     , mOutputThread(NULL)
@@ -38,8 +38,6 @@ VClientSession::VClientSession(const VString& sessionBaseName, VServer* server, 
     , mSocketStream(socket, "VClientSession") // FIXME: find a way to get the IP address here or to set in ctor
     , mIOStream(mSocketStream)
     {
-    socket->getHostName(mClientIP);
-    mClientPort = socket->getPortNumber();
     mClientAddress.format("%s:%d", mClientIP.chars(), mClientPort);
     mName.format("%s:%s:%d", sessionBaseName.chars(), mClientIP.chars(), mClientPort);
     mMutex.setName(VSTRING_FORMAT("VClientSession[%s]::mMutex", mName.chars()));

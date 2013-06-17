@@ -111,13 +111,13 @@ VString VSocketBase::addrinfoToIPAddressString(const VString& hostName, const st
     return result;
 }
 
-VSocket::VSocket(VSocketID id)
-    : VSocketBase(id)
+VSocket::VSocket()
+    : VSocketBase()
     {
 }
 
-VSocket::VSocket(const VString& hostName, int portNumber)
-    : VSocketBase(hostName, portNumber)
+VSocket::VSocket(VSocketID id)
+    : VSocketBase(id)
     {
 }
 
@@ -273,10 +273,8 @@ void VSocket::discoverHostAndPort() {
 
     int portNumber = (int) V_BYTESWAP_NTOH_S16_GET(static_cast<Vs16>(info.sin_port));
 
-    const char* name = ::inet_ntoa(info.sin_addr); // addr2ascii is preferred but is not yet standard:
-    //const char* name = ::addr2ascii(AF_INET, info.sin_addr, sizeof(info.sin_addr), NULL);
-
-    this->setHostAndPort(VSTRING_COPY(name), portNumber);
+    const char* ipAddress = ::inet_ntoa(info.sin_addr);
+    this->setHostIPAddressAndPort(VSTRING_COPY(ipAddress), portNumber);
 }
 
 void VSocket::closeRead() {
@@ -299,17 +297,17 @@ void VSocket::setSockOpt(int level, int name, void* valuePtr, int valueLength) {
     (void) ::setsockopt(mSocketID, level, name, valuePtr, valueLength);
 }
 
-#ifndef V_BSD_ENHANCED_SOCKETS
+void VSocket::_connectToIPAddress(const VString& ipAddress, int portNumber) {
+    this->setHostIPAddressAndPort(ipAddress, portNumber);
 
-void VSocket::_connect() {
     struct sockaddr_in  info;
     int                 infoLength = sizeof(info);
     VSocketID           socketID;
 
     ::memset(&info, 0, sizeof(info));
     info.sin_family = AF_INET;
-    info.sin_port = (in_port_t) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(mPortNumber));
-    info.sin_addr.s_addr = /*::hack_*/::inet_addr(mHostName);
+    info.sin_port = (in_port_t) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(portNumber));
+    info.sin_addr.s_addr = /*::hack_*/::inet_addr(ipAddress);
 
     socketID = ::socket(AF_INET, SOCK_STREAM, 0);
 
@@ -318,8 +316,8 @@ void VSocket::_connect() {
 
         if (result != 0) {
             // Connect failed.
-            VSystemError e = VSystemError::getSocketError(); // Call before calling closeSocket(), which will succeed and clear the error code!
-            vault::close(socketID);
+            VSystemError e = VSystemError::getSocketError(); // Call before calling vault::closeSocket(), which will succeed and clear the error code!
+            vault::closeSocket(socketID);
             throw VException(e, VSTRING_FORMAT("VSocket[%s] _connect: Connect failed.", mSocketName.chars()));
         }
     }
@@ -328,11 +326,11 @@ void VSocket::_connect() {
 }
 
 void VSocket::_listen(const VString& bindAddress, int backlog) {
+    // TODO: This function is now identical to the _win version. Consolidate.
     VSocketID           listenSockID = kNoSocketID;
     struct sockaddr_in  info;
     int                 infoLength = sizeof(info);
     const int           on = 1;
-    int                 result;
 
     ::memset(&info, 0, sizeof(info));
     info.sin_family = AF_INET;
@@ -348,174 +346,31 @@ void VSocket::_listen(const VString& bindAddress, int backlog) {
     if (listenSockID < 0) {
         throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: socket() failed. Result=%d.", mSocketName.chars(), listenSockID));
     }
-
-    result = ::setsockopt(listenSockID, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-    if (result != 0) {
-        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: setsockopt() failed. Result=%d.", mSocketName.chars(), result));
-    }
-
-    result = ::bind(listenSockID, (const sockaddr*) &info, infoLength);
-    if (result != 0) {
-        vault::close(listenSockID);
-        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: bind() failed. Result=%d.", mSocketName.chars(), result));
-    }
-
-    (void) ::listen(listenSockID, backlog);
-    if (result != 0) {
-        vault::close(listenSockID);
-        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: listen() failed. Result=%d.", mSocketName.chars(), result));
-    }
-
-    mSocketID = listenSockID;
-}
-
-#else /* V_BSD_ENHANCED_SOCKETS version follows */
-
-void VSocket::_connect() {
-    VSocketID           socketID = kNoSocketID;
-    struct addrinfo*    res = NULL;
-
-    this->_tcpGetAddrInfo(&res);
-
+    
+    // Once we've successfully called ::socket(), if something else fails here, we need
+    // to close that socket. We can just throw upon any failed call, and use a try/catch
+    // with re-throw after closure.
+    
     try {
-        socketID = this->_tcpConnectWAddrInfo(res);
-    } catch (const VException& ex) {
-        ::freeaddrinfo(res);
+        int result = ::setsockopt(listenSockID, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+        if (result != 0) {
+            throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: setsockopt() failed. Result=%d.", mSocketName.chars(), result));
+        }
+
+        result = ::bind(listenSockID, (const sockaddr*) &info, infoLength);
+        if (result != 0) {
+            throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: bind() failed. Result=%d.", mSocketName.chars(), result));
+        }
+
+        (void) ::listen(listenSockID, backlog);
+        if (result != 0) {
+            throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: listen() failed. Result=%d.", mSocketName.chars(), result));
+        }
+
+    } catch (...) {
+        vault::closeSocket(listenSockID);
         throw;
     }
 
-    ::freeaddrinfo(res);
-
-    mSocketID = socketID;
-}
-
-void VSocket::_listen(const VString& bindAddress, int backlog) {
-    VSocketID           listenSockID;
-    int                 result;
-    const int           on = 1;
-    struct addrinfo     hints;
-    struct addrinfo*    res;
-    struct addrinfo*    ressave;
-    VString             lastErrorText;
-    VSystemError        lastSystemError(0, VString::EMPTY());
-
-    ::memset(&hints, 0, sizeof(hints));
-    hints.ai_flags = AI_PASSIVE;
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-
-    result = this->_getAddrInfo(&hints, &res, false);
-    if (result != 0) {
-        throw VStackTraceException(VSystemError(errno, ::gai_strerror(errno)), VSTRING_FORMAT("VSocket[%s] listen: getaddrinfo() failed. Result=%d.", mSocketName.chars(), result));
-    }
-
-    ressave = res;
-
-    do {
-        listenSockID = ::socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-
-        if (listenSockID < 0) {
-            // Error on this interface, we'll try the next one.
-            lastErrorText.format("VSocket[%s] listen: Socket failed. ID=%d.", mSocketName.chars(), listenSocketID);
-            lastSystemError = VSystemError::getSocketError();
-            continue;
-        }
-
-        result = ::setsockopt(listenSockID, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-        if (result != 0) {
-            // Error on this interface, we'll try the next one.
-            lastErrorText.format("VSocket[%s] listen: Setsockopt failed. Result=%d.", mSocketName.chars(), result);
-            lastSystemError = VSystemError::getSocketError();
-            continue;
-        }
-
-        result = ::bind(listenSockID, res->ai_addr, res->ai_addrlen);
-
-        if (result == 0) {
-            // Success -- break out of loop to continue setting up listen.
-            break;
-        }
-
-        // Error on this interface, we'll try the next one.
-        lastErrorText.format("VSocket[%s] listen: Bind failed. Result=%d.", mSocketName.chars(), result);
-        lastSystemError = VSystemError::getSocketError();
-        vault::close(listenSockID);
-
-    } while ((res = res->ai_next) != NULL);
-
-    if (res == NULL) {
-        throw VStackTraceException(lastSystemError, lastErrorText);
-    }
-
-    if (lastErrorText.isNotEmpty()) {
-        VString s(VSTRING_ARGS("VSocket[%s] listen: Bind succeeded after earlier error: ", mSocketName.chars()));
-        std::cout << s << lastErrorText << std::endl;
-    }
-
-    result = ::listen(listenSockID, backlog);
-
-    ::freeaddrinfo(ressave);
-
-    if (result != 0) {
-        vault::close(listenSockID);
-        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: Listen failed. Result=%d", mSocketName.chars(), result));
-    }
-
     mSocketID = listenSockID;
 }
-
-void VSocket::_tcpGetAddrInfo(struct addrinfo** res) {
-    struct addrinfo hints;
-    int             result;
-
-    ::memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-
-    result = this->_getAddrInfo(&hints, res);
-
-    if (result != 0) {
-        throw VException(VSystemError(errno, ::gai_strerror(errno)), VSTRING_FORMAT("VSocket[%s] _tcpGetAddrInfo: GetAddrInfo failed. Result=%d.", mSocketName.chars(), result));
-    }
-}
-
-int VSocket::_getAddrInfo(struct addrinfo* hints, struct addrinfo** res, bool useHostName) {
-    VMutexLocker    locker(&gAddrInfoMutex, "VSocket::_getAddrInfo()");
-    VString         portAsString(VSTRING_FORMATTER_INT, mPortNumber);
-
-    return ::getaddrinfo(useHostName ? mHostName.chars() : NULL, portAsString.chars(), hints, res);
-}
-
-VSocketID VSocket::_tcpConnectWAddrInfo(struct addrinfo* const resInput) {
-    struct addrinfo*    res = resInput;
-    VSocketID           socketID;
-
-    do {
-        socketID = ::socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-
-        if (socketID < 0) {
-            // Debug message: socket open failed but we will try again if more available...
-            continue;
-        } else if (socketID > FD_SETSIZE) { // FD_SETSIZE is max num open sockets, sockid over that is sign of a big problem
-            // Debug message: socket id appears to be out of range...
-        }
-
-        if (::connect(socketID, res->ai_addr, res->ai_addrlen) == 0) {
-            break; /* success */
-        }
-
-        vault::close(socketID);
-    } while ((res = res->ai_next) != NULL);
-
-    if (res == NULL) {
-        throw VException(VSystemError(errno, ::gai_strerror(errno)), VSTRING_FORMAT("VSocket[%s] _tcpConnectWAddrInfo: Socket/Connect failed.", mSocketName.chars()));
-    }
-
-    return socketID;
-}
-
-// The BSD call to getaddrinfo() is not threadsafe so we protect it with a global mutex.
-VMutex VSocket::gAddrInfoMutex("VSocket::gAddrInfoMutex");
-
-#endif /* V_BSD_ENHANCED_SOCKETS */
-

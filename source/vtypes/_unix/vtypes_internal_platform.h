@@ -35,6 +35,9 @@ does not need to be exposed to any of this.
 // Both CodeWarrior and GCC (4.0 at least) provide gettimeofday(), which uses UTC-based values.
 #define V_INSTANT_SNAPSHOT_IS_UTC    // platform_snapshot() gives us a UTC time suitable for platform_now()
 
+// Redundant definition from vsocketbase.h, but needed below, and this is an internal platform-specific header.
+typedef int VSocketID;    ///< The platform-dependent definition of a socket identifier.
+
 /*
 These are the custom uniform definitions of system-level functions that behave
 slightly differently on each compiler/library/OS platform. These are declared
@@ -50,6 +53,7 @@ inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::wri
 inline off_t lseek(int fd, off_t offset, int whence) { return ::lseek(fd, offset, whence); }
 inline int open(const char* path, int flags, mode_t mode) { return ::open(path, flags, mode); }
 inline int close(int fd) { return ::close(fd); }
+inline int closeSocket(VSocketID fd) { return ::close(fd); }
 inline int mkdir(const char* path, mode_t mode) { return ::mkdir(path, mode); }
 inline int rmdir(const char* path) { return ::rmdir(path); }
 inline int unlink(const char* path) { return ::unlink(path); }

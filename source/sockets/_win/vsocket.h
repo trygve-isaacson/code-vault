@@ -39,14 +39,14 @@ class VSocket : public VSocketBase {
     public:
 
         /**
+        Constructs the object; does NOT open a connection.
+        */
+        VSocket();
+        /**
         Constructs the object with an already-opened low-level
         socket connection identified by its ID.
         */
         VSocket(VSocketID id);
-        /**
-        Constructs the object; does NOT open a connection.
-        */
-        VSocket(const VString& hostName, int portNumber);
         /**
         Destructor, cleans up by closing the socket.
         */
@@ -111,7 +111,7 @@ class VSocket : public VSocketBase {
         /**
         Connects to the server.
         */
-        virtual void _connect();
+        virtual void _connectToIPAddress(const VString& ipAddress, int port);
         /**
         Starts listening for incoming connections. Only useful to call
         with a VListenerSocket subclass, but needed here for class

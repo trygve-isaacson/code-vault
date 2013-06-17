@@ -107,9 +107,110 @@ VStringVector VSocketBase::resolveHostName(const VString& hostName) {
     return resolvedAddresses;
 }
 
-VSocketBase::VSocketBase(VSocketID id)
-    : mSocketID(id)
-    , mHostName()
+/*
+This is a somewhat cursory check. The exact sequence and order of dots and decimals is not verified.
+*/
+// static
+bool VSocketBase::isIPv4NumericString(const VString& s) {
+    int numDots = 0;
+    int numDecimalDigits = 0;
+    
+    for (int i = 0; i < s.length(); ++i) {
+        if (s[i] == '.') {
+            ++numDots;
+            continue;
+        }
+        
+        if (s[i].isNumeric()) {
+            ++numDecimalDigits;
+            continue;
+        }
+        
+        return false; // Some other character that is not part of a numeric IPv4 address.
+    }
+    
+    // A cursory check of minimum number of dots and digits. Order is not checked.
+    return (numDots == 3) && (numDecimalDigits >= 4);
+}
+
+/*
+There are lots of different forms possible. See RFC 2373.
+We know there must be colons present, at least two.
+The shortest possible value is "::".
+There are usually several hexadecimal segments separated by colons.
+There may also be dotted decimal (IPv4) elements at the end.
+So we check that every character is a colon, a dot, or a hexadecimal.
+And there must be two colons, so an explicit minimum length of 2 test is superfluous.
+*/
+// static
+bool VSocketBase::isIPv6NumericString(const VString& s) {
+    int numColons = 0;
+    
+    for (int i = 0; i < s.length(); ++i) {
+        if (! ((s[i] == ':') || (s[i] == '.') || s[i].isHexadecimal())) {
+            return false;
+        }
+        
+        if (s[i] == ':') {
+            ++numColons;
+        }
+    }
+
+    return (numColons >= 2); // The shortest possible IPv6 string is "::".
+}
+
+/*
+Scan the string once, looking for signs that it's neither an IPv4 nor IPv6 numeric address.
+If checking for either, this is faster than checking separately.
+*/
+// static
+bool VSocketBase::isIPNumericString(const VString& s) {
+    int numColons = 0;
+    int numDots = 0;
+    int numDecimalDigits = 0;
+    int numNonDecimalHexDigits = 0;
+    
+    for (int i = 0; i < s.length(); ++i) {
+        if (s[i] == ':') {
+            ++numColons;
+            continue;
+        }
+        
+        if (s[i] == '.') {
+            ++numDots;
+            continue;
+        }
+        
+        if (s[i].isNumeric()) {
+            ++numDecimalDigits;
+            continue;
+        }
+        
+        if (s[i].isHexadecimal()) {
+            ++numNonDecimalHexDigits;
+            continue;
+        }
+        
+        return false; // Some other character that is not part of a numeric IPv4 or IPv6 address.
+    }
+    
+    // If we saw no colons (i.e., it's IPv4 dotted decimal) then there must be no A-F hex digits.
+    if ((numColons == 0) && (numNonDecimalHexDigits != 0)) {
+        return false;
+    }
+    
+    // If we saw colons, it's IPv6 and the minimum is two colons.
+    if (numColons != 0) {
+        return (numColons >= 2); // The shortest possible IPv6 string is "::".
+    }
+
+    // We saw no colons, so the address should be IPv4. Cursory length check as in isIPv4NumericString().
+    return (numDots == 3) && (numDecimalDigits >= 4); // A minimum of 4 digits separated by dots: "1.2.3.4"
+}
+
+VSocketBase::VSocketBase()
+    : mSocketID(kNoSocketID)
+    , mHostIPAddress()
     , mPortNumber(0)
     , mReadTimeOutActive(false)
     , mReadTimeOut()
@@ -123,10 +224,10 @@ VSocketBase::VSocketBase(VSocketID id)
     {
 }
 
-VSocketBase::VSocketBase(const VString& hostName, int portNumber)
-    : mSocketID(kNoSocketID)
-    , mHostName(hostName)
-    , mPortNumber(portNumber)
+VSocketBase::VSocketBase(VSocketID id)
+    : mSocketID(id)
+    , mHostIPAddress()
+    , mPortNumber(0)
     , mReadTimeOutActive(false)
     , mReadTimeOut()
     , mWriteTimeOutActive(false)
@@ -135,7 +236,7 @@ VSocketBase::VSocketBase(const VString& hostName, int portNumber)
     , mNumBytesRead(0)
     , mNumBytesWritten(0)
     , mLastEventTime()
-    , mSocketName(VSTRING_ARGS("%s:%d", hostName.chars(), portNumber))
+    , mSocketName()
     {
 }
 
@@ -143,19 +244,24 @@ VSocketBase::~VSocketBase() {
     VSocketBase::close();
 }
 
-void VSocketBase::setHostAndPort(const VString& hostName, int portNumber) {
-    mHostName = hostName;
+void VSocketBase::setHostIPAddressAndPort(const VString& hostIPAddress, int portNumber) {
+    mHostIPAddress = hostIPAddress;
     mPortNumber = portNumber;
-    mSocketName.format("%s:%d", hostName.chars(), portNumber);
+    mSocketName.format("%s:%d", hostIPAddress.chars(), portNumber);
 }
 
-void VSocketBase::connect() {
-    this->_connect();
+void VSocketBase::connectToIPAddress(const VString& ipAddress, int portNumber) {
+    this->_connectToIPAddress(ipAddress, portNumber);
     this->setDefaultSockOpt();
 }
 
-void VSocketBase::getHostName(VString& address) const {
-    address = mHostName;
+void VSocketBase::connectToHostName(const VString& hostName, int portNumber) {
+    VStringVector ipAddresses = VSocketBase::resolveHostName(hostName);
+    this->connectToIPAddress(ipAddresses[0], portNumber);
+}
+
+VString VSocketBase::getHostIPAddress() const {
+    return mHostIPAddress;
 }
 
 int VSocketBase::getPortNumber() const {
@@ -164,11 +270,7 @@ int VSocketBase::getPortNumber() const {
 
 void VSocketBase::close() {
     if (mSocketID != kNoSocketID) {
-#ifdef VPLATFORM_WIN
-        ::closesocket(mSocketID);
-#else
-        vault::close(mSocketID);
-#endif
+        vault::closeSocket(mSocketID);
         mSocketID = kNoSocketID;
     }
 }
@@ -261,12 +363,11 @@ void VSocketBase::setSockID(VSocketID id) {
 
 VSocketInfo::VSocketInfo(const VSocket& socket)
     : mSocketID(socket.getSockID())
-    , mHostName()
+    , mHostIPAddress(socket.getHostIPAddress())
     , mPortNumber(socket.getPortNumber())
     , mNumBytesRead(socket.numBytesRead())
     , mNumBytesWritten(socket.numBytesWritten())
     , mIdleTime(socket.getIdleTime())
     {
-    socket.getHostName(mHostName);
 }
 

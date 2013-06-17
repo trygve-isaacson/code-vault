@@ -79,13 +79,13 @@ VString VSocketBase::addrinfoToIPAddressString(const VString& hostName, const st
     return result;
 }
 
-VSocket::VSocket(VSocketID id)
-    : VSocketBase(id)
+VSocket::VSocket()
+    : VSocketBase()
     {
 }
 
-VSocket::VSocket(const VString& hostName, int portNumber)
-    : VSocketBase(hostName, portNumber)
+VSocket::VSocket(VSocketID id)
+    : VSocketBase(id)
     {
 }
 
@@ -93,15 +93,17 @@ VSocket::~VSocket() {
     // Note: base class destructor does a close() of the socket if it is open.
 }
 
-void VSocket::_connect() {
+void VSocket::_connectToIPAddress(const VString& ipAddress, int portNumber) {
+    this->setHostIPAddressAndPort(ipAddress, portNumber);
+
     int                 length;
     struct sockaddr_in  address;
     VSocketID           socketID;
 
     ::memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
-    address.sin_port = (u_short) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(mPortNumber));
-    address.sin_addr.s_addr = ::inet_addr(mHostName);
+    address.sin_port = (u_short) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(portNumber));
+    address.sin_addr.s_addr = ::inet_addr(ipAddress);
     length = sizeof(struct sockaddr_in);
 
     socketID = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -110,8 +112,8 @@ void VSocket::_connect() {
         if (::connect(socketID, (const sockaddr*) &address, length) != 0) {
             // failure
             VSystemError e = VSystemError::getSocketError(); // Call before calling closeSocket(), which will succeed and clear the error code!
-            ::closesocket(socketID);
-            throw VException(e, VSTRING_FORMAT("VSocket[%s] _connect: Connect failed.", mSocketName.chars()));
+            vault::closeSocket(socketID);
+            throw VException(e, VSTRING_FORMAT("VSocket[%s] _connectToIPAddress: Connect failed.", mSocketName.chars()));
         }
     }
 
@@ -119,11 +121,11 @@ void VSocket::_connect() {
 }
 
 void VSocket::_listen(const VString& bindAddress, int backlog) {
+    // TODO: This function is now identical to the _unix version. Consolidate.
     VSocketID           listenSockID = kNoSocketID;
     struct sockaddr_in  info;
     int                 infoLength = sizeof(info);
     const int           on = 1;
-    int                 result;
 
     ::memset(&info, 0, sizeof(info));
     info.sin_family = AF_INET;
@@ -140,21 +142,29 @@ void VSocket::_listen(const VString& bindAddress, int backlog) {
         throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen socket() failed with id %d.", listenSockID));
     }
 
-    result = ::setsockopt(listenSockID, SOL_SOCKET, SO_REUSEADDR, (const char*) &on, sizeof(on));
-    if (result != 0) {
-        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen setsockopt() failed -- socket id %d, result %d.", listenSockID, result));
-    }
+    // Once we've successfully called ::socket(), if something else fails here, we need
+    // to close that socket. We can just throw upon any failed call, and use a try/catch
+    // with re-throw after closure.
+    try {
+        int result = ::setsockopt(listenSockID, SOL_SOCKET, SO_REUSEADDR, (const char*) &on, sizeof(on));
+        if (result != 0) {
+            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen setsockopt() failed -- socket id %d, result %d.", listenSockID, result));
+        }
 
-    result = ::bind(listenSockID, (const sockaddr*) &info, infoLength);
-    if (result != 0) {
-        // Bind failed.
-        ::closesocket(listenSockID);
-        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen bind() for port %d failed -- socket id %d.", mPortNumber, listenSockID));
-    }
+        result = ::bind(listenSockID, (const sockaddr*) &info, infoLength);
+        if (result != 0) {
+            vault::closeSocket(listenSockID);
+            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen bind() for port %d failed -- socket id %d.", mPortNumber, listenSockID));
+        }
 
-    result = ::listen(listenSockID, backlog);
-    if (result != 0) {
-        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen listen() for port %d failed -- socket id %d, result %d.", mPortNumber, listenSockID, result));
+        result = ::listen(listenSockID, backlog);
+        if (result != 0) {
+            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen listen() for port %d failed -- socket id %d, result %d.", mPortNumber, listenSockID, result));
+        }
+
+    } catch (...) {
+        vault::closeSocket(listenSockID);
+        throw;
     }
 
     mSocketID = listenSockID;
@@ -310,15 +320,15 @@ int VSocket::write(const Vu8* buffer, int numBytesToWrite) {
 }
 
 void VSocket::discoverHostAndPort() {
-    VSocklenT           namelen = sizeof(struct sockaddr_in);
     struct sockaddr_in  info;
+    VSocklenT           infoLength = sizeof(info);
 
-    ::getpeername(mSocketID, (struct sockaddr*) &info, &namelen);
+    ::getpeername(mSocketID, (struct sockaddr*) &info, &infoLength);
 
     int portNumber = (int) V_BYTESWAP_NTOH_S16_GET(static_cast<Vs16>(info.sin_port));
-    const char* name = ::inet_ntoa(info.sin_addr);
+    const char* ipAddress = ::inet_ntoa(info.sin_addr);
 
-    this->setHostAndPort(VSTRING_COPY(name), portNumber);
+    this->setHostIPAddressAndPort(VSTRING_COPY(ipAddress), portNumber);
 }
 
 void VSocket::closeRead() {

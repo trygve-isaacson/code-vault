@@ -23,16 +23,6 @@ http://www.bombaydigital.com/
 #include <netdb.h>
 #include <arpa/inet.h>
 
-/**
-If the enhanced BSD multi-home APIs are available, you can define the
-preprocessor symbol V_BSD_ENHANCED_SOCKETS, which will cause a slightly
-different set of code to be used for listen() and connect(), which
-takes advantage of those APIs. One thing the BSD APIs let you do is listen on
-multiple interfaces or an interface other than the default one. The
-IEEE 1003.1 APIs don't give you control over this, so you can only listen on
-the default interface.
-*/
-
 /*
 There are a couple of Unix APIs we call that take a socklen_t parameter.
 Well, on HP-UX the parameter is defined as an int. The cleanest way of dealing
@@ -64,14 +54,14 @@ class VSocket : public VSocketBase {
     public:
 
         /**
+        Constructs the object; does NOT open a connection.
+        */
+        VSocket();
+        /**
         Constructs the object with an already-opened low-level
         socket connection identified by its ID.
         */
         VSocket(VSocketID id);
-        /**
-        Constructs the object; does NOT open a connection.
-        */
-        VSocket(const VString& hostName, int portNumber);
         /**
         Destructor, cleans up by closing the socket.
         */
@@ -136,7 +126,7 @@ class VSocket : public VSocketBase {
         /**
         Connects to the server.
         */
-        virtual void _connect();
+        virtual void _connectToIPAddress(const VString& ipAddress, int port);
         /**
         Starts listening for incoming connections. Only useful to call
         with a VListenerSocket subclass, but needed here for class
@@ -151,18 +141,6 @@ class VSocket : public VSocketBase {
         virtual void _listen(const VString& bindAddress, int backlog);
 
     private:
-
-#ifdef V_BSD_ENHANCED_SOCKETS
-
-        // These are further BSD-specific methods used in the V_BSD_ENHANCED_SOCKETS
-        // versions of connect() and listen().
-        void        _tcpGetAddrInfo(struct addrinfo** res);                                             ///< Calls low-level getaddrinfo()
-        int         _getAddrInfo(struct addrinfo* hints, struct addrinfo** res, bool useHostName = true); ///< Calls low-level _getAddrInfo()
-        VSocketID   _tcpConnectWAddrInfo(struct addrinfo* const resInput);                              ///< Calls low-level socket() and connect()
-
-        static VMutex gAddrInfoMutex;   ///< getaddrinfo() is not thread-safe, so we have to protect ourselves.
-
-#endif /* V_BSD_ENHANCED_SOCKETS */
 
         static bool gStaticInited;  ///< Used internally to initialize at startup.
         static bool staticInit();   ///< Used internally to initialize at startup.

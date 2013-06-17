@@ -414,26 +414,16 @@ void VPlatformUnit::_runUtilitiesTest() {
 
 #include "vsocket.h"
 
-// There may be more exotic forms, but n.n.n.n where the n's are numeric values is what we get.
-static bool _isIPv4NumericString(const VString& s) {
-    for (int i = 0; i < s.length(); ++i) {
-        if (! ((s[i] == '.') || s[i].isNumeric())) {
-            return false;
-        }
-    }
+// These helpers let us test a couple of things at once for a proposed IP address string.
+// E.g.: A proposed IPv4 string should also be seen as an IP string, and as NOT an IPv6 string. And vice versa.
+// This way we don't have to assert all three tests separately for each proposed address.
 
-    return (s.length() >= 7); // A minimum of 4 digits separated by dots: "1.2.3.4"
+static bool _isIPv4NumericString(const VString& s) {
+    return VSocketBase::isIPv4NumericString(s) && VSocketBase::isIPNumericString(s) && !VSocketBase::isIPv6NumericString(s);
 }
 
-// There may be more exotic forms, but x:x:x:x::n where the x's are hex strings and the n is a numeric value is what we get.
 static bool _isIPv6NumericString(const VString& s) {
-    for (int i = 0; i < s.length(); ++i) {
-        if (! ((s[i] == ':') || s[i].isHexadecimal() || s[i].isNumeric())) {
-            return false;
-        }
-    }
-
-    return (s.length() >= 10); // A minimum of: "x:x:x:x::n" -- don't assume 4 hex digits in each segment
+    return VSocketBase::isIPv6NumericString(s) && VSocketBase::isIPNumericString(s) && !VSocketBase::isIPv4NumericString(s);
 }
 
 void VPlatformUnit::_runSocketTests() {
@@ -445,20 +435,60 @@ void VPlatformUnit::_runSocketTests() {
     //  they were liable to change more than I expected. So instead I now just test that names do resolve, and resolve
     //  to valid IPv4 or IPv6 numeric address strings.
     
-    this->_runResolveHostNameTest("apple.com");
-    this->_runResolveHostNameTest("microsoft.com");
-    this->_runResolveHostNameTest("google.com");
+    this->_runResolveAndConnectHostNameTest("bombaydigital.com");
+    this->_runResolveAndConnectHostNameTest("apple.com");
+    this->_runResolveAndConnectHostNameTest("microsoft.com");
+    this->_runResolveAndConnectHostNameTest("google.com");
+
+    VUNIT_ASSERT_TRUE(_isIPv4NumericString("1.2.3.4"));
+    VUNIT_ASSERT_TRUE(_isIPv4NumericString("11.22.33.44"));
+    VUNIT_ASSERT_TRUE(_isIPv4NumericString("111.222.333.444"));
+    VUNIT_ASSERT_FALSE(_isIPv4NumericString("bombaydigital.com"));
+    VUNIT_ASSERT_FALSE(_isIPv4NumericString("1"));
+    VUNIT_ASSERT_FALSE(_isIPv4NumericString("1.2"));
+    VUNIT_ASSERT_FALSE(_isIPv4NumericString("1.2.3"));
+    VUNIT_ASSERT_FALSE(_isIPv4NumericString("1.2.3."));
+    VUNIT_ASSERT_FALSE(_isIPv4NumericString(".1.2.3."));
+    VUNIT_ASSERT_FALSE(_isIPv4NumericString(""));
+    VUNIT_ASSERT_FALSE(_isIPv4NumericString("::"));
+    VUNIT_ASSERT_FALSE(_isIPv4NumericString("::1"));
+
+    VUNIT_ASSERT_TRUE(_isIPv6NumericString("::"));
+    VUNIT_ASSERT_TRUE(_isIPv6NumericString("::1"));
+    VUNIT_ASSERT_TRUE(_isIPv6NumericString("1:2:3:4"));
+    VUNIT_ASSERT_TRUE(_isIPv6NumericString("1:2:3:4.5"));
+    VUNIT_ASSERT_TRUE(_isIPv6NumericString("A:B:C:D:1"));
+    VUNIT_ASSERT_TRUE(_isIPv6NumericString("A:B:C:D:1.2.3.4"));
+    VUNIT_ASSERT_TRUE(_isIPv6NumericString("A:B::C"));
+    VUNIT_ASSERT_TRUE(_isIPv6NumericString("A:B:C:D::1"));
+    VUNIT_ASSERT_TRUE(_isIPv6NumericString("A:B:C:D::1.2.3.4"));
+    VUNIT_ASSERT_FALSE(_isIPv6NumericString("bombaydigital.com"));
+    VUNIT_ASSERT_FALSE(_isIPv6NumericString(""));
+    VUNIT_ASSERT_FALSE(_isIPv6NumericString(":"));
+    VUNIT_ASSERT_FALSE(_isIPv6NumericString(":1"));
+    VUNIT_ASSERT_FALSE(_isIPv6NumericString("1.2.3.4"));    // IPv4
+    VUNIT_ASSERT_FALSE(_isIPv6NumericString("Z:A:B:C"));    // non-hexadecimal component
+    VUNIT_ASSERT_FALSE(_isIPv6NumericString("A:B:C:D/0"));  // prefix indicators (appended slash+digits) are not part of the address proper
 }
 
-void VPlatformUnit::_runResolveHostNameTest(const VString& hostName) {
+void VPlatformUnit::_runResolveAndConnectHostNameTest(const VString& hostName) {
     VStringVector names = VSocketBase::resolveHostName(hostName);
     VUNIT_ASSERT_FALSE(names.empty());
     for (VStringVector::const_iterator i = names.begin(); i != names.end(); ++i) {
-        this->_assertStringIsNumericIPAddressString(hostName, (*i));
+        this->_assertStringIsNumericIPAddressString("Returned resolved address", hostName, (*i));
+    }
+
+    /* connection scope */ {
+        VSocket sock;
+        VInstant start;
+        sock.connectToHostName(names[0], 80);
+        VDuration duration(start);
+        VUNIT_ASSERT_EQUAL_LABELED(80, sock.getPortNumber(), VSTRING_FORMAT("_runResolveAndConnectHostNameTest connected to %s at %s port 80 in %s", hostName.chars(), sock.getHostIPAddress().chars(), duration.getDurationString().chars()));
+        this->_assertStringIsNumericIPAddressString("_runResolveAndConnectHostNameTest connected", hostName.chars(), sock.getHostIPAddress());
     }
 }
 
-void VPlatformUnit::_assertStringIsNumericIPAddressString(const VString& hostName, const VString& value) {
-    VUNIT_ASSERT_TRUE_LABELED(_isIPv4NumericString(value) || _isIPv6NumericString(value),
-        VSTRING_FORMAT("'%s' -> '%s' is an IPv4 or IPv6 numeric address", hostName.chars(), value.chars()));
+void VPlatformUnit::_assertStringIsNumericIPAddressString(const VString& label, const VString& hostName, const VString& value) {
+    VUNIT_ASSERT_TRUE_LABELED(VSocketBase::isIPv4NumericString(value) || VSocketBase::isIPv6NumericString(value),
+        VSTRING_FORMAT("%s: '%s' -> '%s' is an IPv4 or IPv6 numeric address", label.chars(), hostName.chars(), value.chars()));
 }
