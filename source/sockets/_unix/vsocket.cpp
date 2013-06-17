@@ -298,21 +298,40 @@ void VSocket::setSockOpt(int level, int name, void* valuePtr, int valueLength) {
 }
 
 void VSocket::_connectToIPAddress(const VString& ipAddress, int portNumber) {
+    // TODO: This function is NEARLY identical to the _win version. Consolidate.
     this->setHostIPAddressAndPort(ipAddress, portNumber);
 
-    struct sockaddr_in  info;
-    int                 infoLength = sizeof(info);
-    VSocketID           socketID;
-
-    ::memset(&info, 0, sizeof(info));
-    info.sin_family = AF_INET;
-    info.sin_port = (in_port_t) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(portNumber));
-    info.sin_addr.s_addr = /*::hack_*/::inet_addr(ipAddress);
-
-    socketID = ::socket(AF_INET, SOCK_STREAM, 0);
+    bool        isIPv4 = VSocketBase::isIPv4NumericString(ipAddress);
+    VSocketID   socketID = ::socket((isIPv4 ? AF_INET : AF_INET6), SOCK_STREAM, 0);
 
     if (socketID >= 0) {
-        int result = ::connect(socketID, (const sockaddr*) &info, infoLength);
+    
+        const sockaddr* infoPtr = NULL;
+        socklen_t infoLen = 0;
+        struct sockaddr_in infoIPv4;
+        struct sockaddr_in6 infoIPv6;
+    
+        if (isIPv4) {
+            ::memset(&infoIPv4, 0, sizeof(infoIPv4));
+            infoIPv4.sin_family = AF_INET;
+            infoIPv4.sin_port = (in_port_t) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(portNumber));
+            infoIPv4.sin_addr.s_addr = ::inet_addr(ipAddress);
+            infoPtr = (const sockaddr*) &infoIPv4;
+            infoLen = sizeof(infoIPv4);
+        } else {
+            ::memset(&infoIPv6, 0, sizeof(infoIPv6));
+            infoIPv6.sin6_len = sizeof(infoIPv6);
+            infoIPv6.sin6_family = AF_INET6;
+            infoIPv6.sin6_port = (in_port_t) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(portNumber));
+            int ptonResult = ::inet_pton(AF_INET6, ipAddress, &infoIPv6.sin6_addr);
+            if (ptonResult != 1) {
+                throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] _connectToIPAddress: inet_pton() failed.", mSocketName.chars()));
+            }
+            infoPtr = (const sockaddr*) &infoIPv6;
+            infoLen = sizeof(infoIPv6);
+        }
+
+        int result = ::connect(socketID, infoPtr, infoLen);
 
         if (result != 0) {
             // Connect failed.

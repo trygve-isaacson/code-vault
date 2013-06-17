@@ -93,24 +93,46 @@ VSocket::~VSocket() {
     // Note: base class destructor does a close() of the socket if it is open.
 }
 
+#define in_port_t USHORT
+
 void VSocket::_connectToIPAddress(const VString& ipAddress, int portNumber) {
+    // TODO: This function is NEARLY identical to the _unix version. Consolidate. (See also #define just above.)
     this->setHostIPAddressAndPort(ipAddress, portNumber);
 
-    int                 length;
-    struct sockaddr_in  address;
-    VSocketID           socketID;
+    bool        isIPv4 = VSocketBase::isIPv4NumericString(ipAddress);
+    VSocketID   socketID = ::socket((isIPv4 ? AF_INET : AF_INET6), SOCK_STREAM, 0);
 
-    ::memset(&address, 0, sizeof(address));
-    address.sin_family = AF_INET;
-    address.sin_port = (u_short) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(portNumber));
-    address.sin_addr.s_addr = ::inet_addr(ipAddress);
-    length = sizeof(struct sockaddr_in);
+    if (socketID != INVALID_SOCKET) {
+    
+        const sockaddr* infoPtr = NULL;
+        socklen_t infoLen = 0;
+        struct sockaddr_in infoIPv4;
+        struct sockaddr_in6 infoIPv6;
+    
+        if (isIPv4) {
+            ::memset(&infoIPv4, 0, sizeof(infoIPv4));
+            infoIPv4.sin_family = AF_INET;
+            infoIPv4.sin_port = (in_port_t) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(portNumber));
+            infoIPv4.sin_addr.s_addr = ::inet_addr(ipAddress);
+            infoPtr = (const sockaddr*) &infoIPv4;
+            infoLen = sizeof(infoIPv4);
+        } else {
+            ::memset(&infoIPv6, 0, sizeof(infoIPv6));
+            //infoIPv6.sin6_len = sizeof(infoIPv6); // not defined in Winsock struct
+            infoIPv6.sin6_family = AF_INET6;
+            infoIPv6.sin6_port = (in_port_t) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(portNumber));
+            int ptonResult = ::inet_pton(AF_INET6, ipAddress, &infoIPv6.sin6_addr);
+            if (ptonResult != 1) {
+                throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] _connectToIPAddress: inet_pton() failed.", mSocketName.chars()));
+            }
+            infoPtr = (const sockaddr*) &infoIPv6;
+            infoLen = sizeof(infoIPv6);
+        }
 
-    socketID = ::socket(AF_INET, SOCK_STREAM, 0);
+        int result = ::connect(socketID, infoPtr, infoLen);
 
-    if (socketID != kNoSocketID) {
-        if (::connect(socketID, (const sockaddr*) &address, length) != 0) {
-            // failure
+        if (result != 0) {
+            // Connect failed.
             VSystemError e = VSystemError::getSocketError(); // Call before calling closeSocket(), which will succeed and clear the error code!
             vault::closeSocket(socketID);
             throw VException(e, VSTRING_FORMAT("VSocket[%s] _connectToIPAddress: Connect failed.", mSocketName.chars()));
