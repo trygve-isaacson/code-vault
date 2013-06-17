@@ -1,5 +1,18 @@
 CODE VAULT RELEASE NOTES
 
+---------- VERSION 4.0a6 ----------
+Trygve Isaacson, June 2013
+
+VAULT-0025
+* Added support for system error codes and messages.
+- VSystemError captures Unix errno or Windows GetLastError(), plus string conversion.
+- Alternate version captures Winsock flavor of errors.
+- VException constructors can take VSystemError parameter instead of error code, and use when formatting what() text.
+
+VAULT-0029
+* Miscellaneous
+- Change copyright dates and version strings.
+
 ---------- VERSION 4.0a5 ----------
 Trygve Isaacson, May 2013
 
