@@ -33,6 +33,37 @@ const Vu8* vault::VgetNativeLineEnding(int& numBytes) {
     return kDOSLineEnding;
 }
 
+// VSystemError ---------------------------------------------------------------
+// Platform-specific implementation of VSystemError internal accessors.
+
+// static
+int VSystemError::_getSystemErrorCode() {
+    return (int) ::GetLastError();
+}
+
+// static
+int VSystemError::_getSocketErrorCode() {
+    return ::WSAGetLastError();;
+}
+
+// static
+VString VSystemError::_getSystemErrorMessage(int errorCode) {
+    LPVOID bufferPtr;
+    ::FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        (DWORD) errorCode,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPSTR) &bufferPtr,
+        0, NULL);
+
+    VString result((char*) bufferPtr);
+    ::LocalFree(bufferPtr);
+    return result;
+}
+
 static void getCurrentTZ(VString& tz) {
     char* tzEnvString = vault::getenv("TZ");
 

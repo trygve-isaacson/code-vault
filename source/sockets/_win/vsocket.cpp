@@ -38,14 +38,14 @@ VNetworkInterfaceList VSocketBase::enumerateNetworkInterfaces() {
 
     SOCKET sock = ::WSASocket(AF_INET, SOCK_DGRAM, 0, 0, 0, 0);
     if (sock == SOCKET_ERROR) {
-        throw VException(VSTRING_FORMAT("VSocketBase::enumerateNetworkInterfaces: WSASocket failed with error code %d.", ::WSAGetLastError()));
+        throw VException(VSystemError::getSocketError(), "VSocketBase::enumerateNetworkInterfaces: WSASocket failed.");
     }
 
     INTERFACE_INFO interfaceInfo[20];
     unsigned long numBytesReturned;
     int result = ::WSAIoctl(sock, SIO_GET_INTERFACE_LIST, 0, 0, &interfaceInfo, sizeof(interfaceInfo), &numBytesReturned, 0, 0);
     if (result == SOCKET_ERROR) {
-        throw VException(VSTRING_FORMAT("VSocketBase::enumerateNetworkInterfaces: WSAIoctl failed with error code %d.", ::WSAGetLastError()));
+        throw VException(VSystemError::getSocketError(), "VSocketBase::enumerateNetworkInterfaces: WSAIoctl failed.");
     }
 
     int numInterfaces = numBytesReturned / sizeof(INTERFACE_INFO);
@@ -72,7 +72,7 @@ VString VSocketBase::addrinfoToIPAddressString(const VString& hostName, const st
     DWORD bufferLength = MAX_ADDRSTRLEN;
     int resultCode = ::WSAAddressToStringA(info->ai_addr, (DWORD) info->ai_addrlen, NULL, result.buffer(), &bufferLength);
     if (resultCode != 0) {
-        throw VException(::WSAGetLastError(), VSTRING_FORMAT("VSocketBase::addrinfoToIPAddressString(%s): WSAAddressToString() failed. Error=%d.", hostName.chars(), ::WSAGetLastError()));
+        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocketBase::addrinfoToIPAddressString(%s): WSAAddressToString() failed.", hostName.chars()));
     }
     result.postflight(bufferLength-1);
 
@@ -109,8 +109,9 @@ void VSocket::_connect() {
     if (socketID != kNoSocketID) {
         if (::connect(socketID, (const sockaddr*) &address, length) != 0) {
             // failure
+            VSystemError e = VSystemError::getSocketError(); // Call before calling closeSocket(), which will succeed and clear the error code!
             ::closesocket(socketID);
-            throw VException(VSTRING_FORMAT("VSocket::connect was unable to connect to %s:%d -- socket %d, errno=%s", mHostName.chars(), mPortNumber, socketID, ::strerror(errno)));
+            throw VException(e, VSTRING_FORMAT("VSocket[%s] _connect: Connect failed.", mSocketName.chars()));
         }
     }
 
@@ -136,24 +137,24 @@ void VSocket::_listen(const VString& bindAddress, int backlog) {
 
     listenSockID = ::socket(AF_INET, SOCK_STREAM, 0);
     if (listenSockID <= 0) {
-        throw VException(VSTRING_FORMAT("VSocket::listen socket() failed with id %d, errno=%d", listenSockID, ::WSAGetLastError()));
+        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen socket() failed with id %d.", listenSockID));
     }
 
     result = ::setsockopt(listenSockID, SOL_SOCKET, SO_REUSEADDR, (const char*) &on, sizeof(on));
     if (result != 0) {
-        throw VException(VSTRING_FORMAT("VSocket::listen setsockopt() failed -- socket id %d, result %d, errno=%d", listenSockID, result, ::WSAGetLastError()));
+        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen setsockopt() failed -- socket id %d, result %d.", listenSockID, result));
     }
 
     result = ::bind(listenSockID, (const sockaddr*) &info, infoLength);
     if (result != 0) {
         // Bind failed.
         ::closesocket(listenSockID);
-        throw VException(VSTRING_FORMAT("VSocket::listen bind() for port %d failed -- socket id %d, errno=%d", mPortNumber, listenSockID, ::WSAGetLastError()));
+        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen bind() for port %d failed -- socket id %d.", mPortNumber, listenSockID));
     }
 
     result = ::listen(listenSockID, backlog);
     if (result != 0) {
-        throw VException(VSTRING_FORMAT("VSocket::listen listen() for port %d failed -- socket id %d, result %d, errno=%d", mPortNumber, listenSockID, result, ::WSAGetLastError()));
+        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen listen() for port %d failed -- socket id %d, result %d.", mPortNumber, listenSockID, result));
     }
 
     mSocketID = listenSockID;
@@ -165,7 +166,7 @@ int VSocket::available() {
     int result = ::ioctlsocket(mSocketID, FIONREAD, &numBytesAvailable);
 
     if (result != 0) {
-        throw VException(::WSAGetLastError(), VSTRING_FORMAT("VSocket::available failed on socket %d, result=%d, error=%s.", mSocketID, result, ::strerror(errno)));
+        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] available: ioctlsocket() failed with result %d.", mSocketName.chars(), result));
     }
 
     if (numBytesAvailable == 0) {
@@ -176,7 +177,7 @@ int VSocket::available() {
         //See if there is any data in the buffer.
         char recvBuffer[4]; // It's unclear if NULL buffer parameter is runtime safe, even with 0 length parameter. Provide valid buffer pointer to be sure.
         result = ::recv(mSocketID, recvBuffer, 0 , MSG_PEEK);
-        int theSocketError = ::WSAGetLastError();
+        VSystemError theSocketError = VSystemError::getSocketError();
 
         //restore the blocking
         argp = 1;
@@ -187,10 +188,11 @@ int VSocket::available() {
                 throw VEOFException("VSocket::available: Peer closed connection gracefully.");
                 break;
             case SOCKET_ERROR:
-                if (theSocketError == WSAECONNRESET)
-                    throw VEOFException("VSocket::available: WSAECONNRESET: socket is no longer available.");
-                else
-                    throw VException(theSocketError, VSTRING_FORMAT("VSocket::available failed on socket %d, result=%d, error=%d.", mSocketID, result, theSocketError));
+                if (theSocketError.getErrorCode() == WSAECONNRESET) {
+                    throw VEOFException("VSocket::available: The socket is no longer available.");
+                } else {
+                    throw VException(theSocketError, VSTRING_FORMAT("VSocket::available failed on socket %d, with SOCKET_ERROR.", mSocketID));
+                }
                 break;
             default:
                 numBytesAvailable = result;
@@ -227,22 +229,22 @@ int VSocket::read(Vu8* buffer, int numBytesToRead) {
                 continue;
             }
 
-            throw VException(VSTRING_FORMAT("VSocket::read select failed on socket %d, result=%d, error=%s.", mSocketID, result, ::strerror(errno)));
+            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::read select failed on socket %d with result = %d.", mSocketID, result));
         } else if (result == 0) {
             throw VException(VSTRING_FORMAT("VSocket::read select timed out on socket %d.", mSocketID));
         }
 
         if (!FD_ISSET(mSocketID, &readset)) {
-            throw VException(VSTRING_FORMAT("VSocket::read select got FD_ISSET false on socket %d, errno=%s.", mSocketID, ::strerror(errno)));
+            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::read select got FD_ISSET false on socket %d.", mSocketID));
         }
 
         numBytesRead = ::recv(mSocketID, (char*) nextBufferPositionPtr, bytesRemainingToRead, 0);
 
         if (numBytesRead < 0) {
-            throw VException(VSTRING_FORMAT("VSocket::read recv failed on socket %d, result=%d, errno=%s.", mSocketID, numBytesRead, ::strerror(errno)));
+            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::read recv failed on socket %d with result %d.", mSocketID, numBytesRead));
         } else if (numBytesRead == 0) {
             if (mRequireReadAll) {
-                throw VEOFException(VSTRING_FORMAT("VSocket::read: reached EOF unexpectedly on socket %d, recv of length %d returned 0, errno=%s.", mSocketID, bytesRemainingToRead, ::strerror(errno)));
+                throw VEOFException(VSTRING_FORMAT("VSocket::read: reached EOF unexpectedly on socket %d, recv of length %d returned 0.", mSocketID, bytesRemainingToRead));
             } else {
                 break;    // got successful but partial read, caller will have to keep reading
             }
@@ -283,7 +285,7 @@ int VSocket::write(const Vu8* buffer, int numBytesToWrite) {
                 continue;
             }
 
-            throw VException(::WSAGetLastError(), VSTRING_FORMAT("VSocket::write select failed on socket %d, result=%d, errno=%d.", mSocketID, result, ::WSAGetLastError() ));
+            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::write select failed on socket %d, result=%d.", mSocketID, result));
         } else if (result == 0) {
             throw VException(VSTRING_FORMAT("VSocket::write select timed out on socket %d", mSocketID));
         }
@@ -291,7 +293,7 @@ int VSocket::write(const Vu8* buffer, int numBytesToWrite) {
         numBytesWritten = ::send(mSocketID, (const char*) nextBufferPositionPtr, bytesRemainingToWrite, 0);
 
         if (numBytesWritten <= 0) {
-            throw VException(::WSAGetLastError(), VSTRING_FORMAT("VSocket::write send failed on socket %d, errno=%d.", mSocketID, ::WSAGetLastError()));
+            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::write send failed on socket %d.", mSocketID));
         } else if (numBytesWritten != bytesRemainingToWrite) {
             // Debug message: write was only partially completed so we will cycle around and write the rest...
         } else {

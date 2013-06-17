@@ -53,6 +53,51 @@ http://www.bombaydigital.com/
         VLOG(VLog::kErrorDetailLevel, "Caught error #%%d: '%%s'", ex.getError(), ex.what());\n
         }
 
+    <h3>Platform-Specific Error Codes and Messages</h3>
+    
+    On Unix-based systems, when a function call fails you are often directed to
+    check 'errno' (which is usually a macro for a thread-local stored error value)
+    as an error code, and can call strerror(errno) to get a system error message
+    string that describes the error code.
+    
+    On Windows, the analog of errno and strerror() are GetLastError() (or for WinSock APIs,
+    WSAGetLastError()) and a complicated API FormatMessage().
+    
+    It's often desirable to throw a VException that contains the error code and system error
+    message, along with a string that describes your operation that failed. To facilitate this
+    in a cross-platform way, all of the VException classes have constructors that take a
+    VSystemError object. You can supply such an object by calling one of two static functions
+    of VSystemError -- getSystemError() and getSocketError(). For most errors use the former,
+    and for socket API errors use the latter. The distinction is because on Windows there is
+    a difference (internally there are two functions for getting error codes, one specific to
+    sockets).
+    
+    For example, if we fail to open a file successfully, we can write:
+        throw VException(VSystemError(), VSTRING_FORMAT("Failed to open file '%s'.", path.chars()));
+    Or if we fail on a socket connect() call, we can write:
+        VSystemError e = VSystemError::getSocketError();
+        vault::closeSocket(socketID);
+        throw VException(e, VSTRING_FORMAT("Failed to connect to '%s'.", ipAddress.chars()));
+    
+    Note the second example above showing a situation where we need to put the VSystemError object into
+    a local variable before throwing the exception, because we first close() the bad socket, and
+    the act of calling close() means that presumably close() will succeed and thus set the system
+    error code to 0. We need to "stash" the error code that happened on the connect() failure,
+    because if we retrieve the socket error code as we construct the exception, we'll be retrieving
+    the 0 value that resulted from a successful closeSocket() call.
+
+    The VException will be filled in with the error code, and the error message you supply will have
+    the system error message (including the numeric value) appended. For example, in the above, the
+    exceptions might contain these error strings:
+        "Failed to open file 'foo'. Error 2: File not found."
+        "Failed to connect to '1.2.3.4'. Error 51: Network is unreachable."
+    The VException numeric error code values would be 2 and 51, respectively.
+
+    This style of building exceptions relieves you of having to worry about how to consistently
+    retrieve and format the system level error codes and error messages. Just say what operation
+    failed (with details as specific as you need, such as an item name/description and a function
+    return code) and pass in the VSystemError object that is relevant.
+
     <h3>Specialized Exceptions</h3>
 
     VEOFException is thrown by the stream i/o classes when they unexpectedly
@@ -72,6 +117,86 @@ http://www.bombaydigital.com/
 /**
     @ingroup vexception
 */
+
+/**
+VSystemError captures the current system error code and the corresponding error message text. A
+static API is provided to specifically capture the current socket error code. Alternate constructors
+let you supply an error code and an error message.
+
+You can supply one of these objects to a VException as a convenient way to get the system
+error code and text represented in the exception text, appended in a standard way to the exception 
+error message text that you provide. This allows more easily throwing exceptions that capture the
+system error code and message in a platform-independent way without having to carefully construct
+an exception error string that includes all of it explicitly.
+
+Here's precisely what I mean in the terminology here:
+- The "current system error code" is simply the current thread's global error code variable. On Unix
+it's "errno", and on Windows it's "GetLastError()".
+- The "error message text" is simply the system-supplied string that is obtained from a given error
+code. On Unix it's "::strerror()", and on Windows it's "::FormatMessage()", supplying the error code.
+- The "current socket error code" is not separate from the "current system error code" on Unix, but
+on Windows it's "WSAGetLastError()" (WS referring to WinSock).
+*/
+class VSystemError {
+    
+    public:
+    
+        /**
+        The default constructor captures the current system error code and its error message.
+        This is usually sufficient to supply to a thrown VException.
+        */
+        VSystemError();
+        /**
+        This constructor lets you supply the error code, and the error message will be obtained
+        automatically. This can be useful if an API returns a specific error code and the current
+        system error code is not relevant.
+        @param  errorCode   an error code to store; the OS will be asked to obtain the relevant
+                            error message for that error code
+        */
+        VSystemError(int errorCode);
+        /**
+        This constructor lets you supply both the error code and the error message. The OS will
+        not be asked to form the error message. An example from the Unix socket implementation is
+        ::getaddrinfo() which doesn't use ::strerror() for obtaining an error message.
+        @param  errorCode       an error code to store
+        @param  errorMessage    an error message to store
+        */
+        VSystemError(int errorCode, const VString& errorMessage);
+        ~VSystemError() {}
+        
+        /**
+        This static API builds a system error object by getting the current socket error code.
+        On Windows current socket error code is separate from the current system error code, so
+        for socket-related APIs on any platform you should use this to get a system error object.
+        @return a VSystemError containing the current socket error code and message
+        */
+        static VSystemError getSocketError();
+
+        /**
+        Returns the stored error code. The numeric values for error codes are generally very
+        platform-specific.
+        @return obvious
+        */
+        int getErrorCode() const { return mErrorCode; }
+        /**
+        Returns the stored error message. For system and socket error codes, this string will
+        normally have been obtained by asking the OS to form a string that corresponds to the
+        stored error code.
+        @return obvious
+        */
+        VString getErrorMessage() const { return mErrorMessage; }
+    
+    private:
+
+        // Platform-specific implementations for obtaining system and socket error codes and messages.
+        // The implementation for these is in each platform's vtypes_platform.cpp file.
+        static int _getSystemErrorCode();
+        static int _getSocketErrorCode();
+        static VString _getSystemErrorMessage(int errorCode);
+    
+        int     mErrorCode;     ///< The stored error code.
+        VString mErrorMessage;  ///< The stored error message.
+};
 
 /**
 VException is the base class for all exceptions thrown by the Vault.
@@ -124,6 +249,13 @@ class VException : public std::exception {
         @param    errorString    the error message
         */
         VException(const VString& errorString, bool recordStackTrace = false);
+        /**
+        Constructs a VException with system error and VString message. The internal error
+        message will be formatted from the two.
+        @param    error         the error construct
+        @param    errorString   the error message
+        */
+        VException(const VSystemError& error, const VString& errorString, bool recordStackTrace = false);
         /**
         Destructor. The throw() declaration is required to satisfy the
         base class std::exception definition.
@@ -224,6 +356,8 @@ class VStackTraceException : public VException {
         VStackTraceException(const VString& errorString) :
             VException(errorString, true) {}
         VStackTraceException(int error, const VString& errorString) :
+            VException(error, errorString, true) {}
+        VStackTraceException(const VSystemError& error, const VString& errorString) :
             VException(error, errorString, true) {}
         virtual ~VStackTraceException() throw() {}
 };

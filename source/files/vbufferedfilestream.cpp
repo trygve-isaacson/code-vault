@@ -146,7 +146,7 @@ Vs64 VBufferedFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite) {
         VString path;
         mNode.getPath(path);
 
-        throw VException(errno, VSTRING_FORMAT("VBufferedFileStream::write to '%s' only wrote " VSTRING_FORMATTER_S64 " of " VSTRING_FORMATTER_S64 " requested bytes.", path.chars(), numBytesWritten, numBytesToWrite));
+        throw VException(VSystemError(), VSTRING_FORMAT("VBufferedFileStream::write to '%s' only wrote " VSTRING_FORMATTER_S64 " of " VSTRING_FORMATTER_S64 " requested bytes.", path.chars(), numBytesWritten, numBytesToWrite));
     }
 
     return numBytesWritten;
@@ -158,7 +158,7 @@ void VBufferedFileStream::flush() {
     if (result != 0) {
         VString path;
         mNode.getPath(path);
-        throw VException(result, VSTRING_FORMAT("VBufferedFileStream::flush to '%s' failed (errno=%d : %s)", path.chars(), errno, ::strerror(errno)));
+        throw VException(VSystemError(), VSTRING_FORMAT("VBufferedFileStream::flush to '%s' failed with result %d.", path.chars(), result));
     }
 }
 
@@ -216,9 +216,7 @@ Vs64 VBufferedFileStream::available() const {
 // This a useful place to put a breakpoint when things aren't going as planned.
 static void _debugCheck(bool success) {
     if (! success) {
-        int     e = errno;
-        char*   s = ::strerror(e);
-        s = NULL;    // avoid compiler warning for unused variable s
+        VSystemError e;
     }
 }
 

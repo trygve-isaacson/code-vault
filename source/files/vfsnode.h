@@ -188,12 +188,23 @@ class VFSNode {
             CURRENT_WORKING_DIRECTORY:  / (obviously this is not a writeable directory in this environment)
             EXECUTABLE_DIRECTORY:       @
 
-        Windows: (note that the OS can return a different Application Data path, including a different
+        Windows XP: (note that the OS can return a different Application Data path, including a different
             drive letter, if so configured; these are just the typical case examples)
             USER_HOME_DIRECTORY:        C:/Documents and Settings/(user)
             LOG_FILES_DIRECTORY:        C:/Documents and Settings/(user)/Application Data/(company)/(app)/Logs
             USER_PREFERENCES_DIRECTORY: C:/Documents and Settings/(user)/Application Data/(company)/(app)/Preferences
             CACHED_DATA_DIRECTORY:      C:/Documents and Settings/(user)/Application Data/(company)/(app)/Caches
+            APPLICATION_DATA_DIRECTORY: C:/Documents and Settings/(user)/Application Data/(company)/(app)
+            CURRENT_WORKING_DIRECTORY:  the full path to the current working directory
+            EXECUTABLE_DIRECTORY:       the full path to the directory containing this app's .exe file
+
+        Windows 7: (note that the OS can return a different Application Data path, including a different
+            drive letter, if so configured; these are just the typical case examples; use of the "Roaming"
+            folder is merely one type of network configuration)
+            USER_HOME_DIRECTORY:        C:/Users/(user)/AppData
+            LOG_FILES_DIRECTORY:        C:/Users/(user)/AppData/Roaming/(company)/(app)/Logs
+            USER_PREFERENCES_DIRECTORY: C:/Users/(user)/AppData/Roaming/(company)/(app)/Preferences
+            CACHED_DATA_DIRECTORY:      C:/Users/(user)/AppData/Roaming/(company)/(app)/Caches
             APPLICATION_DATA_DIRECTORY: C:/Documents and Settings/(user)/Application Data/(company)/(app)
             CURRENT_WORKING_DIRECTORY:  the full path to the current working directory
             EXECUTABLE_DIRECTORY:       the full path to the directory containing this app's .exe file

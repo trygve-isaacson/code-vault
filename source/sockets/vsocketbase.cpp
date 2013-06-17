@@ -97,7 +97,7 @@ VStringVector VSocketBase::resolveHostName(const VString& hostName) {
     }
 
     if (result != 0) {
-        throw VException(errno, VSTRING_FORMAT("VSocketBase::resolveHostName(%s): getaddrinfo failed. Result=%d. Error='%s'.", hostName.chars(), result, ::strerror(errno)));
+        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocketBase::resolveHostName(%s): getaddrinfo returned %d.", hostName.chars(), result));
     }
     
     if (resolvedAddresses.empty()) {

@@ -198,7 +198,11 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
 
     struct passwd* pwInfo = ::getpwuid(::getuid()); // Get info about the current user.
     if (pwInfo == NULL) {
-        throw VStackTraceException(errno, VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode failed to get current user info from getpwuid() (error %d: %s)", errno, (errno == 0 ? "No such user" : ::strerror(errno))));
+        throw VStackTraceException(
+            // Oddity: errno 0 can occur and means "no such user".
+            (errno == 0 ? VSystemError(0, "No such user") : VSystemError()),
+            "VFSNode::_platform_getKnownDirectoryNode failed to get current user info from getpwuid()."
+            );
     }
 
     const VString homePath(pwInfo->pw_dir);
@@ -283,7 +287,7 @@ VFSNode VFSNode::_platform_getExecutable() {
     executablePath.preflight(PATH_BUFFER_SIZE);
     ssize_t len = ::readlink(PROCESS_LINKPATH, executablePath.buffer(), PATH_BUFFER_SIZE - 1);
     if (len == -1) {
-        throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getExecutable: Unable to determine executable path. Error %d (%s)", (int) errno, ::strerror(errno)));
+        throw VStackTraceException(VSystemError(), "VFSNode::_platform_getExecutable: Unable to determine executable path.");
     }
 
     executablePath.postflight(len);
@@ -315,7 +319,7 @@ void VFSNode::_platform_createDirectory() const {
     int result = VFileSystemAPI::wrap_mkdir(mPath, (S_IFDIR | S_IRWXO | S_IRWXG | S_IRWXU));
 
     if (result != 0)
-        throw VException(result, VSTRING_FORMAT("VFSNode::_platform_createDirectory failed (error %d: %s) for '%s'.", errno, ::strerror(errno), mPath.chars()));
+        throw VException(VSystemError(), VSTRING_FORMAT("VFSNode::_platform_createDirectory failed with result %d for '%s'.", result, mPath.chars()));
 }
 
 bool VFSNode::_platform_removeDirectory() const {
@@ -332,7 +336,7 @@ void VFSNode::_platform_renameNode(const VString& newPath) const {
     int result = VFileSystemAPI::wrap_rename(mPath, newPath);
 
     if (result != 0)
-        throw VException(result, VSTRING_FORMAT("VFSNode::_platform_renameNode failed (error %d: %s) renaming '%s' to '%s'.", errno, ::strerror(errno), mPath.chars(), newPath.chars()));
+        throw VException(VSystemError(), VSTRING_FORMAT("VFSNode::_platform_renameNode failed with result %d renaming '%s' to '%s'.", result, mPath.chars(), newPath.chars()));
 }
 
 // This is the Unix implementation of directory iteration using

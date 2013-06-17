@@ -11,9 +11,7 @@ http://www.bombaydigital.com/
 // This is a useful place to put a breakpoint when things aren't going as planned.
 static void _debugCheck(bool success) {
     if (! success) {
-        int     e = errno;
-        char*   s = ::strerror(e);
-        s = NULL;    // avoid compiler warning for unused variable s
+        VSystemError e;
     }
 }
 

@@ -8,6 +8,11 @@ http://www.bombaydigital.com/
 
 #include "vtypes.h"
 
+#include "vstring.h"
+#include "vexception.h"
+
+#include <errno.h>
+
 Vs64 vault::VgetMemoryUsage() {
     return 0; // FIXME - find an API to use on Mac
 }
@@ -23,3 +28,20 @@ const Vu8* vault::VgetNativeLineEnding(int& numBytes) {
     return &kUnixLineEnding;
 }
 
+// VSystemError ---------------------------------------------------------------
+// Platform-specific implementation of VSystemError internal accessors.
+
+// static
+int VSystemError::_getSystemErrorCode() {
+    return errno;
+}
+
+// static
+int VSystemError::_getSocketErrorCode() {
+    return errno;
+}
+
+// static
+VString VSystemError::_getSystemErrorMessage(int errorCode) {
+    return ::strerror(errorCode);
+}

@@ -56,7 +56,7 @@ VNetworkInterfaceList VSocketBase::enumerateNetworkInterfaces() {
     struct ifaddrs* interfacesDataPtr = NULL;
     int result = ::getifaddrs(&interfacesDataPtr);
     if (result != 0) {
-        throw VStackTraceException(VSTRING_FORMAT("VSocketBase::enumerateNetworkInterfaces: getifaddrs returned %d, errno = %d (%s)", result, errno, ::strerror(errno)));
+        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocketBase::enumerateNetworkInterfaces: getifaddrs() failed with result %d.", result));
     }
 
     struct ifaddrs* intfPtr = interfacesDataPtr;
@@ -104,7 +104,7 @@ VString VSocketBase::addrinfoToIPAddressString(const VString& hostName, const st
     result.preflight(MAX_ADDRSTRLEN);
     const char* buf = ::inet_ntop(info->ai_family, addr, result.buffer(), MAX_ADDRSTRLEN);
     if (buf == NULL) {
-        throw VException(errno, VSTRING_FORMAT("VSocketBase::addrinfoToIPAddressString(%s): inet_ntop() failed. Error='%s'.", hostName.chars(), ::strerror(errno)));
+        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocketBase::addrinfoToIPAddressString(%s): inet_ntop() failed.", hostName.chars()));
     }
     result.postflight(::strlen(buf));
 
@@ -131,7 +131,7 @@ int VSocket::available() {
     int result = ::ioctl(mSocketID, FIONREAD, &numBytesAvailable);
 
     if (result == -1) {
-        throw VStackTraceException(errno, VSTRING_FORMAT("VSocket[%s] available: Ioctl failed. Result=%d. Error='%s'.", mSocketName.chars(), result, ::strerror(errno)));
+        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] available: ioctl() failed.", mSocketName.chars()));
     }
 
     return numBytesAvailable;
@@ -164,7 +164,7 @@ int VSocket::read(Vu8* buffer, int numBytesToRead) {
                 if (errno == EBADF) {
                     throw VSocketClosedException(errno, VSTRING_FORMAT("VSocket[%s] read: Socket has closed (EBADF).", mSocketName.chars()));
                 } else {
-                    throw VException(errno, VSTRING_FORMAT("VSocket[%s] read: Select failed. Result=%d. Error='%s'.", mSocketName.chars(), result, ::strerror(errno)));
+                    throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] read: Select failed. Result=%d.", mSocketName.chars(), result));
                 }
             } else if (result == 0) {
                 throw VException(VSTRING_FORMAT("VSocket[%s] read: Select timed out.", mSocketName.chars()));
@@ -172,7 +172,7 @@ int VSocket::read(Vu8* buffer, int numBytesToRead) {
 
             //lint -e573 "Signed-unsigned mix with divide"
             if (!FD_ISSET(mSocketID, &readset)) {
-                throw VException(errno, VSTRING_FORMAT("VSocket[%s] read: Select got FD_ISSET false. Error='%s'.", mSocketName.chars(), ::strerror(errno)));
+                throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] read: Select got FD_ISSET false.", mSocketName.chars()));
             }
 
         }
@@ -183,7 +183,7 @@ int VSocket::read(Vu8* buffer, int numBytesToRead) {
             if (errno == EPIPE) {
                 throw VSocketClosedException(errno, VSTRING_FORMAT("VSocket[%s] read: Socket has closed (EPIPE).", mSocketName.chars()));
             } else {
-                throw VException(errno, VSTRING_FORMAT("VSocket[%s] read: Recv failed. Result=%d. Error='%s'.", mSocketName.chars(), theNumBytesRead, ::strerror(errno)));
+                throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] read: recv failed. Result=%d.", mSocketName.chars(), theNumBytesRead));
             }
         } else if (theNumBytesRead == 0) {
             if (mRequireReadAll) {
@@ -231,7 +231,7 @@ int VSocket::write(const Vu8* buffer, int numBytesToWrite) {
                 if (errno == EBADF) {
                     throw VSocketClosedException(errno, VSTRING_FORMAT("VSocket[%s] write: Socket has closed (EBADF).", mSocketName.chars()));
                 } else {
-                    throw VException(errno, VSTRING_FORMAT("VSocket[%s] write: Select failed. Result=%d. Error='%s'.", mSocketName.chars(), result, ::strerror(errno)));
+                    throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] write: select() failed. Result=%d.", mSocketName.chars(), result));
                 }
             } else if (result == 0) {
                 throw VException(VSTRING_FORMAT("VSocket[%s] write: Select timed out.", mSocketName.chars()));
@@ -245,7 +245,7 @@ int VSocket::write(const Vu8* buffer, int numBytesToWrite) {
             if (errno == EPIPE) {
                 throw VSocketClosedException(errno, VSTRING_FORMAT("VSocket[%s] write: Socket has closed (EPIPE).", mSocketName.chars()));
             } else {
-                throw VException(errno, VSTRING_FORMAT("VSocket[%s] write: Send failed. Error='%s'.", mSocketName.chars(), ::strerror(errno)));
+                throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] write: send() failed.", mSocketName.chars()));
             }
         } else if (theNumBytesWritten != bytesRemainingToWrite) {
             // Debug message: write was only partially completed so we will cycle around and write the rest...
@@ -268,7 +268,7 @@ void VSocket::discoverHostAndPort() {
 
     int result = ::getpeername(mSocketID, (struct sockaddr*) &info, &infoLength);
     if (result != 0) {
-        throw VStackTraceException(errno, VSTRING_FORMAT("VSocket[%s] discoverHostAndPort: Getpeername failed. Error='%s'.", mSocketName.chars(), ::strerror(errno)));
+        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] discoverHostAndPort: getpeername() failed.", mSocketName.chars()));
     }
 
     int portNumber = (int) V_BYTESWAP_NTOH_S16_GET(static_cast<Vs16>(info.sin_port));
@@ -318,8 +318,9 @@ void VSocket::_connect() {
 
         if (result != 0) {
             // Connect failed.
+            VSystemError e = VSystemError::getSocketError(); // Call before calling closeSocket(), which will succeed and clear the error code!
             vault::close(socketID);
-            throw VException(errno, VSTRING_FORMAT("VSocket[%s] connect: Connect failed. Error='%s'.", mSocketName.chars(), ::strerror(errno)));
+            throw VException(e, VSTRING_FORMAT("VSocket[%s] _connect: Connect failed.", mSocketName.chars()));
         }
     }
 
@@ -345,24 +346,24 @@ void VSocket::_listen(const VString& bindAddress, int backlog) {
 
     listenSockID = ::socket(AF_INET, SOCK_STREAM, 0);
     if (listenSockID < 0) {
-        throw VStackTraceException(errno, VSTRING_FORMAT("VSocket[%s] listen: Socket failed. Result=%d. Error='%s'.", mSocketName.chars(), listenSockID, ::strerror(errno)));
+        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: socket() failed. Result=%d.", mSocketName.chars(), listenSockID));
     }
 
     result = ::setsockopt(listenSockID, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
     if (result != 0) {
-        throw VStackTraceException(errno, VSTRING_FORMAT("VSocket[%s] listen: Setsockopt failed. Result=%d. Error='%s'.", mSocketName.chars(), result, ::strerror(errno)));
+        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: setsockopt() failed. Result=%d.", mSocketName.chars(), result));
     }
 
     result = ::bind(listenSockID, (const sockaddr*) &info, infoLength);
     if (result != 0) {
         vault::close(listenSockID);
-        throw VStackTraceException(errno, VSTRING_FORMAT("VSocket[%s] listen: Bind failed. Result=%d. Error='%s'.", mSocketName.chars(), result, ::strerror(errno)));
+        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: bind() failed. Result=%d.", mSocketName.chars(), result));
     }
 
     (void) ::listen(listenSockID, backlog);
     if (result != 0) {
         vault::close(listenSockID);
-        throw VStackTraceException(errno, VSTRING_FORMAT("VSocket[%s] listen: Listen failed. Result=%d. Error='%s'.", mSocketName.chars(), result, ::strerror(errno)));
+        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: listen() failed. Result=%d.", mSocketName.chars(), result));
     }
 
     mSocketID = listenSockID;
@@ -395,7 +396,8 @@ void VSocket::_listen(const VString& bindAddress, int backlog) {
     struct addrinfo     hints;
     struct addrinfo*    res;
     struct addrinfo*    ressave;
-    VString             lastError;
+    VString             lastErrorText;
+    VSystemError        lastSystemError(0, VString::EMPTY());
 
     ::memset(&hints, 0, sizeof(hints));
     hints.ai_flags = AI_PASSIVE;
@@ -404,7 +406,7 @@ void VSocket::_listen(const VString& bindAddress, int backlog) {
 
     result = this->_getAddrInfo(&hints, &res, false);
     if (result != 0) {
-        throw VStackTraceException(errno, VSTRING_FORMAT("VSocket[%s] listen: GetAddrInfo failed. Result=%d. Error='%s'.", mSocketName.chars(), result, ::gai_strerror(errno)));
+        throw VStackTraceException(VSystemError(errno, ::gai_strerror(errno)), VSTRING_FORMAT("VSocket[%s] listen: getaddrinfo() failed. Result=%d.", mSocketName.chars(), result));
     }
 
     ressave = res;
@@ -414,14 +416,16 @@ void VSocket::_listen(const VString& bindAddress, int backlog) {
 
         if (listenSockID < 0) {
             // Error on this interface, we'll try the next one.
-            lastError.format("VSocket[%s] listen: Socket failed. ID=%d. Error='%s'.", mSocketName.chars(), listenSocketID, ::strerror(errno));
+            lastErrorText.format("VSocket[%s] listen: Socket failed. ID=%d.", mSocketName.chars(), listenSocketID);
+            lastSystemError = VSystemError::getSocketError();
             continue;
         }
 
         result = ::setsockopt(listenSockID, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
         if (result != 0) {
             // Error on this interface, we'll try the next one.
-            lastError.format("VSocket[%s] listen: Setsockopt failed. Result=%d. Error='%s'.", mSocketName.chars(), result, ::strerror(errno));
+            lastErrorText.format("VSocket[%s] listen: Setsockopt failed. Result=%d.", mSocketName.chars(), result);
+            lastSystemError = VSystemError::getSocketError();
             continue;
         }
 
@@ -433,18 +437,19 @@ void VSocket::_listen(const VString& bindAddress, int backlog) {
         }
 
         // Error on this interface, we'll try the next one.
-        lastError.format("VSocket[%s] listen: Bind failed. Result=%d. Error='%s'.", mSocketName.chars(), result, ::strerror(errno));
+        lastErrorText.format("VSocket[%s] listen: Bind failed. Result=%d.", mSocketName.chars(), result);
+        lastSystemError = VSystemError::getSocketError();
         vault::close(listenSockID);
 
     } while ((res = res->ai_next) != NULL);
 
     if (res == NULL) {
-        throw VStackTraceException(errno, lastError);
+        throw VStackTraceException(lastSystemError, lastErrorText);
     }
 
-    if (lastError.length() != 0) {
+    if (lastErrorText.isNotEmpty()) {
         VString s(VSTRING_ARGS("VSocket[%s] listen: Bind succeeded after earlier error: ", mSocketName.chars()));
-        std::cout << s << lastError << std::endl;
+        std::cout << s << lastErrorText << std::endl;
     }
 
     result = ::listen(listenSockID, backlog);
@@ -453,7 +458,7 @@ void VSocket::_listen(const VString& bindAddress, int backlog) {
 
     if (result != 0) {
         vault::close(listenSockID);
-        throw VException(errno, VSTRING_FORMAT("VSocket[%s] listen: Listen failed. Result=%d. Error='%s'.", mSocketName.chars(), result, ::strerror(errno)));
+        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: Listen failed. Result=%d", mSocketName.chars(), result));
     }
 
     mSocketID = listenSockID;
@@ -470,7 +475,7 @@ void VSocket::_tcpGetAddrInfo(struct addrinfo** res) {
     result = this->_getAddrInfo(&hints, res);
 
     if (result != 0) {
-        throw VException(errno, VSTRING_FORMAT("VSocket[%s] _tcpGetAddrInfo: GetAddrInfo failed. Result=%d. Error='%s'.", mSocketName.chars(), result, ::gai_strerror(errno)));
+        throw VException(VSystemError(errno, ::gai_strerror(errno)), VSTRING_FORMAT("VSocket[%s] _tcpGetAddrInfo: GetAddrInfo failed. Result=%d.", mSocketName.chars(), result));
     }
 }
 
@@ -503,7 +508,7 @@ VSocketID VSocket::_tcpConnectWAddrInfo(struct addrinfo* const resInput) {
     } while ((res = res->ai_next) != NULL);
 
     if (res == NULL) {
-        throw VException(errno, VSTRING_FORMAT("VSocket[%s] _tcpConnectWAddrInfo: Socket/Connect failed. Error='%s'.", mSocketName.chars(), ::gai_strerror(errno)));
+        throw VException(VSystemError(errno, ::gai_strerror(errno)), VSTRING_FORMAT("VSocket[%s] _tcpConnectWAddrInfo: Socket/Connect failed.", mSocketName.chars()));
     }
 
     return socketID;

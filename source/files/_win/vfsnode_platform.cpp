@@ -172,7 +172,7 @@ VFSNode VFSNode::_platform_getExecutable() {
     DWORD result = ::GetModuleFileNameA(HMODULE(NULL), LPSTR(exePath.buffer()), DWORD(_MAX_PATH));
 
     if (result == 0)
-        throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getExecutable: Unable to determine exe path. Error %d.", (int) ::GetLastError()));
+        throw VStackTraceException(VSystemError(), "VFSNode::_platform_getExecutable: Unable to determine exe path.");
 
     exePath.postflight(result); // result is actual length of returned string data
     VFSNode::normalizePath(exePath); // must supply normalized form to VFSNode below
@@ -202,7 +202,7 @@ void VFSNode::_platform_createDirectory() const {
     int result = VFileSystemAPI::wrap_mkdir(mPath, (S_IFDIR | S_IRWXO | S_IRWXG | S_IRWXU));
 
     if (result != 0)
-        throw VException(result, VSTRING_FORMAT("VFSNode::_platform_createDirectory failed (error %d: %s) for '%s'.", errno, ::strerror(errno), mPath.chars()));
+        throw VException(VSystemError(), VSTRING_FORMAT("VFSNode::_platform_createDirectory failed with result %d for '%s'.", result, mPath.chars()));
 }
 
 bool VFSNode::_platform_removeDirectory() const {
@@ -219,7 +219,7 @@ void VFSNode::_platform_renameNode(const VString& newPath) const {
     int result = VFileSystemAPI::wrap_rename(mPath, newPath);
 
     if (result != 0)
-        throw VException(result, VSTRING_FORMAT("VFSNode::_platform_renameNode failed (error %d: %s) renaming '%s' to '%s'.", errno, ::strerror(errno), mPath.chars(), newPath.chars()));
+        throw VException(VSystemError(), VSTRING_FORMAT("VFSNode::_platform_renameNode failed with result %d renaming '%s' to '%s'.", result, mPath.chars(), newPath.chars()));
 }
 
 // This is the Windows implementation of directory iteration using

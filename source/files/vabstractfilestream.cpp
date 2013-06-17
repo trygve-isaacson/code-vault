@@ -8,7 +8,6 @@ http://www.bombaydigital.com/
 
 #include "vabstractfilestream.h"
 #include "vtypes_internal_platform.h"
-#include "errno.h"
 
 #include "vexception.h"
 
@@ -34,7 +33,7 @@ const VFSNode& VAbstractFileStream::getNode() const {
 
 void VAbstractFileStream::_throwIfOpenFailed(const VString& failedMethod, const VString& path) {
     if (! this->isOpen()) {
-        throw VException(errno, VSTRING_FORMAT("%s failed to open '%s'. Error %d (%s).", failedMethod.chars(), path.chars(), errno, ::strerror(errno)));
+        throw VException(VSystemError(), VSTRING_FORMAT("%s failed to open '%s'.", failedMethod.chars(), path.chars()));
     }
 }
 

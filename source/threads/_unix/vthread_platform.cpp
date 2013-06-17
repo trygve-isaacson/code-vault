@@ -28,13 +28,13 @@ void VThread::threadCreate(VThreadID_Type* threadID, bool createDetached, thread
     result = ::pthread_attr_init(&threadAttributes);
 
     if (result != 0) {
-        throw VStackTraceException(result, VSTRING_FORMAT("VThread::threadCreate: pthread_attr_init returned %d (%s).", result, ::strerror(result)));
+        throw VStackTraceException(VSystemError(result), "VThread::threadCreate: pthread_attr_init() failed.");
     }
 
     result = ::pthread_attr_setdetachstate(&threadAttributes, createDetached ? PTHREAD_CREATE_DETACHED : PTHREAD_CREATE_JOINABLE);
 
     if (result != 0) {
-        throw VStackTraceException(result, VSTRING_FORMAT("VThread::threadCreate: pthread_attr_setdetachstate returned %d (%s).", result, ::strerror(result)));
+        throw VStackTraceException(VSystemError(result), "VThread::threadCreate: pthread_attr_setdetachstate() failed.");
     }
 
     result = ::pthread_create(threadID, &threadAttributes, threadMainProcPtr, threadArgument);
@@ -42,7 +42,7 @@ void VThread::threadCreate(VThreadID_Type* threadID, bool createDetached, thread
     if (result != 0) {
         // Usually this means we have hit the limit of threads allowed per process.
         // Log our statistics. Maybe we have a thread handle leak.
-        throw VStackTraceException(result, VSTRING_FORMAT("VThread::threadCreate: pthread_create returned %d (%s). Likely due to lack of resources.", result, ::strerror(result)));
+        throw VStackTraceException(VSystemError(result), "VThread::threadCreate: pthread_create failed. Likely due to lack of resources.");
     }
 
     (void) ::pthread_attr_destroy(&threadAttributes);

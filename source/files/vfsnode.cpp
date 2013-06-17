@@ -462,7 +462,7 @@ VInstant VFSNode::creationDate() const {
     bool nodeExists = this->_platform_getNodeInfo(info);
 
     if (!nodeExists)
-        throw VException(info.mErrNo, VSTRING_FORMAT("VFSNode::creationDate failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars()));
+        throw VException(VSystemError(info.mErrNo), VSTRING_FORMAT("VFSNode::creationDate failed for '%s'.", mPath.chars()));
 
     return VInstant::instantFromRawValue(info.mCreationDate);
 }
@@ -472,7 +472,7 @@ VInstant VFSNode::modificationDate() const {
     bool nodeExists = this->_platform_getNodeInfo(info);
 
     if (!nodeExists)
-        throw VException(info.mErrNo, VSTRING_FORMAT("VFSNode::modificationDate failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars()));
+        throw VException(VSystemError(info.mErrNo), VSTRING_FORMAT("VFSNode::modificationDate failed for '%s'.", mPath.chars()));
 
     return VInstant::instantFromRawValue(info.mModificationDate);
 }
@@ -482,7 +482,7 @@ VFSize VFSNode::size() const {
     bool nodeExists = this->_platform_getNodeInfo(info);
 
     if (!nodeExists)
-        throw VException(info.mErrNo, VSTRING_FORMAT("VFSNode::size failed (error %d: %s) for '%s'.", info.mErrNo, ::strerror(info.mErrNo), mPath.chars()));
+        throw VException(VSystemError(info.mErrNo), VSTRING_FORMAT("VFSNode::size failed for '%s'.", mPath.chars()));
 
     return info.mFileSize;
 }

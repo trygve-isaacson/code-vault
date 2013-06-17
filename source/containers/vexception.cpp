@@ -9,6 +9,34 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 
 #include "vassert.h"
+#include "vtypes_internal.h"
+
+// VSystemError ---------------------------------------------------------------
+
+//static
+VSystemError VSystemError::getSocketError() {
+    return VSystemError(VSystemError::_getSocketErrorCode());
+}
+
+VSystemError::VSystemError()
+    : mErrorCode(VSystemError::_getSystemErrorCode())
+    , mErrorMessage(VSystemError::_getSystemErrorMessage(mErrorCode))
+    {
+}
+
+VSystemError::VSystemError(int errorCode)
+    : mErrorCode(errorCode)
+    , mErrorMessage(VSystemError::_getSystemErrorMessage(errorCode))
+    {
+}
+
+VSystemError::VSystemError(int errorCode, const VString& errorMessage)
+    : mErrorCode(errorCode)
+    , mErrorMessage(errorMessage)
+    {
+}
+
+// VException -----------------------------------------------------------------
 
 // Is ASSERT_INVARIANT enabled/disabled specifically for VException?
 #ifdef V_ASSERT_INVARIANT_VEXCEPTION_ENABLED
@@ -124,8 +152,25 @@ VException::VException(const VString& errorString, bool recordStackTrace)
     }
 }
 
+VException::VException(const VSystemError& error, const VString& errorString, bool recordStackTrace)
+    : std::exception()
+    , mError(error.getErrorCode())
+    , mErrorString(VSTRING_FORMAT("%s Error %d: %s.", errorString.chars(), error.getErrorCode(), error.getErrorMessage().chars()))
+    , mErrorMessage(NULL)
+    , mStackTrace()
+    {
+    ASSERT_INVARIANT();
+
+    VException::_breakpointLocation();
+
+    if (recordStackTrace) {
+        this->_recordStackTrace();
+    }
+}
+
 VException::~VException() throw() {
     // do NOT delete mErrorMessage, it's someone's static string constant
+    mErrorMessage = NULL;
 }
 
 VException& VException::operator=(const VException& other) {

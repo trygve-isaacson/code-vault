@@ -46,8 +46,7 @@ void VThread::threadCreate(VThreadID_Type* threadID, bool /*createDetached*/, th
     HANDLE threadHandle = ::CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) threadMainProcPtr, threadArgument, 0, /*(LPDWORD)*/ threadID);
 
     if (threadHandle == NULL) {
-        int errorCode = (int) ::GetLastError();
-        throw VStackTraceException(errorCode, VSTRING_FORMAT("VThread::threadCreate: CreateThread returned null, error %d.", errorCode));
+        throw VStackTraceException(VSystemError(), "VThread::threadCreate: CreateThread returned null.");
     }
 
     _addThreadToMap(*threadID, threadHandle);

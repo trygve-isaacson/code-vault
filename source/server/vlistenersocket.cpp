@@ -58,7 +58,7 @@ VSocket* VListenerSocket::accept() {
         int result = ::select(static_cast<int>(mSocketID + 1), &readset, NULL, NULL, &timeout);
 
         if (result == -1) {
-            throw VException(VSTRING_FORMAT("VListenerSocket::accept select error, errno=%s", ::strerror(errno)));
+            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VListenerSocket[%s:%d]::accept select() failed.", mBindAddress.chars(), mPortNumber));
         }
 
         //lint -e573 Signed-unsigned mix with divide"
@@ -70,7 +70,7 @@ VSocket* VListenerSocket::accept() {
         handlerSockID = ::accept(mSocketID, (struct sockaddr*) &clientaddr, &clientaddrLength);
 
         if (handlerSockID == kNoSocketID) {
-            throw VException(VSTRING_FORMAT("VListenerSocket::accept accept error, errno=%s", ::strerror(errno)));
+            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VListenerSocket[%s:%d]::accept accept() failed.", mBindAddress.chars(), mPortNumber));
         } else {
             handlerSocket = mFactory->createSocket(handlerSockID);
         }
