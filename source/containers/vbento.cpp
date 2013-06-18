@@ -799,7 +799,7 @@ void VBentoAttribute::_escapeXMLValue(VString& text) {
     // Replaced naive series of calls to text.replace("f", "&foo;") with optimized one-pass
     // in-place insertion replacement. Approximately 80x performance improvement for plain text,
     // and 30x improvement for heavily escaped text.
-    
+
     // Strategy:
     // When we find a char requiring escape, replace it where it is:
     // 1. Overwrite the char with the first char of the escape sequence.

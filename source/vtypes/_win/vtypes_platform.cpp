@@ -50,7 +50,7 @@ int VSystemError::_getSocketErrorCode() {
 VString VSystemError::_getSystemErrorMessage(int errorCode) {
     LPVOID bufferPtr;
     ::FormatMessageA(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+        FORMAT_MESSAGE_ALLOCATE_BUFFER |
         FORMAT_MESSAGE_FROM_SYSTEM |
         FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL,

@@ -129,7 +129,7 @@ int VSettingsNode::getInt(const VString& path, int defaultValue) const {
 int VSettingsNode::getInt(const VString& path) const {
     const VSettingsNode* nodeForPath = this->findNode(path);
 
-    if (nodeForPath != NULL) 
+    if (nodeForPath != NULL)
         return nodeForPath->getIntValue();
 
     this->throwNotFound("Integer", path);

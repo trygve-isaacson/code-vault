@@ -10,10 +10,11 @@ http://www.bombaydigital.com/
 #include "vstream.h"
 
 VStreamCopier::VStreamCopier()
-    : mChunkSize(0),
-    mFrom(NULL),
-    mTo(NULL),
-    mNumBytesCopied(0) {
+    : mChunkSize(0)
+    , mFrom(NULL)
+    , mTo(NULL)
+    , mNumBytesCopied(0)
+    {
 }
 
 VStreamCopier::VStreamCopier(int chunkSize, VStream* from, VStream* to)

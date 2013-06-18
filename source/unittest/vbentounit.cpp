@@ -156,7 +156,7 @@ void VBentoUnit::run() {
     rootFromText.readFromBentoTextString(rootText);
 
     this->_verifyContents(rootFromText, "text");
-    
+
     // Test VBentoString with 0xb9 character. Validates non-ASCII escaping behavior, with a specific use case.
     VBentoString b9("b9", VString('\xB9'/*PI symbol in Mac Roman*/), VString::EMPTY());
     VString xmlVal;
@@ -188,14 +188,14 @@ void VBentoUnit::run() {
     VUNIT_ASSERT_EQUAL(s3.getName(), "source.name");
     VUNIT_ASSERT_EQUAL(s3.getValue(), source.getValue());
     VUNIT_ASSERT_EQUAL(s3.getValue(), "source.value");
-    
+
     /* subtest scope */ {
         VBentoNode foo("foo");
         // Test string conversion behavior. String should be replaced.
         VString fooText("junk that should be replaced");
         foo.writeToBentoTextString(fooText);
         VUNIT_ASSERT_FALSE(fooText.startsWith("junk"));
-        
+
         // Test stream conversion behavior. Stream should be appended to.
         VMemoryStream fooBuffer;
         VTextIOStream fooTextStream(fooBuffer);
@@ -206,7 +206,7 @@ void VBentoUnit::run() {
         fooTextStream.readLine(result);
         VUNIT_ASSERT_TRUE(result.startsWith("junk"));
     }
-    
+
     /* subtest scope */ {
         // Verify that escaping works as expected. Basically, characters in a node name (or other text attribute) that are
         // also part of the Bento text syntax must be escaped. And recursively, the escape character (backslash) must itself be escaped.

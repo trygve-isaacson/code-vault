@@ -2302,7 +2302,7 @@ class VBentoNotFoundException : public VStackTraceException {
             , mAttributeName(attributeName)
             {}
         virtual ~VBentoNotFoundException() throw() {}
-        
+
         const VString mDataTypeID;
         const VString mAttributeName;
 };

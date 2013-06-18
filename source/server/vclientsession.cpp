@@ -97,9 +97,10 @@ void VClientSession::postOutputMessage(VMessagePtr message) {
     VMutexLocker locker(&mMutex, VSTRING_FORMAT("[%s]VClientSession::postOutputMessage()", this->getName().chars())); // protect the mStartupStandbyQueue during queue operations
 
     // Don't post if client is doing a disconnect:
-    if (mIsShuttingDown || this->isClientGoingOffline())
+    if (mIsShuttingDown || this->isClientGoingOffline()) {
         VLOGGER_MESSAGE_WARN(VSTRING_FORMAT("VClientSession::postOutputMessage: NOT posting message@0x%08X to going-offline session [%s], presumably in process of session shutdown.", message.get(), mClientAddress.chars()));
         return;
+    }
 
     if (! this->isClientOnline()) {
         // This branch is entered only for posting to an offline session (e.g. a session still starting up

@@ -42,7 +42,7 @@ class VPlatformUnit : public VUnit {
         void _runTimeCheck();
         void _runUtilitiesTest();
         void _runSocketTests();
-        
+
         void _runResolveAndConnectHostNameTest(const VString& hostName);
         void _assertStringIsNumericIPAddressString(const VString& label, const VString& hostName, const VString& value);
 

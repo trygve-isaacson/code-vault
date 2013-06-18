@@ -16,7 +16,7 @@ typedef boost::shared_ptr<TestMessage> TestMessagePtr;
 
 class TestMessage : public VMessage {
     public:
-    
+
         static TestMessagePtr factory();
         static TestMessagePtr factory(VMessageID messageID);
         virtual ~TestMessage();

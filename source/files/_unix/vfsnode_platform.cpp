@@ -202,7 +202,7 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
             // Oddity: errno 0 can occur and means "no such user".
             (errno == 0 ? VSystemError(0, "No such user") : VSystemError()),
             "VFSNode::_platform_getKnownDirectoryNode failed to get current user info from getpwuid()."
-            );
+        );
     }
 
     const VString homePath(pwInfo->pw_dir);

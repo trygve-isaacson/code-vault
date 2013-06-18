@@ -564,7 +564,7 @@ class VSocketConnectionStrategy {
                                 in place if successful
         */
         virtual void connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const = 0;
-        
+
         // For testing purposes, you can inject a specific set of IP addresses, which
         // will cause the hostName supplied with connect() to be ignored. You could supply
         // specific bad IP addresses or slow-to-succeed IP addresses, in order to see
@@ -572,7 +572,7 @@ class VSocketConnectionStrategy {
         void injectDebugIPAddresses(const VStringVector debugIPAddresses) { mDebugIPAddresses = debugIPAddresses; }
 
     protected:
-    
+
         VStringVector mDebugIPAddresses; ///< If non-empty, use instead of resolving hostName in connect().
 };
 
@@ -617,14 +617,14 @@ robining) but where we have an opportunity to use the one that responds fastest.
 class VSocketConnectionStrategyThreaded : public VSocketConnectionStrategy {
 
     public:
-        VSocketConnectionStrategyThreaded(const VDuration& timeoutInterval, int maxNumThreads=4);
+        VSocketConnectionStrategyThreaded(const VDuration& timeoutInterval, int maxNumThreads = 4);
         virtual ~VSocketConnectionStrategyThreaded() {}
 
         // VSocketConnectionStrategy implementation:
         virtual void connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const;
 
     private:
-        
+
         VDuration   mTimeoutInterval;
         int         mMaxNumThreads;
 };

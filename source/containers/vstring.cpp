@@ -1716,8 +1716,8 @@ void VString::vaFormat(const char* formatText, va_list args) {
     if (formatText == NULL) {
         this->_setLength(0);
     } else {
-		va_list argsCopy;
-		va_copy(argsCopy, args);
+        va_list argsCopy;
+        va_copy(argsCopy, args);
         int newStringLength = VString::_determineSprintfLength(formatText, args);
 
         if (newStringLength == -1) {

@@ -21,6 +21,8 @@ VAULT-0027
 VAULT-0029
 * Miscellaneous
 - Change copyright dates and version strings.
+- Reapply Astyle formatting, with edits for preferred initializer list bracing and preprocessor indentation.
+- Fixed a bug in VClientSession::postOutputMessage() that was introduced in 4.0a1.
 
 ---------- VERSION 4.0a5 ----------
 Trygve Isaacson, May 2013

@@ -90,7 +90,7 @@ VStringVector VSocketBase::resolveHostName(const VString& hostName) {
     AddrInfoHintsHelper     hints(AF_UNSPEC, SOCK_STREAM, 0, 0); // accept IPv4 or IPv6, we'll skip any others on receipt; stream connections only, not udp.
     AddrInfoLifeCycleHelper info;
     int result = ::getaddrinfo(hostName.chars(), NULL, &hints.mHints, &info.mInfo); // TODO: iOS solution. If WWAN is asleep, calling getaddrinfo() in isolation may return an error. See CFHost API.
-    
+
     if (result == 0) {
         for (const struct addrinfo* item = info.mInfo; item != NULL; item = item->ai_next) {
             if ((item->ai_family == AF_INET) || (item->ai_family == AF_INET6)) {
@@ -102,11 +102,11 @@ VStringVector VSocketBase::resolveHostName(const VString& hostName) {
     if (result != 0) {
         throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocketBase::resolveHostName(%s): getaddrinfo returned %d.", hostName.chars(), result));
     }
-    
+
     if (resolvedAddresses.empty()) {
         throw VException(VSTRING_FORMAT("VSocketBase::resolveHostName(%s): getaddrinfo did not resolve any addresses.", hostName.chars()));
     }
-    
+
     return resolvedAddresses;
 }
 
@@ -117,21 +117,21 @@ This is a somewhat cursory check. The exact sequence and order of dots and decim
 bool VSocketBase::isIPv4NumericString(const VString& s) {
     int numDots = 0;
     int numDecimalDigits = 0;
-    
+
     for (int i = 0; i < s.length(); ++i) {
         if (s[i] == '.') {
             ++numDots;
             continue;
         }
-        
+
         if (s[i].isNumeric()) {
             ++numDecimalDigits;
             continue;
         }
-        
+
         return false; // Some other character that is not part of a numeric IPv4 address.
     }
-    
+
     // A cursory check of minimum number of dots and digits. Order is not checked.
     return (numDots == 3) && (numDecimalDigits >= 4);
 }
@@ -148,12 +148,12 @@ And there must be two colons, so an explicit minimum length of 2 test is superfl
 // static
 bool VSocketBase::isIPv6NumericString(const VString& s) {
     int numColons = 0;
-    
+
     for (int i = 0; i < s.length(); ++i) {
-        if (! ((s[i] == ':') || (s[i] == '.') || s[i].isHexadecimal())) {
+        if (!((s[i] == ':') || (s[i] == '.') || s[i].isHexadecimal())) {
             return false;
         }
-        
+
         if (s[i] == ':') {
             ++numColons;
         }
@@ -172,36 +172,36 @@ bool VSocketBase::isIPNumericString(const VString& s) {
     int numDots = 0;
     int numDecimalDigits = 0;
     int numNonDecimalHexDigits = 0;
-    
+
     for (int i = 0; i < s.length(); ++i) {
         if (s[i] == ':') {
             ++numColons;
             continue;
         }
-        
+
         if (s[i] == '.') {
             ++numDots;
             continue;
         }
-        
+
         if (s[i].isNumeric()) {
             ++numDecimalDigits;
             continue;
         }
-        
+
         if (s[i].isHexadecimal()) {
             ++numNonDecimalHexDigits;
             continue;
         }
-        
+
         return false; // Some other character that is not part of a numeric IPv4 or IPv6 address.
     }
-    
+
     // If we saw no colons (i.e., it's IPv4 dotted decimal) then there must be no A-F hex digits.
     if ((numColons == 0) && (numNonDecimalHexDigits != 0)) {
         return false;
     }
-    
+
     // If we saw colons, it's IPv6 and the minimum is two colons.
     if (numColons != 0) {
         return (numColons >= 2); // The shortest possible IPv6 string is "::".
@@ -410,7 +410,7 @@ void VSocketConnectionStrategyLinear::connect(const VString& hostName, int portN
             }
         }
     }
-    
+
     throw VException("VSocketConnectionStrategyLinear::connect: Failed to connect to all resolved names.");
 }
 
@@ -426,7 +426,7 @@ class VSocketConnectionStrategyThreadedWorker : public VThread {
 
         // VThread implementation:
         virtual void run();
-        
+
     private:
 
         // These contain the code to communicate safely with the owner (which is running in another thread),
@@ -458,7 +458,7 @@ class VSocketConnectionStrategyThreadedRunner : public VThread {
 
         // VThread implementation:
         virtual void run();
-        
+
         // Caller should start() this thread, and then aggressively check for completion via hasAnswer().
         // Once done, call getConnectedSockID(), and if it's not kNoSockID, it's a connected sockid to take over.
         // Call getConnectedIPAddress() to find out where we got connected to.
@@ -486,7 +486,7 @@ class VSocketConnectionStrategyThreadedRunner : public VThread {
         bool            mDetachedFromStrategy;
         mutable VMutex  mMutex;
         VStringVector   mIPAddressesYetToTry;
-        
+
         bool            mConnectionCompleted;
         bool            mAllWorkersFailed;
         VSocketID       mConnectedSocketID;
@@ -581,7 +581,7 @@ void VSocketConnectionStrategyThreadedRunner::run() {
         VStringVector ipAddresses = (mDebugIPAddresses.empty() ? VSocketBase::resolveHostName(mHostNameToConnect) : mDebugIPAddresses);
         int numWorkersRemaining = mMaxNumThreads;
         for (size_t i = 0; i < ipAddresses.size(); ++i) {
-        //for (size_t i1 = ipAddresses.size(); i1 > 0; --i1) { int i = i1-1; // try backwards to get that google.com IPv6 address
+            //for (size_t i1 = ipAddresses.size(); i1 > 0; --i1) { int i = i1-1; // try backwards to get that google.com IPv6 address
             if (numWorkersRemaining == 0) {
                 mIPAddressesYetToTry.push_back(ipAddresses[i]);
             } else {
@@ -590,17 +590,17 @@ void VSocketConnectionStrategyThreadedRunner::run() {
             }
         }
     }
-    
+
     // More workers will be created when and if others complete unsuccessfully.
-    
+
     while (! this->_isDone()) {
         VThread::sleep(VDuration::MILLISECOND());
     }
-    
+
     while (! this->_isDetachedFromStrategy()) {
         VThread::sleep(VDuration::MILLISECOND());
     }
-    
+
 }
 
 bool VSocketConnectionStrategyThreadedRunner::hasAnswer() const {
@@ -650,7 +650,7 @@ void VSocketConnectionStrategyThreadedRunner::_workerSucceeded(VSocketConnection
         mConnectedSocketID = openedSocket.getSockID();
         mConnectedSocketIPAddress = openedSocket.getHostIPAddress();
         openedSocket.setSockID(VSocketBase::kNoSocketID); // So when it destructs on return from this function, it will NOT close the adopted socket ID.
-    
+
         mConnectionCompleted = true;
     }
 
@@ -660,7 +660,7 @@ void VSocketConnectionStrategyThreadedRunner::_workerSucceeded(VSocketConnection
 void VSocketConnectionStrategyThreadedRunner::_workerFailed(VSocketConnectionStrategyThreadedWorker* worker, const VException& ex) {
     VMutexLocker locker(&mMutex, VSTRING_FORMAT("_workerFailed(%s)", worker->getName().chars()));
     this->_lockedForgetOneWorker(worker);
-    
+
     VLOGGER_ERROR(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner::_workerFailed: %s", ex.what()));
 
     // If we have yet to succeed, start another worker thread if we have more addresses to try.
@@ -680,7 +680,7 @@ void VSocketConnectionStrategyThreadedRunner::_workerFailed(VSocketConnectionStr
             this->_lockedStartWorker(nextIPAddressToTry);
         }
     }
-    
+
     // If that failure was the last worker, then now that it's gone there are no more workers,
     // because we didn't just start another one in its place, then we failed.
     if (mWorkers.empty()) {
@@ -712,7 +712,7 @@ void VSocketConnectionStrategyThreaded::connect(const VString& hostName, int por
 
     VSocketConnectionStrategyThreadedRunner* runner = new VSocketConnectionStrategyThreadedRunner(mTimeoutInterval, mMaxNumThreads, hostName, portNumber, mDebugIPAddresses);
     runner->start();
-    
+
     while (! runner->hasAnswer()) {
         VThread::sleep(VDuration::MILLISECOND());
     }
@@ -724,7 +724,7 @@ void VSocketConnectionStrategyThreaded::connect(const VString& hostName, int por
         socketToConnect.setSockID(sockID);
         socketToConnect.setHostIPAddressAndPort(runner->getConnectedIPAddress(), portNumber);
     }
-    
+
     // Finally, let the runner know that it is safe for it to end because we are no longer referring to it.
     // It may still need to bookkeep worker threads that have not yet completed. It will self-delete later.
     runner->detachFromStrategy();

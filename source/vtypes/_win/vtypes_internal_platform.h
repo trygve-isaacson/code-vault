@@ -13,33 +13,34 @@ http://www.bombaydigital.com/
 These are the Windows-specific includes and definitions needed
 to compile the Vault code itself. Code that includes Vault headers
 does not need to be exposed to any of this.
+These CodeWarrior adaptations allow us to at least compile with CW,
+even if we cannot link and run.
 */
 
 #ifdef VCOMPILER_CODEWARRIOR
     #include <unistd.h>
     #include <cassert> // used by Vassert
     #define __assert(cond, file, line) assert(cond) // used by Vassert
-	#define _MSL_MATH_X87_H
-	#define __MACTYPES__
-	
-	// CW old #includes don't define
-	#define INET_ADDRSTRLEN  22		// CW old #includes doesn't define this
-	#define INET6_ADDRSTRLEN 65
-	typedef struct addrinfo
-	{
-    	int                 ai_flags;       // AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST
-    	int                 ai_family;      // PF_xxx
-    	int                 ai_socktype;    // SOCK_xxx
-    	int                 ai_protocol;    // 0 or IPPROTO_xxx for IPv4 and IPv6
-    	size_t              ai_addrlen;     // Length of ai_addr
-    	char *              ai_canonname;   // Canonical name for nodename
-//    	__field_bcount(ai_addrlen)
-		struct sockaddr *   ai_addr;        // Binary address
-    	struct addrinfo *   ai_next;        // Next structure in linked list
-	} ADDRINFOA, *PADDRINFOA;	
-	
-	WINSOCK_API_LINKAGE VOID WSAAPI freeaddrinfo(struct addrinfo*);
-	WINSOCK_API_LINKAGE INT WSAAPI getaddrinfo( PCSTR, PCSTR, const ADDRINFOA *, PADDRINFOA *);	
+    #define _MSL_MATH_X87_H
+    #define __MACTYPES__
+    
+    // Supply definitions not provided by old CodeWarrior includes, from other Windows includes.
+    #define INET_ADDRSTRLEN  22
+    #define INET6_ADDRSTRLEN 65
+    typedef struct addrinfo {
+        int                 ai_flags;       // AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST
+        int                 ai_family;      // PF_xxx
+        int                 ai_socktype;    // SOCK_xxx
+        int                 ai_protocol;    // 0 or IPPROTO_xxx for IPv4 and IPv6
+        size_t              ai_addrlen;     // Length of ai_addr
+        char*               ai_canonname;   // Canonical name for nodename
+        // __field_bcount(ai_addrlen)
+        struct sockaddr*    ai_addr;        // Binary address
+        struct addrinfo*    ai_next;        // Next structure in linked list
+    } ADDRINFOA, *PADDRINFOA;
+    
+    WINSOCK_API_LINKAGE VOID WSAAPI freeaddrinfo(struct addrinfo*);
+    WINSOCK_API_LINKAGE INT WSAAPI getaddrinfo(PCSTR, PCSTR, const ADDRINFOA*, PADDRINFOA*);
 #endif
 
 #include <sys/types.h>

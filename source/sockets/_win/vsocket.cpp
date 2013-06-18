@@ -67,14 +67,14 @@ static const int MAX_ADDRSTRLEN = V_MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
 VString VSocketBase::addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info) {
     VString result;
     result.preflight(MAX_ADDRSTRLEN);
-    
+
     // WSAAddressToString() works for both IPv4 and IPv6 and is available on "older" versions of Windows.
     DWORD bufferLength = MAX_ADDRSTRLEN;
     int resultCode = ::WSAAddressToStringA(info->ai_addr, (DWORD) info->ai_addrlen, NULL, result.buffer(), &bufferLength);
     if (resultCode != 0) {
         throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocketBase::addrinfoToIPAddressString(%s): WSAAddressToString() failed.", hostName.chars()));
     }
-    result.postflight(bufferLength-1);
+    result.postflight(bufferLength - 1);
 
     return result;
 }
@@ -103,12 +103,12 @@ void VSocket::_connectToIPAddress(const VString& ipAddress, int portNumber) {
     VSocketID   socketID = ::socket((isIPv4 ? AF_INET : AF_INET6), SOCK_STREAM, 0);
 
     if (socketID != INVALID_SOCKET) {
-    
+
         const sockaddr* infoPtr = NULL;
         socklen_t infoLen = 0;
         struct sockaddr_in infoIPv4;
         struct sockaddr_in6 infoIPv6;
-    
+
         if (isIPv4) {
             ::memset(&infoIPv4, 0, sizeof(infoIPv4));
             infoIPv4.sin_family = AF_INET;

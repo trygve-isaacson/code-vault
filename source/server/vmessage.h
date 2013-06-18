@@ -53,7 +53,7 @@ format (the wire protocol).
 */
 class VMessage : public VBinaryIOStream {
     public:
-    
+
         /**
         Readies the message to be re-used with the existing message data intact,
         for posting to a session or client. The new message ID is applied, and

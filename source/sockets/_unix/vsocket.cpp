@@ -92,14 +92,14 @@ static const int MAX_ADDRSTRLEN = V_MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
 VString VSocketBase::addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info) {
     void* addr;
     if (info->ai_family == AF_INET) {
-        addr = (void*)&(((struct sockaddr_in *)info->ai_addr)->sin_addr);
+        addr = (void*) &(((struct sockaddr_in*)info->ai_addr)->sin_addr);
     } else if (info->ai_family == AF_INET6) {
-        addr = (void*)&(((struct sockaddr_in6 *)info->ai_addr)->sin6_addr);
+        addr = (void*) &(((struct sockaddr_in6*)info->ai_addr)->sin6_addr);
     } else {
         // We don't know how to access the addr for other family types. They could conceivably be added.
         throw VException(VSTRING_FORMAT("VSocketBase::addrinfoToIPAddressString(%s): An invalid family (%d) other than AF_INET or AF_INET6 was specified.", hostName.chars(), info->ai_family));
     }
-    
+
     VString result;
     result.preflight(MAX_ADDRSTRLEN);
     const char* buf = ::inet_ntop(info->ai_family, addr, result.buffer(), MAX_ADDRSTRLEN);
@@ -305,12 +305,12 @@ void VSocket::_connectToIPAddress(const VString& ipAddress, int portNumber) {
     VSocketID   socketID = ::socket((isIPv4 ? AF_INET : AF_INET6), SOCK_STREAM, 0);
 
     if (socketID >= 0) {
-    
+
         const sockaddr* infoPtr = NULL;
         socklen_t infoLen = 0;
         struct sockaddr_in infoIPv4;
         struct sockaddr_in6 infoIPv6;
-    
+
         if (isIPv4) {
             ::memset(&infoIPv4, 0, sizeof(infoIPv4));
             infoIPv4.sin_family = AF_INET;
@@ -365,11 +365,11 @@ void VSocket::_listen(const VString& bindAddress, int backlog) {
     if (listenSockID < 0) {
         throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: socket() failed. Result=%d.", mSocketName.chars(), listenSockID));
     }
-    
+
     // Once we've successfully called ::socket(), if something else fails here, we need
     // to close that socket. We can just throw upon any failed call, and use a try/catch
     // with re-throw after closure.
-    
+
     try {
         int result = ::setsockopt(listenSockID, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
         if (result != 0) {

@@ -707,7 +707,7 @@ VString VLogger::_commandGetInfoString() {
 
 // static
 void VLogger::commandSetLogLevel(const VString& loggerName, int level) {
-    
+
     std::vector<VNamedLoggerPtr> targetLoggers;
 
     // First, get all the desired loggers, with required locking in place.
@@ -721,7 +721,7 @@ void VLogger::commandSetLogLevel(const VString& loggerName, int level) {
             }
         }
     }
-    
+
     // Now, set each logger's level with the public API. It locks each time.
     for (std::vector<VNamedLoggerPtr>::const_iterator i = targetLoggers.begin(); i != targetLoggers.end(); ++i) {
         (*i)->setLevel(level);
@@ -1026,7 +1026,7 @@ VFileLogAppender::VFileLogAppender(const VSettingsNode& settings, const VSetting
     VString defaultPath;
     VLogger::getBaseLogDirectory().getChildPath(settings.getString("name") + ".log", defaultPath);
     mFileStream.setNode(VFSNode(_getStringInitSetting("path", settings, defaults, defaultPath)));
-    
+
     this->_openFile();
 }
 
@@ -1034,7 +1034,7 @@ void VFileLogAppender::_openFile() {
     VFSNode newLogFileDir;
     mFileStream.getNode().getParentNode(newLogFileDir);
     newLogFileDir.mkdirs();
-    
+
     mFileStream.openReadWrite();
     mFileStream.seek(CONST_S64(0), SEEK_END);
 
