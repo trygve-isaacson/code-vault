@@ -146,7 +146,6 @@ Vs64 VInstant::_platform_offsetFromUTCStruct(const VInstantStruct& when) {
 
     _setTMStructFromInstantStruct(when, fields);
 
-    //lint -e421 "Caution -- function 'mktime(struct tm *)' is considered dangerous [MISRA Rule 127]"
     Vs64    result = CONST_S64(1000) * static_cast<Vs64>(::timegm(&fields));
 
     // tm struct has no milliseconds, so restore input value milliseconds

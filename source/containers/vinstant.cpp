@@ -1217,3 +1217,276 @@ VDateAndTime::VDateAndTime(const VString& timeZoneID)
     mTimeOfDay.setMillisecond(nowTimeOfDay.getMillisecond());
 }
 
+// VInstantFormatter ---------------------------------------------------------
+
+static VInstantFormatterLocalizedStrings DEFAULT_LOCALIZED_STRINGS;
+
+VInstantFormatterLocalizedStrings::VInstantFormatterLocalizedStrings()
+    : CE_MARKER("CE")
+    , AM_MARKER("AM")
+    , PM_MARKER("PM")
+    {
+    MONTH_NAMES_SHORT.push_back("Jan");
+    MONTH_NAMES_SHORT.push_back("Feb");
+    MONTH_NAMES_SHORT.push_back("Mar");
+    MONTH_NAMES_SHORT.push_back("Apr");
+    MONTH_NAMES_SHORT.push_back("May");
+    MONTH_NAMES_SHORT.push_back("Jun");
+    MONTH_NAMES_SHORT.push_back("Jul");
+    MONTH_NAMES_SHORT.push_back("Aug");
+    MONTH_NAMES_SHORT.push_back("Sep");
+    MONTH_NAMES_SHORT.push_back("Oct");
+    MONTH_NAMES_SHORT.push_back("Nov");
+    MONTH_NAMES_SHORT.push_back("Dec");
+
+    MONTH_NAMES_LONG.push_back("January");
+    MONTH_NAMES_LONG.push_back("February");
+    MONTH_NAMES_LONG.push_back("March");
+    MONTH_NAMES_LONG.push_back("April");
+    MONTH_NAMES_LONG.push_back("May");
+    MONTH_NAMES_LONG.push_back("June");
+    MONTH_NAMES_LONG.push_back("July");
+    MONTH_NAMES_LONG.push_back("August");
+    MONTH_NAMES_LONG.push_back("September");
+    MONTH_NAMES_LONG.push_back("October");
+    MONTH_NAMES_LONG.push_back("November");
+    MONTH_NAMES_LONG.push_back("December");
+
+    DAY_NAMES_SHORT.push_back("Sun");
+    DAY_NAMES_SHORT.push_back("Mon");
+    DAY_NAMES_SHORT.push_back("Tue");
+    DAY_NAMES_SHORT.push_back("Wed");
+    DAY_NAMES_SHORT.push_back("Thu");
+    DAY_NAMES_SHORT.push_back("Fri");
+    DAY_NAMES_SHORT.push_back("Sat");
+
+    DAY_NAMES_LONG.push_back("Sunday");
+    DAY_NAMES_LONG.push_back("Monday");
+    DAY_NAMES_LONG.push_back("Tuesday");
+    DAY_NAMES_LONG.push_back("Wednesday");
+    DAY_NAMES_LONG.push_back("Thursday");
+    DAY_NAMES_LONG.push_back("Friday");
+    DAY_NAMES_LONG.push_back("Saturday");
+}
+
+#define DEFAULT_FORMAT_SPECIFIER "y-MM-dd HH:mm:ss.SSS"
+
+VInstantFormatter::VInstantFormatter()
+    : mFormatSpecifier(DEFAULT_FORMAT_SPECIFIER)
+    , mLocalizedStrings(DEFAULT_LOCALIZED_STRINGS)
+    {
+}
+
+VInstantFormatter::VInstantFormatter(const VInstantFormatterLocalizedStrings& localizedStrings)
+    : mFormatSpecifier(DEFAULT_FORMAT_SPECIFIER)
+    , mLocalizedStrings(localizedStrings)
+    {
+}
+
+VInstantFormatter::VInstantFormatter(const VString& formatSpecifier)
+    : mFormatSpecifier(formatSpecifier)
+    , mLocalizedStrings(DEFAULT_LOCALIZED_STRINGS)
+    {
+}
+
+VInstantFormatter::VInstantFormatter(const VString& formatSpecifier, const VInstantFormatterLocalizedStrings& localizedStrings)
+    : mFormatSpecifier(formatSpecifier)
+    , mLocalizedStrings(localizedStrings)
+    {
+}
+
+VString VInstantFormatter::_format(const VInstant& when) const {
+    // For efficiency, extract the date and time once rather than while looping as needed.
+    // We'll almost inevitably need them.
+    const VDate d = when.getLocalDate();
+    const VTimeOfDay tod = when.getLocalTimeOfDay();
+    VString result;
+    VString pendingFieldSpecifier;
+    const int formatLength = mFormatSpecifier.length();
+    
+    for (int i = 0; i < formatLength; ++i) {
+        VChar c = mFormatSpecifier[i];
+        switch (c) {
+        
+            // The following characters match those in Java 1.7 SimpleDateFormat:
+            // <http://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html>
+            case 'G':
+            case 'y':
+            case 'Y':
+            case 'M':
+            //case 'w': // week in year: NOT YET IMPLEMENTED
+            //case 'W': // week in month: NOT YET IMPLEMENTED
+            //case 'D':
+            case 'd':
+            //case 'F': // day of week in month: NOT YET IMPLEMENTED
+            case 'E':
+            case 'u':
+            case 'a':
+            case 'H':
+            case 'k':
+            case 'K':
+            case 'h':
+            case 'm':
+            case 's':
+            case 'S':
+            case 'z':
+            case 'Z':
+            case 'X':
+                if (pendingFieldSpecifier.isNotEmpty() && (c != pendingFieldSpecifier[0])) {
+                    this->_flushPendingFieldSpecifier(when, d, tod, pendingFieldSpecifier, result);
+                }
+
+                pendingFieldSpecifier += c;
+                break;
+
+            default:
+                this->_flushPendingFieldSpecifier(when, d, tod, pendingFieldSpecifier, result);
+                result += c;
+                break;
+        }
+    }
+
+    this->_flushPendingFieldSpecifier(when, d, tod, pendingFieldSpecifier, result);
+    
+    return result;
+}
+
+void VInstantFormatter::_flushPendingFieldSpecifier(const VInstant& when, const VDate& d, const VTimeOfDay& tod, VString& fieldSpecifier, VString& resultToAppendTo) const {
+    if (fieldSpecifier.isEmpty()) {
+        return;
+    }
+
+    int fieldSpecifierLength = fieldSpecifier.length();
+    if (fieldSpecifier.startsWith('G')) {
+        this->_flushFixedLengthTextValue(mLocalizedStrings.CE_MARKER, resultToAppendTo);
+    }
+    
+    else if (fieldSpecifier.startsWithIgnoreCase("y")) {
+        this->_flushYearValue(d.getYear(), fieldSpecifierLength, resultToAppendTo);
+    }
+
+    else if (fieldSpecifier.startsWith('M')) { // month (long or short name, or number 1-12)
+        this->_flushMonthValue(d.getMonth(), fieldSpecifierLength, resultToAppendTo);
+    }
+
+    else if (fieldSpecifier.startsWith('d')) { // day in month 1-31
+        this->_flushNumberValue(d.getDay(), fieldSpecifierLength, resultToAppendTo);
+    }
+
+    else if (fieldSpecifier.startsWith('E')) { // day name in week (long or short name)
+        this->_flushDayNameValue(d, fieldSpecifierLength, resultToAppendTo);
+    }
+
+    else if (fieldSpecifier.startsWith('u')) { // day number in week (1=Monday, ..., 7=Sunday)
+        this->_flushDayNumberValue(d, fieldSpecifierLength, resultToAppendTo);
+    }
+
+    else if (fieldSpecifier.startsWith('a')) { // AM or PM
+        this->_flushFixedLengthTextValue((tod.getHour() < 12) ? mLocalizedStrings.AM_MARKER : mLocalizedStrings.PM_MARKER, resultToAppendTo);
+    }
+
+    else if (fieldSpecifier.startsWith('H')) { // hour in day 0-23
+        this->_flushNumberValue(tod.getHour(), fieldSpecifierLength, resultToAppendTo);
+    }
+
+    else if (fieldSpecifier.startsWith('k')) { // hour in day 1-24
+        this->_flushNumberValue(tod.getHour() + 1, fieldSpecifierLength, resultToAppendTo);
+    }
+
+    else if (fieldSpecifier.startsWith('K')) { // hour in am/pm 0-11
+        this->_flushNumberValue(tod.getHour() % 12, fieldSpecifierLength, resultToAppendTo);
+    }
+
+    else if (fieldSpecifier.startsWith('h')) { // hour in am/pm 1-12
+        this->_flushNumberValue((tod.getHour() % 12) + 1, fieldSpecifierLength, resultToAppendTo);
+    }
+
+    else if (fieldSpecifier.startsWith('m')) { // minute in hour 0-59
+        this->_flushNumberValue(tod.getMinute(), fieldSpecifierLength, resultToAppendTo);
+    }
+
+    else if (fieldSpecifier.startsWith('s')) { // second in minute 0-59
+        this->_flushNumberValue(tod.getSecond(), fieldSpecifierLength, resultToAppendTo);
+    }
+
+    else if (fieldSpecifier.startsWith('S')) { // millisecond 0-999
+        this->_flushNumberValue(tod.getMillisecond(), fieldSpecifierLength, resultToAppendTo);
+    }
+
+    else if (fieldSpecifier.startsWith('z') || // time zone "general" format
+            fieldSpecifier.startsWith('Z') || // time zone RFC 822 format
+            fieldSpecifier.startsWith('X')) { // time zone ISO 8601 format
+        this->_flushTimeZoneValue(when, fieldSpecifier, resultToAppendTo);
+    }
+
+    fieldSpecifier = VString::EMPTY();
+}
+
+void VInstantFormatter::_flushFixedLengthTextValue(const VString& value, VString& resultToAppendTo) const {
+    resultToAppendTo += value;
+}
+
+void VInstantFormatter::_flushVariableLengthTextValue(const VString& shortValue, const VString& longValue, int fieldLength, VString& resultToAppendTo) const {
+    resultToAppendTo += (fieldLength < 4) ? shortValue : longValue;
+}
+
+void VInstantFormatter::_flushNumberValue(int value, int fieldLength, VString& resultToAppendTo) const {
+    VString numberFormatter(VSTRING_FORMAT("%%0%dd", fieldLength)); // note double-percent to escape the first percent sign, and extra d: we want to end up with, say, "%05d" if the field length is 5.
+    resultToAppendTo += VSTRING_FORMAT(numberFormatter, value);
+}
+
+void VInstantFormatter::_flushYearValue(int year, int fieldLength, VString& resultToAppendTo) const {
+    // Rules say if if fieldLength is 2, truncate to 2 digits; otherwise treat as "number".
+    if (fieldLength == 2) {
+        resultToAppendTo += VSTRING_FORMAT("%02d", year % 100);
+    } else {
+        this->_flushNumberValue(year, fieldLength, resultToAppendTo);
+    }
+}
+
+void VInstantFormatter::_flushMonthValue(int month, int fieldLength, VString& resultToAppendTo) const {
+    VASSERT_IN_RANGE(month, 1, 12);
+
+    // Rules say if if fieldLength is 3 or more, use name; otherwise treat as "number".
+    if (fieldLength >= 3) {
+        this->_flushVariableLengthTextValue(mLocalizedStrings.MONTH_NAMES_SHORT[month-1], mLocalizedStrings.MONTH_NAMES_LONG[month-1], fieldLength, resultToAppendTo);
+    } else {
+        this->_flushNumberValue(month, fieldLength, resultToAppendTo);
+    }
+}
+
+void VInstantFormatter::_flushDayNameValue(const VDate& d, int fieldLength, VString& resultToAppendTo) const {
+    const int dayOfWeek = d.getDayOfWeek(); // 0=Sunday ...
+    this->_flushVariableLengthTextValue(mLocalizedStrings.DAY_NAMES_SHORT[dayOfWeek], mLocalizedStrings.DAY_NAMES_LONG[dayOfWeek], fieldLength, resultToAppendTo);
+}
+
+void VInstantFormatter::_flushDayNumberValue(const VDate& d, int fieldLength, VString& resultToAppendTo) const {
+    const int dayOfWeek = d.getDayOfWeek(); // 0=Sunday ... 6=Saturday
+    // SimpleDateFormat day-of-week numbers are 1=Monday ... 7=Sunday, so compensate for Sunday:
+    this->_flushNumberValue(dayOfWeek == 0 ? 7 : dayOfWeek, fieldLength, resultToAppendTo);
+}
+
+void VInstantFormatter::_flushTimeZoneValue(const VInstant& when, const VString& fieldSpecifier, VString& resultToAppendTo) const {
+    int localOffsetMilliseconds = static_cast<int>(when.getLocalOffsetMilliseconds()); // offset can't really be too big for int, simplifies formatting below
+    int absLocalOffsetHours = V_ABS(localOffsetMilliseconds / (1000 * 60 * 60));
+    int absLocalOffsetMinutes = V_ABS((localOffsetMilliseconds / (1000 * 60)) % 60);
+
+    if (fieldSpecifier.startsWith('z')) { // general
+        resultToAppendTo += VSTRING_FORMAT("GMT%c%02d:%02d", (localOffsetMilliseconds < 0 ? '-':'+'), absLocalOffsetHours, absLocalOffsetMinutes);
+    } else if (fieldSpecifier.startsWith('Z')) { // RFC 822
+        resultToAppendTo += VSTRING_FORMAT("%c%02d%02d", (localOffsetMilliseconds < 0 ? '-':'+'), absLocalOffsetHours, absLocalOffsetMinutes);
+    } else if (fieldSpecifier.startsWith('X')) { // ISO 8601
+        const int fieldSpecifierLength = fieldSpecifier.length();
+        VASSERT_IN_RANGE(fieldSpecifierLength, 1, 4);
+
+        if (localOffsetMilliseconds == 0) {
+            resultToAppendTo += 'Z';
+        } else if (fieldSpecifier.length() == 1) { // rule says: sign followed by two-digit hours only
+            resultToAppendTo += VSTRING_FORMAT("%c%02dZ", (localOffsetMilliseconds < 0 ? '-':'+'), absLocalOffsetHours);
+        } else if (fieldSpecifier.length() == 2) { // rule says: sign followed by two-digit hours and minutes
+            resultToAppendTo += VSTRING_FORMAT("%c%02d%02dZ", (localOffsetMilliseconds < 0 ? '-':'+'), absLocalOffsetHours, absLocalOffsetMinutes);
+        } else if (fieldSpecifier.length() == 3) { // rule says: sign followed by two-digit hours, colon, and minutes
+            resultToAppendTo += VSTRING_FORMAT("%c%02d:%02dZ", (localOffsetMilliseconds < 0 ? '-':'+'), absLocalOffsetHours, absLocalOffsetMinutes);
+        }
+    }
+}

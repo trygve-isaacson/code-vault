@@ -45,7 +45,7 @@ Vs64 VInstant::_platform_now() {
 #else
 
     // This means we can only get second resolution for VInstant values.
-    //lint -e418 -e421 "Passing null pointer to function 'time(long *)'"
+    //lint -e418 -e421 "Passing null pointer to function 'time(long *)'" [OK: IEEE POSIX disagrees with lint. NULL is meaningful.]
     return (CONST_S64(1000) * static_cast<Vs64>(::time(NULL)));
 
 #endif /* V_INSTANT_SNAPSHOT_IS_UTC */

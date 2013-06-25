@@ -11,26 +11,28 @@ http://www.bombaydigital.com/
 #include "vinstant.h"
 #include "vexception.h"
 #include "vthread.h"
+#include "vassert.h"
 
 VInstantUnit::VInstantUnit(bool logOnSuccess, bool throwOnError) :
     VUnit("VInstantUnit", logOnSuccess, throwOnError) {
 }
 
 void VInstantUnit::run() {
+    VInstant now;
+    this->logStatus(VSTRING_FORMAT("VInstant current local time is %s. This must be visually confirmed to be correct.", now.getLocalString().chars()));
+    this->logStatus(VSTRING_FORMAT("VInstant current UTC time is %s. This must be visually confirmed to be correct.", now.getUTCString().chars()));
 
-    {
-        VInstant    now;
-        VString        nowLocalString;
-        VString        nowUTCString;
-        now.getLocalString(nowLocalString);
-        now.getUTCString(nowUTCString);
+    this->_runInstantOperatorTests();
+    this->_runInstantComparatorTests();
+    this->_runClockSimulationTests();
+    this->_runTimeZoneConversionTests();
+    this->_runDurationValueTests();
+    this->_runExoticDurationValueTests();
+    this->_runDurationStringTests();
+    this->_runInstantFormatterTests();
+}
 
-        this->logStatus(VSTRING_FORMAT("VInstant current local time is %s. This must be visually confirmed to be correct.",
-                                       nowLocalString.chars()));
-
-        this->logStatus(VSTRING_FORMAT("VInstant current UTC time is %s. This must be visually confirmed to be correct.",
-                                       nowUTCString.chars()));
-    }
+void VInstantUnit::_runInstantOperatorTests() {
 
     VInstant    i1;
     VInstant    i2;
@@ -98,6 +100,10 @@ void VInstantUnit::run() {
     this->test(i2 >= i1, "comparison test 2f");
     this->test(i2 - i1 == VDuration::ZERO(), "comparison test 2g");
 
+}
+
+void VInstantUnit::_runInstantComparatorTests() {
+
     // Test comparison operators with "infinite" values.
     VInstant    now;
     VInstant    infinitePast = VInstant::INFINITE_PAST();
@@ -145,11 +151,15 @@ void VInstantUnit::run() {
     this->test(VInstant::min(past, future) == past, "comparison test 6k");
     this->test(VInstant::max(past, future) == future, "comparison test 6l");
 
-    // Test the operation of the simulated clock offset. Restore it right away,
-    // because while we do this, we are messing with the time continuum! (Other
-    // threads that get the current time from VInstant will see weirdness.)
-    {
-        // scope for test subset local variables
+}
+
+void VInstantUnit::_runClockSimulationTests() {
+
+    /* scope for test subset local variables */ {
+        // Test the operation of the simulated clock offset. Restore it right away,
+        // because while we do this, we are messing with the time continuum! (Other
+        // threads that get the current time from VInstant will see weirdness.)
+        
         VInstant base0;
         VInstant basePlus1Minute = base0; basePlus1Minute += VDuration::MINUTE();
         VInstant::incrementSimulatedClockOffset(2 * VDuration::MINUTE()); // should put us forward about 2 additional minutes
@@ -161,8 +171,8 @@ void VInstantUnit::run() {
         this->test(normalNow < basePlus1Minute, "restore simulated clock offset part 2"); // can only fail if it takes > 1 real minute to execute the last 5 lines of code
     }
 
-    {
-        // scope for test subset local variables
+    /* scope for test subset local variables */ {
+
         // Here we test that setSimulatedClockValue() sets the time correctly;
         // we set it and the obtain the current time, which should differ by
         // only by the amount of time it takes to execute the set and get, so
@@ -182,8 +192,8 @@ void VInstantUnit::run() {
         VInstant::setSimulatedClockOffset(VDuration::ZERO()); // restore the time continuum to normal
     }
 
-    {
-        // scope for frozen time tests
+    /* scope for test subset local variables */ {
+
         VInstant realNow;
 
         VDateAndTime fakePastDT(1990, 3, 17, 10, 11, 0, 0);
@@ -231,6 +241,10 @@ void VInstantUnit::run() {
 
         VInstant::setSimulatedClockOffset(VDuration::ZERO()); // restore the time continuum to normal
     }
+
+}
+
+void VInstantUnit::_runTimeZoneConversionTests() {
 
     // Test local-gm time conversion consistency.
 
@@ -322,6 +336,9 @@ void VInstantUnit::run() {
                (timeUTCFromUTC.getMinute() == 0) &&
                (timeUTCFromUTC.getSecond() == 0), "time of day values");
 
+}
+
+void VInstantUnit::_runDurationValueTests() {
     // VDuration tests.
 
     this->test(VDuration::ZERO().getDurationMilliseconds() == CONST_S64(0), "VDuration ZERO");
@@ -406,6 +423,10 @@ void VInstantUnit::run() {
     this->test((- VDuration::NEGATIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration unary minus of negative infinity test");
     this->test((- VDuration::POSITIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY(), "VDuration unary minus of positive infinity test");
 
+}
+
+void VInstantUnit::_runExoticDurationValueTests() {
+
     // Additional tests for exotic instant and duration properties such as
     // math operations on +/- infinity.
 
@@ -476,14 +497,18 @@ void VInstantUnit::run() {
     VInstant currentMinus24h = currentTime - (24 * VDuration::HOUR());
     VInstant currentPlus1d = currentTime + VDuration::DAY();
     VInstant currentPlus24h = currentTime + (24 * VDuration::HOUR());
-    infinitePast = VInstant::INFINITE_PAST();
-    infiniteFuture = VInstant::INFINITE_FUTURE();
+    VInstant infinitePast = VInstant::INFINITE_PAST();
+    VInstant infiniteFuture = VInstant::INFINITE_FUTURE();
     VInstant never = VInstant::NEVER_OCCURRED();
 
     this->test(infinitePast < currentTime, "infinitePast < currentTime");
     this->test(infinitePast <= currentTime, "infinitePast <= currentTime");
     this->test(!(infinitePast >= currentTime), "! (infinitePast >= currentTime)");
     this->test(!(infinitePast > currentTime), "! (infinitePast > currentTime)");
+
+}
+
+void VInstantUnit::_runDurationStringTests() {
 
     VDuration stringTestDuration;
 
@@ -536,5 +561,113 @@ void VInstantUnit::run() {
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), VDuration::POSITIVE_INFINITY().getDurationMilliseconds(), "setDurationString infinity");
     stringTestDuration.setDurationString("INFINITY");
     VUNIT_ASSERT_EQUAL_LABELED(stringTestDuration.getDurationMilliseconds(), VDuration::POSITIVE_INFINITY().getDurationMilliseconds(), "setDurationString INFINITY");
+    
 }
 
+void VInstantUnit::_runInstantFormatterTests() {
+
+    /* scope for formatter test */ {
+        VInstant now;
+        VInstantFormatter formatter;
+        VString s;
+        
+        s = formatter.format(now);
+        this->logStatus(VSTRING_FORMAT("VInstant old API local string output for local time (offset=%lld) is '%s'", now.getValue(), now.getLocalString().chars()));
+        this->logStatus(VSTRING_FORMAT("VInstantFormatter default output for local time is '%s'", s.chars()));
+    }
+    
+    // Now let's test some specific formatting directives.
+    VDate       d_06_03_1998(1998, 6, 3);
+    VTimeOfDay  tod_15_56_37_444_pm(15, 56, 37, 444);
+    VInstant    when;
+
+    when.setValues(d_06_03_1998, tod_15_56_37_444_pm, VInstant::LOCAL_TIME_ZONE_ID());
+    
+    // Note: some of these tests only work when run on a machine set to Pacific time, because TZ conversions are being
+    // performed and then tested against. So we may need to conditionalize running these tests.
+    
+    /* scope for formatter test */ {
+        VInstantFormatter formatter("E, y-MMM-dd HH:mm:ss.SSS");
+        VString s = formatter.format(when);
+        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
+        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("Wed, 1998-Jun-03 15:56:37.444"));
+    }
+    
+    /* scope for formatter test */ {
+        VInstantFormatter formatter("E, y-MMM-dd HH:mm:ss.SSS G");
+        VString s = formatter.format(when);
+        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
+        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("Wed, 1998-Jun-03 15:56:37.444 CE"));
+    }
+    
+    /* scope for formatter test */ {
+        VInstantFormatter formatter("EEEE, yy-MMMM-d HH:mm:ss.SSS");
+        VString s = formatter.format(when);
+        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
+        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("Wednesday, 98-June-3 15:56:37.444"));
+    }
+    
+    /* scope for formatter test */ {
+        VInstantFormatter formatter("y-MM-dd HH:mm:ss.SSS z");
+        VString s = formatter.format(when);
+        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
+        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 15:56:37.444 GMT-07:00"));
+    }
+    
+    /* scope for formatter test */ {
+        VInstantFormatter formatter("u, y-MMM-dd HH:mm:ss.SSS");
+        VString s = formatter.format(when);
+        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
+        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("3, 1998-Jun-03 15:56:37.444"));
+    }
+    
+    /* scope for formatter test */ {
+        VInstantFormatter formatter("y-MM-dd HH:mm:ss.SSS Z");
+        VString s = formatter.format(when);
+        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
+        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 15:56:37.444 -0700"));
+    }
+    
+    /* scope for formatter test */ {
+        VInstantFormatter formatter("y-MM-dd HH:mm:ss.SSS XXX");
+        VString s = formatter.format(when);
+        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
+        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 15:56:37.444 -07:00Z"));
+    }
+    
+    /* scope for formatter test */ {
+        VInstantFormatter formatter("y-MM-dd HH:mm:ss.SSS XX");
+        VString s = formatter.format(when);
+        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
+        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 15:56:37.444 -0700Z"));
+    }
+    
+    /* scope for formatter test */ {
+        VInstantFormatter formatter("y-MM-dd HH:mm:ss.SSS X");
+        VString s = formatter.format(when);
+        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
+        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 15:56:37.444 -07Z"));
+    }
+    
+    /* scope for formatter test */ {
+        VInstantFormatter formatter("y-MM-dd HH:mm:ss");
+        VString s = formatter.format(when);
+        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
+        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 15:56:37"));
+    }
+    
+    /* scope for formatter test */ {
+        VInstantFormatter formatter("y-MM-dd KK:mm:ss a");
+        VString s = formatter.format(when);
+        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
+        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 03:56:37 PM"));
+    }
+    
+    /* scope for formatter test */ {
+        VInstantFormatter formatter("G|GG|y|yy|yyy|yyyy|Y|YY|YYY|YYYY|M|MM|MMM|MMMM|d|dd|E|EE|EEE|EEEE|u|uu|a|H|HH|k|kk|K|KK|h|hh|m|mm|s|ss|S|SS|SSS|z|Z|X|XX|XXX");
+        VString s = formatter.format(when);
+        this->logStatus(VSTRING_FORMAT("VInstantFormatter kitchen sink for chosen time is '%s'", s.chars()));
+        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("CE|CE|1998|98|1998|1998|1998|98|1998|1998|6|06|Jun|June|3|03|Wed|Wed|Wed|Wednesday|3|03|PM|15|15|16|16|3|03|4|04|56|56|37|37|444|444|444|GMT-07:00|-0700|-07Z|-0700Z|-07:00Z"));
+    }
+    
+}

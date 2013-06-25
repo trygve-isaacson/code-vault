@@ -33,6 +33,17 @@ class VInstantUnit : public VUnit {
         */
         virtual void run();
 
+    private:
+    
+        void _runInstantOperatorTests();
+        void _runInstantComparatorTests();
+        void _runClockSimulationTests();
+        void _runTimeZoneConversionTests();
+        void _runDurationValueTests();
+        void _runExoticDurationValueTests();
+        void _runDurationStringTests();
+        void _runInstantFormatterTests();
+
 };
 
 #endif /* vinstantunit_h */

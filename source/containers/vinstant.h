@@ -11,8 +11,9 @@ http://www.bombaydigital.com/
 
 #include "vtypes.h"
 
+#include "vstring.h"
+
 class VChar;
-class VString;
 class VInstant;
 class VDate;
 class VTimeOfDay;
@@ -1174,5 +1175,53 @@ class VDateAndTime {
 };
 
 inline bool operator==(const VDateAndTime& dt1, const VDateAndTime& dt2) { return (dt1.mDate == dt2.mDate) && (dt1.mTimeOfDay == dt2.mTimeOfDay); }
+
+class VInstantFormatterLocalizedStrings {
+    public:
+    
+        VInstantFormatterLocalizedStrings();
+        ~VInstantFormatterLocalizedStrings() {}
+        
+        const VString CE_MARKER;
+        const VString AM_MARKER;
+        const VString PM_MARKER;
+        VStringVector MONTH_NAMES_SHORT;    // [0] = Jan ... [11] = Dec
+        VStringVector MONTH_NAMES_LONG;
+        VStringVector DAY_NAMES_SHORT;      // [0] = Sun ... [6] = Sat
+        VStringVector DAY_NAMES_LONG;
+};
+
+class VInstantFormatter {
+    public:
+    
+        VInstantFormatter();
+        VInstantFormatter(const VInstantFormatterLocalizedStrings& localizedStrings);
+        VInstantFormatter(const VString& formatSpecifier);
+        VInstantFormatter(const VString& formatSpecifier, const VInstantFormatterLocalizedStrings& localizedStrings);
+        ~VInstantFormatter() {}
+
+        VString format(const VInstant& when) const { return this->_format(when); }
+        //VString format(const VDate& d) const;
+        //VString format(const VTimeOfDay& tod) const;
+
+    private:
+    
+        VString _format(const VInstant& when) const;
+        void _flushPendingFieldSpecifier(const VInstant& when, const VDate& d, const VTimeOfDay& tod, VString& fieldSpecifier/*will be set to empty on return*/, VString& resultToAppendTo) const;
+
+        void _flushFixedLengthTextValue(const VString& value, VString& resultToAppendTo) const;
+        void _flushVariableLengthTextValue(const VString& shortValue, const VString& longValue, int fieldLength, VString& resultToAppendTo) const;
+        void _flushNumberValue(int value, int fieldLength, VString& resultToAppendTo) const;
+        void _flushYearValue(int year, int fieldLength, VString& resultToAppendTo) const;
+        void _flushMonthValue(int month, int fieldLength, VString& resultToAppendTo) const;
+        void _flushDayNameValue(const VDate& d, int fieldLength, VString& resultToAppendTo) const;
+        void _flushDayNumberValue(const VDate& d, int fieldLength, VString& resultToAppendTo) const;
+        void _flushTimeZoneValue(const VInstant& when, const VString& fieldSpecifier, VString& resultToAppendTo) const;
+        
+        VString mFormatSpecifier;
+        
+        // Pseudo-constants: Potentially localized values, not static, because we allow setting per VInstantFormatter.
+        const VInstantFormatterLocalizedStrings mLocalizedStrings;
+};
 
 #endif /* vinstant_h */
