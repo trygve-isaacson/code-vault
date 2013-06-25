@@ -30,6 +30,11 @@ clear by reading which ones you are not using.
 /* It is only available if you are using Boost. */
 #define VAULT_BOOST_STRING_FORMATTING_SUPPORT
 
+/* This flag causes Vault to include <boost/shared_ptr.hpp> and related headers. */
+/* If you are using a C++11 compiler, don't define this because the C++11 library */
+/* has shared_ptr and related APIs already. */
+#define VAULT_BOOST_SHARED_PTR_INCLUDE
+
 /* This flag enables converting between VString and QString. */
 /* It is only available if you are using Qt. */
 #define VAULT_QT_SUPPORT
@@ -43,9 +48,6 @@ clear by reading which ones you are not using.
 
 /* This flag enables the memory allocation tracking feature, useful for finding leaks. */
 #define VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT
-
-/* This flag enables translation of Win32 structured exceptions into standard C++ exceptions. Requires /EHa compiler option. */
-#define VAULT_WIN32_STRUCTURED_EXCEPTION_TRANSLATION_SUPPORT
 
 /* This flag lets Vault define the VThread::userThreadMain() function. If you add custom stack crawl handling, you need to define it yourself. */
 #define VAULT_SIMPLE_USER_THREAD_MAIN

@@ -51,6 +51,8 @@ Finally, proceed with everything else.
 #ifdef V_INCLUDE_BOOST_CORE
     #include <boost/format.hpp>
     #include <boost/shared_ptr.hpp>
+    #include <boost/weak_ptr.hpp>
+    #include <boost/enable_shared_from_this.hpp>
     // Unfortunately GCC does not have a save/restore diagnostic state pragma.
 #endif
 

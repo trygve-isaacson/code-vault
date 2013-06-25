@@ -13,8 +13,6 @@ http://www.bombaydigital.com/
 #include "vmemorystream.h"
 #include "vlogger.h"
 
-#include <boost/shared_ptr.hpp>
-
 /** @file */
 
 /**
@@ -199,8 +197,8 @@ class VMessage : public VBinaryIOStream {
         VMessageID      mMessageID;             ///< The message ID, either read during receive or to be written during send.
 };
 
-typedef boost::shared_ptr<VMessage> VMessagePtr;
-typedef boost::shared_ptr<const VMessage> VMessageConstPtr;
+typedef VSharedPtr<VMessage> VMessagePtr;
+typedef VSharedPtr<const VMessage> VMessageConstPtr;
 
 /**
 VMessageFactory is an abstract base class that you must implement for purposes

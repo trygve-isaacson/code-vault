@@ -18,9 +18,14 @@ VAULT-0027
 - Simplest strategy just uses first address as you probably did before expecting 1 resolved address.
 - Better strategy iterates over all resolved addresses until one connects.
 - Complicated strategy multi-threads in an attempt to use the fastest server to respond to connection request.
+VAULT-0032
+* Made references to shared_ptr and related templates indirect.
+- The VAULT_BOOST_SHARED_PTR_INCLUDE switch in vconfigure.h controls includes and several typedefs.
+- If you define it, you get includes and typedefs using boost; otherwise, you get the C++11 typedefs.
+- The types are VSharedPtr, VWeakPtr, and VEnableSharedFromThis.
 VAULT-0029
 * Miscellaneous
-- Change copyright dates and version strings.
+- Updated copyright dates and version strings.
 - Reapply Astyle formatting, with edits for preferred initializer list bracing and preprocessor indentation.
 - Fixed a bug in VClientSession::postOutputMessage() that was introduced in 4.0a1.
 

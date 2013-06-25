@@ -14,8 +14,6 @@ http://www.bombaydigital.com/
 #include "vmutex.h"
 #include "vbufferedfilestream.h"
 #include "vtextiostream.h"
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 
 // Microsoft steals this symbol name globally. Take it back.
 #ifdef VPLATFORM_WIN
@@ -326,8 +324,8 @@ class VLogAppender {
         static void _breakpointLocationForEmit(); ///< A convenient place to set a debugger breakpoint for any appender emitting output.
 };
 
-typedef boost::shared_ptr<VLogAppender> VLogAppenderPtr;
-typedef boost::shared_ptr<const VLogAppender> VLogAppenderConstPtr;
+typedef VSharedPtr<VLogAppender> VLogAppenderPtr;
+typedef VSharedPtr<const VLogAppender> VLogAppenderConstPtr;
 typedef std::vector<VLogAppenderPtr> VLogAppenderPtrList;
 
 class VNamedLogger;
@@ -446,7 +444,7 @@ a message that has passed the level and repetition filters, to zero or more appe
     adds an empty string so the the logger will emit to the default appender.
 - It emits to all "global appenders".
 */
-class VNamedLogger : public boost::enable_shared_from_this<VNamedLogger> {
+class VNamedLogger : public VEnableSharedFromThis<VNamedLogger> {
     public:
 
         /**
@@ -575,8 +573,8 @@ class VNamedLogger : public boost::enable_shared_from_this<VNamedLogger> {
         friend class VLoggerPrintStackConfig; // ditto
 };
 
-typedef boost::shared_ptr<VNamedLogger> VNamedLoggerPtr;
-typedef boost::shared_ptr<const VNamedLogger> VNamedLoggerConstPtr;
+typedef VSharedPtr<VNamedLogger> VNamedLoggerPtr;
+typedef VSharedPtr<const VNamedLogger> VNamedLoggerConstPtr;
 
 /**
 The abstract base class is what you implement to allow an appender class to be
@@ -605,7 +603,7 @@ class VLogAppenderFactory {
 
 };
 
-typedef boost::shared_ptr<const VLogAppenderFactory> VLogAppenderFactoryPtr;
+typedef VSharedPtr<const VLogAppenderFactory> VLogAppenderFactoryPtr;
 
 /**
 This class holds the constants defining the log levels. You can use other
@@ -1061,8 +1059,8 @@ class VStringLogger : public VNamedLogger {
 
 };
 
-typedef boost::shared_ptr<VStringLogger> VStringLoggerPtr;
-typedef boost::shared_ptr<const VStringLogger> VStringLoggerConstPtr;
+typedef VSharedPtr<VStringLogger> VStringLoggerPtr;
+typedef VSharedPtr<const VStringLogger> VStringLoggerConstPtr;
 
 /**
 A special logger subclass meant to be declared on the stack (not "registered") and explicitly logged
@@ -1087,7 +1085,7 @@ class VStringVectorLogger : public VNamedLogger {
 
 };
 
-typedef boost::shared_ptr<VStringVectorLogger> VStringVectorLoggerPtr;
-typedef boost::shared_ptr<const VStringVectorLogger> VStringVectorLoggerConstPtr;
+typedef VSharedPtr<VStringVectorLogger> VStringVectorLoggerPtr;
+typedef VSharedPtr<const VStringVectorLogger> VStringVectorLoggerConstPtr;
 
 #endif /* vlogger_h */

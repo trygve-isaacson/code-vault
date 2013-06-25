@@ -25,7 +25,7 @@ VFSNode VLogger::gBaseLogDirectory(".");
 // VNamedLogger ---------------------------------------------------------------
 
 VNamedLogger::VNamedLogger(const VString& name, int level, const VStringVector& appenderNames, VLogAppenderPtr specificAppender)
-    : boost::enable_shared_from_this<VNamedLogger>()
+    : VEnableSharedFromThis<VNamedLogger>()
     , mName(name)
     , mLevel(level)
     , mAppendersMutex(VSTRING_FORMAT("VNamedLogger[%s]", name.chars()), true/*suppress logging*/)

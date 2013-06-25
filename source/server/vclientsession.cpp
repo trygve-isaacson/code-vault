@@ -19,7 +19,7 @@ http://www.bombaydigital.com/
 // VClientSession --------------------------------------------------------------
 
 VClientSession::VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket, const VDuration& standbyTimeLimit, Vs64 maxQueueDataSize)
-    : boost::enable_shared_from_this<VClientSession>()
+    : VEnableSharedFromThis<VClientSession>()
     , mName(sessionBaseName)
     , mMutex(VString::EMPTY()/*name will be set in body*/)
     , mServer(server)

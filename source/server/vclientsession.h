@@ -16,9 +16,6 @@ http://www.bombaydigital.com/
 #include "vsocketstream.h"
 #include "vbinaryiostream.h"
 
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-
 /**
     @ingroup vsocket
 */
@@ -44,7 +41,7 @@ functions are to manage the queue of outbound messages, and to ensure
 that it is not destructed until pending attached threaded tasks complete
 (see _selfDestruct() mechanism).
 */
-class VClientSession : public boost::enable_shared_from_this<VClientSession> {
+class VClientSession : public VEnableSharedFromThis<VClientSession> {
     public:
 
         /**
@@ -167,8 +164,8 @@ class VClientSession : public boost::enable_shared_from_this<VClientSession> {
         VBinaryIOStream mIOStream;      ///< The binary-format i/o stream over the raw socket stream.
 };
 
-typedef boost::shared_ptr<VClientSession> VClientSessionPtr;
-typedef boost::shared_ptr<const VClientSession> VClientSessionConstPtr;
+typedef VSharedPtr<VClientSession> VClientSessionPtr;
+typedef VSharedPtr<const VClientSession> VClientSessionConstPtr;
 typedef std::vector<VClientSessionPtr> VClientSessionList;
 
 /**

@@ -12,7 +12,7 @@ http://www.bombaydigital.com/
 #include "vcompactingdeque.h"
 
 class TestMessage;
-typedef boost::shared_ptr<TestMessage> TestMessagePtr;
+typedef VSharedPtr<TestMessage> TestMessagePtr;
 
 class TestMessage : public VMessage {
     public:

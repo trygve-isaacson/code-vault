@@ -106,12 +106,6 @@ void VPlatformUnit::_reportEnvironment() {
     this->logStatus("_CRT_SECURE_NO_DEPRECATE is not set.");
 #endif
 
-#ifdef VAULT_WIN32_STRUCTURED_EXCEPTION_TRANSLATION_SUPPORT
-    this->logStatus("VAULT_WIN32_STRUCTURED_EXCEPTION_TRANSLATION_SUPPORT is set.");
-#else
-    this->logStatus("VAULT_WIN32_STRUCTURED_EXCEPTION_TRANSLATION_SUPPORT is not set.");
-#endif
-
 #endif /* VPLATFORM_WIN */
 
 #ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT

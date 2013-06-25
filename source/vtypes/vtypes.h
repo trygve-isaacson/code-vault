@@ -623,6 +623,20 @@ class VAutoreleasePool {
         void* mPool; // "void*" so as not to add a type dependency on includers.
 };
 
+// vconfigure.h tells us via this symbol whether we are using boost::shared_ptr.
+// If not indicated, then we are using C++11 std::shared_ptr. Any necessary boost
+// includes and related compatibility stuff was done above in vtypes_platform.h,
+// so here we finally define the library-neutral names for these things:
+#ifdef VAULT_BOOST_SHARED_PTR_INCLUDE
+    #define VSharedPtr              boost::shared_ptr
+    #define VWeakPtr                boost::weak_ptr
+    #define VEnableSharedFromThis   boost::enable_shared_from_this
+#else
+    #define VSharedPtr              std::shared_ptr
+    #define VWeakPtr                std::weak_ptr
+    #define VEnableSharedFromThis   std::enable_shared_from_this
+#endif
+
 /*
 Memory leak tracking facility. See implementation in vmemorytracker.cpp.
 The feature is compiled in, or not, based on this defined preprocessor symbol.

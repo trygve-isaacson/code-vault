@@ -230,7 +230,7 @@ void VException::_recordStackTrace() {
     }
 
     // Use a VStringLogger so we can log directly to it and then capture its lines and add them to the exception.
-    boost::shared_ptr<VStringLogger> logger(new VStringLogger(VString::EMPTY(), VLoggerLevel::TRACE));
+    VSharedPtr<VStringLogger> logger(new VStringLogger(VString::EMPTY(), VLoggerLevel::TRACE));
     VThread::logStackCrawl("Stack:", logger, false);
     mErrorString += VString::NATIVE_LINE_ENDING();
     mErrorString += logger->getLines();
