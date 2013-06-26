@@ -44,6 +44,7 @@ class VInstantUnit : public VUnit {
         void _runDurationStringTests();
         void _runInstantFormatterTests();
 
+        void _testInstantFormatter(const VString& label, const VInstant& instant, bool useLocal, const VString& format, const VString& expectedOutput);
 };
 
 #endif /* vinstantunit_h */

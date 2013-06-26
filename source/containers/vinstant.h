@@ -401,13 +401,26 @@ class VInstant {
         */
         VInstant& operator-=(const VDuration& backwardOffsetDuration);
         /**
-        Sets the instant to the current time.
+        Sets the instant to the current time. The time is affected by any simulated
+        or frozen time state that has been set.
         */
         void setNow();
         /**
         Sets the instant to the actual current time not offset by simulation or frozen time.
         */
         void setTrueNow();
+        /**
+        Returns an object holding the broken-down fields that this instant represents
+        in UTC. This is primarily for use by VInstantFormatter when formatting a string.
+        @return the UTC y/m/d/h/m/s etc. values for this instant
+        */
+        VInstantStruct getUTCInstantFields() const;
+        /**
+        Returns an object holding the broken-down fields that this instant represents
+        in the current time zone. This is primarily for use by VInstantFormatter when formatting a string.
+        @return the current time zone y/m/d/h/m/s etc. values for this instant
+        */
+        VInstantStruct getLocalInstantFields() const;
         /**
         Returns a UTC string representation of the instant.
         @param    s                the string to be formatted
@@ -1176,52 +1189,130 @@ class VDateAndTime {
 
 inline bool operator==(const VDateAndTime& dt1, const VDateAndTime& dt2) { return (dt1.mDate == dt2.mDate) && (dt1.mTimeOfDay == dt2.mTimeOfDay); }
 
-class VInstantFormatterLocalizedStrings {
+// VInstantFormatterLocaleInfo -----------------------------------------------
+
+/**
+This class holds a set of locale-specific text and other information used when
+formatting VInstant time stamp strings. The purpose is to decouple the text and
+rules specific to a locale from the formatting directive logic of VInstantFormatter
+itself. You can supply one of these when constructing a VInstantFormatter to
+control the format. Currently I have the default constructor creating US English
+strings and that's all, but you can build one for another locale and use it when
+appropriate. 
+*/
+class VInstantFormatterLocaleInfo {
     public:
     
-        VInstantFormatterLocalizedStrings();
-        ~VInstantFormatterLocalizedStrings() {}
+        /**
+        Returns a reference to a global locale info object for a specific locale.
+        Currently I do not actually track and return objects for different locales,
+        so this is a future-proofing API. It always returns the US English info.
+        @param  localeName  the local name string (e.g. "en-us")
+        @return the info for the specified locale, to use when formatting
+        */
+        static const VInstantFormatterLocaleInfo& getLocaleInfo(const VString& localeName);
+
+        /**
+        Constructs an empty locale info that you can modify.
+        (In reality, the default constructor currently fills in "en-us" locale info.)
+        */
+        VInstantFormatterLocaleInfo();
+        ~VInstantFormatterLocaleInfo() {}
         
-        const VString CE_MARKER;
-        const VString AM_MARKER;
-        const VString PM_MARKER;
-        VStringVector MONTH_NAMES_SHORT;    // [0] = Jan ... [11] = Dec
-        VStringVector MONTH_NAMES_LONG;
-        VStringVector DAY_NAMES_SHORT;      // [0] = Sun ... [6] = Sat
-        VStringVector DAY_NAMES_LONG;
+        // The instance variables are public since they are just data, which you can
+        // build if you are setting up your own locale object.
+
+        VString         CE_MARKER;              ///< The marker for the common era name, e.g. "CE" or "AD"
+        VString         AM_MARKER;              ///< The marker for times before noon, e.g. "AM"
+        VString         PM_MARKER;              ///< The marker for time after noon, e.g. "PM"
+        VStringVector   MONTH_NAMES_SHORT;      ///< Short-form abbreviated month names, e.g. [0] = "Jan" ... [11] = "Dec"
+        VStringVector   MONTH_NAMES_LONG;       ///< Long-form full month names, e.g. [0] = "January" ... [11] = "December"
+        VStringVector   DAY_NAMES_SHORT;        ///< Short-form abbreviated day-of-week names, e.g. [0] = "Sun" ... [6] = "Sat"
+        VStringVector   DAY_NAMES_LONG;         ///< Long-form full day-of-week names, e.g. [0] = "Sunday" ... [6] = "Saturday"
 };
 
+// VInstantFormatter ---------------------------------------------------------
+
+/**
+This class describes how a VInstant should be formatted as a string.
+You construct it with a format specifier string, whose contents lay out the
+fields that you want in the string, and their form.
+The format specifier implements as closely as possible the same directives as
+the Java SimpleDateFormat documentation describes:
+<http://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html>
+You can also supply a locale info object to indicate the language of non-numeric
+parts of the string. In the future this may also include some aspects of formatting
+that differ per locale rather than per format specifier.
+
+Because there is nothing mutable in this class, and because there is no transient
+internal state in the object, the format() method can be called freely by multiple
+threads at the same time.
+*/
 class VInstantFormatter {
     public:
-    
+
+        /**
+        Constructs a formatter for the default locale with a default format specifier.
+        */
         VInstantFormatter();
-        VInstantFormatter(const VInstantFormatterLocalizedStrings& localizedStrings);
+        /**
+        Constructs a formatter for a specified locale with a default format specifier.
+        @param localeInfo   the locale to use
+        */
+        VInstantFormatter(const VInstantFormatterLocaleInfo& localeInfo);
+        /**
+        Constructs a formatter for the default locale with a specified format specifier.
+        @param formatSpecifier  the format to apply
+        */
         VInstantFormatter(const VString& formatSpecifier);
-        VInstantFormatter(const VString& formatSpecifier, const VInstantFormatterLocalizedStrings& localizedStrings);
+        /**
+        Constructs a formatter for a specified locale and format specifier.
+        @param formatSpecifier  the format to apply
+        @param localeInfo       the locale to use
+        */
+        VInstantFormatter(const VString& formatSpecifier, const VInstantFormatterLocaleInfo& localeInfo);
+
         ~VInstantFormatter() {}
 
-        VString format(const VInstant& when) const { return this->_format(when); }
-        //VString format(const VDate& d) const;
-        //VString format(const VTimeOfDay& tod) const;
+        /**
+        Builds and returns a local time zone time stamp string for the specified instant,
+        according to the locale and format specifier supplied to the constructor
+        of this formatter. Assuming that the local time zone is non-UTC, if the format
+        specifier includes time zone, it will be non-zero such as "-07:00" depending on
+        the particular specifier.
+        */
+        VString formatLocalString(const VInstant& when) const;
+        /**
+        Builds and returns a UTC time zone time stamp string for the specified instant,
+        according to the locale and format specifier supplied to the constructor
+        of this formatter. If the format specifier includes the time zone, it will
+        indicate UTC in a form such as "Z" or "+0:00" depending on the particular specifier.
+        */
+        VString formatUTCString(const VInstant& when) const;
 
     private:
     
-        VString _format(const VInstant& when) const;
-        void _flushPendingFieldSpecifier(const VInstant& when, const VDate& d, const VTimeOfDay& tod, VString& fieldSpecifier/*will be set to empty on return*/, VString& resultToAppendTo) const;
+        /**
+        This is what we call internally to format the instant after converting it to
+        a broken-down set of information. If it's a UTC time, the offset is zero;
+        otherwise it's the offset in milliseconds.
+        */
+        VString _format(const VInstantStruct& when, int utcOffsetMilliseconds) const;
+        void _flushPendingFieldSpecifier(const VInstantStruct& when, int utcOffsetMilliseconds, VString& fieldSpecifier/*will be set to empty on return*/, VString& resultToAppendTo) const;
 
         void _flushFixedLengthTextValue(const VString& value, VString& resultToAppendTo) const;
         void _flushVariableLengthTextValue(const VString& shortValue, const VString& longValue, int fieldLength, VString& resultToAppendTo) const;
         void _flushNumberValue(int value, int fieldLength, VString& resultToAppendTo) const;
         void _flushYearValue(int year, int fieldLength, VString& resultToAppendTo) const;
         void _flushMonthValue(int month, int fieldLength, VString& resultToAppendTo) const;
-        void _flushDayNameValue(const VDate& d, int fieldLength, VString& resultToAppendTo) const;
-        void _flushDayNumberValue(const VDate& d, int fieldLength, VString& resultToAppendTo) const;
-        void _flushTimeZoneValue(const VInstant& when, const VString& fieldSpecifier, VString& resultToAppendTo) const;
+        void _flushDayNameValue(int dayOfWeek/*0=sun ... 6=sat*/, int fieldLength, VString& resultToAppendTo) const;
+        void _flushDayNumberValue(int dayOfWeek/*0=sun ... 6=sat*/, int fieldLength, VString& resultToAppendTo) const;
+        void _flushTimeZoneValue(int utcOffsetMilliseconds, const VString& fieldSpecifier, VString& resultToAppendTo) const;
         
         VString mFormatSpecifier;
         
         // Pseudo-constants: Potentially localized values, not static, because we allow setting per VInstantFormatter.
-        const VInstantFormatterLocalizedStrings mLocalizedStrings;
+        const VInstantFormatterLocaleInfo& mLocaleInfo;
 };
 
 #endif /* vinstant_h */

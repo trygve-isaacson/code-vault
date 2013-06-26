@@ -571,103 +571,132 @@ void VInstantUnit::_runInstantFormatterTests() {
         VInstantFormatter formatter;
         VString s;
         
-        s = formatter.format(now);
+        s = formatter.formatLocalString(now);
         this->logStatus(VSTRING_FORMAT("VInstant old API local string output for local time (offset=%lld) is '%s'", now.getValue(), now.getLocalString().chars()));
         this->logStatus(VSTRING_FORMAT("VInstantFormatter default output for local time is '%s'", s.chars()));
     }
     
     // Now let's test some specific formatting directives.
-    VDate       d_06_03_1998(1998, 6, 3);
-    VTimeOfDay  tod_15_56_37_444_pm(15, 56, 37, 444);
     VInstant    when;
-
-    when.setValues(d_06_03_1998, tod_15_56_37_444_pm, VInstant::LOCAL_TIME_ZONE_ID());
+    when.setValues(VDate(1998, 6, 3), VTimeOfDay(15, 56, 37, 444), VInstant::LOCAL_TIME_ZONE_ID());
     
     // Note: some of these tests only work when run on a machine set to Pacific time, because TZ conversions are being
     // performed and then tested against. So we may need to conditionalize running these tests.
     
-    /* scope for formatter test */ {
-        VInstantFormatter formatter("E, y-MMM-dd HH:mm:ss.SSS");
-        VString s = formatter.format(when);
-        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
-        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("Wed, 1998-Jun-03 15:56:37.444"));
-    }
+    this->_testInstantFormatter("E (short day of week name)", when, true,
+        "E, y-MMM-dd HH:mm:ss.SSS",
+        "Wed, 1998-Jun-03 15:56:37.444");
     
-    /* scope for formatter test */ {
-        VInstantFormatter formatter("E, y-MMM-dd HH:mm:ss.SSS G");
-        VString s = formatter.format(when);
-        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
-        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("Wed, 1998-Jun-03 15:56:37.444 CE"));
-    }
+    this->_testInstantFormatter("G (era)", when, true,
+        "E, y-MMM-dd HH:mm:ss.SSS G",
+        "Wed, 1998-Jun-03 15:56:37.444 AD");
     
-    /* scope for formatter test */ {
-        VInstantFormatter formatter("EEEE, yy-MMMM-d HH:mm:ss.SSS");
-        VString s = formatter.format(when);
-        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
-        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("Wednesday, 98-June-3 15:56:37.444"));
-    }
+    this->_testInstantFormatter("EEEE (long day of week name) / yy-d (2-digit year, 1-digit day)", when, true,
+        "EEEE, yy-MMMM-d HH:mm:ss.SSS",
+        "Wednesday, 98-June-3 15:56:37.444");
     
-    /* scope for formatter test */ {
-        VInstantFormatter formatter("y-MM-dd HH:mm:ss.SSS z");
-        VString s = formatter.format(when);
-        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
-        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 15:56:37.444 GMT-07:00"));
-    }
+    this->_testInstantFormatter("z (general time zone)", when, true,
+        "y-MM-dd HH:mm:ss.SSS z",
+        "1998-06-03 15:56:37.444 GMT-07:00");
     
-    /* scope for formatter test */ {
-        VInstantFormatter formatter("u, y-MMM-dd HH:mm:ss.SSS");
-        VString s = formatter.format(when);
-        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
-        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("3, 1998-Jun-03 15:56:37.444"));
-    }
+    this->_testInstantFormatter("u (day of week number)", when, true,
+        "u, y-MMM-dd HH:mm:ss.SSS",
+        "3, 1998-Jun-03 15:56:37.444");
     
-    /* scope for formatter test */ {
-        VInstantFormatter formatter("y-MM-dd HH:mm:ss.SSS Z");
-        VString s = formatter.format(when);
-        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
-        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 15:56:37.444 -0700"));
-    }
+    this->_testInstantFormatter("Z (RFC 822 time zone)", when, true,
+        "y-MM-dd HH:mm:ss.SSS Z",
+        "1998-06-03 15:56:37.444 -0700");
     
-    /* scope for formatter test */ {
-        VInstantFormatter formatter("y-MM-dd HH:mm:ss.SSS XXX");
-        VString s = formatter.format(when);
-        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
-        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 15:56:37.444 -07:00Z"));
-    }
+    this->_testInstantFormatter("XXX (ISO 8601 3-letter)", when, true,
+        "y-MM-dd HH:mm:ss.SSS XXX",
+        "1998-06-03 15:56:37.444 -07:00Z");
     
-    /* scope for formatter test */ {
-        VInstantFormatter formatter("y-MM-dd HH:mm:ss.SSS XX");
-        VString s = formatter.format(when);
-        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
-        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 15:56:37.444 -0700Z"));
-    }
+    this->_testInstantFormatter("XX (ISO 8601 2-letter)", when, true,
+        "y-MM-dd HH:mm:ss.SSS XX",
+        "1998-06-03 15:56:37.444 -0700Z");
     
-    /* scope for formatter test */ {
-        VInstantFormatter formatter("y-MM-dd HH:mm:ss.SSS X");
-        VString s = formatter.format(when);
-        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
-        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 15:56:37.444 -07Z"));
-    }
+    this->_testInstantFormatter("X (ISO 8601 1-letter)", when, true,
+        "y-MM-dd HH:mm:ss.SSS X",
+        "1998-06-03 15:56:37.444 -07Z");
     
-    /* scope for formatter test */ {
-        VInstantFormatter formatter("y-MM-dd HH:mm:ss");
-        VString s = formatter.format(when);
-        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
-        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 15:56:37"));
-    }
+    this->_testInstantFormatter("simplest form", when, true,
+        "y-MM-dd HH:mm:ss",
+        "1998-06-03 15:56:37");
+
+    this->_testInstantFormatter("KK + a (12-hour with AM/PM suffix)", when, true,
+        "y-MM-dd KK:mm:ss a",
+        "1998-06-03 03:56:37 PM");
+
+    this->_testInstantFormatter("kitchen sink", when, true,
+        "G|GG|y|yy|yyy|yyyy|Y|YY|YYY|YYYY|M|MM|MMM|MMMM|d|dd|E|EE|EEE|EEEE|u|uu|a|H|HH|k|kk|K|KK|h|hh|m|mm|s|ss|S|SS|SSS|z|Z|X|XX|XXX",
+        "AD|AD|1998|98|1998|1998|1998|98|1998|1998|6|06|Jun|June|3|03|Wed|Wed|Wed|Wednesday|3|03|PM|15|15|16|16|3|03|3|03|56|56|37|37|444|444|444|GMT-07:00|-0700|-07Z|-0700Z|-07:00Z");
+
+    // Do tests on UTC values. Good because they don't depend on the TZ where we are running!
+    when.setValues(VDate(1998, 6, 3), VTimeOfDay(15, 56, 37, 444), VInstant::UTC_TIME_ZONE_ID());
+    this->_testInstantFormatter("kitchen sink UTC", when, false,
+        "G|GG|y|yy|yyy|yyyy|Y|YY|YYY|YYYY|M|MM|MMM|MMMM|d|dd|E|EE|EEE|EEEE|u|uu|a|H|HH|k|kk|K|KK|h|hh|m|mm|s|ss|S|SS|SSS|z|Z|X|XX|XXX",
+        "AD|AD|1998|98|1998|1998|1998|98|1998|1998|6|06|Jun|June|3|03|Wed|Wed|Wed|Wednesday|3|03|PM|15|15|16|16|3|03|3|03|56|56|37|37|444|444|444|GMT+00:00|+0000|Z|Z|Z");
     
-    /* scope for formatter test */ {
-        VInstantFormatter formatter("y-MM-dd KK:mm:ss a");
-        VString s = formatter.format(when);
-        this->logStatus(VSTRING_FORMAT("VInstantFormatter output for chosen time is '%s'", s.chars()));
-        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("1998-06-03 03:56:37 PM"));
-    }
-    
-    /* scope for formatter test */ {
-        VInstantFormatter formatter("G|GG|y|yy|yyy|yyyy|Y|YY|YYY|YYYY|M|MM|MMM|MMMM|d|dd|E|EE|EEE|EEEE|u|uu|a|H|HH|k|kk|K|KK|h|hh|m|mm|s|ss|S|SS|SSS|z|Z|X|XX|XXX");
-        VString s = formatter.format(when);
-        this->logStatus(VSTRING_FORMAT("VInstantFormatter kitchen sink for chosen time is '%s'", s.chars()));
-        VUNIT_ASSERT_EQUAL(s, VSTRING_COPY("CE|CE|1998|98|1998|1998|1998|98|1998|1998|6|06|Jun|June|3|03|Wed|Wed|Wed|Wednesday|3|03|PM|15|15|16|16|3|03|4|04|56|56|37|37|444|444|444|GMT-07:00|-0700|-07Z|-0700Z|-07:00Z"));
-    }
-    
+    // Do the examples in the Javadoc, but with UTC for TZ independence of unit tests.
+    // Note that I have left the commented out PDT version for comparison; if we pass true rather than false, and run in PDT and support TZ names, those would be the ones to use.
+    when.setValues(VDate(2001, 7, 4), VTimeOfDay(12, 8, 56, 235), VInstant::UTC_TIME_ZONE_ID());
+
+    this->_testInstantFormatter("SDF ex 1", when, false,
+        "yyyy.MM.dd G 'at' HH:mm:ss z",
+        "2001.07.04 AD at 12:08:56 GMT+00:00");
+        //"2001.07.04 AD at 12:08:56 PDT");
+
+    this->_testInstantFormatter("SDF ex 2", when, false,
+        "EEE, MMM d, ''yy",
+        "Wed, Jul 4, '01");
+
+    this->_testInstantFormatter("SDF ex 3", when, false,
+        "h:mm a",
+        "12:08 PM");
+
+    this->_testInstantFormatter("SDF ex 4", when, false,
+        "hh 'o''clock' a, zzzz",
+        "12 o'clock PM, GMT+00:00");
+        //"12 o'clock PM, Pacific Daylight Time");
+
+    this->_testInstantFormatter("SDF ex 5", when, false,
+        "K:mm a, z",
+        "0:08 PM, GMT+00:00");
+        //"0:08 PM, PDT");
+
+    this->_testInstantFormatter("SDF ex 6", when, false,
+        "yyyyy.MMMMM.dd GGG hh:mm aaa",
+        "02001.July.04 AD 12:08 PM");
+
+    this->_testInstantFormatter("SDF ex 7", when, false,
+        "EEE, d MMM yyyy HH:mm:ss Z",
+        "Wed, 4 Jul 2001 12:08:56 +0000");
+        //"Wed, 4 Jul 2001 12:08:56 -0700");
+
+    this->_testInstantFormatter("SDF ex 8", when, false,
+        "yyMMddHHmmssZ",
+        "010704120856+0000");
+        //"010704120856-0700");
+
+    this->_testInstantFormatter("SDF ex 9", when, false,
+        "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+        "2001-07-04T12:08:56.235+0000");
+        //"2001-07-04T12:08:56.235-0700");
+
+    this->_testInstantFormatter("SDF ex 10", when, false,
+        "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+        "2001-07-04T12:08:56.235Z");
+        //"2001-07-04T12:08:56.235-07:00");
+
+    this->_testInstantFormatter("SDF ex 11", when, false,
+        "YYYY-'W'ww-u",
+        "2001-W-3"); // we don't yet support W and w at all --> they currently emit blanks
+        //"2001-W27-3");
+}
+
+void VInstantUnit::_testInstantFormatter(const VString& label, const VInstant& instant, bool useLocal, const VString& format, const VString& expectedOutput) {
+    VInstantFormatter formatter(format);
+    VString s = useLocal ? formatter.formatLocalString(instant) : formatter.formatUTCString(instant);
+    VString assertLabel(VSTRING_ARGS("Exercising '%s' '%s' -> '%s'", label.chars(), format.chars(), s.chars()));
+    VUNIT_ASSERT_EQUAL_LABELED(s, expectedOutput, assertLabel);
 }

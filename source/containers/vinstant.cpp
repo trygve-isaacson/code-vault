@@ -467,6 +467,18 @@ void VInstant::setTrueNow() {
     mValue = VInstant::_platform_now();
 }
 
+VInstantStruct VInstant::getUTCInstantFields() const {
+    VInstantStruct when;
+    VInstant::_platform_offsetToUTCStruct(mValue, when);
+    return when;
+}
+
+VInstantStruct VInstant::getLocalInstantFields() const {
+    VInstantStruct when;
+    VInstant::_platform_offsetToLocalStruct(mValue, when);
+    return when;
+}
+
 #define FORMAT_FILE_NAME_SAFE_WITH_MILLISECONDS     "%d%02d%02d%02d%02d%02d%03d"
 #define FORMAT_FILE_NAME_SAFE_WITHOUT_MILLISECONDS  "%d%02d%02d%02d%02d%02d"
 #define FORMAT_UTC_WITH_MILLISECONDS                "%d-%02d-%02d %02d:%02d:%02d.%03d UTC"
@@ -1219,10 +1231,15 @@ VDateAndTime::VDateAndTime(const VString& timeZoneID)
 
 // VInstantFormatter ---------------------------------------------------------
 
-static VInstantFormatterLocalizedStrings DEFAULT_LOCALIZED_STRINGS;
+// static
+const VInstantFormatterLocaleInfo& VInstantFormatterLocaleInfo::getLocaleInfo(const VString& /*localeName*/) {
+    // TODO: Allow info for other locales to be registered and returned.
+    static const VInstantFormatterLocaleInfo EN_US_INFO;
+    return EN_US_INFO;
+}
 
-VInstantFormatterLocalizedStrings::VInstantFormatterLocalizedStrings()
-    : CE_MARKER("CE")
+VInstantFormatterLocaleInfo::VInstantFormatterLocaleInfo()
+    : CE_MARKER("AD")
     , AM_MARKER("AM")
     , PM_MARKER("PM")
     {
@@ -1270,43 +1287,96 @@ VInstantFormatterLocalizedStrings::VInstantFormatterLocalizedStrings()
 }
 
 #define DEFAULT_FORMAT_SPECIFIER "y-MM-dd HH:mm:ss.SSS"
+#define V_DEFAULT_LOCALE "en-us"
 
 VInstantFormatter::VInstantFormatter()
     : mFormatSpecifier(DEFAULT_FORMAT_SPECIFIER)
-    , mLocalizedStrings(DEFAULT_LOCALIZED_STRINGS)
+    , mLocaleInfo(VInstantFormatterLocaleInfo::getLocaleInfo(V_DEFAULT_LOCALE))
     {
 }
 
-VInstantFormatter::VInstantFormatter(const VInstantFormatterLocalizedStrings& localizedStrings)
+VInstantFormatter::VInstantFormatter(const VInstantFormatterLocaleInfo& localeInfo)
     : mFormatSpecifier(DEFAULT_FORMAT_SPECIFIER)
-    , mLocalizedStrings(localizedStrings)
+    , mLocaleInfo(localeInfo)
     {
 }
 
 VInstantFormatter::VInstantFormatter(const VString& formatSpecifier)
     : mFormatSpecifier(formatSpecifier)
-    , mLocalizedStrings(DEFAULT_LOCALIZED_STRINGS)
+    , mLocaleInfo(VInstantFormatterLocaleInfo::getLocaleInfo(V_DEFAULT_LOCALE))
     {
 }
 
-VInstantFormatter::VInstantFormatter(const VString& formatSpecifier, const VInstantFormatterLocalizedStrings& localizedStrings)
+VInstantFormatter::VInstantFormatter(const VString& formatSpecifier, const VInstantFormatterLocaleInfo& localeInfo)
     : mFormatSpecifier(formatSpecifier)
-    , mLocalizedStrings(localizedStrings)
+    , mLocaleInfo(localeInfo)
     {
 }
 
-VString VInstantFormatter::_format(const VInstant& when) const {
+VString VInstantFormatter::formatLocalString(const VInstant& when) const {
+    return this->_format(when.getLocalInstantFields(), static_cast<int>(when.getLocalOffsetMilliseconds()));
+}
+
+VString VInstantFormatter::formatUTCString(const VInstant& when) const {
+    return this->_format(when.getUTCInstantFields(), 0);
+}
+
+VString VInstantFormatter::_format(const VInstantStruct& when, int utcOffsetMilliseconds) const {
     // For efficiency, extract the date and time once rather than while looping as needed.
     // We'll almost inevitably need them.
-    const VDate d = when.getLocalDate();
-    const VTimeOfDay tod = when.getLocalTimeOfDay();
     VString result;
     VString pendingFieldSpecifier;
+    bool isEscaped = false; // true if we have encountered a single quote (') but not its match to close
+    bool isUnescapePending = false; // true if we have encountered a second single quote (')
+    bool gotEscapedChars = false;
     const int formatLength = mFormatSpecifier.length();
     
     for (int i = 0; i < formatLength; ++i) {
         VChar c = mFormatSpecifier[i];
+        
+        // If we're in escaped mode, handle all cases separately right here.
+        if (isEscaped) {
+        
+            if (c == '\'') {
+                // This is likely the end of the escape block, but could be the first of a two adjacent quotes which would mean to emit a single quote
+                if (isUnescapePending) {
+                    // Get back to normal escape mode and emit the single quote.
+                    result += '\'';
+                    isUnescapePending = false;
+                } else {
+                    isUnescapePending = true;
+                }
+
+                continue;
+
+            } else if (isUnescapePending) {
+                // The unescape is complete. Exit escape mode and proceed on to the big switch statement as normal.
+                // If there was nothing between the escape quotes, we should emit a single quote.
+                if (!gotEscapedChars) {
+                    result += '\'';
+                }
+
+                isEscaped = false;
+                isUnescapePending = false;
+                gotEscapedChars = false;
+                // lack of continue here, so we will proceed to the switch below and process this character
+            } else {
+                // This is some character inside the escape sequence. Just emit it.
+                gotEscapedChars = true;
+                result += c;
+                continue;
+            }
+        
+        }
+        
         switch (c) {
+        
+            case '\'':
+                // Enter escaped mode.
+                this->_flushPendingFieldSpecifier(when, utcOffsetMilliseconds, pendingFieldSpecifier, result);
+                isEscaped = true;
+                isUnescapePending = false;
+                break;
         
             // The following characters match those in Java 1.7 SimpleDateFormat:
             // <http://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html>
@@ -1333,90 +1403,102 @@ VString VInstantFormatter::_format(const VInstant& when) const {
             case 'Z':
             case 'X':
                 if (pendingFieldSpecifier.isNotEmpty() && (c != pendingFieldSpecifier[0])) {
-                    this->_flushPendingFieldSpecifier(when, d, tod, pendingFieldSpecifier, result);
+                    this->_flushPendingFieldSpecifier(when, utcOffsetMilliseconds, pendingFieldSpecifier, result);
                 }
 
                 pendingFieldSpecifier += c;
                 break;
 
+            // These are the ones we don't yet implement. Emit nothing, rather than unprocessed char like default does.
+            case 'w': // week in year: NOT YET IMPLEMENTED
+            case 'W': // week in month: NOT YET IMPLEMENTED
+            case 'D':
+            case 'F': // day of week in month: NOT YET IMPLEMENTED
+                this->_flushPendingFieldSpecifier(when, utcOffsetMilliseconds, pendingFieldSpecifier, result);
+                break;
+
             default:
-                this->_flushPendingFieldSpecifier(when, d, tod, pendingFieldSpecifier, result);
+                this->_flushPendingFieldSpecifier(when, utcOffsetMilliseconds, pendingFieldSpecifier, result);
                 result += c;
                 break;
         }
     }
 
-    this->_flushPendingFieldSpecifier(when, d, tod, pendingFieldSpecifier, result);
+    this->_flushPendingFieldSpecifier(when, utcOffsetMilliseconds, pendingFieldSpecifier, result);
     
     return result;
 }
 
-void VInstantFormatter::_flushPendingFieldSpecifier(const VInstant& when, const VDate& d, const VTimeOfDay& tod, VString& fieldSpecifier, VString& resultToAppendTo) const {
+void VInstantFormatter::_flushPendingFieldSpecifier(const VInstantStruct& when, int utcOffsetMilliseconds, VString& fieldSpecifier, VString& resultToAppendTo) const {
     if (fieldSpecifier.isEmpty()) {
         return;
     }
 
     int fieldSpecifierLength = fieldSpecifier.length();
     if (fieldSpecifier.startsWith('G')) {
-        this->_flushFixedLengthTextValue(mLocalizedStrings.CE_MARKER, resultToAppendTo);
+        this->_flushFixedLengthTextValue(mLocaleInfo.CE_MARKER, resultToAppendTo);
     }
     
     else if (fieldSpecifier.startsWithIgnoreCase("y")) {
-        this->_flushYearValue(d.getYear(), fieldSpecifierLength, resultToAppendTo);
+        this->_flushYearValue(when.mYear, fieldSpecifierLength, resultToAppendTo);
     }
 
     else if (fieldSpecifier.startsWith('M')) { // month (long or short name, or number 1-12)
-        this->_flushMonthValue(d.getMonth(), fieldSpecifierLength, resultToAppendTo);
+        this->_flushMonthValue(when.mMonth, fieldSpecifierLength, resultToAppendTo);
     }
 
     else if (fieldSpecifier.startsWith('d')) { // day in month 1-31
-        this->_flushNumberValue(d.getDay(), fieldSpecifierLength, resultToAppendTo);
+        this->_flushNumberValue(when.mDay, fieldSpecifierLength, resultToAppendTo);
     }
 
     else if (fieldSpecifier.startsWith('E')) { // day name in week (long or short name)
-        this->_flushDayNameValue(d, fieldSpecifierLength, resultToAppendTo);
+        this->_flushDayNameValue(when.mDayOfWeek, fieldSpecifierLength, resultToAppendTo);
     }
 
     else if (fieldSpecifier.startsWith('u')) { // day number in week (1=Monday, ..., 7=Sunday)
-        this->_flushDayNumberValue(d, fieldSpecifierLength, resultToAppendTo);
+        this->_flushDayNumberValue(when.mDayOfWeek, fieldSpecifierLength, resultToAppendTo);
     }
 
     else if (fieldSpecifier.startsWith('a')) { // AM or PM
-        this->_flushFixedLengthTextValue((tod.getHour() < 12) ? mLocalizedStrings.AM_MARKER : mLocalizedStrings.PM_MARKER, resultToAppendTo);
+        this->_flushFixedLengthTextValue((when.mHour < 12) ? mLocaleInfo.AM_MARKER : mLocaleInfo.PM_MARKER, resultToAppendTo);
     }
 
     else if (fieldSpecifier.startsWith('H')) { // hour in day 0-23
-        this->_flushNumberValue(tod.getHour(), fieldSpecifierLength, resultToAppendTo);
+        this->_flushNumberValue(when.mHour, fieldSpecifierLength, resultToAppendTo);
     }
 
     else if (fieldSpecifier.startsWith('k')) { // hour in day 1-24
-        this->_flushNumberValue(tod.getHour() + 1, fieldSpecifierLength, resultToAppendTo);
+        this->_flushNumberValue(when.mHour + 1, fieldSpecifierLength, resultToAppendTo);
     }
 
     else if (fieldSpecifier.startsWith('K')) { // hour in am/pm 0-11
-        this->_flushNumberValue(tod.getHour() % 12, fieldSpecifierLength, resultToAppendTo);
+        this->_flushNumberValue(when.mHour % 12, fieldSpecifierLength, resultToAppendTo);
     }
 
     else if (fieldSpecifier.startsWith('h')) { // hour in am/pm 1-12
-        this->_flushNumberValue((tod.getHour() % 12) + 1, fieldSpecifierLength, resultToAppendTo);
+        int hour = when.mHour % 12;
+        if (hour == 0) {
+            hour = 12;
+        }
+        this->_flushNumberValue(hour, fieldSpecifierLength, resultToAppendTo);
     }
 
     else if (fieldSpecifier.startsWith('m')) { // minute in hour 0-59
-        this->_flushNumberValue(tod.getMinute(), fieldSpecifierLength, resultToAppendTo);
+        this->_flushNumberValue(when.mMinute, fieldSpecifierLength, resultToAppendTo);
     }
 
     else if (fieldSpecifier.startsWith('s')) { // second in minute 0-59
-        this->_flushNumberValue(tod.getSecond(), fieldSpecifierLength, resultToAppendTo);
+        this->_flushNumberValue(when.mSecond, fieldSpecifierLength, resultToAppendTo);
     }
 
     else if (fieldSpecifier.startsWith('S')) { // millisecond 0-999
-        this->_flushNumberValue(tod.getMillisecond(), fieldSpecifierLength, resultToAppendTo);
+        this->_flushNumberValue(when.mMillisecond, fieldSpecifierLength, resultToAppendTo);
     }
 
     else if (fieldSpecifier.startsWith('z') || // time zone "general" format
             fieldSpecifier.startsWith('Z') || // time zone RFC 822 format
             fieldSpecifier.startsWith('X')) { // time zone ISO 8601 format
-        this->_flushTimeZoneValue(when, fieldSpecifier, resultToAppendTo);
+        this->_flushTimeZoneValue(utcOffsetMilliseconds, fieldSpecifier, resultToAppendTo);
     }
 
     fieldSpecifier = VString::EMPTY();
@@ -1449,44 +1531,41 @@ void VInstantFormatter::_flushMonthValue(int month, int fieldLength, VString& re
 
     // Rules say if if fieldLength is 3 or more, use name; otherwise treat as "number".
     if (fieldLength >= 3) {
-        this->_flushVariableLengthTextValue(mLocalizedStrings.MONTH_NAMES_SHORT[month-1], mLocalizedStrings.MONTH_NAMES_LONG[month-1], fieldLength, resultToAppendTo);
+        this->_flushVariableLengthTextValue(mLocaleInfo.MONTH_NAMES_SHORT[month-1], mLocaleInfo.MONTH_NAMES_LONG[month-1], fieldLength, resultToAppendTo);
     } else {
         this->_flushNumberValue(month, fieldLength, resultToAppendTo);
     }
 }
 
-void VInstantFormatter::_flushDayNameValue(const VDate& d, int fieldLength, VString& resultToAppendTo) const {
-    const int dayOfWeek = d.getDayOfWeek(); // 0=Sunday ...
-    this->_flushVariableLengthTextValue(mLocalizedStrings.DAY_NAMES_SHORT[dayOfWeek], mLocalizedStrings.DAY_NAMES_LONG[dayOfWeek], fieldLength, resultToAppendTo);
+void VInstantFormatter::_flushDayNameValue(int dayOfWeek/*0=sun ... 6=sat*/, int fieldLength, VString& resultToAppendTo) const {
+    this->_flushVariableLengthTextValue(mLocaleInfo.DAY_NAMES_SHORT[dayOfWeek], mLocaleInfo.DAY_NAMES_LONG[dayOfWeek], fieldLength, resultToAppendTo);
 }
 
-void VInstantFormatter::_flushDayNumberValue(const VDate& d, int fieldLength, VString& resultToAppendTo) const {
-    const int dayOfWeek = d.getDayOfWeek(); // 0=Sunday ... 6=Saturday
+void VInstantFormatter::_flushDayNumberValue(int dayOfWeek/*0=sun ... 6=sat*/, int fieldLength, VString& resultToAppendTo) const {
     // SimpleDateFormat day-of-week numbers are 1=Monday ... 7=Sunday, so compensate for Sunday:
     this->_flushNumberValue(dayOfWeek == 0 ? 7 : dayOfWeek, fieldLength, resultToAppendTo);
 }
 
-void VInstantFormatter::_flushTimeZoneValue(const VInstant& when, const VString& fieldSpecifier, VString& resultToAppendTo) const {
-    int localOffsetMilliseconds = static_cast<int>(when.getLocalOffsetMilliseconds()); // offset can't really be too big for int, simplifies formatting below
-    int absLocalOffsetHours = V_ABS(localOffsetMilliseconds / (1000 * 60 * 60));
-    int absLocalOffsetMinutes = V_ABS((localOffsetMilliseconds / (1000 * 60)) % 60);
+void VInstantFormatter::_flushTimeZoneValue(int utcOffsetMilliseconds, const VString& fieldSpecifier, VString& resultToAppendTo) const {
+    int absOffsetHours = V_ABS(utcOffsetMilliseconds / (1000 * 60 * 60));
+    int absOffsetMinutes = V_ABS((utcOffsetMilliseconds / (1000 * 60)) % 60);
 
     if (fieldSpecifier.startsWith('z')) { // general
-        resultToAppendTo += VSTRING_FORMAT("GMT%c%02d:%02d", (localOffsetMilliseconds < 0 ? '-':'+'), absLocalOffsetHours, absLocalOffsetMinutes);
+        resultToAppendTo += VSTRING_FORMAT("GMT%c%02d:%02d", (utcOffsetMilliseconds < 0 ? '-':'+'), absOffsetHours, absOffsetMinutes);
     } else if (fieldSpecifier.startsWith('Z')) { // RFC 822
-        resultToAppendTo += VSTRING_FORMAT("%c%02d%02d", (localOffsetMilliseconds < 0 ? '-':'+'), absLocalOffsetHours, absLocalOffsetMinutes);
+        resultToAppendTo += VSTRING_FORMAT("%c%02d%02d", (utcOffsetMilliseconds < 0 ? '-':'+'), absOffsetHours, absOffsetMinutes);
     } else if (fieldSpecifier.startsWith('X')) { // ISO 8601
         const int fieldSpecifierLength = fieldSpecifier.length();
         VASSERT_IN_RANGE(fieldSpecifierLength, 1, 4);
 
-        if (localOffsetMilliseconds == 0) {
+        if (utcOffsetMilliseconds == 0) {
             resultToAppendTo += 'Z';
         } else if (fieldSpecifier.length() == 1) { // rule says: sign followed by two-digit hours only
-            resultToAppendTo += VSTRING_FORMAT("%c%02dZ", (localOffsetMilliseconds < 0 ? '-':'+'), absLocalOffsetHours);
+            resultToAppendTo += VSTRING_FORMAT("%c%02dZ", (utcOffsetMilliseconds < 0 ? '-':'+'), absOffsetHours);
         } else if (fieldSpecifier.length() == 2) { // rule says: sign followed by two-digit hours and minutes
-            resultToAppendTo += VSTRING_FORMAT("%c%02d%02dZ", (localOffsetMilliseconds < 0 ? '-':'+'), absLocalOffsetHours, absLocalOffsetMinutes);
+            resultToAppendTo += VSTRING_FORMAT("%c%02d%02dZ", (utcOffsetMilliseconds < 0 ? '-':'+'), absOffsetHours, absOffsetMinutes);
         } else if (fieldSpecifier.length() == 3) { // rule says: sign followed by two-digit hours, colon, and minutes
-            resultToAppendTo += VSTRING_FORMAT("%c%02d:%02dZ", (localOffsetMilliseconds < 0 ? '-':'+'), absLocalOffsetHours, absLocalOffsetMinutes);
+            resultToAppendTo += VSTRING_FORMAT("%c%02d:%02dZ", (utcOffsetMilliseconds < 0 ? '-':'+'), absOffsetHours, absOffsetMinutes);
         }
     }
 }
