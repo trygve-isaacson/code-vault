@@ -149,6 +149,8 @@ VFSNode VFSNode::getExecutable() {
     return VFSNode::_platform_getExecutable();
 }
 
+static VInstantFormatter VFSNODE_SAFE_FILE_NAME_INSTANT_FORMATTER("yMMddHHmmssSSS");
+
 // static
 void VFSNode::safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinaryIOStream& dataStream) {
     bool success = true;
@@ -157,7 +159,8 @@ void VFSNode::safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinar
     VString targetFileName = target.getName();
 
     VInstant now;
-    VString temporaryFileName = now.getLocalString(true/*file name safe*/) + "_tmp_" + targetFileName;
+    VString temporaryFileName = now.getLocalString(VFSNODE_SAFE_FILE_NAME_INSTANT_FORMATTER) + "_tmp_" + targetFileName;
+
     VFSNode directoryNode;
     target.getParentNode(directoryNode);
     VFSNode temporaryFileNode(directoryNode, temporaryFileName);

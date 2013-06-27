@@ -394,9 +394,7 @@ VUnitSimpleTextOutput::VUnitSimpleTextOutput(VLogAppender& outputAppender) :
 void VUnitSimpleTextOutput::testSuitesBegin() {
     this->_testSuitesBegin();
 
-    VString nowText;
-    mTestSuitesStartTime.getLocalString(nowText);
-    mLogAppender.emitRaw(VSTRING_FORMAT("[status ] Test run starting at %s.", nowText.chars()));
+    mLogAppender.emitRaw(VSTRING_FORMAT("[status ] Test run starting at %s.", mTestSuitesStartTime.getLocalString().chars()));
     mLogAppender.emitRaw(VString::EMPTY());
 }
 
@@ -446,10 +444,8 @@ void VUnitSimpleTextOutput::testSuitesEnd() {
 
     VInstant now;
     VDuration totalTestTime = now - mTestSuitesStartTime;
-    VString nowText;
-    now.getLocalString(nowText);
     mLogAppender.emitRaw(VString::EMPTY());
-    mLogAppender.emitRaw(VSTRING_FORMAT("[status ] Test run ending at %s. Total time %s.", nowText.chars(), totalTestTime.getDurationString().chars()));
+    mLogAppender.emitRaw(VSTRING_FORMAT("[status ] Test run ending at %s. Total time %s.", now.getLocalString().chars(), totalTestTime.getDurationString().chars()));
 }
 
 // VUnitTeamCityOutput -------------------------------------------------------

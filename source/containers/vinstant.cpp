@@ -479,74 +479,95 @@ VInstantStruct VInstant::getLocalInstantFields() const {
     return when;
 }
 
-#define FORMAT_FILE_NAME_SAFE_WITH_MILLISECONDS     "%d%02d%02d%02d%02d%02d%03d"
-#define FORMAT_FILE_NAME_SAFE_WITHOUT_MILLISECONDS  "%d%02d%02d%02d%02d%02d"
-#define FORMAT_UTC_WITH_MILLISECONDS                "%d-%02d-%02d %02d:%02d:%02d.%03d UTC"
-#define FORMAT_UTC_WITHOUT_MILLISECONDS             "%d-%02d-%02d %02d:%02d:%02d UTC"
-#define FORMAT_LOCAL_WITH_MILLISECONDS              "%d-%02d-%02d %02d:%02d:%02d.%03d"
-#define FORMAT_LOG_LOCAL_WITH_MILLISECONDS          "%d-%02d-%02d %02d:%02d:%02d,%03d"
-#define FORMAT_LOCAL_WITHOUT_MILLISECONDS           "%d-%02d-%02d %02d:%02d:%02d"
+// These are the special string representations we use to signify the three non-specific time values, plus one for setting to the current time.
+static VString VINSTANT_STRING_NOW("NOW");
+static VString VINSTANT_STRING_PAST("PAST");
+static VString VINSTANT_STRING_FUTURE("FUTURE");
+static VString VINSTANT_STRING_NEVER("NEVER");
 
-static void _formatInstantString(const VInstantStruct& when, bool isUTC, VString& s, bool fileNameSafe, bool wantMilliseconds) {
+static VInstantFormatter VINSTANT_FORMATTER_FILENAMESAFE("yMMddHHmmssSSS");
+static VInstantFormatter VINSTANT_FORMATTER_FILENAMESAFE_WITHOUT_MILLISECONDS("yMMddHHmmss");
+static VInstantFormatter VINSTANT_FORMATTER_UTC_DEFAULT("y-MM-dd HH:mm:ss.SSS 'UTC'");
+static VInstantFormatter VINSTANT_FORMATTER_UTC_DEFAULT_WITHOUT_MILLISECONDS("y-MM-dd HH:mm:ss 'UTC'");
+static VInstantFormatter VINSTANT_FORMATTER_LOCAL_DEFAULT("y-MM-dd HH:mm:ss.SSS");
+static VInstantFormatter VINSTANT_FORMATTER_LOCAL_DEFAULT_WITHOUT_MILLISECONDS("y-MM-dd HH:mm:ss");
+
+// Readability values for passing to _getLegacyFormatter(isUTC, . . . )
+#define LEGACY_FORMATTER_IS_UTC true
+#define LEGACY_FORMATTER_IS_LOCAL false
+
+static const VInstantFormatter& _getLegacyFormatter(bool isUTC, bool fileNameSafe, bool wantMilliseconds) {
     if (fileNameSafe) {
-        if (wantMilliseconds) {
-            s.format(FORMAT_FILE_NAME_SAFE_WITH_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
-        } else {
-            s.format(FORMAT_FILE_NAME_SAFE_WITHOUT_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond);
-        }
+        return (wantMilliseconds ? VINSTANT_FORMATTER_FILENAMESAFE : VINSTANT_FORMATTER_FILENAMESAFE_WITHOUT_MILLISECONDS);
     } else if (isUTC) {
-        if (wantMilliseconds) {
-            s.format(FORMAT_UTC_WITH_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
-        } else {
-            s.format(FORMAT_UTC_WITHOUT_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond);
-        }
+        return (wantMilliseconds ? VINSTANT_FORMATTER_UTC_DEFAULT : VINSTANT_FORMATTER_UTC_DEFAULT_WITHOUT_MILLISECONDS);
     } else {
-        if (wantMilliseconds) {
-            s.format(FORMAT_LOCAL_WITH_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
-        } else {
-            s.format(FORMAT_LOCAL_WITHOUT_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond);
-        }
+        return (wantMilliseconds ? VINSTANT_FORMATTER_LOCAL_DEFAULT : VINSTANT_FORMATTER_LOCAL_DEFAULT_WITHOUT_MILLISECONDS);
+    }
+}
+
+VString VInstant::getUTCString() const {
+    return this->getUTCString(VINSTANT_FORMATTER_UTC_DEFAULT);
+}
+
+VString VInstant::getUTCString(const VInstantFormatter& formatter) const {
+    if (this->isSpecific()) {
+        return formatter.formatUTCString(*this);
+    } else if (*this == VInstant::INFINITE_PAST()) {
+        return VINSTANT_STRING_PAST;
+    } else if (*this == VInstant::INFINITE_FUTURE()) {
+        return VINSTANT_STRING_FUTURE;
+    } else { // == NEVER_OCCURRED
+        return VINSTANT_STRING_NEVER;
     }
 }
 
 void VInstant::getUTCString(VString& s, bool fileNameSafe, bool wantMilliseconds) const {
+    s = this->getUTCString(_getLegacyFormatter(LEGACY_FORMATTER_IS_UTC, fileNameSafe, wantMilliseconds));
+}
+
+VString VInstant::getLocalString() const {
+    return this->getLocalString(VINSTANT_FORMATTER_LOCAL_DEFAULT);
+}
+
+VString VInstant::getLocalString(const VInstantFormatter& formatter) const {
     if (this->isSpecific()) {
-        VInstantStruct    when;
-        VInstant::_platform_offsetToUTCStruct(mValue, when);
-        _formatInstantString(when, true/*utc*/, s, fileNameSafe, wantMilliseconds);
+        return formatter.formatLocalString(*this);
     } else if (*this == VInstant::INFINITE_PAST()) {
-        s = "PAST";
+        return VINSTANT_STRING_PAST;
     } else if (*this == VInstant::INFINITE_FUTURE()) {
-        s = "FUTURE";
-    } else { /* NEVER_OCCURRED */
-        s = "NEVER";
+        return VINSTANT_STRING_FUTURE;
+    } else { // == NEVER_OCCURRED
+        return VINSTANT_STRING_NEVER;
     }
 }
 
-VString VInstant::getUTCString(bool fileNameSafe, bool wantMilliseconds) const {
-    VString s;
-    this->getUTCString(s, fileNameSafe, wantMilliseconds);
-    return s;
+void VInstant::getLocalString(VString& s, bool fileNameSafe, bool wantMilliseconds) const {
+    s = this->getLocalString(_getLegacyFormatter(LEGACY_FORMATTER_IS_LOCAL, fileNameSafe, wantMilliseconds));
 }
 
+#define SSCANF_FORMAT_UTC_WITH_MILLISECONDS "%d-%02d-%02d %02d:%02d:%02d.%03d UTC"
+
 void VInstant::setUTCString(const VString& s) {
-    if (s == "NOW") {
+    if (s == VINSTANT_STRING_NOW) {
         this->setNow();
-    } else if (s == "PAST") {
+    } else if (s == VINSTANT_STRING_PAST) {
         mValue = kInfinitePastInternalValue;
-    } else if (s == "FUTURE") {
+    } else if (s == VINSTANT_STRING_FUTURE) {
         mValue = kInfiniteFutureInternalValue;
-    } else if (s == "NEVER") {
+    } else if (s == VINSTANT_STRING_NEVER) {
         mValue = kNeverOccurredInternalValue;
     } else {
         VInstantStruct when;
         when.mDayOfWeek = 0;
 
-        (void) ::sscanf(s, FORMAT_UTC_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
+        (void) ::sscanf(s, SSCANF_FORMAT_UTC_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
 
         mValue = VInstant::_platform_offsetFromUTCStruct(when);
     }
 }
+
+#define FORMAT_LOG_LOCAL_WITH_MILLISECONDS  "%d-%02d-%02d %02d:%02d:%02d,%03d"
 
 void VInstant::getLocalLogString(VString& s) const {
     if (this->isSpecific()) {
@@ -554,48 +575,30 @@ void VInstant::getLocalLogString(VString& s) const {
         VInstant::_platform_offsetToLocalStruct(mValue, when);
         s.format(FORMAT_LOG_LOCAL_WITH_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
     } else if (*this == VInstant::INFINITE_PAST()) {
-        s = "PAST";
+        s = VINSTANT_STRING_PAST;
     } else if (*this == VInstant::INFINITE_FUTURE()) {
-        s = "FUTURE";
+        s = VINSTANT_STRING_FUTURE;
     } else { /* NEVER_OCCURRED */
-        s = "NEVER";
+        s = VINSTANT_STRING_NEVER;
     }
 }
 
-void VInstant::getLocalString(VString& s, bool fileNameSafe, bool wantMilliseconds) const {
-    if (this->isSpecific()) {
-        VInstantStruct    when;
-        VInstant::_platform_offsetToLocalStruct(mValue, when);
-        _formatInstantString(when, false/*not utc*/, s, fileNameSafe, wantMilliseconds);
-    } else if (*this == VInstant::INFINITE_PAST()) {
-        s = "PAST";
-    } else if (*this == VInstant::INFINITE_FUTURE()) {
-        s = "FUTURE";
-    } else { /* NEVER_OCCURRED */
-        s = "NEVER";
-    }
-}
-
-VString VInstant::getLocalString(bool fileNameSafe, bool wantMilliseconds) const {
-    VString s;
-    this->getLocalString(s, fileNameSafe, wantMilliseconds);
-    return s;
-}
+#define SSCANF_FORMAT_LOCAL_WITH_MILLISECONDS "%d-%02d-%02d %02d:%02d:%02d.%03d"
 
 void VInstant::setLocalString(const VString& s) {
-    if (s == "NOW") {
+    if (s == VINSTANT_STRING_NOW) {
         this->setNow();
-    } else if (s == "PAST") {
+    } else if (s == VINSTANT_STRING_PAST) {
         mValue = kInfinitePastInternalValue;
-    } else if (s == "FUTURE") {
+    } else if (s == VINSTANT_STRING_FUTURE) {
         mValue = kInfiniteFutureInternalValue;
-    } else if (s == "NEVER") {
+    } else if (s == VINSTANT_STRING_NEVER) {
         mValue = kNeverOccurredInternalValue;
     } else {
         VInstantStruct when;
         when.mDayOfWeek = 0;
 
-        (void) ::sscanf(s, FORMAT_LOCAL_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
+        (void) ::sscanf(s, SSCANF_FORMAT_LOCAL_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
 
         mValue = VInstant::_platform_offsetFromLocalStruct(when);
     }

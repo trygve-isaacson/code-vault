@@ -541,8 +541,7 @@ void VMemoryTracker::reportMemoryTracking(const VString& label, bool toLogger, b
 
                 try {
                     if (showDetails) {
-                        VString timeString;
-                        r->mWhen.getLocalString(timeString);
+                        VString timeString = r->mWhen.getLocalString();
                         VString summary(VSTRING_ARGS(" [" VSTRING_FORMATTER_S64 "] [%s] 0x%08X " VSTRING_FORMATTER_SIZE " bytes @%s:%d", r->mAllocationNumber, timeString.chars(), r->mPointer, r->mSize, fileName.chars(), r->mLine));
 
                         if (r->mStackCrawlInfo != NULL) {

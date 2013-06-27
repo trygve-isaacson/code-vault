@@ -406,9 +406,7 @@ void VFSNodeUnit::_writeKnownDirectoryTestFile(VFSNode::KnownDirectoryIdentifier
     VTextIOStream out(fs);
 
     VInstant now;
-    VString nowString;
-    now.getLocalString(nowString);
-    out.writeLine(nowString);
+    out.writeLine(now.getLocalString());
     out.flush();
 
     this->logStatus(VSTRING_FORMAT("Wrote to file '%s'.", fileNode.getPath().chars()));

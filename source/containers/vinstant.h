@@ -18,6 +18,7 @@ class VInstant;
 class VDate;
 class VTimeOfDay;
 class VDateAndTime;
+class VInstantFormatter;
 
 /**
 A VDuration is a length of time. It is most useful in conjunction with VInstant
@@ -421,61 +422,81 @@ class VInstant {
         @return the current time zone y/m/d/h/m/s etc. values for this instant
         */
         VInstantStruct getLocalInstantFields() const;
+        
+        /*
+        There are two flavors of string conversion -- UTC and local -- and each one has
+        a modern form and a legacy form.
+        
+        The modern form returns the string, and is supplied a VInstantFormatter to control
+        the format; there are several preset formatters available in VInstantFormatter.
+        If you omit the formatter you get the same format that the legacy API provided
+        prior to Vault 4.0, for backward compatibility.
+        
+        The legacy form puts the string into a read-write parameter and has optional
+        parameters to control whether milliseconds are included and whether punctuation
+        is stripped out to make the string safe to use as a file system node name.
+        */
+        
+        // Modern APIs starting with Vault 4.0:
+        
         /**
-        Returns a UTC string representation of the instant.
-        @param    s                the string to be formatted
-        @param    fileNameSafe    if true, the returned string is stripped of the
-                                punctuation formatting chars, yielding YYYYMMDDHHMMSSmmm;
-                                if false (the default), the returned string is
-                                formatted as "YYYY-MM-DD HH:MM:SS.mmm UTC".
-        @param    wantMilliseconds  if true (the default), the string includes the
-                                milliseconds; if not, it only goes to seconds
+        Returns a string for this instant in UTC time in the format "y-MM-dd HH:mm:ss.SSS UTC",
+        or one of the special time value strings "PAST", "FUTURE", or "NEVER".
+        @return obvious
+        */
+        VString getUTCString() const;
+        /**
+        Returns a string for this instant in UTC time in the specified format,
+        or one of the special time value strings "PAST", "FUTURE", or "NEVER".
+        @param  formatter   the formatter to use
+        @return obvious
+        */
+        VString getUTCString(const VInstantFormatter& formatter) const;
+        /**
+        Returns a string for this instant in local time in the format "y-MM-dd HH:mm:ss.SSS",
+        or one of the special time value strings "PAST", "FUTURE", or "NEVER".
+        @return obvious
+        */
+        VString getLocalString() const;
+        /**
+        Returns a string for this instant in local time in the specified format,
+        or one of the special time value strings "PAST", "FUTURE", or "NEVER".
+        @param  formatter   the formatter to use
+        @return obvious
+        */
+        VString getLocalString(const VInstantFormatter& formatter) const;
+
+        // Legacy APIs:
+
+        /**
+        Returns a string for this instant in UTC time, or one of the special time value
+        strings "PAST", "FUTURE", or "NEVER". You can specify whether to use a format that
+        is safe for use in a file system node name (no punctuation), and whether to include
+        the milliseconds.
+        @param  s                   the string for format for return
+        @param  fileNameSafe        if true, the format omits punctuation and the " UTC" suffix so it can be safely used in a file system node name
+        @param  wantMilliseconds    if true, the milliseconds suffix is included; otherwise not
         */
         void getUTCString(VString& s, bool fileNameSafe = false, bool wantMilliseconds = true) const;
         /**
-        Convenience version of getUTCString that returns the string as the
-        function result. May involve one extra string copy depending on use case
-        and compiler.
-        @param    fileNameSafe    if true, the returned string is stripped of the
-                                punctuation formatting chars, yielding YYYYMMDDHHMMSSmmm.
-                                if false (the default), the returned string is
-                                formatted as "YYYY-MM-DD HH:MM:SS.mmm UTC".
-        @param    wantMilliseconds  if true (the default), the string includes the
-                                milliseconds; if not, it only goes to seconds
-        @return formatted UTC time string (ends in " UTC")
+        Returns a string for this instant in local time, or one of the special time value
+        strings "PAST", "FUTURE", or "NEVER". You can specify whether to use a format that
+        is safe for use in a file system node name (no punctuation), and whether to include
+        the milliseconds.
+        @param  s                   the string for format for return
+        @param  fileNameSafe        if true, the format omits punctuation so it can be safely used in a file system node name
+        @param  wantMilliseconds    if true, the milliseconds suffix is included; otherwise not
         */
-        VString getUTCString(bool fileNameSafe = false, bool wantMilliseconds = true) const;
+        void getLocalString(VString& s, bool fileNameSafe = false, bool wantMilliseconds = true) const;
+
         /**
         Sets the instant from a UTC string representation.
-        You must use the same string format as returned by getUTCString.
+        You must use the same string format as returned by getUTCString(), that is "y-MM-dd HH:mm:ss.SSS UTC",
+        or one of the special time value strings "PAST", "FUTURE", or "NEVER", or the special string "NOW".
         @param    s    the UTC string representation of the instant
         @see    VInstant::getUTCString()
         */
         void setUTCString(const VString& s);
-        /**
-        Returns a local string representation of the instant.
-        @param    s                the string to be formatted
-        @param    fileNameSafe    if true, the returned string is stripped of the
-                                punctuation formatting chars, yielding YYYYMMDDHHMMSSmmm.
-                                if false (the default), the returned string is
-                                formatted as "YYYY-MM-DD HH:MM:SS.mmm".
-        @param    wantMilliseconds  if true (the default), the string includes the
-                                milliseconds; if not, it only goes to seconds
-        */
-        void getLocalString(VString& s, bool fileNameSafe = false, bool wantMilliseconds = true) const;
-        /**
-        Convenience version of getLocalString that returns the string as the
-        function result. May involve one extra string copy depending on use case
-        and compiler.
-        @param    fileNameSafe    if true, the returned string is stripped of the
-                                punctuation formatting chars, yielding YYYYMMDDHHMMSSmmm.
-                                if false (the default), the returned string is
-                                formatted as "YYYY-MM-DD HH:MM:SS.mmm".
-        @param    wantMilliseconds  if true (the default), the string includes the
-                                milliseconds; if not, it only goes to seconds
-        @return formatted local time string
-        */
-        VString getLocalString(bool fileNameSafe = false, bool wantMilliseconds = true) const;
         /**
         formats an instant for logging, is not fileSafe, includes miliseconds
         @param    s                the string to be formatted
@@ -483,11 +504,13 @@ class VInstant {
         void getLocalLogString(VString& s) const;
         /**
         Sets the instant from a local string representation.
-        You must use the same string format as returned by getLocalString.
+        You must use the same string format as returned by getLocalString(), that is "y-MM-dd HH:mm:ss.SSS",
+        or one of the special time value strings "PAST", "FUTURE", or "NEVER", or the special string "NOW".
         @param    s    the local string representation of the instant
         @see    VInstant::getLocalString()
         */
         void setLocalString(const VString& s);
+
         /**
         Returns true if the instance has a specific time value, indicating that it
         is not one of the special time constants NEVER_OCCURRED, INFINITE_PAST, or

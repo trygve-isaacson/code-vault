@@ -955,10 +955,7 @@ VString VLogAppender::_formatMessage(int level, const char* file, int line, cons
     // If we are running in simulated time, display both the current and simulated time.
     if ((VInstant::getSimulatedClockOffset() != VDuration::ZERO()) || VInstant::isTimeFrozen()) {
         now.setTrueNow();
-        VString     trueTimeStampString;
-        now.getLocalString(trueTimeStampString);
-
-        timeStampString = trueTimeStampString + " " + timeStampString;
+        timeStampString = now.getLocalString() + " " + timeStampString;
     }
 
     VString levelName = VLoggerLevel::getName(level);

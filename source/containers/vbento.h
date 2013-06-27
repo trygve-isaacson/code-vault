@@ -1341,9 +1341,9 @@ class VBentoInstant : public VBentoAttribute {
         virtual VBentoAttribute* clone() const { return new VBentoInstant(this->getName(), mValue); }
         VBentoInstant& operator=(const VBentoInstant& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
-        virtual void getValueAsXMLText(VString& s) const { mValue.getUTCString(s); }
-        virtual void getValueAsString(VString& s) const { mValue.getUTCString(s); }
-        virtual void getValueAsBentoTextString(VString& s) const { mValue.getUTCString(s); }
+        virtual void getValueAsXMLText(VString& s) const { s = mValue.getUTCString(); }
+        virtual void getValueAsString(VString& s) const { s = mValue.getUTCString(); }
+        virtual void getValueAsBentoTextString(VString& s) const { s = mValue.getUTCString(); }
 
         inline const VInstant& getValue() const { return mValue; } ///< Returns the attribute's value. @return a reference to the value object
         inline void setValue(const VInstant& i) { mValue = i; } ///< Sets the attribute's value. @param i the attribute value
@@ -2279,7 +2279,7 @@ class VBentoInstantArray : public VBentoArray {
         virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { int numElements = static_cast<int>(mValue.size()); stream.writeS32(numElements); for (VInstantVector::const_iterator i = mValue.begin(); i != mValue.end(); ++i) stream.writeInstant(*i); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
         virtual int _getNumElements() const { return static_cast<int>(mValue.size()); }
-        virtual void _appendElementBentoText(int elementIndex, VString& s) const { VString instantString; mValue[elementIndex].getUTCString(instantString); s += instantString; }
+        virtual void _appendElementBentoText(int elementIndex, VString& s) const { s += mValue[elementIndex].getUTCString(); }
 
     private:
 
