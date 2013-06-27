@@ -133,8 +133,6 @@ void* VThread::userThreadMain(void* arg) {
 #endif
 
 void* VThread::threadMain(void* arg) {
-    VException::installWin32SEHandler(); // A no-op if not configured to be used.
-
     VThread*    thread = static_cast<VThread*>(arg);
     VString     threadName = thread->getName();
 

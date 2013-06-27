@@ -294,34 +294,6 @@ class VException : public std::exception {
         */
         const VStringVector& getStackTrace() const;
 
-        /**
-        On Windows, and if V_TRANSLATE_WIN32_STRUCTURED_EXCEPTIONS is enabled, this function
-        installs a structured exception handler for the current thread, that will throw a
-        VException when the SE translator callback is invoked by the runtime. Normally such
-        events (writing to a null pointer, etc.) will just crash or trigger the stack crawl
-        fatal log message. This allows you to see those errors as C++ exceptions, if you want to.
-        VThread calls this automatically. Your main thread (or your VThread::main) needs to
-        call it manually if desired.
-        If the build is not SEH enabled (at compile time), this function is a no-op.
-        */
-        static void installWin32SEHandler();
-        /**
-        On Windows, and if and if V_TRANSLATE_WIN32_STRUCTURED_EXCEPTIONS is enabled, this function
-        lets you disable (or re-enable) the installWin32SEHandler() function, which is normally enabled.
-        The purpose of this function is to let you enable SEH at compile time via the
-        V_TRANSLATE_WIN32_STRUCTURED_EXCEPTIONS symbol, but then optionally disable it at startup if
-        you have some kind of runtime configuration flag to trigger this function.
-        Note that this flag only has an effect on installWin32SEHandler() when that function is called;
-        it is called by VThread to install the handler when the thread starts. So it is not able to
-        disable SEH on a thread that is already running; it is a way to prevent subsequent threads from
-        installing the SEH (or the main thread, if you do this before the main thread installs the SEH).
-        If the build is not SEH enabled (at compile time), this function is a no-op.
-        @param  enabled if false, subsequent calls to installWin32SEHandler() will do nothing; if true,
-                            subsequent calls to installWin32SEHandler() will install the SEH if compiled in
-        */
-        static void enableWin32SEHandler(bool enabled);
-        static bool isWin32SEHandlerEnabled();
-
     private:
 
         /** Asserts if any invariant is broken. */
@@ -338,8 +310,6 @@ class VException : public std::exception {
         VString     mErrorString;   ///< The error string if NOT supplied as const char*.
         const char* mErrorMessage;  ///< The error string if supplied as const char*, else NULL.
         VStringVector mStackTrace;   ///< Optional stack frame info strings.
-
-        static bool gWin32SEHEnabled; ///< If false, compile-time-enabled installWin32SEHandler() does nothing at runtime.
 };
 
 /**

@@ -38,7 +38,6 @@ class VExceptionUnit : public VUnit {
         void _testConstructors();
         void _testCatchHierarchy();
         void _testCheckedDynamicCast();
-        void _testWin32SEH();
 
 };
 

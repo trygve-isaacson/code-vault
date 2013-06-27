@@ -50,7 +50,6 @@ void App::run() {
 
 // static
 int VThread::userMain(int argc, char** argv) {
-    VException::installWin32SEHandler(); // A no-op if not configured to be used.
 
 #ifdef VAULT_MEMORY_ALLOCATION_TRACKING_SUPPORT
     VMemoryTracker memoryTracker;
