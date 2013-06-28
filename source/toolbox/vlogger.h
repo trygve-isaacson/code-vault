@@ -339,14 +339,23 @@ class VLogAppender {
         static int _getIntInitSetting(const VString& attributePath, const VSettingsNode& settings, const VSettingsNode& defaults, int defaultValue);
         static VString _getStringInitSetting(const VString& attributePath, const VSettingsNode& settings, const VSettingsNode& defaults, const VString& defaultValue);
 
-        VMutex mMutex;          ///< A mutex to protect against multiple threads' messages from being intertwined;
-        // subclasses may access this carefully; note that it is locked prior to any
-        // call to emitMessage() or emitRawLine(), so implementors of those functions must
-        // not re-lock because to do so would cause a deadlock.
-        VString mName;          ///< The name of the appender, used for lookup by loggers.
-        bool    mFormatOutput;  ///< True if this appender should format messages it is asked to emit.
-        VString mFormatSpec;    ///< If formatting, this defines the format.
-        VInstantFormatter mTimeFormatter;   ///< If formatting and time stamp is printed, this defines the format. See VInstantFormatter for specification.
+        VMutex              mMutex;          ///< A mutex to protect against multiple threads' messages from being intertwined;
+                                                // subclasses may access this carefully; note that it is locked prior to any
+                                                // call to emitMessage() or emitRawLine(), so implementors of those functions must
+                                                // not re-lock because to do so would cause a deadlock.
+        VString             mName;          ///< The name of the appender, used for lookup by loggers.
+        bool                mFormatOutput;  ///< True if this appender should format messages it is asked to emit.
+        VString             mFormatSpec;    ///< If formatting, this defines the format.
+        VInstantFormatter   mTimeFormatter; ///< If formatting and time stamp is printed, this defines the format. See VInstantFormatter for specification.
+        
+        // These fields cache state of the mFormatSpec. This allows _formatMessage() to avoid unnecessary work
+        // when we know the format doesn't need everything to be supplied. If we allow mFormatSpec to be set
+        // after construction, these will have to be re-calculated at that time.
+        bool    mFormatUsesLocalTime;
+        bool    mFormatUsesUTCTime;
+        bool    mFormatUsesLevel;
+        bool    mFormatUsesThread;
+        bool    mFormatUsesLocation;
 
     private:
 

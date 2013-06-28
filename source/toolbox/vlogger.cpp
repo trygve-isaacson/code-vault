@@ -881,6 +881,11 @@ VLogAppender::VLogAppender(const VString& name, bool formatOutput, const VString
     , mFormatOutput(formatOutput)
     , mFormatSpec(formatSpec.isEmpty() ? DEFAULT_APPENDER_FORMAT_SPEC : formatSpec)
     , mTimeFormatter(timeFormat.isEmpty() ? DEFAULT_TIME_FORMAT : timeFormat)
+    , mFormatUsesLocalTime(mFormatSpec.contains("$localtime"))
+    , mFormatUsesUTCTime(mFormatSpec.contains("$utctime"))
+    , mFormatUsesLevel(mFormatSpec.contains("$level"))
+    , mFormatUsesThread(mFormatSpec.contains("$thread"))
+    , mFormatUsesLocation(mFormatSpec.contains("$location"))
     {
 }
 
@@ -890,6 +895,11 @@ VLogAppender::VLogAppender(const VSettingsNode& settings, const VSettingsNode& d
     , mFormatOutput(VLogAppender::_getBooleanInitSetting("format-output", settings, defaults, DO_FORMAT_OUTPUT))
     , mFormatSpec(VLogAppender::_getStringInitSetting("format-spec", settings, defaults, DEFAULT_APPENDER_FORMAT_SPEC))
     , mTimeFormatter(VLogAppender::_getStringInitSetting("time-format", settings, defaults, DEFAULT_TIME_FORMAT))
+    , mFormatUsesLocalTime(mFormatSpec.contains("$localtime"))
+    , mFormatUsesUTCTime(mFormatSpec.contains("$utctime"))
+    , mFormatUsesLevel(mFormatSpec.contains("$level"))
+    , mFormatUsesThread(mFormatSpec.contains("$thread"))
+    , mFormatUsesLocation(mFormatSpec.contains("$location"))
     {
 }
 
@@ -958,30 +968,48 @@ void VLogAppender::_emitMessage(int level, const char* file, int line, const VSt
 }
 
 VString VLogAppender::_formatMessage(int level, const char* file, int line, const VString& message) {
-    VInstant    now;
-    VString     localTimeStampString = now.getLocalString(mTimeFormatter);
-    VString     utcTimeStampString = now.getUTCString(mTimeFormatter);
+    VInstant now;
+    VInstant trueNow(now); // copy constructor avoids another call to read the clock
 
     // If we are running in simulated time, display both the current and simulated time.
-    bool needTrueTime = ((VInstant::getSimulatedClockOffset() != VDuration::ZERO()) || VInstant::isTimeFrozen());
-    if (needTrueTime) {
-        now.setTrueNow();
-        localTimeStampString = now.getLocalString(mTimeFormatter) + " " + localTimeStampString;
-        utcTimeStampString = now.getUTCString(mTimeFormatter) + " " + utcTimeStampString;
+    bool prependTrueTime = ((VInstant::getSimulatedClockOffset() != VDuration::ZERO()) || VInstant::isTimeFrozen());
+    if (prependTrueTime) {
+        trueNow.setTrueNow();
     }
 
-    VString fileAndLineIndicator;
-    if (file != NULL) {
-        fileAndLineIndicator.format("@ %s:%d: ", file, line);
-    }
+    VString formattedMessage = mFormatSpec;
     
-    VString formattedMessage = DEFAULT_APPENDER_FORMAT_SPEC;
-    formattedMessage.replace("$localtime", localTimeStampString);
-    formattedMessage.replace("$utctime", utcTimeStampString);
-    formattedMessage.replace("$level", VLoggerLevel::getName(level));
-    formattedMessage.replace("$location", fileAndLineIndicator);
-    formattedMessage.replace("$thread", VThread::getCurrentThreadName());
-    formattedMessage.replace("$message", message);
+    // I am do replacement in this order (mainly with $message last) to be sure that
+    // none of the replacements put a $ specifier into the string.
+    if (mFormatUsesLocalTime) {
+        VString localTimeStampString = now.getLocalString(mTimeFormatter);
+        if (prependTrueTime) {
+            localTimeStampString = trueNow.getLocalString(mTimeFormatter) + " " + localTimeStampString;
+        }
+        formattedMessage.replace("$localtime", localTimeStampString);
+    }
+
+    if (mFormatUsesUTCTime) {
+        VString utcTimeStampString = now.getUTCString(mTimeFormatter);
+        if (prependTrueTime) {
+            utcTimeStampString = trueNow.getUTCString(mTimeFormatter) + " " + utcTimeStampString;
+        }
+        formattedMessage.replace("$utctime", utcTimeStampString);
+    }
+
+    if (mFormatUsesLevel) {
+        formattedMessage.replace("$level", VLoggerLevel::getName(level));
+    }
+
+    if (mFormatUsesLocation && (file != NULL)) {
+        formattedMessage.replace("$location", VSTRING_FORMAT("@ %s:%d: ", file, line));
+    }
+
+    if (mFormatUsesThread) {
+        formattedMessage.replace("$thread", VThread::getCurrentThreadName());
+    }
+
+    formattedMessage.replace("$message",    message);
 
     return formattedMessage;
 }
