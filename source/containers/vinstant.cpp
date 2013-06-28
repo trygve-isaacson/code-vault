@@ -567,22 +567,6 @@ void VInstant::setUTCString(const VString& s) {
     }
 }
 
-#define FORMAT_LOG_LOCAL_WITH_MILLISECONDS  "%d-%02d-%02d %02d:%02d:%02d,%03d"
-
-void VInstant::getLocalLogString(VString& s) const {
-    if (this->isSpecific()) {
-        VInstantStruct    when;
-        VInstant::_platform_offsetToLocalStruct(mValue, when);
-        s.format(FORMAT_LOG_LOCAL_WITH_MILLISECONDS, when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond);
-    } else if (*this == VInstant::INFINITE_PAST()) {
-        s = VINSTANT_STRING_PAST;
-    } else if (*this == VInstant::INFINITE_FUTURE()) {
-        s = VINSTANT_STRING_FUTURE;
-    } else { /* NEVER_OCCURRED */
-        s = VINSTANT_STRING_NEVER;
-    }
-}
-
 #define SSCANF_FORMAT_LOCAL_WITH_MILLISECONDS "%d-%02d-%02d %02d:%02d:%02d.%03d"
 
 void VInstant::setLocalString(const VString& s) {

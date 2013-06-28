@@ -146,6 +146,33 @@ class VBentoNode;
       the current thread name. In some cases it may be useful to omit such prefix data, for example
       when using logging to emit output during tests that will need to be "diff'ed" without regard
       to the time each line was written.
+    - "format-spec" (string)
+      If formatting is to be used, this string specifies what the format is. The following
+      variables may be placed in the string to indicate the information layout. Each item is
+      simply a digit surrounded by curly brackets. The appender simply replaces each such
+      occurrence
+      $localtime - The time stamp in local time. If simulated or frozen time is in effect,
+        the true time is printed, followed by a space and the simulated time. The format used
+        for times is given by the "time-format" setting described below.
+      $utctime - The time stamp in UTC time. (The same as $localtime in other respects.)
+      $level - The level name. This is a five-character upper case string such as "WARN " or "ERROR".
+        For levels in between the large-grained values, for example 82, the string is three
+        characters abbreviating the large-grained value, and two digits of the actual number,
+        in this example "DBG82".
+      $thread - The current thread name.
+      $location - The file name and line number of the log statement; if printed, it will print a
+        trailing space. This is normally only printed for levels ERROR and below (more serious
+        conditions). It's recommended to not leave a space after the variable, so that the printed
+        trailing space will provide spacing if present, yet the item will be completely missing if
+        not printed.
+      $message - The actual log message text.
+      As an example, the default appender format is:
+      "$localtime $level | $thread | $location$message"
+    - "time-format" (string)
+      For the $localtime or $utctime variables in the format specification, this setting controls the format of
+      the time stamp text. The directives you can put in this string are defined by the class
+      VInstantFormatter, and generally are the same as the Java SimpleDateFormat.
+      The default time format is "y-MM-dd HH:mm:ss.SSS".
     - "print-stack-level" (int)
       Defaults to 0 (VLoggerLevel::OFF). If non-zero, this indicates a log level that when the
       appender receives a message at that level or less, the appender also emits a stack trace.
@@ -220,8 +247,10 @@ class VLogAppender {
         by name will route its output (after level filtering) to this appender.
         @param  name            the name of this appender
         @param  formatOutput    true if the logger should normally format its output, false for raw output
+        @param  formatSpec      the format specifier for this appender's formatted output; empty for default
+        @param  timeFormat      for any $localtime or $utctime elements in the formatSpec, the time format to use (@see VInstantFormatter for definition); empty for default
         */
-        VLogAppender(const VString& name, bool formatOutput);
+        VLogAppender(const VString& name, bool formatOutput, const VString& formatSpec, const VString& timeFormat);
         /**
         Constructs the appender from settings. A VNamedLogger that refers to this appender
         by name will route its output (after level filtering) to this appender.
@@ -316,6 +345,8 @@ class VLogAppender {
         // not re-lock because to do so would cause a deadlock.
         VString mName;          ///< The name of the appender, used for lookup by loggers.
         bool    mFormatOutput;  ///< True if this appender should format messages it is asked to emit.
+        VString mFormatSpec;    ///< If formatting, this defines the format.
+        VInstantFormatter mTimeFormatter;   ///< If formatting and time stamp is printed, this defines the format. See VInstantFormatter for specification.
 
     private:
 
@@ -926,7 +957,7 @@ It defines no additional settings properties.
 */
 class VCoutLogAppender : public VLogAppender {
     public:
-        VCoutLogAppender(const VString& name, bool formatOutput);
+        VCoutLogAppender(const VString& name, bool formatOutput, const VString& formatSpec, const VString& timeFormat);
         VCoutLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults);
         virtual ~VCoutLogAppender() {}
         virtual void addInfo(VBentoNode& infoNode) const;
@@ -942,7 +973,7 @@ It defines the following additional properties:
 */
 class VFileLogAppender : public VLogAppender {
     public:
-        VFileLogAppender(const VString& name, bool formatOutput, const VString& filePath);
+        VFileLogAppender(const VString& name, bool formatOutput, const VString& formatSpec, const VString& timeFormat, const VString& filePath);
         VFileLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults);
         virtual ~VFileLogAppender() {}
         virtual void addInfo(VBentoNode& infoNode) const;
@@ -967,7 +998,7 @@ occurs then there is no growth in the number of files on disk.
 */
 class VRollingFileLogAppender : public VLogAppender {
     public:
-        VRollingFileLogAppender(const VString& name, bool formatOutput, const VString& dirPath, const VString& fileNamePrefix, int maxNumLines);
+        VRollingFileLogAppender(const VString& name, bool formatOutput, const VString& formatSpec, const VString& timeFormat, const VString& dirPath, const VString& fileNamePrefix, int maxNumLines);
         VRollingFileLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults);
         virtual ~VRollingFileLogAppender() {}
         virtual void addInfo(VBentoNode& infoNode) const;
@@ -981,7 +1012,7 @@ It defines no additional settings properties.
 */
 class VSilentLogAppender : public VLogAppender {
     public:
-        VSilentLogAppender(const VString& name) : VLogAppender(name, true/*this won't matter*/) {}
+        VSilentLogAppender(const VString& name) : VLogAppender(name, true/*this won't matter*/, VString::EMPTY(), VString::EMPTY()) {}
         VSilentLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults) : VLogAppender(settings, defaults) {}
         virtual ~VSilentLogAppender() {}
         virtual void addInfo(VBentoNode& infoNode) const;
@@ -997,7 +1028,7 @@ It defines no additional settings properties.
 */
 class VStringLogAppender : public VLogAppender {
     public:
-        VStringLogAppender(const VString& name, bool formatOutput);
+        VStringLogAppender(const VString& name, bool formatOutput, const VString& formatSpec, const VString& timeFormat);
         VStringLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults);
         virtual ~VStringLogAppender() {}
         virtual void addInfo(VBentoNode& infoNode) const;
@@ -1020,7 +1051,7 @@ It defines no additional settings properties.
 */
 class VStringVectorLogAppender : public VLogAppender {
     public:
-        VStringVectorLogAppender(const VString& name, bool formatOutput, VStringVector* storage);
+        VStringVectorLogAppender(const VString& name, bool formatOutput, const VString& formatSpec, const VString& timeFormat, VStringVector* storage);
         VStringVectorLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults);
         virtual ~VStringVectorLogAppender();
         virtual void addInfo(VBentoNode& infoNode) const;
@@ -1042,7 +1073,7 @@ to, which uses an embedded VStringLogAppender to capture the emitted messages to
 class VStringLogger : public VNamedLogger {
     public:
 
-        VStringLogger(const VString& name, int level, bool formatOutput = VLogAppender::DO_FORMAT_OUTPUT);
+        VStringLogger(const VString& name, int level, bool formatOutput = VLogAppender::DO_FORMAT_OUTPUT, const VString& formatSpec = VString::EMPTY(), const VString& timeFormat = VString::EMPTY());
         virtual ~VStringLogger() {}
         virtual void addInfo(VBentoNode& infoNode) const;
 
@@ -1069,7 +1100,7 @@ to, which uses an embedded VStringVectorLogAppender to capture the emitted messa
 class VStringVectorLogger : public VNamedLogger {
     public:
 
-        VStringVectorLogger(const VString& name, int level, VStringVector* storage, bool formatOutput = VLogAppender::DO_FORMAT_OUTPUT);
+        VStringVectorLogger(const VString& name, int level, VStringVector* storage, bool formatOutput = VLogAppender::DO_FORMAT_OUTPUT, const VString& formatSpec = VString::EMPTY(), const VString& timeFormat = VString::EMPTY());
         virtual ~VStringVectorLogger() {}
         virtual void addInfo(VBentoNode& infoNode) const;
 

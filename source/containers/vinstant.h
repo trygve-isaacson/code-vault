@@ -498,11 +498,6 @@ class VInstant {
         */
         void setUTCString(const VString& s);
         /**
-        formats an instant for logging, is not fileSafe, includes miliseconds
-        @param    s                the string to be formatted
-        */
-        void getLocalLogString(VString& s) const;
-        /**
         Sets the instant from a local string representation.
         You must use the same string format as returned by getLocalString(), that is "y-MM-dd HH:mm:ss.SSS",
         or one of the special time value strings "PAST", "FUTURE", or "NEVER", or the special string "NOW".
@@ -1312,6 +1307,9 @@ class VInstantFormatter {
         indicate UTC in a form such as "Z" or "+0:00" depending on the particular specifier.
         */
         VString formatUTCString(const VInstant& when) const;
+        
+        // Getter, for debugging use.
+        VString getFormatSpecifier() const { return mFormatSpecifier; }
 
     private:
     

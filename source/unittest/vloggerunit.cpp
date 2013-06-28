@@ -470,7 +470,7 @@ void VLoggerUnit::_testNewInfrastructure() {
     _println("HERE IS WHAT SLX CAPTURED:");
     _println(slxOut);
 
-    VStringLogAppender* slxap = new VStringLogAppender("slxa", false);
+    VStringLogAppender* slxap = new VStringLogAppender("slxa", false, VString::EMPTY(), VString::EMPTY());
     VLogAppenderPtr slxa(slxap);
     VNamedLogger slxx("slxx", VLoggerLevel::INFO, VStringVector(), slxa);
     slxx.log(VLoggerLevel::INFO, NULL, 0, "1.slxx.info");

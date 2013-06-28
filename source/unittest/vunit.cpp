@@ -265,11 +265,11 @@ VLogAppender* VUnitOutputWriter::_newLogAppenderByType(const VString& outputType
     // We allow either cout logging, or file logging.
     VLogAppender* appender = NULL;
     if (filePath == OUTPUT_FILEPATH_STDOUT) {
-        appender = new VCoutLogAppender(VSTRING_FORMAT("vunit-%s-cout", outputType.chars()), false);
+        appender = new VCoutLogAppender(VSTRING_FORMAT("vunit-%s-cout", outputType.chars()), false, VString::EMPTY(), VString::EMPTY());
     } else {
         VFSNode logFile(filePath);
         logFile.rm();
-        appender = new VFileLogAppender(VSTRING_FORMAT("vunit-%s-%s", outputType.chars(), filePath.chars()), false, filePath);
+        appender = new VFileLogAppender(VSTRING_FORMAT("vunit-%s-%s", outputType.chars(), filePath.chars()), false, VString::EMPTY(), VString::EMPTY(), filePath);
     }
 
     return appender;

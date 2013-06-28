@@ -595,7 +595,7 @@ VLogAppenderPtr VLogger::getDefaultAppender() {
     VMutexLocker locker(_mutexInstance(), "VLogger::getDefaultAppender");
 
     if (gDefaultAppender == NULL) {
-        VLogger::_registerAppender(VLogAppenderPtr(new VCoutLogAppender("auto-default-cout-appender", VLogAppender::DO_FORMAT_OUTPUT)), true);
+        VLogger::_registerAppender(VLogAppenderPtr(new VCoutLogAppender("auto-default-cout-appender", VLogAppender::DO_FORMAT_OUTPUT, VString::EMPTY(), VString::EMPTY())), true);
     }
 
     return gDefaultAppender;
@@ -872,10 +872,15 @@ VNamedLoggerPtr VLogger::_findNamedLoggerFromPathName(const VString& pathName) {
 
 // VLogAppender ------------------------------------------------------
 
-VLogAppender::VLogAppender(const VString& name, bool formatOutput)
+static const VString DEFAULT_APPENDER_FORMAT_SPEC("$localtime $level | $thread | $location$message");
+static const VString DEFAULT_TIME_FORMAT("y-MM-dd HH:mm:ss.SSS");
+
+VLogAppender::VLogAppender(const VString& name, bool formatOutput, const VString& formatSpec, const VString& timeFormat)
     : mMutex(VSTRING_FORMAT("VLogAppender(%s)", name.chars()), true/*this mutex itself must not log*/)
     , mName(name)
     , mFormatOutput(formatOutput)
+    , mFormatSpec(formatSpec.isEmpty() ? DEFAULT_APPENDER_FORMAT_SPEC : formatSpec)
+    , mTimeFormatter(timeFormat.isEmpty() ? DEFAULT_TIME_FORMAT : timeFormat)
     {
 }
 
@@ -883,6 +888,8 @@ VLogAppender::VLogAppender(const VSettingsNode& settings, const VSettingsNode& d
     : mMutex(VSTRING_FORMAT("VLogAppender(%s)", settings.getString("name").chars()), true/*this mutex itself must not log*/)
     , mName(settings.getString("name"))
     , mFormatOutput(VLogAppender::_getBooleanInitSetting("format-output", settings, defaults, DO_FORMAT_OUTPUT))
+    , mFormatSpec(VLogAppender::_getStringInitSetting("format-spec", settings, defaults, DEFAULT_APPENDER_FORMAT_SPEC))
+    , mTimeFormatter(VLogAppender::_getStringInitSetting("time-format", settings, defaults, DEFAULT_TIME_FORMAT))
     {
 }
 
@@ -899,6 +906,9 @@ void VLogAppender::addInfo(VBentoNode& infoNode) const {
     if (!mFormatOutput) {
         infoNode.addBool("format-output", DONT_FORMAT_OUTPUT);
     }
+    
+    infoNode.addString("format-spec", mFormatSpec);
+    infoNode.addString("time-format", mTimeFormatter.getFormatSpecifier());
 }
 
 void VLogAppender::emit(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine) {
@@ -949,24 +959,31 @@ void VLogAppender::_emitMessage(int level, const char* file, int line, const VSt
 
 VString VLogAppender::_formatMessage(int level, const char* file, int line, const VString& message) {
     VInstant    now;
-    VString     timeStampString;
-    now.getLocalLogString(timeStampString);
+    VString     localTimeStampString = now.getLocalString(mTimeFormatter);
+    VString     utcTimeStampString = now.getUTCString(mTimeFormatter);
 
     // If we are running in simulated time, display both the current and simulated time.
-    if ((VInstant::getSimulatedClockOffset() != VDuration::ZERO()) || VInstant::isTimeFrozen()) {
+    bool needTrueTime = ((VInstant::getSimulatedClockOffset() != VDuration::ZERO()) || VInstant::isTimeFrozen());
+    if (needTrueTime) {
         now.setTrueNow();
-        timeStampString = now.getLocalString() + " " + timeStampString;
+        localTimeStampString = now.getLocalString(mTimeFormatter) + " " + localTimeStampString;
+        utcTimeStampString = now.getUTCString(mTimeFormatter) + " " + utcTimeStampString;
     }
 
-    VString levelName = VLoggerLevel::getName(level);
-    const VString threadName = VThread::getCurrentThreadName();
-
-    // If there's file/line number info, then always show it.
-    if (file == NULL) {
-        return VSTRING_FORMAT("%s %s | %s | %s", timeStampString.chars(), levelName.chars(), threadName.chars(), message.chars());
-    } else {
-        return VSTRING_FORMAT("%s %s | %s | @ %s:%d: %s", timeStampString.chars(), levelName.chars(), threadName.chars(), file, line, message.chars());
+    VString fileAndLineIndicator;
+    if (file != NULL) {
+        fileAndLineIndicator.format("@ %s:%d: ", file, line);
     }
+    
+    VString formattedMessage = DEFAULT_APPENDER_FORMAT_SPEC;
+    formattedMessage.replace("$localtime", localTimeStampString);
+    formattedMessage.replace("$utctime", utcTimeStampString);
+    formattedMessage.replace("$level", VLoggerLevel::getName(level));
+    formattedMessage.replace("$location", fileAndLineIndicator);
+    formattedMessage.replace("$thread", VThread::getCurrentThreadName());
+    formattedMessage.replace("$message", message);
+
+    return formattedMessage;
 }
 
 VString VLogAppender::_toString() const {
@@ -981,8 +998,8 @@ void VLogAppender::_breakpointLocationForEmit() {
 
 // VCoutLogAppender ----------------------------------------------------------
 
-VCoutLogAppender::VCoutLogAppender(const VString& name, bool formatOutput)
-    : VLogAppender(name, formatOutput)
+VCoutLogAppender::VCoutLogAppender(const VString& name, bool formatOutput, const VString& formatSpec, const VString& timeFormat)
+    : VLogAppender(name, formatOutput, formatSpec, timeFormat)
     {
     std::cout << std::endl;
 }
@@ -1005,8 +1022,8 @@ void VCoutLogAppender::_emitRawLine(const VString& line) {
 
 // VFileLogAppender ----------------------------------------------------------
 
-VFileLogAppender::VFileLogAppender(const VString& name, bool formatOutput, const VString& filePath)
-    : VLogAppender(name, formatOutput)
+VFileLogAppender::VFileLogAppender(const VString& name, bool formatOutput, const VString& formatSpec, const VString& timeFormat, const VString& filePath)
+    : VLogAppender(name, formatOutput, formatSpec, timeFormat)
     , mFileStream(VFSNode(filePath))
     , mOutputStream(mFileStream)
     {
@@ -1051,8 +1068,8 @@ void VFileLogAppender::_emitRawLine(const VString& line) {
 
 // VRollingFileLogAppender ---------------------------------------------------
 
-VRollingFileLogAppender::VRollingFileLogAppender(const VString& name, bool formatOutput, const VString& /*dirPath*/, const VString& /*fileNamePrefix*/, int /*maxNumLines*/)
-    : VLogAppender(name, formatOutput)
+VRollingFileLogAppender::VRollingFileLogAppender(const VString& name, bool formatOutput, const VString& formatSpec, const VString& timeFormat, const VString& /*dirPath*/, const VString& /*fileNamePrefix*/, int /*maxNumLines*/)
+    : VLogAppender(name, formatOutput, formatSpec, timeFormat)
     {
 }
 
@@ -1085,8 +1102,8 @@ void VSilentLogAppender::addInfo(VBentoNode& infoNode) const {
 
 // VStringLogAppender ----------------------------------------------------------
 
-VStringLogAppender::VStringLogAppender(const VString& name, bool formatOutput)
-    : VLogAppender(name, formatOutput)
+VStringLogAppender::VStringLogAppender(const VString& name, bool formatOutput, const VString& formatSpec, const VString& timeFormat)
+    : VLogAppender(name, formatOutput, formatSpec, timeFormat)
     , mLines()
     {
 }
@@ -1109,8 +1126,8 @@ void VStringLogAppender::_emitRawLine(const VString& line) {
 
 // VStringVectorLogAppender ---------------------------------------------------
 
-VStringVectorLogAppender::VStringVectorLogAppender(const VString& name, bool formatOutput, /*@Nullable*/VStringVector* storage)
-    : VLogAppender(name, formatOutput)
+VStringVectorLogAppender::VStringVectorLogAppender(const VString& name, bool formatOutput, const VString& formatSpec, const VString& timeFormat, /*@Nullable*/VStringVector* storage)
+    : VLogAppender(name, formatOutput, formatSpec, timeFormat)
     , mStorage(storage)
     , mLines()
     {
@@ -1143,9 +1160,9 @@ void VStringVectorLogAppender::_emitRawLine(const VString& line) {
 
 // VStringLogger -------------------------------------------------------------
 
-VStringLogger::VStringLogger(const VString& name, int level, bool formatOutput)
+VStringLogger::VStringLogger(const VString& name, int level, bool formatOutput, const VString& formatSpec, const VString& timeFormat)
     : VNamedLogger(name, level, VStringVector())
-    , mAppender(name + ".appender", formatOutput)
+    , mAppender(name + ".appender", formatOutput, formatSpec, timeFormat)
     {
 }
 
@@ -1160,9 +1177,9 @@ void VStringLogger::_emitToAppenders(int level, const char* file, int line, bool
 
 // VStringVectorLogger -------------------------------------------------------------
 
-VStringVectorLogger::VStringVectorLogger(const VString& name, int level, /*@Nullable*/VStringVector* storage, bool formatOutput)
+VStringVectorLogger::VStringVectorLogger(const VString& name, int level, /*@Nullable*/VStringVector* storage, bool formatOutput, const VString& formatSpec, const VString& timeFormat)
     : VNamedLogger(name, level, VStringVector())
-    , mAppender(name + ".appender", formatOutput, storage)
+    , mAppender(name + ".appender", formatOutput, formatSpec, timeFormat, storage)
     {
 }
 
