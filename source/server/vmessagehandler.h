@@ -204,8 +204,6 @@ class VMessageHandler {
 
     private:
 
-        virtual void releaseMessage() {} // TEMPORARY VMessagePtr transition: Make sure no one uses this or overrides it. It is OBSOLETE.
-
         VMessageHandler(const VMessageHandler&); // not copyable
         VMessageHandler& operator=(const VMessageHandler&); // not assignable
 
