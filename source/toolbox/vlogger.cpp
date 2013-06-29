@@ -972,7 +972,7 @@ VString VLogAppender::_formatMessage(int level, const char* file, int line, cons
     VInstant trueNow(now); // copy constructor avoids another call to read the clock
 
     // If we are running in simulated time, display both the current and simulated time.
-    bool prependTrueTime = ((VInstant::getSimulatedClockOffset() != VDuration::ZERO()) || VInstant::isTimeFrozen());
+    bool prependTrueTime = (mFormatUsesLocalTime || mFormatUsesUTCTime) && ((VInstant::getSimulatedClockOffset() != VDuration::ZERO()) || VInstant::isTimeFrozen());
     if (prependTrueTime) {
         trueNow.setTrueNow();
     }
@@ -982,18 +982,21 @@ VString VLogAppender::_formatMessage(int level, const char* file, int line, cons
     // I am do replacement in this order (mainly with $message last) to be sure that
     // none of the replacements put a $ specifier into the string.
     if (mFormatUsesLocalTime) {
-        VString localTimeStampString = now.getLocalString(mTimeFormatter);
+        VString localTimeStampString;
         if (prependTrueTime) {
-            localTimeStampString = trueNow.getLocalString(mTimeFormatter) + " " + localTimeStampString;
+            localTimeStampString = trueNow.getLocalString(mTimeFormatter) + " ";
         }
+
+        localTimeStampString += now.getLocalString(mTimeFormatter);
         formattedMessage.replace("$localtime", localTimeStampString);
     }
 
     if (mFormatUsesUTCTime) {
-        VString utcTimeStampString = now.getUTCString(mTimeFormatter);
+        VString utcTimeStampString;
         if (prependTrueTime) {
-            utcTimeStampString = trueNow.getUTCString(mTimeFormatter) + " " + utcTimeStampString;
+            utcTimeStampString = trueNow.getUTCString(mTimeFormatter) + " ";
         }
+        utcTimeStampString += now.getUTCString(mTimeFormatter);
         formattedMessage.replace("$utctime", utcTimeStampString);
     }
 
@@ -1001,8 +1004,12 @@ VString VLogAppender::_formatMessage(int level, const char* file, int line, cons
         formattedMessage.replace("$level", VLoggerLevel::getName(level));
     }
 
-    if (mFormatUsesLocation && (file != NULL)) {
-        formattedMessage.replace("$location", VSTRING_FORMAT("@ %s:%d: ", file, line));
+    if (mFormatUsesLocation) {
+        if (file == NULL) {
+            formattedMessage.replace("$location", VString::EMPTY());
+        } else {
+            formattedMessage.replace("$location", VSTRING_FORMAT("@ %s:%d: ", file, line));
+        }
     }
 
     if (mFormatUsesThread) {

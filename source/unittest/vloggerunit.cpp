@@ -112,7 +112,7 @@ void VLoggerUnit::_testStringLoggers() {
 
     this->logStatus(VSTRING_FORMAT("VStringLogger contents:\n%s", vsl.getLines().chars()));
 
-    VStringVectorLogger vsvl("VLoggerUnit's VStringLogger", VLoggerLevel::INFO, NULL);
+    VStringVectorLogger vsvl("VLoggerUnit's VStringVectorLogger", VLoggerLevel::INFO, NULL);
     vsvl.log(VLoggerLevel::FATAL, FATAL_MESSAGE);
     vsvl.log(VLoggerLevel::ERROR, ERROR_MESSAGE);
     vsvl.log(VLoggerLevel::WARN, WARN_MESSAGE);
@@ -127,10 +127,37 @@ void VLoggerUnit::_testStringLoggers() {
     this->test(actualOutputLines.at(2).endsWith(WARN_MESSAGE), "VStringVectorLogger lines[2]");
     this->test(actualOutputLines.at(3).endsWith(INFO_MESSAGE), "VStringVectorLogger lines[3]");
 
-    this->logStatus("VStringVectorLogger contents follow:");
+    this->logStatus("VStringVectorLogger contents follow, each as unit test status element:");
     for (VStringVector::const_iterator i = actualOutputLines.begin(); i != actualOutputLines.end(); ++i)
         this->logStatus(*i);
 
+    /*
+    Test that when there is frozen or simulated time, the logger emits both time values.
+    */
+
+    VDuration frozenFutureShift = 123 * VDuration::MILLISECOND();
+    VInstant frozenStartTime; // get the time now as we start manipulating time
+    VInstant shiftedFrozenTime = frozenStartTime + frozenFutureShift;
+    VInstant::freezeTime(shiftedFrozenTime); // Until we un-freeze, all apparent VInstant "now" values will be this specified time that is shifted into the future.
+    
+    VString testTimeFormat("yMMddHHmmssSSS"); // Control the format we generate and therefore expect to see.
+    VInstantFormatter testTimeFormatter(testTimeFormat);
+    VStringLogger trueTimeLogOutputLogger("frozen time logging test logger", VLoggerLevel::INFO, VLogAppender::DO_FORMAT_OUTPUT, VString::EMPTY(), testTimeFormat);
+    VString frozenTimeString = shiftedFrozenTime.getLocalString(testTimeFormatter);
+    // Ever so slightly tricky: we'd like to verify that the true current time appears, but it can change between when we look at it
+    // and when the logger emits it! To be 100% robust and not have rare test failures, let's allow the current time or the current
+    // time plus 1ms to appear in the log output.
+    VInstant trueNow; trueNow.setTrueNow(); // It will have the true current time, not the frozen time.
+    VString trueNowString = trueNow.getLocalString(testTimeFormatter);
+    trueNow += VDuration::MILLISECOND();
+    VString trueNowPlus1msString = trueNow.getLocalString(testTimeFormatter);
+    trueTimeLogOutputLogger.log(VLoggerLevel::WARN, VSTRING_FORMAT("This warning should have two timestamps to the left: the true time '%s' (or 1ms later = '%s') and the %s-shifted frozen time '%s'.", trueNowString.chars(), trueNowPlus1msString.chars(), frozenFutureShift.getDurationString().chars(), frozenTimeString.chars()));
+    this->logStatus(VSTRING_FORMAT("frozen time logging test logger contents: %s", trueTimeLogOutputLogger.getLines().chars()));
+
+    this->test(trueTimeLogOutputLogger.getLines().contains(frozenTimeString), VSTRING_FORMAT("frozen time logging test output contains frozen time %s into the future", frozenFutureShift.getDurationString().chars()));
+    this->test(trueTimeLogOutputLogger.getLines().contains(trueNowString) || trueTimeLogOutputLogger.getLines().contains(trueNowPlus1msString), "frozen time logging test output contains true time");
+
+    VInstant::unfreezeTime();
 }
 
 void VLoggerUnit::_testMaxActiveLogLevel() {
