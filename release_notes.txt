@@ -28,6 +28,16 @@ VAULT-0029
 - Updated copyright dates and version strings.
 - Reapply Astyle formatting, with edits for preferred initializer list bracing and preprocessor indentation.
 - Fixed a bug in VClientSession::postOutputMessage() that was introduced in 4.0a1.
+VAULT-0030
+* User configurability for log output and time stamp strings.
+- You can now specify the format of VInstant time stamp strings via a VInstantFormatter.
+- It implements almost all of the format specifiers defined by Java SimpleDateFormat.
+- The existing APIs produce the same format as previously; they now use VInstantFormatter internally.
+- You can now specify the overall format structure, and time stamp format of VLogAppender.
+- This can be specified during construction or from dynamically loaded XML settings.
+- The "format-spec" XML property for appender config defines the field layout (see VLogAppender docs).
+- The "time-format" XML property for appender config defines the format of time stamps, same as VInstantFormatter.
+- The default formats produce the same logger output as previously.
 
 ---------- VERSION 4.0a5 ----------
 Trygve Isaacson, May 2013
