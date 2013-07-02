@@ -18,17 +18,18 @@ http://www.bombaydigital.com/
 
 // VClientSession --------------------------------------------------------------
 
-VClientSession::VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket, const VDuration& standbyTimeLimit, Vs64 maxQueueDataSize)
+VClientSession::VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket, VMessageInputThread* inputThread, VMessageOutputThread* outputThread, const VDuration& standbyTimeLimit, Vs64 maxQueueDataSize)
     : VEnableSharedFromThis<VClientSession>()
     , mName(sessionBaseName)
+    , mLoggerName(VSTRING_ARGS("vault.messages.VClientSession.%s.%s.%s", sessionBaseName.chars(), clientType.chars(), VLogger::getCleansedLoggerName(socket->getHostIPAddress()).chars()))
     , mMutex(VString::EMPTY()/*name will be set in body*/)
     , mServer(server)
     , mClientType(clientType)
     , mClientIP(socket->getHostIPAddress())
     , mClientPort(socket->getPortNumber())
     , mClientAddress()
-    , mInputThread(NULL)
-    , mOutputThread(NULL)
+    , mInputThread(inputThread)
+    , mOutputThread(outputThread)
     , mIsShuttingDown(false)
     , mStartupStandbyQueue()
     , mStandbyStartTime(VInstant::NEVER_OCCURRED())
@@ -44,7 +45,7 @@ VClientSession::VClientSession(const VString& sessionBaseName, VServer* server, 
 
     if (mServer == NULL) {
         VString message(VSTRING_ARGS("[%s] VClientSession: No server specified.", this->getClientAddress().chars()));
-        VLOGGER_ERROR(message);
+        VLOGGER_NAMED_ERROR(mLoggerName, message);
         throw VStackTraceException(message);
     }
 }
@@ -60,19 +61,31 @@ VClientSession::~VClientSession() {
     delete mSocket;
 }
 
+void VClientSession::initIOThreads() {
+    if (mInputThread != NULL) {
+        mInputThread->attachSession(shared_from_this());
+        mInputThread->start();
+    }
+
+    if (mOutputThread != NULL) {
+        mOutputThread->attachSession(shared_from_this());
+        mOutputThread->start();
+    }
+}
+
 void VClientSession::shutdown(VThread* callingThread) {
     VMutexLocker locker(&mMutex, VSTRING_FORMAT("[%s]VClientSession::shutdown() %s", this->getName().chars(), (callingThread == NULL ? "" : callingThread->getName().chars())));
 
     mIsShuttingDown = true;
 
     if (callingThread == NULL) {
-        VLOGGER_DEBUG(VSTRING_FORMAT("[%s] VClientSession::shutdown: Server requested shutdown of VClientSession@0x%08X.", this->getName().chars(), this));
+        VLOGGER_NAMED_DEBUG(mLoggerName, VSTRING_FORMAT("[%s] VClientSession::shutdown: Server requested shutdown of VClientSession@0x%08X.", this->getName().chars(), this));
     }
 
     if (mInputThread != NULL) {
         if (callingThread == mInputThread) {
             mInputThread = NULL;
-            VLOGGER_DEBUG(VSTRING_FORMAT("[%s] VClientSession::shutdown: Input Thread [%s] requested shutdown of VClientSession@0x%08X.", this->getName().chars(), callingThread->getName().chars(), this));
+            VLOGGER_NAMED_DEBUG(mLoggerName, VSTRING_FORMAT("[%s] VClientSession::shutdown: Input Thread [%s] requested shutdown of VClientSession@0x%08X.", this->getName().chars(), callingThread->getName().chars(), this));
         } else {
             mInputThread->stop();
         }
@@ -81,7 +94,7 @@ void VClientSession::shutdown(VThread* callingThread) {
     if (mOutputThread != NULL) {
         if (callingThread == mOutputThread) {
             mOutputThread = NULL;
-            VLOGGER_DEBUG(VSTRING_FORMAT("[%s] VClientSession::shutdown: Output Thread [%s] requested shutdown of VClientSession@0x%08X.", this->getName().chars(), callingThread->getName().chars(), this));
+            VLOGGER_NAMED_DEBUG(mLoggerName, VSTRING_FORMAT("[%s] VClientSession::shutdown: Output Thread [%s] requested shutdown of VClientSession@0x%08X.", this->getName().chars(), callingThread->getName().chars(), this));
         } else {
             mOutputThread->stop();
         }
@@ -93,16 +106,16 @@ void VClientSession::shutdown(VThread* callingThread) {
     mServer->removeClientSession(shared_from_this());
 }
 
-void VClientSession::postOutputMessage(VMessagePtr message) {
+void VClientSession::postOutputMessage(VMessagePtr message, bool isForBroadcast) {
     VMutexLocker locker(&mMutex, VSTRING_FORMAT("[%s]VClientSession::postOutputMessage()", this->getName().chars())); // protect the mStartupStandbyQueue during queue operations
 
     // Don't post if client is doing a disconnect:
     if (mIsShuttingDown || this->isClientGoingOffline()) {
-        VLOGGER_MESSAGE_WARN(VSTRING_FORMAT("VClientSession::postOutputMessage: NOT posting message@0x%08X to going-offline session [%s], presumably in process of session shutdown.", message.get(), mClientAddress.chars()));
+        VLOGGER_NAMED_WARN(mLoggerName, VSTRING_FORMAT("VClientSession::postOutputMessage: NOT posting message@0x%08X to going-offline session [%s], presumably in process of session shutdown.", message.get(), mClientAddress.chars()));
         return;
     }
 
-    if (! this->isClientOnline()) {
+    if (isForBroadcast && ! this->isClientOnline()) {
         // This branch is entered only for posting to an offline session (e.g. a session still starting up
         // that is not ready to receive normal "posted" messages.
         // We either post to the session's standby queue, or if we hit a limit we start killing the session.
@@ -116,14 +129,14 @@ void VClientSession::postOutputMessage(VMessagePtr message) {
         Vs64 currentQueueDataSize = mStartupStandbyQueue.getQueueDataSize();
         if ((mMaxClientQueueDataSize > 0) && (currentQueueDataSize >= mMaxClientQueueDataSize)) {
             // We have hit the queue size limit. Do not post. Initiate a shutdown of this session.
-            VLOGGER_ERROR(VSTRING_FORMAT("[%s] VClientSession::postOutputMessage: Reached output queue limit of " VSTRING_FORMATTER_S64 " bytes. Not posting message ID=%d. Closing socket to force shutdown of session and its i/o threads.", this->getName().chars(), mMaxClientQueueDataSize, message->getMessageID()));
+            VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VClientSession::postOutputMessage: Reached output queue limit of " VSTRING_FORMATTER_S64 " bytes. Not posting message ID=%d. Closing socket to force shutdown of session and its i/o threads.", this->getName().chars(), mMaxClientQueueDataSize, message->getMessageID()));
             mSocket->close();
         } else if ((mStandbyTimeLimit == VDuration::ZERO()) || (now <= mStandbyStartTime + mStandbyTimeLimit)) {
-            VLOGGER_DEBUG(VSTRING_FORMAT("[%s] VClientSession::postOutputMessage: Placing message ID=%d on standby queue for not-yet-started session.", this->getName().chars(), message->getMessageID()));
+            VLOGGER_NAMED_DEBUG(mLoggerName, VSTRING_FORMAT("[%s] VClientSession::postOutputMessage: Placing message ID=%d on standby queue for not-yet-started session.", this->getName().chars(), message->getMessageID()));
             mStartupStandbyQueue.postMessage(message);
         } else {
             // We have hit the standby time limit. Do not post. Initiate a shutdown of this session.
-            VLOGGER_ERROR(VSTRING_FORMAT("[%s] VClientSession::postOutputMessage: Reached standby time limit of %s. Not posting message ID=%d. Closing socket to force shutdown of session and its i/o threads.", this->getName().chars(), mStandbyTimeLimit.getDurationString().chars(), message->getMessageID()));
+            VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VClientSession::postOutputMessage: Reached standby time limit of %s. Not posting message ID=%d. Closing socket to force shutdown of session and its i/o threads.", this->getName().chars(), mStandbyTimeLimit.getDurationString().chars(), message->getMessageID()));
             mSocket->close();
         }
     } else if (mOutputThread != NULL) {
@@ -149,9 +162,9 @@ void VClientSession::postOutputMessage(VMessagePtr message) {
 void VClientSession::sendMessageToClient(VMessagePtr message, const VString& sessionLabel, VBinaryIOStream& out) {
     // No longer a need to lock mMutex, because session is ref counted and cannot disappear from under us here.
     if (mIsShuttingDown || this->isClientGoingOffline()) {
-        VLOGGER_MESSAGE_WARN(VSTRING_FORMAT("VClientSession::sendMessageToClient: NOT sending message@0x%08X to offline session [%s], presumably in process of session shutdown.", message.get(), mClientAddress.chars()));
+        VLOGGER_NAMED_WARN(mLoggerName, VSTRING_FORMAT("VClientSession::sendMessageToClient: NOT sending message@0x%08X to offline session [%s], presumably in process of session shutdown.", message.get(), mClientAddress.chars()));
     } else {
-        VLOGGER_MESSAGE_LEVEL(VMessage::kMessageQueueOpsLevel, VSTRING_FORMAT("[%s] VClientSession::sendMessageToClient: Sending message@0x%08X.", sessionLabel.chars(), message.get()));
+        VLOGGER_NAMED_LEVEL(mLoggerName, VMessage::kMessageQueueOpsLevel, VSTRING_FORMAT("[%s] VClientSession::sendMessageToClient: Sending message@0x%08X.", sessionLabel.chars(), message.get()));
         message->send(sessionLabel, out);
     }
 }
@@ -184,7 +197,7 @@ void VClientSession::_moveStandbyMessagesToAsyncOutputQueue() {
     VMessagePtr m = mStartupStandbyQueue.getNextMessage();
 
     while (m != NULL) {
-        VLOGGER_TRACE(VSTRING_FORMAT("[%s] VClientSession::_moveStandbyMessagesToAsyncOutputQueue: Moving message message@0x%08X from standby queue to output queue.", this->getName().chars(), m.get()));
+        VLOGGER_NAMED_TRACE(mLoggerName, VSTRING_FORMAT("[%s] VClientSession::_moveStandbyMessagesToAsyncOutputQueue: Moving message message@0x%08X from standby queue to output queue.", this->getName().chars(), m.get()));
         this->_postStandbyMessageToAsyncOutputQueue(m);
         m = mStartupStandbyQueue.getNextMessage();
     }

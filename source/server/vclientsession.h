@@ -45,13 +45,32 @@ class VClientSession : public VEnableSharedFromThis<VClientSession> {
     public:
 
         /**
-        Initializes the session object.
+        Initializes the session object. The i/o threads are neither attached nor
+        started by the constructor; the caller is required to call initIOThreads()
+        promptly upon return. (This is due to being unable to call shared_from_this()
+        in the constructor.)
         @param  sessionBaseName used to prefix unique info to build mName
-        @param  server      the server that keeps track of the session
-        @param  clientType  a string to distinguish the type of session
-        @param  socket      the socket the session is using
+        @param  server          the server that keeps track of the session
+        @param  clientType      a string to distinguish the type of session
+        @param  socket          the socket the session is using
+        @param  inputThread     the thread that reads message input on the socket for this session;
+                                    NULL is allowed but not an expected use case
+        @param  outputThread    the thread where message output is posted and processed;
+                                    NULL is common and indicates the session uses the socket in a
+                                    synchronous fashion, reading input on the input thread and then
+                                    writing output immediately on that same thread
         */
-        VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket, const VDuration& standbyTimeLimit, Vs64 maxQueueDataSize);
+        VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket, VMessageInputThread* inputThread, VMessageOutputThread* outputThread, const VDuration& standbyTimeLimit, Vs64 maxQueueDataSize);
+
+        /**
+        The code that instantiates the VClientSession must call initIOThreads promptly
+        upon return to finish initialization.
+        Smart pointer shared_from_this() cannot be called from the constructor
+        because the object is not managed by a smart pointer at least until
+        return from the constructor and the caller wraps it. This requires us
+        to use a two-phase init with regard to attaching this to the i/o threads.
+        */
+        virtual void initIOThreads();
 
         const VString& getName() const { return mName; }
 
@@ -85,12 +104,18 @@ class VClientSession : public VEnableSharedFromThis<VClientSession> {
         output thread, the message is posted to the thread's output queue, where
         it will be sent when the output thread wakes up; if the session is NOT
         using an output thread, the message is written to the output stream
-        immediately.
-        Vault 4.0 change: No longer any need to specify broadcast/non-broadcast
-        differences or for caller to handle posting failure.
+        immediately. If the broadcast flag is specified and session is not "online"
+        then the message is queued and will be sent after the session goes online.
         @param  message the message to be sent
         */
-        void postOutputMessage(VMessagePtr message);
+        void postOutputMessage(VMessagePtr message, bool isForBroadcast = false);
+        /**
+        Convenience function for posting a message to the session, when the message
+        is being broadcast to other sessions. Calls postOutputMessage() with the
+        broadcast flag set to true. This means the message will be queued if the
+        session is not yet "online".
+        */
+        void postBroadcastOutputMessage(VMessagePtr message) { this->postOutputMessage(message, true); }
         /**
         Sends a message immediately to the supplied output stream, if the session
         is in a valid state (not in the middle of shutting down). The VMessageOutputThread
@@ -134,6 +159,7 @@ class VClientSession : public VEnableSharedFromThis<VClientSession> {
         virtual void _postStandbyMessageToAsyncOutputQueue(VMessagePtr message);
 
         VString                 mName;          ///< A name for the session to use in logging; built from supplied base name + IP address + port.
+        VString                 mLoggerName;    ///< The logger name which we will use when emitting log output.
         VMutex                  mMutex;         ///< A mutex we use to enforce sequential processing of outbound messages, and to protect our task list.
         VServer*                mServer;        ///< The server that keeps track of this session.
         VString                 mClientType;    ///< A string distinguishing this type of session.
