@@ -45,11 +45,12 @@ class VSocketThread : public VThread {
         is some cross-domain knowledge between threads and sockets;
         this seems the cleaner of the two options.
 
-        @param    name        a name for the thread, useful for debugging purposes
+        @param  threadBaseName  a distinguishing base name for the thread, useful for debugging purposes;
+                                the thread name will be composed of this and the socket's IP address and port
         @param    socket        the socket this thread is managing
-        @param    ownerThread    the thread that created this one
+        @param    ownerThread   the thread that created this one
         */
-        VSocketThread(const VString& name, VSocket* socket, VListenerThread* ownerThread);
+        VSocketThread(const VString& threadBaseName, VSocket* socket, VListenerThread* ownerThread);
         /**
         Virtual destructor.
         */

@@ -917,6 +917,9 @@ class VLogger {
 
         // Used specifically by VNamedLogger::_emitToAppenders to emit to all "global appenders" with correct locking. Should not be called elsewhere.
         static void emitToGlobalAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine);
+        
+        // Utility function useful in forming a logger name; returns a copy of the input string with dots (our path separators) converted to dashes.
+        static VString getCleansedLoggerName(const VString& s);
 
     private:
 

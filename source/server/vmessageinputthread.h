@@ -33,14 +33,15 @@ class VMessageInputThread : public VSocketThread {
         Constructs the socket thread with the specified socket, owner thread,
         and server.
 
-        @param  name        a name for the thread, useful for debugging purposes
-        @param  socket      the socket this thread is managing
-        @param  ownerThread the thread that created this one
-        @param  server      the server we're running for
+        @param  threadBaseName  a distinguishing base name for the thread, useful for debugging purposes;
+                                the thread name will be composed of this and the socket's IP address and port
+        @param  socket          the socket this thread is managing
+        @param  ownerThread     the thread that created this one
+        @param  server          the server we're running for
         @param  messageFactory  a factory that instantiates messages suitable for this thread's input
                                 (The caller owns the factory.)
         */
-        VMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory);
+        VMessageInputThread(const VString& threadBaseName, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory);
         /**
         Virtual destructor.
         */

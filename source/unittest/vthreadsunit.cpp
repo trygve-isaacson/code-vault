@@ -37,7 +37,7 @@ class TestThreadClass : public VThread {
 };
 
 TestThreadClass::TestThreadClass(VThreadsUnit* ownerUnit, const VString& namePrefix, int numSecondsToSleep, int numIterations, bool* boolToSetOnCompletion, TestThreadClass** thisPtrToNull, volatile VThreadID_Type* threadIDMember, volatile VThreadID_Type* threadIDSelf, VMutex* mutexToLock) :
-    VThread(VSTRING_FORMAT("TestThreadClass.%s", namePrefix.chars()), thisPtrToNull != NULL, kCreateThreadJoinable, NULL),
+    VThread(VSTRING_FORMAT("TestThreadClass.%s", namePrefix.chars()), "vault.threads.TestThreadClass", thisPtrToNull != NULL, kCreateThreadJoinable, NULL),
     mOwnerUnit(ownerUnit),
     mNumSecondsToSleep(numSecondsToSleep),
     mNumIterations(numIterations),

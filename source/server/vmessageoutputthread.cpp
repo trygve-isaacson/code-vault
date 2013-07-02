@@ -13,8 +13,8 @@ http://www.bombaydigital.com/
 
 // VMessageOutputThread -------------------------------------------------------
 
-VMessageOutputThread::VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSessionPtr session, VMessageInputThread* dependentInputThread, int maxQueueSize, Vs64 maxQueueDataSize, const VDuration& maxQueueGracePeriod)
-    : VSocketThread(name, socket, ownerThread)
+VMessageOutputThread::VMessageOutputThread(const VString& threadBaseName, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSessionPtr session, VMessageInputThread* dependentInputThread, int maxQueueSize, Vs64 maxQueueDataSize, const VDuration& maxQueueGracePeriod)
+    : VSocketThread(threadBaseName, socket, ownerThread)
     , mOutputQueue()
     , mSocketStream(socket, "VMessageOutputThread")
     , mOutputStream(mSocketStream)
@@ -55,7 +55,7 @@ void VMessageOutputThread::run() {
             this->_processNextOutboundMessage();
         }
     } catch (const VSocketClosedException& /*ex*/) {
-        VLOGGER_MESSAGE_DEBUG(VSTRING_FORMAT("[%s] VMessageOutputThread: Socket has closed, thread will end.", mName.chars()));
+        VLOGGER_NAMED_DEBUG(mLoggerName, VSTRING_FORMAT("[%s] VMessageOutputThread: Socket has closed, thread will end.", mName.chars()));
     } catch (const VException& ex) {
         /*
         Unlike the input threads, we shouldn't normally get an EOF exception to indicate that the
@@ -65,17 +65,17 @@ void VMessageOutputThread::run() {
         being closed programmatically are to be expected, so we check that before logging an error.
         */
         if (this->isRunning()) {
-            VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageOutputThread::run: Exiting due to top level exception #%d '%s'.", mName.chars(), ex.getError(), ex.what()));
+            VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VMessageOutputThread::run: Exiting due to top level exception #%d '%s'.", mName.chars(), ex.getError(), ex.what()));
         } else {
-            VLOGGER_MESSAGE_DEBUG(VSTRING_FORMAT("[%s] VMessageOutputThread: Socket has closed, thread will end.", mName.chars()));
+            VLOGGER_NAMED_DEBUG(mLoggerName, VSTRING_FORMAT("[%s] VMessageOutputThread: Socket has closed, thread will end.", mName.chars()));
         }
     } catch (const std::exception& ex) {
         if (this->isRunning()) {
-            VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageOutputThread: Exiting due to top level exception '%s'.", mName.chars(), ex.what()));
+            VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VMessageOutputThread: Exiting due to top level exception '%s'.", mName.chars(), ex.what()));
         }
     } catch (...) {
         if (this->isRunning()) {
-            VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageOutputThread: Exiting due to top level unknown exception.", mName.chars()));
+            VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VMessageOutputThread: Exiting due to top level unknown exception.", mName.chars()));
         }
     }
 
@@ -124,7 +124,7 @@ bool VMessageOutputThread::postOutputMessage(VMessagePtr message, bool respectQu
 
             if (gracePeriodExceeded) {
                 if (this->isRunning()) { // Only stop() once; we may land here repeatedly under fast queueing, before stop completes.
-                    VLOGGER_ERROR(VSTRING_FORMAT("[%s] VMessageOutputThread::postOutputMessage: Closing socket to shut down session because output queue size of %d messages and " VSTRING_FORMATTER_S64 " bytes is over limit.",
+                    VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VMessageOutputThread::postOutputMessage: Closing socket to shut down session because output queue size of %d messages and " VSTRING_FORMATTER_S64 " bytes is over limit.",
                                                  mName.chars(), currentQueueSize, currentQueueDataSize));
 
                     this->stop();
@@ -135,7 +135,7 @@ bool VMessageOutputThread::postOutputMessage(VMessagePtr message, bool respectQu
                 if (now - mWhenMaxQueueSizeWarned > VDuration::MINUTE()) { // Throttle the rate of ongoing warnings.
                     mWhenMaxQueueSizeWarned = now;
                     VDuration gracePeriodRemaining = (mWhenWentOverLimit + mMaxQueueGracePeriod) - now;
-                    VLOGGER_WARN(VSTRING_FORMAT("[%s] VMessageOutputThread::postOutputMessage: Posting to queue with excess size of %d messages and " VSTRING_FORMATTER_S64 " bytes. Remaining grace period %d seconds.",
+                    VLOGGER_NAMED_WARN(mLoggerName, VSTRING_FORMAT("[%s] VMessageOutputThread::postOutputMessage: Posting to queue with excess size of %d messages and " VSTRING_FORMATTER_S64 " bytes. Remaining grace period %d seconds.",
                                                 mName.chars(), currentQueueSize, currentQueueDataSize, gracePeriodRemaining.getDurationSeconds()));
                 }
             }
@@ -147,7 +147,7 @@ bool VMessageOutputThread::postOutputMessage(VMessagePtr message, bool respectQu
         mOutputQueue.postMessage(message); // can throw bad_alloc if out of memory and queue cannot push_back
         posted = true;
     } catch (...) {
-        VLOGGER_ERROR(VSTRING_FORMAT("[%s] VMessageOutputThread::postOutputMessage: Closing socket to shut down session because ran out memory.", mName.chars()));
+        VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VMessageOutputThread::postOutputMessage: Closing socket to shut down session because ran out memory.", mName.chars()));
         this->stop();
     }
 
@@ -180,7 +180,7 @@ void VMessageOutputThread::_processNextOutboundMessage() {
             mSession->sendMessageToClient(message, mName, mOutputStream);
         } else {
             // We are just a client. No "session". Just send.
-            VLOGGER_MESSAGE_LEVEL(VMessage::kMessageQueueOpsLevel, VSTRING_FORMAT("[%s] VMessageOutputThread::_processNextOutboundMessage: Sending message@0x%08X.", mName.chars(), message.get()));
+            VLOGGER_NAMED_LEVEL(mLoggerName, VMessage::kMessageQueueOpsLevel, VSTRING_FORMAT("[%s] VMessageOutputThread::_processNextOutboundMessage: Sending message@0x%08X.", mName.chars(), message.get()));
             message->send(mName, mOutputStream);
         }
     }

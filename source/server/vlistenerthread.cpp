@@ -20,8 +20,8 @@ http://www.bombaydigital.com/
 #include "vmessageinputthread.h"
 #include "vmessageoutputthread.h"
 
-VListenerThread::VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, const VString& bindAddress, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, VClientSessionFactory* sessionFactory, bool initiallyListening)
-    : VThread(name, deleteSelfAtEnd, createDetached, manager)
+VListenerThread::VListenerThread(const VString& threadBaseName, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, const VString& bindAddress, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, VClientSessionFactory* sessionFactory, bool initiallyListening)
+    : VThread(threadBaseName, VSTRING_FORMAT("vault.messages.VListenerThread.%s.%d", threadBaseName.chars(), portNumber), deleteSelfAtEnd, createDetached, manager)
     , mPortNumber(portNumber)
     , mBindAddress(bindAddress)
     , mShouldListen(initiallyListening)
@@ -29,12 +29,12 @@ VListenerThread::VListenerThread(const VString& name, bool deleteSelfAtEnd, bool
     , mThreadFactory(threadFactory)
     , mSessionFactory(sessionFactory)
     , mSocketThreads()
-    , mSocketThreadsMutex(VSTRING_FORMAT("VListenerThread(%s)::mSocketThreadsMutex", name.chars()))
+    , mSocketThreadsMutex(VSTRING_FORMAT("VListenerThread(%s)::mSocketThreadsMutex", threadBaseName.chars()))
     {
 }
 
 VListenerThread::~VListenerThread() {
-    VLOGGER_DEBUG(VSTRING_FORMAT("VListenerThread '%s' ended.", mName.chars()));
+    VLOGGER_NAMED_DEBUG(mLoggerName, VSTRING_FORMAT("VListenerThread '%s' ended.", mName.chars()));
 
     // Make sure any of socket threads still alive no longer reference us.
     VMutexLocker locker(&mSocketThreadsMutex, VSTRING_FORMAT("[%s]VListenerThread::socketThreadEnded()", this->getName().chars()));
@@ -182,7 +182,7 @@ void VListenerThread::_runListening() {
 
     if (exceptionMessage.isNotEmpty()) {
         mShouldListen = false;
-        VLOGGER_ERROR(exceptionMessage);
+        VLOGGER_NAMED_ERROR(mLoggerName, exceptionMessage);
         if (mManager != NULL) {
             mManager->listenerFailed(this, exceptionMessage);
         }

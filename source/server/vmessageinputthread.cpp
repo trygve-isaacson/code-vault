@@ -14,8 +14,8 @@ http://www.bombaydigital.com/
 
 // VMessageInputThread --------------------------------------------------------
 
-VMessageInputThread::VMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory)
-    : VSocketThread(name, socket, ownerThread)
+VMessageInputThread::VMessageInputThread(const VString& threadBaseName, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory)
+    : VSocketThread(threadBaseName, socket, ownerThread)
     , mSocketStream(socket, "VMessageInputThread")
     , mInputStream(mSocketStream)
     , mConnected(false)
@@ -57,20 +57,20 @@ void VMessageInputThread::run() {
         }
     } catch (const VEOFException& /*ex*/) {
         // Usually just means the client has closed the connection.
-        VLOGGER_MESSAGE_DEBUG(VSTRING_FORMAT("[%s] VMessageInputThread: Socket has closed (EOF), thread will end.", mName.chars()));
+        VLOGGER_NAMED_DEBUG(mLoggerName, VSTRING_FORMAT("[%s] VMessageInputThread: Socket has closed (EOF), thread will end.", mName.chars()));
     } catch (const VSocketClosedException& /*ex*/) {
-        VLOGGER_MESSAGE_DEBUG(VSTRING_FORMAT("[%s] VMessageInputThread: Socket has closed, thread will end.", mName.chars()));
+        VLOGGER_NAMED_DEBUG(mLoggerName, VSTRING_FORMAT("[%s] VMessageInputThread: Socket has closed, thread will end.", mName.chars()));
     } catch (const VException& ex) {
         if (this->isRunning()) {
-            VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread: Exiting due to top level exception #%d '%s'.", mName.chars(), ex.getError(), ex.what()));
+            VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VMessageInputThread: Exiting due to top level exception #%d '%s'.", mName.chars(), ex.getError(), ex.what()));
         }
     } catch (const std::exception& ex) {
         if (this->isRunning()) {
-            VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread: Exiting due to top level exception '%s'.", mName.chars(), ex.what()));
+            VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VMessageInputThread: Exiting due to top level exception '%s'.", mName.chars(), ex.what()));
         }
     } catch (...) {
         if (this->isRunning()) {
-            VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread: Exiting due to top level unknown exception.", mName.chars()));
+            VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VMessageInputThread: Exiting due to top level unknown exception.", mName.chars()));
         }
     }
 
@@ -89,7 +89,7 @@ void VMessageInputThread::run() {
             const VDuration duration = now - startTime;
             if (duration > warnLimit) {
                 warned = true;
-                VLOGGER_MESSAGE_WARN(VSTRING_FORMAT("[%s] VMessageInputThread: Still waiting for output thread to end after %s. Will warn again when output thread ends.", mName.chars(), duration.getDurationString().chars()));
+                VLOGGER_NAMED_WARN(mLoggerName, VSTRING_FORMAT("[%s] VMessageInputThread: Still waiting for output thread to end after %s. Will warn again when output thread ends.", mName.chars(), duration.getDurationString().chars()));
             }
         }
     }
@@ -97,7 +97,7 @@ void VMessageInputThread::run() {
     if (warned) {
         const VInstant now;
         const VDuration duration = now - startTime;
-        VLOGGER_MESSAGE_WARN(VSTRING_FORMAT("[%s] VMessageInputThread: Finally saw output thread end after %s.", mName.chars(), duration.getDurationString().chars()));
+        VLOGGER_NAMED_WARN(mLoggerName, VSTRING_FORMAT("[%s] VMessageInputThread: Finally saw output thread end after %s.", mName.chars(), duration.getDurationString().chars()));
     }
 }
 
@@ -134,7 +134,7 @@ void VMessageInputThread::_dispatchMessage(VMessagePtr message) {
     VMessageHandler* handler = VMessageHandler::get(message, mServer, mSession, this);
 
     if (handler == NULL) {
-        VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: No message hander defined for message %d.", mName.chars(), (int) message->getMessageID()));
+        VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: No message hander defined for message %d.", mName.chars(), (int) message->getMessageID()));
         this->_handleNoMessageHandler(message);
     } else {
         VInstant messageHandlerStart;
@@ -148,11 +148,11 @@ void VMessageInputThread::_dispatchMessage(VMessagePtr message) {
             this->_callProcessMessage(handler);
             this->_afterProcessMessage(handler);
         } catch (const VException& ex) {
-            VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: Caught exception for message %d: #%d %s", mName.chars(), (int) message->getMessageID(), ex.getError(), ex.what()));
+            VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: Caught exception for message %d: #%d %s", mName.chars(), (int) message->getMessageID(), ex.getError(), ex.what()));
         } catch (const std::exception& e) {
-            VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: Caught exception for message ID %d: %s", mName.chars(), (int) message->getMessageID(), e.what()));
+            VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: Caught exception for message ID %d: %s", mName.chars(), (int) message->getMessageID(), e.what()));
         } catch (...) {
-            VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: Caught unknown exception for message ID %d.", mName.chars(), (int) message->getMessageID()));
+            VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] VMessageInputThread::_dispatchMessage: Caught unknown exception for message ID %d.", mName.chars(), (int) message->getMessageID()));
         }
 
         delete handler;
@@ -178,7 +178,7 @@ void VBentoMessageInputThread::_handleNoMessageHandler(VMessagePtr message) {
 
     VString bentoText;
     responseData.writeToBentoTextString(bentoText);
-    VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] Error Reply: %s", mName.chars(), bentoText.chars()));
+    VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] Error Reply: %s", mName.chars(), bentoText.chars()));
 
     VMessagePtr response = mMessageFactory->instantiateNewMessage();
     responseData.writeToStream(*response);
@@ -196,7 +196,7 @@ void VBentoMessageInputThread::_callProcessMessage(VMessageHandler* handler) {
 
         VString bentoText;
         responseData.writeToBentoTextString(bentoText);
-        VLOGGER_MESSAGE_ERROR(VSTRING_FORMAT("[%s] Error Reply: %s", mName.chars(), bentoText.chars()));
+        VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("[%s] Error Reply: %s", mName.chars(), bentoText.chars()));
 
         VMessagePtr response = mMessageFactory->instantiateNewMessage();
         responseData.writeToStream(*response);

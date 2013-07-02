@@ -40,7 +40,7 @@ if we need to return a reference to the current thread but it's not one of our t
 */
 class VStandinThread : public VThread {
     public:
-        VStandinThread() : VThread("?", false, false, NULL) {}
+        VStandinThread() : VThread("?", "vault.threads.VStandinThread", false, false, NULL) {}
         virtual ~VStandinThread() {}
         virtual void run() {}
 };
@@ -60,9 +60,10 @@ static VThread* _getCurrentVThread() {
     // It just can't be passed around to other threads!
 }
 
-VThread::VThread(const VString& name, bool deleteAtEnd, bool createDetached, VManagementInterface* manager)
+VThread::VThread(const VString& name, const VString& loggerName, bool deleteAtEnd, bool createDetached, VManagementInterface* manager)
     : mIsDeleted(false)
     , mName(name)
+    , mLoggerName(loggerName)
     , mDeleteAtEnd(deleteAtEnd)
     , mCreateDetached(createDetached)
     , mManager(manager)
@@ -74,7 +75,7 @@ VThread::VThread(const VString& name, bool deleteAtEnd, bool createDetached, VMa
 VThread::~VThread() {
     // Detect repeat deletion bug. Can't refer to mName because it's been deleted.
     if (mIsDeleted)
-        VLOGGER_ERROR(VSTRING_FORMAT("Thread delete on already-deleted thread @0x%08X.", this));
+        VLOGGER_NAMED_ERROR(mLoggerName, VSTRING_FORMAT("Thread delete on already-deleted thread @0x%08X.", this));
 
     mIsDeleted = true;
     mIsRunning = false;
@@ -135,8 +136,9 @@ void* VThread::userThreadMain(void* arg) {
 void* VThread::threadMain(void* arg) {
     VThread*    thread = static_cast<VThread*>(arg);
     VString     threadName = thread->getName();
+    VString     threadLoggerName = thread->getLoggerName();
 
-    VLOGGER_TRACE(VSTRING_FORMAT("VThread::threadMain: start of thread '%s' id 0x%08X.", threadName.chars(), thread->threadID()));
+    VLOGGER_NAMED_TRACE(threadLoggerName, VSTRING_FORMAT("VThread::threadMain: start of thread '%s' id 0x%08X.", threadName.chars(), thread->threadID()));
 
     bool        deleteAtEnd = thread->getDeleteAtEnd();
 
@@ -153,21 +155,21 @@ void* VThread::threadMain(void* arg) {
 
         thread->run();
     } catch (const VException& ex) {
-        VLOGGER_ERROR(VSTRING_FORMAT("Thread '%s' main caught exception #%d '%s'.", threadName.chars(), ex.getError(), ex.what()));
+        VLOGGER_NAMED_ERROR(threadLoggerName, VSTRING_FORMAT("Thread '%s' main caught exception #%d '%s'.", threadName.chars(), ex.getError(), ex.what()));
     } catch (const std::exception& ex) {
-        VLOGGER_ERROR(VSTRING_FORMAT("Thread '%s' main caught exception '%s'.", threadName.chars(), ex.what()));
+        VLOGGER_NAMED_ERROR(threadLoggerName, VSTRING_FORMAT("Thread '%s' main caught exception '%s'.", threadName.chars(), ex.what()));
     } catch (...) {
-        VLOGGER_ERROR(VSTRING_FORMAT("Thread '%s' main caught unknown exception.", threadName.chars()));
+        VLOGGER_NAMED_ERROR(threadLoggerName, VSTRING_FORMAT("Thread '%s' main caught unknown exception.", threadName.chars()));
     }
 
     // Let's be bulletproof even on this notification -- use try/catch.
     try {
         if (manager != NULL) {
-            VLOGGER_TRACE(VSTRING_FORMAT("VThread '%s' notifying manager[0x%08X] of thread end.", threadName.chars(), manager));
+            VLOGGER_NAMED_TRACE(threadLoggerName, VSTRING_FORMAT("VThread '%s' notifying manager[0x%08X] of thread end.", threadName.chars(), manager));
             manager->threadEnded(thread);
         }
     } catch (...) {
-        VLOGGER_ERROR(VSTRING_FORMAT("Thread '%s' main caught exception notifying manager of thread end.", threadName.chars()));
+        VLOGGER_NAMED_ERROR(threadLoggerName, VSTRING_FORMAT("Thread '%s' main caught exception notifying manager of thread end.", threadName.chars()));
     }
 
     VThread::_threadEnded(thread);
@@ -177,7 +179,7 @@ void* VThread::threadMain(void* arg) {
         delete thread;
     }
 
-    VLOGGER_TRACE(VSTRING_FORMAT("VThread::threadMain: completed thread '%s'.", threadName.chars()));
+    VLOGGER_NAMED_TRACE(threadLoggerName, VSTRING_FORMAT("VThread::threadMain: completed thread '%s'.", threadName.chars()));
 
     return NULL;
 }
@@ -255,7 +257,7 @@ void VThread::logStackCrawl(const VString& headerMessage, VNamedLoggerPtr logger
 // VMainThread ----------------------------------------------------------------
 
 VMainThread::VMainThread()
-    : VThread("main", kDontDeleteSelfAtEnd, kCreateThreadJoinable/*doesn't matter*/, NULL)
+    : VThread("main", "vault.threads.VMainThread", kDontDeleteSelfAtEnd, kCreateThreadJoinable/*doesn't matter*/, NULL)
     {
     mThreadID = VThread::threadSelf();
     _vthreadStarting(this); // Register this object for lookup by mThreadID.
@@ -267,7 +269,7 @@ VMainThread::~VMainThread() {
 
 void VMainThread::start() {
     VString errorMessage("Error: invalid attempt to start VMainThread.");
-    VLOGGER_FATAL(errorMessage);
+    VLOGGER_NAMED_FATAL(mLoggerName, errorMessage);
     throw VStackTraceException(errorMessage);
 }
 
@@ -278,7 +280,7 @@ int VMainThread::execute(int argc, char** argv) {
 // VForeignThread ----------------------------------------------------------------
 
 VForeignThread::VForeignThread(const VString& name)
-    : VThread(name, kDontDeleteSelfAtEnd, kCreateThreadJoinable/*doesn't matter*/, NULL)
+    : VThread(name, "vault.threads.VForeignThread", kDontDeleteSelfAtEnd, kCreateThreadJoinable/*doesn't matter*/, NULL)
     {
     mThreadID = VThread::threadSelf();
     _vthreadStarting(this); // Register this object for lookup by mThreadID.
@@ -290,7 +292,7 @@ VForeignThread::~VForeignThread() {
 
 void VForeignThread::start() {
     VString errorMessage("Error: invalid attempt to start VForeignThread.");
-    VLOGGER_FATAL(errorMessage);
+    VLOGGER_NAMED_FATAL(mLoggerName, errorMessage);
     throw VStackTraceException(errorMessage);
 }
 

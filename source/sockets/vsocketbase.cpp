@@ -404,7 +404,7 @@ void VSocketConnectionStrategyLinear::connect(const VString& hostName, int portN
             socketToConnect.connectToIPAddress(*i, portNumber);
             return; // As soon as we succeed, return.
         } catch (const VException& ex) {
-            VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyLinear::connect(%s): Failed to connect to '%s'. %s", hostName.chars(), (*i).chars(), ex.what()));
+            VLOGGER_TRACE(VSTRING_FORMAT("VSocketConnectionStrategyLinear::connect(%s): Failed to connect to '%s'. %s", hostName.chars(), (*i).chars(), ex.what()));
             if (VInstant(/*now*/) >= expirationTime) {
                 throw;
             }
@@ -505,17 +505,17 @@ class VSocketConnectionStrategyThreadedRunner : public VThread {
 // VSocketConnectionStrategyThreadedWorker ------------------------------------
 
 VSocketConnectionStrategyThreadedWorker::VSocketConnectionStrategyThreadedWorker(VSocketConnectionStrategyThreadedRunner* ownerRunner, const VString& ipAddressToConnect, int portNumberToConnect)
-    : VThread(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker.%s:%d", ipAddressToConnect.chars(), portNumberToConnect), kDeleteSelfAtEnd, kCreateThreadDetached, NULL)
+    : VThread(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker.%s:%d", ipAddressToConnect.chars(), portNumberToConnect), "vault.sockets.VSocketConnectionStrategyThreadedWorker", kDeleteSelfAtEnd, kCreateThreadDetached, NULL)
     , mMutex(mName)
     , mOwnerRunner(ownerRunner)
     , mIPAddressToConnect(ipAddressToConnect)
     , mPortNumberToConnect(portNumberToConnect)
     {
-    VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker %s:%d constructor.", mIPAddressToConnect.chars(), mPortNumberToConnect));
+    VLOGGER_TRACE(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker %s:%d constructor.", mIPAddressToConnect.chars(), mPortNumberToConnect));
 }
 
 VSocketConnectionStrategyThreadedWorker::~VSocketConnectionStrategyThreadedWorker() {
-    VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker %s:%d destructor.", mIPAddressToConnect.chars(), mPortNumberToConnect));
+    VLOGGER_TRACE(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker %s:%d destructor.", mIPAddressToConnect.chars(), mPortNumberToConnect));
 }
 
 void VSocketConnectionStrategyThreadedWorker::run() {
@@ -524,11 +524,11 @@ void VSocketConnectionStrategyThreadedWorker::run() {
         VSocket tempSocket;
         tempSocket.connectToIPAddress(mIPAddressToConnect, mPortNumberToConnect);
         VDuration duration(connectStart);
-        VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker %s:%d run() succeeded with sockid %d in %s.", mIPAddressToConnect.chars(), mPortNumberToConnect, (int) tempSocket.getSockID(), duration.getDurationString().chars()));
+        VLOGGER_TRACE(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker %s:%d run() succeeded with sockid %d in %s.", mIPAddressToConnect.chars(), mPortNumberToConnect, (int) tempSocket.getSockID(), duration.getDurationString().chars()));
         this->_handleSuccess(tempSocket);
     } catch (const VException& ex) {
         VDuration duration(connectStart);
-        VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker %s:%d run() failed in %s.", mIPAddressToConnect.chars(), mPortNumberToConnect, duration.getDurationString().chars()));
+        VLOGGER_TRACE(VSTRING_FORMAT("VSocketConnectionStrategyThreadedWorker %s:%d run() failed in %s.", mIPAddressToConnect.chars(), mPortNumberToConnect, duration.getDurationString().chars()));
         this->_handleFailure(ex);
     }
 }
@@ -552,7 +552,7 @@ void VSocketConnectionStrategyThreadedWorker::_handleFailure(const VException& e
 // VSocketConnectionStrategyThreadedRunner ------------------------------------
 
 VSocketConnectionStrategyThreadedRunner::VSocketConnectionStrategyThreadedRunner(const VDuration& timeoutInterval, int maxNumThreads, const VString& hostName, int portNumber, const VStringVector& debugIPAddresses)
-    : VThread(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner.%s:%d", hostName.chars(), portNumber), kDeleteSelfAtEnd, kCreateThreadDetached, NULL)
+    : VThread(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner.%s:%d", hostName.chars(), portNumber), "vault.sockets.VSocketConnectionStrategyThreadedRunner", kDeleteSelfAtEnd, kCreateThreadDetached, NULL)
     , mExpiry(VInstant() + timeoutInterval)
     , mMaxNumThreads(maxNumThreads)
     , mHostNameToConnect(hostName)
@@ -567,11 +567,11 @@ VSocketConnectionStrategyThreadedRunner::VSocketConnectionStrategyThreadedRunner
     , mConnectedSocketIPAddress()
     , mWorkers()
     {
-    VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner %s:%d constructor.", mHostNameToConnect.chars(), mPortNumberToConnect));
+    VLOGGER_TRACE(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner %s:%d constructor.", mHostNameToConnect.chars(), mPortNumberToConnect));
 }
 
 VSocketConnectionStrategyThreadedRunner::~VSocketConnectionStrategyThreadedRunner() {
-    VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner %s:%d destructor.", mHostNameToConnect.chars(), mPortNumberToConnect));
+    VLOGGER_TRACE(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner %s:%d destructor.", mHostNameToConnect.chars(), mPortNumberToConnect));
 }
 
 void VSocketConnectionStrategyThreadedRunner::run() {
@@ -634,7 +634,7 @@ bool VSocketConnectionStrategyThreadedRunner::_isDetachedFromStrategy() const {
 }
 
 void VSocketConnectionStrategyThreadedRunner::_lockedStartWorker(const VString& ipAddressToConnect) {
-    VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner starting worker %s:%d.", ipAddressToConnect.chars(), mPortNumberToConnect));
+    VLOGGER_TRACE(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner starting worker %s:%d.", ipAddressToConnect.chars(), mPortNumberToConnect));
     VSocketConnectionStrategyThreadedWorker* worker = new VSocketConnectionStrategyThreadedWorker(this, ipAddressToConnect, mPortNumberToConnect);
     mWorkers.push_back(worker);
     worker->start();
@@ -643,9 +643,9 @@ void VSocketConnectionStrategyThreadedRunner::_lockedStartWorker(const VString& 
 void VSocketConnectionStrategyThreadedRunner::_workerSucceeded(VSocketConnectionStrategyThreadedWorker* worker, VSocket& openedSocket) {
     VMutexLocker locker(&mMutex, VSTRING_FORMAT("_workerSucceeded(%s)", worker->getName().chars()));
     if (mConnectionCompleted) {
-        VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner %s:%d _workerSucceeded(sockid %d) ignored because another worker has already won.", openedSocket.getHostIPAddress().chars(), mPortNumberToConnect, (int) openedSocket.getSockID()));
+        VLOGGER_TRACE(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner %s:%d _workerSucceeded(sockid %d) ignored because another worker has already won.", openedSocket.getHostIPAddress().chars(), mPortNumberToConnect, (int) openedSocket.getSockID()));
     } else {
-        VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner %s:%d _workerSucceeded(sockid %d) wins.", openedSocket.getHostIPAddress().chars(), mPortNumberToConnect, (int) openedSocket.getSockID()));
+        VLOGGER_TRACE(VSTRING_FORMAT("VSocketConnectionStrategyThreadedRunner %s:%d _workerSucceeded(sockid %d) wins.", openedSocket.getHostIPAddress().chars(), mPortNumberToConnect, (int) openedSocket.getSockID()));
 
         mConnectedSocketID = openedSocket.getSockID();
         mConnectedSocketIPAddress = openedSocket.getHostIPAddress();
@@ -730,5 +730,5 @@ void VSocketConnectionStrategyThreaded::connect(const VString& hostName, int por
     runner->detachFromStrategy();
     runner = NULL;
 
-    VLOGGER_DEBUG(VSTRING_FORMAT("VSocketConnectionStrategyThreaded::connect(%s, %d) completed successfully at %s.", hostName.chars(), portNumber, socketToConnect.getHostIPAddress().chars()));
+    VLOGGER_TRACE(VSTRING_FORMAT("VSocketConnectionStrategyThreaded::connect(%s, %d) completed successfully at %s.", hostName.chars(), portNumber, socketToConnect.getHostIPAddress().chars()));
 }

@@ -10,7 +10,7 @@ http://www.bombaydigital.com/
 
 // VMessage -------------------------------------------------------------------
 
-const VString VMessage::kMessageLoggerName("messages");
+const VString VMessage::kMessageLoggerName("vault.messages");
 const int VMessage::kMessageContentRecordingLevel  = VLoggerLevel::INFO;
 const int VMessage::kMessageHeaderLevel            = VLoggerLevel::DEBUG;
 const int VMessage::kMessageContentFieldsLevel     = VLoggerLevel::DEBUG + 1;

@@ -182,22 +182,23 @@ class VThread {
 
         /**
         Constructs the thread object in stopped state.
-        @param    name            a name for the thread, useful for debugging purposes
-        @param    deleteSelfAtEnd    true if threadMain() should delete this obj when
+        @param  name            a name for the thread, useful for debugging purposes
+        @param  loggerName      the logger name which we will use when emitting log output.
+        @param  deleteSelfAtEnd true if threadMain() should delete this obj when
                                 run() completes; pass kDeleteSelfAtEnd or kDontDeleteSelfAtEnd.
                                 If you use kDeleteSelfAtEnd then you need to be careful
                                 not to reference the VThread while it is destructing (for
                                 example, by joining to it in a non-threadsafe way); if you
                                 use kDontDeleteSelfAtEnd, you need to delete the VThread after
                                 it has finished running.
-        @param    createDetached    true to create the thread in detached state; false if not.
+        @param  createDetached  true to create the thread in detached state; false if not.
                                 Generally, if you aren't joining to a thread, it should be
                                 detached, and vice-versa. If a non-detached, non-joined
                                 thread ends, it will leak system resources (depending on
                                 the platform implementation).
-        @param    manager            the object that receives notifications for this thread, or NULL
+        @param  manager         the object that receives notifications for this thread, or NULL
         */
-        VThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager);
+        VThread(const VString& name, const VString& loggerName, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager);
         /**
         Destructor.
         */
@@ -275,6 +276,11 @@ class VThread {
         @param    name    a name for this thread
         */
         void setName(const VString& threadName) { mName = threadName; }
+        /**
+        Returns the thread's logger name (useful for emitting to a named logger).
+        @return the thread's logger name
+        */
+        const VString& getLoggerName() const { return mLoggerName; }
 
         /**
         The main function that invokes the thread's run() and cleans up when
@@ -405,6 +411,7 @@ class VThread {
 
         bool                    mIsDeleted;         ///< For debugging purposes it's useful to detect when an attempt is made to delete a thread twice.
         VString                 mName;              ///< For debugging purposes it's very useful to give each thread a name.
+        VString                 mLoggerName;        ///< The logger name which we will use when emitting log output.
         bool                    mDeleteAtEnd;       ///< True if threadMain should delete this obj when it returns from run().
         bool                    mCreateDetached;    ///< True if the thread is created in detached state.
         VManagementInterface*   mManager;           ///< The VManagementInterface that manages us, or NULL.

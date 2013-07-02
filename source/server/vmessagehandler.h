@@ -192,6 +192,7 @@ class VMessageHandler {
         void _logMessageContentHexDump(const VString& info, const Vu8* buffer, Vs64 length) const;
 
         VString                 mName;          ///< The name to identify this handler type in log output.
+        VString                 mLoggerName;    ///< The logger name which we will use when emitting log output.
         VMessagePtr             mMessage;       ///< The message this handler is to process.
         VServer*                mServer;        ///< The server in which we are running.
         VClientSessionPtr       mSession;       ///< The session reference for which we are running, which holds NULL if n/a.

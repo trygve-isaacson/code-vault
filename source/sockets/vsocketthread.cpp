@@ -10,8 +10,11 @@ http://www.bombaydigital.com/
 
 #include "vlistenerthread.h"
 
-VSocketThread::VSocketThread(const VString& name, VSocket* socket, VListenerThread* ownerThread)
-    : VThread(name, kDeleteSelfAtEnd, kCreateThreadDetached, (ownerThread == NULL) ? NULL : ownerThread->getManagementInterface())
+VSocketThread::VSocketThread(const VString& threadBaseName, VSocket* socket, VListenerThread* ownerThread)
+    : VThread(
+        VSTRING_FORMAT("%s[%s:%d]", threadBaseName.chars(), (socket == NULL ? "?":socket->getHostIPAddress().chars()), (socket == NULL ? 0:socket->getPortNumber())),
+        VSTRING_FORMAT("vault.messages.%s.%s", threadBaseName.chars(), (socket == NULL ? "?":(VLogger::getCleansedLoggerName(socket->getHostIPAddress())).chars())),
+        kDeleteSelfAtEnd, kCreateThreadDetached, (ownerThread == NULL) ? NULL : ownerThread->getManagementInterface())
     , mSocket(socket)
     , mOwnerThread(ownerThread)
     {

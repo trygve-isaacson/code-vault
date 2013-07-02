@@ -1,6 +1,29 @@
 CODE VAULT RELEASE NOTES
 
----------- VERSION 4.0a6 ----------
+---------- VERSION 4.0d7 ----------
+Trygve Isaacson, July 2013
+
+VAULT-0030
+* User configurability for log output and time stamp strings.
+- You can now specify the format of VInstant time stamp strings via a VInstantFormatter.
+- It implements almost all of the format specifiers defined by Java SimpleDateFormat.
+- The existing APIs produce the same format as previously; they now use VInstantFormatter internally.
+- You can now specify the overall format structure, and time stamp format of VLogAppender.
+- This can be specified during construction or from dynamically loaded XML settings.
+- The "format-spec" XML property for appender config defines the field layout (see VLogAppender docs).
+- The "time-format" XML property for appender config defines the format of time stamps, same as VInstantFormatter.
+- The default formats produce the same logger output as previously.
+VAULT-0031
+* Refined internal use of logging.
+- Logging is generally at TRACE level.
+- Significant events are logged at DEBUG level.
+- All log statements use dot-separated path-like names for fine-grained control.
+VAULT-0034
+* Fixed bug in posting message to session that is not yet online.
+VAULT-0035
+* Fixed bug in attaching IO threads to VClientSession.
+
+---------- VERSION 4.0d6 ----------
 Trygve Isaacson, June 2013
 
 VAULT-0025
@@ -28,18 +51,8 @@ VAULT-0029
 - Updated copyright dates and version strings.
 - Reapply Astyle formatting, with edits for preferred initializer list bracing and preprocessor indentation.
 - Fixed a bug in VClientSession::postOutputMessage() that was introduced in 4.0a1.
-VAULT-0030
-* User configurability for log output and time stamp strings.
-- You can now specify the format of VInstant time stamp strings via a VInstantFormatter.
-- It implements almost all of the format specifiers defined by Java SimpleDateFormat.
-- The existing APIs produce the same format as previously; they now use VInstantFormatter internally.
-- You can now specify the overall format structure, and time stamp format of VLogAppender.
-- This can be specified during construction or from dynamically loaded XML settings.
-- The "format-spec" XML property for appender config defines the field layout (see VLogAppender docs).
-- The "time-format" XML property for appender config defines the format of time stamps, same as VInstantFormatter.
-- The default formats produce the same logger output as previously.
 
----------- VERSION 4.0a5 ----------
+---------- VERSION 4.0d5 ----------
 Trygve Isaacson, May 2013
 
 VAULT-0023
@@ -47,7 +60,7 @@ VAULT-0023
 VAULT-0024
 * Implemented DNS resolve APIs to VSocket.
 
----------- VERSION 4.0a4 ----------
+---------- VERSION 4.0d4 ----------
 Trygve Isaacson, February 2013
 
 VAULT-0022
@@ -55,7 +68,7 @@ VAULT-0022
 VAULT-0021
 * Added support for minor Qt 5.0 API changes.
 
----------- VERSION 4.0a3 ----------
+---------- VERSION 4.0d3 ----------
 Trygve Isaacson, November 2012
 
 VAULT-0020
@@ -64,7 +77,7 @@ VAULT-0020
 - Fixed Bento unit test for non-ASCII character escaping.
 * Added comments on best practices for VString creation macros.
 
----------- VERSION 4.0a2 ----------
+---------- VERSION 4.0d2 ----------
 Trygve Isaacson, September 2012
 
 VAULT-0019
@@ -76,7 +89,7 @@ VAULT-0019
 - Improved error code reporting in Windows version of VSocket::available() and write().
 Thanks to Jay Hamilton-Roth.
 
----------- VERSION 4.0a1 ----------
+---------- VERSION 4.0d1 ----------
 Trygve Isaacson, July 2012
 
 VAULT-0018

@@ -42,6 +42,7 @@ VMessageHandlerFactoryMap* VMessageHandler::mapInstance() {
 
 VMessageHandler::VMessageHandler(const VString& name, VMessagePtr m, VServer* server, VClientSessionPtr session, VSocketThread* thread, const VMessageFactory* messageFactory, VMutex* mutex)
     : mName(name)
+    , mLoggerName(VSTRING_ARGS("vault.messages.VMessageHandler.%d", m->getMessageID()))
     , mMessage(m)
     , mServer(server)
     , mSession(session)
@@ -59,12 +60,12 @@ VMessageHandler::VMessageHandler(const VString& name, VMessagePtr m, VServer* se
         mSessionName = mThread->getName();
     }
 
-    VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerLifecycleLevel, VSTRING_FORMAT("[%s] %s@0x%08X for message ID=%d constructed.", mSessionName.chars(), mName.chars(), this, (int) m->getMessageID()));
+    VLOGGER_NAMED_LEVEL(mLoggerName, VMessage::kMessageHandlerLifecycleLevel, VSTRING_FORMAT("[%s] %s@0x%08X for message ID=%d constructed.", mSessionName.chars(), mName.chars(), this, (int) m->getMessageID()));
 }
 
 VMessageHandler::~VMessageHandler() {
     try {
-        VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerLifecycleLevel, VSTRING_FORMAT("[%s] %s@0x%08X destructed.", mSessionName.chars(), mName.chars(), this));
+        VLOGGER_NAMED_LEVEL(mLoggerName, VMessage::kMessageHandlerLifecycleLevel, VSTRING_FORMAT("[%s] %s@0x%08X destructed.", mSessionName.chars(), mName.chars(), this));
     } catch (...) {} // prevent exception from propagating
 
     mServer = NULL;
@@ -95,50 +96,50 @@ void VMessageHandler::logMessageContentFields(const VString& details, VNamedLogg
 
 void VMessageHandler::logMessageDetailsFields(const VString& details, VNamedLoggerPtr logger) const {
     if (logger == NULL)
-        logger = VLogger::findNamedLoggerForLevel(VMessage::kMessageLoggerName, VMessage::kMessageTrafficDetailsLevel);
+        logger = VLogger::findNamedLoggerForLevel(mLoggerName, VMessage::kMessageTrafficDetailsLevel);
 
     if (logger != NULL)
         logger->log(VMessage::kMessageTrafficDetailsLevel, details);
 }
 
 void VMessageHandler::logProcessMessageStart() const {
-    VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerDispatchLevel, VSTRING_FORMAT("%s start.", mName.chars()));
+    VLOGGER_NAMED_LEVEL(mLoggerName, VMessage::kMessageHandlerDispatchLevel, VSTRING_FORMAT("%s start.", mName.chars()));
 }
 
 void VMessageHandler::logProcessMessageEnd() const {
     VDuration elapsed = VInstant(/*now*/) - mStartTime;
     if (mUnblockTime == mStartTime) {
-        VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerDispatchLevel, VSTRING_FORMAT("%s end. (Elapsed time: %s)", mName.chars(), elapsed.getDurationString().chars()));
+        VLOGGER_NAMED_LEVEL(mLoggerName, VMessage::kMessageHandlerDispatchLevel, VSTRING_FORMAT("%s end. (Elapsed time: %s)", mName.chars(), elapsed.getDurationString().chars()));
     } else {
         // We were evidently blocked for at least 1ms during construction, waiting for the mutex to be released.
         // If the duration of blocked time exceeded a certain amount, emit this at info level so it is even more visible.
         VDuration blockedTime = mUnblockTime - mStartTime;
-        VLOGGER_MESSAGE_LEVEL((blockedTime > 25 * VDuration::MILLISECOND()) ? VLoggerLevel::INFO : (int)VMessage::kMessageHandlerDispatchLevel, // strangely, gcc gave linker error w/o int cast
+        VLOGGER_NAMED_LEVEL(mLoggerName, (blockedTime > 25 * VDuration::MILLISECOND()) ? VLoggerLevel::INFO : (int)VMessage::kMessageHandlerDispatchLevel, // strangely, gcc gave linker error w/o int cast
                               VSTRING_FORMAT("%s end. (Elapsed time: %s. Blocked for: %s.)", mName.chars(), elapsed.getDurationString().chars(), blockedTime.getDurationString().chars()));
     }
 }
 
 void VMessageHandler::_logDetailedDispatch(const VString& dispatchInfo) const {
-    VLOGGER_MESSAGE_LEVEL(VMessage::kMessageHandlerDetailLevel, dispatchInfo);
+    VLOGGER_NAMED_LEVEL(mLoggerName, VMessage::kMessageHandlerDetailLevel, dispatchInfo);
 }
 
 void VMessageHandler::_logMessageContentRecord(const VString& contentInfo) const {
-    VLOGGER_MESSAGE_LEVEL(VMessage::kMessageContentRecordingLevel, contentInfo);
+    VLOGGER_NAMED_LEVEL(mLoggerName, VMessage::kMessageContentRecordingLevel, contentInfo);
 }
 
 void VMessageHandler::_logMessageContentFields(const VString& contentInfo) const {
-    VLOGGER_MESSAGE_LEVEL(VMessage::kMessageContentFieldsLevel, contentInfo);
+    VLOGGER_NAMED_LEVEL(mLoggerName, VMessage::kMessageContentFieldsLevel, contentInfo);
 }
 
 void VMessageHandler::_logMessageContentHexDump(const VString& info, const Vu8* buffer, Vs64 length) const {
-    VLOGGER_MESSAGE_HEXDUMP(info, buffer, length);
+    VLOGGER_NAMED_HEXDUMP(mLoggerName, VMessage::kMessageContentHexDumpLevel, info, buffer, length);
 }
 
 VNamedLoggerPtr VMessageHandler::_getMessageContentRecordLogger() const {
-    return VLogger::findNamedLoggerForLevel(VMessage::kMessageLoggerName, VMessage::kMessageContentRecordingLevel);
+    return VLogger::findNamedLoggerForLevel(mLoggerName, VMessage::kMessageContentRecordingLevel);
 }
 
 VNamedLoggerPtr VMessageHandler::_getMessageContentFieldsLogger() const {
-    return VLogger::findNamedLoggerForLevel(VMessage::kMessageLoggerName, VMessage::kMessageContentFieldsLevel);
+    return VLogger::findNamedLoggerForLevel(mLoggerName, VMessage::kMessageContentFieldsLevel);
 }
 

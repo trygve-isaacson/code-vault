@@ -56,27 +56,28 @@ class VListenerThread : public VThread {
         you can supply it to the VListenerThread so that it can let the
         manager know when the thread starts and ends.
 
-        @param    name              a name for the thread, useful for debugging purposes
-        @param    deleteSelfAtEnd   @see VThread
-        @param    createDetached    @see VThread
-        @param    manager           the object that receives notifications for this thread, or NULL
-        @param    portNumber        the port number to listen on
-        @param    bindAddress       if empty, the socket will bind to INADDR_ANY (usually a good
+        @param  threadBaseName      a distinguishing base name for the thread, useful for debugging purposes;
+                                    the thread name will be composed of this and the socket's IP address and port
+        @param  deleteSelfAtEnd     @see VThread
+        @param  createDetached      @see VThread
+        @param  manager             the object that receives notifications for this thread, or NULL
+        @param  portNumber          the port number to listen on
+        @param  bindAddress         if empty, the socket will bind to INADDR_ANY (usually a good
                                     default); if a value is supplied the socket will bind to the
                                     supplied IP address (can be useful on a multi-homed server)
-        @param    socketFactory     a factory for creating a VSocket for each incoming connection
-        @param    threadFactory     a factory for creating a VSocketThread for
+        @param  socketFactory       a factory for creating a VSocket for each incoming connection
+        @param  threadFactory       a factory for creating a VSocketThread for
                                         each incoming connection, if sessionFactory is
                                         not supplied (threadFactory OR sessionFactory should
                                         be NULL)
-        @param    sessionFactory    a factory that will create a session object
+        @param  sessionFactory      a factory that will create a session object
                                         for each incoming connection if not using the
                                         threadFactory (threadFactory OR sessionFactory should
                                         be NULL)
-        @param    initiallyListening    true if the thread should be listening when it first starts;
+        @param  initiallyListening  true if the thread should be listening when it first starts;
                                         false means it won't listen until you call startListening()
         */
-        VListenerThread(const VString& name, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, const VString& bindAddress, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, VClientSessionFactory* sessionFactory = NULL, bool initiallyListening = true);
+        VListenerThread(const VString& threadBaseName, bool deleteSelfAtEnd, bool createDetached, VManagementInterface* manager, int portNumber, const VString& bindAddress, VSocketFactory* socketFactory, VSocketThreadFactory* threadFactory, VClientSessionFactory* sessionFactory = NULL, bool initiallyListening = true);
         /**
         Destructor.
         */

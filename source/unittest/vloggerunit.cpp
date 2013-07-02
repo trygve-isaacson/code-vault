@@ -73,14 +73,6 @@ void VLoggerUnit::_testMacros() {
     VLOGGER_NAMED_HEXDUMP(name, VLoggerLevel::INFO, "Example of VLOGGER_NAMED_HEXDUMP @ kInfo.", s.getDataBufferConst(), s.length() + 1);
     if (VLOGGER_NAMED_WOULD_LOG(name, VLoggerLevel::INFO)) {}
 
-    VLOGGER_MESSAGE_LEVEL(VLoggerLevel::INFO, "Example of VLOGGER_MESSAGE_LEVEL @ kInfo.");
-    VLOGGER_MESSAGE_FATAL("Example of VLOGGER_MESSAGE_FATAL.");
-    VLOGGER_MESSAGE_ERROR("Example of VLOGGER_MESSAGE_ERROR.");
-    VLOGGER_MESSAGE_WARN("Example of VLOGGER_MESSAGE_WARN.");
-    VLOGGER_MESSAGE_INFO("Example of VLOGGER_MESSAGE_INFO.");
-    VLOGGER_MESSAGE_DEBUG("Example of VLOGGER_MESSAGE_DEBUG.");
-    VLOGGER_MESSAGE_TRACE("Example of VLOGGER_MESSAGE_TRACE.");
-    VLOGGER_MESSAGE_HEXDUMP("Example of VLOGGER_MESSAGE_HEXDUMP @ kInfo.", s.getDataBufferConst(), s.length() + 1);
 }
 
 void VLoggerUnit::_testStringLoggers() {

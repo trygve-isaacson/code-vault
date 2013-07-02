@@ -75,7 +75,7 @@ VMessagePtr VMessageQueue::getNextMessage() {
         VInstant now;
         VDuration delayInterval = now - mLastMessagePostTime;
         if (delayInterval >= gVMessageQueueLagLoggingThreshold) {
-            VLOGGER_LEVEL(gVMessageQueueLagLoggingLevel, VSTRING_FORMAT("VMessageQueue saw a delay of %s when getting a message with ID %d.", delayInterval.getDurationString().chars(), message->getMessageID()));
+            VLOGGER_NAMED_LEVEL("vault.messages.VMessageQueue", gVMessageQueueLagLoggingLevel, VSTRING_FORMAT("VMessageQueue saw a delay of %s when getting a message with ID %d.", delayInterval.getDurationString().chars(), message->getMessageID()));
         }
     }
 

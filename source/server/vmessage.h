@@ -140,8 +140,9 @@ class VMessage : public VBinaryIOStream {
         /*
         These are the log level definitions used for consistent logging
         of message traffic, processing, and dispatch. Use these
-        levels and log to the logger named VMessage::kMessageLoggerName
-        in order to be consistent in message logging.
+        levels and log to the appropriate logger -- whose name is usually in
+        the path form "vault.messages.{classname}.{messageid}" -- in order to
+        be consistent in message logging.
         There are issues with some compilers and lazy constant evaluation even
         though these are ints, so we define the actual values in the .cpp file
         separately.

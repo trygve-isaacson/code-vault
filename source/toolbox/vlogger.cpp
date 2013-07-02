@@ -750,6 +750,13 @@ void VLogger::emitToGlobalAppenders(int level, const char* file, int line, bool 
 }
 
 // static
+VString VLogger::getCleansedLoggerName(const VString& s) {
+    VString cleansed(s);
+    cleansed.replace('.', '-');
+    return cleansed;
+}
+
+// static
 void VLogger::_registerAppender(VLogAppenderPtr appender, bool asDefaultAppender, bool asGlobalAppender) {
     // ASSUMES CALLER HOLDS _mutexInstance().
 

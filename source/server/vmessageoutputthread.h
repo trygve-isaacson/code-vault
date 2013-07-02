@@ -33,11 +33,12 @@ class VMessageOutputThread : public VSocketThread {
         Constructs the output thread. The supplied message queue,
         server, and session are still owned by the caller; this class
         does not delete them in its destructor.
-        @param    name        a name for the thread, useful for debugging purposes
+        @param  threadBaseName  a distinguishing base name for the thread, useful for debugging purposes;
+                                the thread name will be composed of this and the socket's IP address and port
         @param    socket        the socket this thread is managing
-        @param    ownerThread    the thread that created this one
+        @param    ownerThread   the thread that created this one
         @param    server        the server object
-        @param    session        the session object
+        @param    session       the session object
         @param    dependentInputThread   if non-null, the VMessageInputThread that is dependent
                                 upon this output thread, and which we must notify before we
                                 return from our run() method
@@ -50,7 +51,7 @@ class VMessageOutputThread : public VSocketThread {
         @param maxQueueGracePeriod how long the maxQueueSize and maxQueueDataSize limits may be exceeded
                             before the socket is closed upon next posted message
         */
-        VMessageOutputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSessionPtr session, VMessageInputThread* dependentInputThread, int maxQueueSize = 0, Vs64 maxQueueDataSize = 0, const VDuration& maxQueueGracePeriod = VDuration::ZERO());
+        VMessageOutputThread(const VString& threadBaseName, VSocket* socket, VListenerThread* ownerThread, VServer* server, VClientSessionPtr session, VMessageInputThread* dependentInputThread, int maxQueueSize = 0, Vs64 maxQueueDataSize = 0, const VDuration& maxQueueGracePeriod = VDuration::ZERO());
         /**
         Virtual destructor.
         */
