@@ -148,9 +148,9 @@ class VBentoNode;
       to the time each line was written.
     - "format-spec" (string)
       If formatting is to be used, this string specifies what the format is. The following
-      variables may be placed in the string to indicate the information layout. Each item is
-      simply a digit surrounded by curly brackets. The appender simply replaces each such
-      occurrence
+      variables may be placed in the string to indicate special values; the rest of the string
+      may be your own text and punctuation formatting. If your custom VLogAppender subclass
+      overrides the _formatMessage() method, it can further control formatting beyond this.
       $localtime - The time stamp in local time. If simulated or frozen time is in effect,
         the true time is printed, followed by a space and the simulated time. The format used
         for times is given by the "time-format" setting described below.
