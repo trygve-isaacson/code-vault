@@ -13,6 +13,7 @@ VAULT-0030
 - The "format-spec" XML property for appender config defines the field layout (see VLogAppender docs).
 - The "time-format" XML property for appender config defines the format of time stamps, same as VInstantFormatter.
 - The default formats produce the same logger output as previously.
+- Logger config settings for level can now use the level name as an alternative to the level number.
 VAULT-0031
 * Refined internal use of logging.
 - Logging is generally at TRACE level.

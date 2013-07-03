@@ -54,7 +54,7 @@ void VNamedLogger::addAppender(const VString& appenderName) {
     mAppenderNames.push_back(appenderName);
 }
 
-void VNamedLogger::log(int level, const char* file, int line, const VString& message) {
+void VNamedLogger::log(int level, const char* file, int line, const VString& message, const VString& specifiedLoggerName) {
     if (level > mLevel) {
         return;
     }
@@ -67,8 +67,8 @@ void VNamedLogger::log(int level, const char* file, int line, const VString& mes
     }
 
     VMutexLocker locker(&mAppendersMutex, "VNamedLogger::log");
-    if (mRepetitionFilter.checkMessage(*this, level, file, line, message)) {
-        this->_emitToAppenders(level, file, line, true, message, false, VString::EMPTY());
+    if (mRepetitionFilter.checkMessage(*this, level, file, line, message, specifiedLoggerName, mName)) {
+        this->_emitToAppenders(level, file, line, true, message, specifiedLoggerName, false, VString::EMPTY());
         if (mPrintStackConfig.shouldPrintStack(level, *this)) {
             locker.unlock(); // avoid recursive deadlock, we're done with our data until we recur
             VThread::logStackCrawl(message, VNamedLoggerPtr(shared_from_this()), false);
@@ -98,7 +98,7 @@ void VNamedLogger::log(int level, const VString& message) {
     this->log(level, NULL, 0, message);
 }
 
-void VNamedLogger::logHexDump(int level, const VString& message, const Vu8* buffer, Vs64 length) {
+void VNamedLogger::logHexDump(int level, const VString& message, const VString& specifiedLoggerName, const Vu8* buffer, Vs64 length) {
     if (level > mLevel) {
         return;
     }
@@ -119,12 +119,12 @@ void VNamedLogger::logHexDump(int level, const VString& message, const Vu8* buff
     }
 
     VMutexLocker locker(&mAppendersMutex, "VNamedLogger::logHexDump");
-    this->_emitToAppenders(level, NULL, 0, true, message, true, hexString);
+    this->_emitToAppenders(level, NULL, 0, true, message, specifiedLoggerName, true, hexString);
 }
 
 void VNamedLogger::emitStackCrawlLine(const VString& message) {
     VMutexLocker locker(&mAppendersMutex, "VNamedLogger::emitStackCrawlLine");
-    this->_emitToAppenders(VLoggerLevel::TRACE /* not used for raw line emit */, NULL, 0, false, VString::EMPTY(), true, message);
+    this->_emitToAppenders(VLoggerLevel::TRACE /* not used for raw line emit */, NULL, 0, false, VString::EMPTY(), VString::EMPTY(), true, message);
 }
 
 void VNamedLogger::setLevel(int level) {
@@ -137,17 +137,17 @@ bool VNamedLogger::isDefaultLogger() const {
     return VLogger::gDefaultLogger.get() == this;
 }
 
-void VNamedLogger::_emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine) {
+void VNamedLogger::_emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, const VString& specifiedLoggerName, bool emitRawLine, const VString& rawLine) {
     if (mSpecificAppender != NULL_LOG_APPENDER_PTR) {
-        mSpecificAppender->emit(level, file, line, emitMessage, message, emitRawLine, rawLine);
+        mSpecificAppender->emit(level, file, line, emitMessage, message, specifiedLoggerName, mName, emitRawLine, rawLine);
     }
 
     for (VStringVector::const_iterator i = mAppenderNames.begin(); i != mAppenderNames.end(); ++i) {
         VLogAppenderPtr appender = (*i).isEmpty() ? VLogger::getDefaultAppender() : VLogger::getAppender(*i);
-        appender->emit(level, file, line, emitMessage, message, emitRawLine, rawLine);
+        appender->emit(level, file, line, emitMessage, message, specifiedLoggerName, mName, emitRawLine, rawLine);
     }
 
-    VLogger::emitToGlobalAppenders(level, file, line, emitMessage, message, emitRawLine, rawLine);
+    VLogger::emitToGlobalAppenders(level, file, line, emitMessage, message, specifiedLoggerName, mName, emitRawLine, rawLine);
 }
 
 VString VNamedLogger::_toString() const {
@@ -272,7 +272,9 @@ static VLogAppenderFactoriesMap& _getAppenderFactoriesMap() {
 VString VLoggerLevel::getName(int level) {
     // We make all strings 5 characters long for clean layout in the log output.
 
-    if (level == FATAL)
+    if (level == OFF)
+        return VSTRING_COPY("OFF  "); // Of course, OFF will never appear in output because there will be no such output!
+    else if (level == FATAL)
         return VSTRING_COPY("FATAL");
     else if (level == ERROR)
         return VSTRING_COPY("ERROR");
@@ -285,15 +287,38 @@ VString VLoggerLevel::getName(int level) {
     else if (level == TRACE)
         return VSTRING_COPY("TRACE");
     else if (level > DEBUG)
-        return VSTRING_FORMAT("DBG%2d", level);
+        return VSTRING_FORMAT("DBG%02d", level);
     else if (level > INFO)
-        return VSTRING_FORMAT("INF%2d", level);
+        return VSTRING_FORMAT("INF%02d", level);
     else if (level > WARN)
-        return VSTRING_FORMAT("WRN%2d", level);
+        return VSTRING_FORMAT("WRN%02d", level);
     else if (level > ERROR)
-        return VSTRING_FORMAT("ERR%2d", level);
+        return VSTRING_FORMAT("ERR%02d", level);
     else
-        return VSTRING_FORMAT("%5d", level);
+        return VSTRING_FORMAT("%05d", level);
+}
+
+// static
+int VLoggerLevel::fromString(const VString& value) {
+    if (value.equalsIgnoreCase("OFF")) {
+        return VLoggerLevel::OFF;
+    } else if (value.equalsIgnoreCase("FATAL")) {
+        return VLoggerLevel::FATAL;
+    } else if (value.equalsIgnoreCase("ERROR")) {
+        return VLoggerLevel::ERROR;
+    } else if (value.equalsIgnoreCase("WARN")) {
+        return VLoggerLevel::WARN;
+    } else if (value.equalsIgnoreCase("INFO")) {
+        return VLoggerLevel::INFO;
+    } else if (value.equalsIgnoreCase("DEBUG")) {
+        return VLoggerLevel::DEBUG;
+    } else if (value.equalsIgnoreCase("TRACE")) {
+        return VLoggerLevel::TRACE;
+    } else if (value.equalsIgnoreCase("ALL")) {
+        return VLoggerLevel::ALL;
+    }
+    
+    return value.parseInt(); // Will throw VRangeException if value is not an integer.
 }
 
 // static
@@ -311,7 +336,8 @@ void VLogger::installNewLogAppender(const VSettingsNode& appenderSettings, const
 // static
 void VLogger::installNewNamedLogger(const VSettingsNode& loggerSettings) {
     VString name = loggerSettings.getString("name");
-    int level = loggerSettings.getInt("level", VLoggerLevel::INFO);
+    VString levelText = loggerSettings.getString("level", "INFO");
+    int level = VLoggerLevel::fromString(levelText);
     VStringVector appenderNames;
     VString appenderName = loggerSettings.getString("appender", VString::EMPTY());
     if (appenderName.isNotEmpty()) {
@@ -741,11 +767,11 @@ void VLogger::commandSetPrintStackLevel(const VString& loggerName, int printStac
 }
 
 // static
-void VLogger::emitToGlobalAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine) {
+void VLogger::emitToGlobalAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, const VString& specifiedLoggerName, const VString& actualLoggerName, bool emitRawLine, const VString& rawLine) {
     VMutexLocker locker(_mutexInstance(), "VLogger::emitToGlobalAppenders");
     for (VLogAppendersMap::const_iterator i = _getGlobalAppendersMap().begin(); i != _getGlobalAppendersMap().end(); ++i) {
         VLogAppenderPtr appender = (*i).second;
-        appender->emit(level, file, line, emitMessage, message, emitRawLine, rawLine);
+        appender->emit(level, file, line, emitMessage, message, specifiedLoggerName, actualLoggerName, emitRawLine, rawLine);
     }
 }
 
@@ -879,6 +905,7 @@ VNamedLoggerPtr VLogger::_findNamedLoggerFromPathName(const VString& pathName) {
 
 // VLogAppender ------------------------------------------------------
 
+//static const VString DEFAULT_APPENDER_FORMAT_SPEC("$localtime $level | $thread | $specifiedlogger=>$actuallogger | $location$message"); // <- useful for debugging the named logger routing
 static const VString DEFAULT_APPENDER_FORMAT_SPEC("$localtime $level | $thread | $location$message");
 static const VString DEFAULT_TIME_FORMAT("y-MM-dd HH:mm:ss.SSS");
 
@@ -893,6 +920,8 @@ VLogAppender::VLogAppender(const VString& name, bool formatOutput, const VString
     , mFormatUsesLevel(mFormatSpec.contains("$level"))
     , mFormatUsesThread(mFormatSpec.contains("$thread"))
     , mFormatUsesLocation(mFormatSpec.contains("$location"))
+    , mFormatUsesSpecifiedLoggerName(mFormatSpec.contains("$specifiedlogger"))
+    , mFormatUsesActualLoggerName(mFormatSpec.contains("$actuallogger"))
     {
 }
 
@@ -907,6 +936,8 @@ VLogAppender::VLogAppender(const VSettingsNode& settings, const VSettingsNode& d
     , mFormatUsesLevel(mFormatSpec.contains("$level"))
     , mFormatUsesThread(mFormatSpec.contains("$thread"))
     , mFormatUsesLocation(mFormatSpec.contains("$location"))
+    , mFormatUsesSpecifiedLoggerName(mFormatSpec.contains("$specifiedlogger"))
+    , mFormatUsesActualLoggerName(mFormatSpec.contains("$actuallogger"))
     {
 }
 
@@ -928,13 +959,13 @@ void VLogAppender::addInfo(VBentoNode& infoNode) const {
     infoNode.addString("time-format", mTimeFormatter.getFormatSpecifier());
 }
 
-void VLogAppender::emit(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine) {
+void VLogAppender::emit(int level, const char* file, int line, bool emitMessage, const VString& message, const VString& specifiedLoggerName, const VString& actualLoggerName, bool emitRawLine, const VString& rawLine) {
     VLogAppender::_breakpointLocationForEmit();
 
     VMutexLocker locker(&mMutex, "emit"); // ensure multiple threads don't intertwine lines of a single emission
 
     if (emitMessage) {
-        this->_emitMessage(level, file, line, message);
+        this->_emitMessage(level, file, line, message, specifiedLoggerName, actualLoggerName);
     }
 
     if (emitRawLine) {
@@ -943,7 +974,7 @@ void VLogAppender::emit(int level, const char* file, int line, bool emitMessage,
 }
 
 void VLogAppender::emitRaw(const VString& message) {
-    this->emit(VLoggerLevel::TRACE, NULL, 0, false, VString::EMPTY(), true, message);
+    this->emit(VLoggerLevel::TRACE, NULL, 0, false, VString::EMPTY(), VString::EMPTY(), VString::EMPTY(), true, message);
 }
 
 bool VLogAppender::isDefaultAppender() const {
@@ -965,16 +996,16 @@ VString VLogAppender::_getStringInitSetting(const VString& attributePath, const 
     return settings.getString(attributePath, defaults.getString(attributePath, defaultValue));
 }
 
-void VLogAppender::_emitMessage(int level, const char* file, int line, const VString& message) {
+void VLogAppender::_emitMessage(int level, const char* file, int line, const VString& message, const VString& specifiedLoggerName, const VString& actualLoggerName) {
     if (mFormatOutput) {
-        VString formattedMessage = this->_formatMessage(level, file, line, message);
+        VString formattedMessage = this->_formatMessage(level, file, line, message, specifiedLoggerName, actualLoggerName);
         this->_emitRawLine(formattedMessage);
     } else {
         this->_emitRawLine(message); // directly, without applying formatting
     }
 }
 
-VString VLogAppender::_formatMessage(int level, const char* file, int line, const VString& message) {
+VString VLogAppender::_formatMessage(int level, const char* file, int line, const VString& message, const VString& specifiedLoggerName, const VString& actualLoggerName) {
     VInstant now;
     VInstant trueNow(now); // copy constructor avoids another call to read the clock
 
@@ -1023,7 +1054,15 @@ VString VLogAppender::_formatMessage(int level, const char* file, int line, cons
         formattedMessage.replace("$thread", VThread::getCurrentThreadName());
     }
 
-    formattedMessage.replace("$message",    message);
+    if (mFormatUsesSpecifiedLoggerName) {
+        formattedMessage.replace("$specifiedlogger", specifiedLoggerName);
+    }
+
+    if (mFormatUsesActualLoggerName) {
+        formattedMessage.replace("$actuallogger", actualLoggerName);
+    }
+
+    formattedMessage.replace("$message", message);
 
     return formattedMessage;
 }
@@ -1213,8 +1252,8 @@ void VStringLogger::addInfo(VBentoNode& infoNode) const {
     infoNode.addString("type", "VStringLogger");
 }
 
-void VStringLogger::_emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine) {
-    mAppender.emit(level, file, line, emitMessage, message, emitRawLine, rawLine);
+void VStringLogger::_emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, const VString& specifiedLoggerName, bool emitRawLine, const VString& rawLine) {
+    mAppender.emit(level, file, line, emitMessage, message, specifiedLoggerName, this->getName(), emitRawLine, rawLine);
 }
 
 // VStringVectorLogger -------------------------------------------------------------
@@ -1230,8 +1269,8 @@ void VStringVectorLogger::addInfo(VBentoNode& infoNode) const {
     infoNode.addString("type", "VStringVectorLogger");
 }
 
-void VStringVectorLogger::_emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine) {
-    mAppender.emit(level, file, line, emitMessage, message, emitRawLine, rawLine);
+void VStringVectorLogger::_emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, const VString& specifiedLoggerName, bool emitRawLine, const VString& rawLine) {
+    mAppender.emit(level, file, line, emitMessage, message, specifiedLoggerName, this->getName(), emitRawLine, rawLine);
 }
 
 // VLoggerRepetitionFilter ---------------------------------------------------
@@ -1245,6 +1284,8 @@ VLoggerRepetitionFilter::VLoggerRepetitionFilter()
     , mFile(NULL)
     , mLine(0)
     , mMessage()
+    , mSpecifiedLoggerName()
+    , mActualLoggerName()
     {
 }
 
@@ -1256,9 +1297,11 @@ void VLoggerRepetitionFilter::reset() {
     mFile = NULL;
     mLine = 0;
     mMessage = VString::EMPTY();
+    mSpecifiedLoggerName = VString::EMPTY();
+    mActualLoggerName = VString::EMPTY();
 }
 
-bool VLoggerRepetitionFilter::checkMessage(VNamedLogger& logger, int level, const char* file, int line, const VString& message) {
+bool VLoggerRepetitionFilter::checkMessage(VNamedLogger& logger, int level, const char* file, int line, const VString& message, const VString& specifiedLoggerName, const VString& actualLoggerName) {
     if (!mEnabled) {
         return true;
     }
@@ -1293,6 +1336,8 @@ bool VLoggerRepetitionFilter::checkMessage(VNamedLogger& logger, int level, cons
         mFile = file;
         mLine = line;
         mMessage = message;
+        mSpecifiedLoggerName = specifiedLoggerName;
+        mActualLoggerName = actualLoggerName;
     }
 
     return ! isRepeatMessage;
@@ -1315,9 +1360,9 @@ void VLoggerRepetitionFilter::_emitSuppressedMessages(VNamedLogger& logger) {
     // If there was only 1 suppressed message, no need to mark it.
     if (mNumSuppressedOccurrences > 1) {
         VString tweakedMessage(VSTRING_ARGS("[%dx] %s", mNumSuppressedOccurrences, mMessage.chars()));
-        logger._emitToAppenders(mLevel, mFile, mLine, true, tweakedMessage, false, VString::EMPTY());
+        logger._emitToAppenders(mLevel, mFile, mLine, true, tweakedMessage, mSpecifiedLoggerName, false, VString::EMPTY());
     } else {
-        logger._emitToAppenders(mLevel, mFile, mLine, true, mMessage, false, VString::EMPTY());
+        logger._emitToAppenders(mLevel, mFile, mLine, true, mMessage, mSpecifiedLoggerName, false, VString::EMPTY());
     }
 
     mHasSavedMessage = false;
@@ -1413,7 +1458,7 @@ bool VLoggerPrintStackConfig::shouldPrintStack(int level, VNamedLogger& logger) 
         mDuration = VDuration::POSITIVE_INFINITY();
         mCountdown = -1;
         mExpiration = VInstant::INFINITE_FUTURE();
-        logger._emitToAppenders(VLoggerLevel::INFO, NULL, 0, true, "Print stack crawl for this logger is auto-disabling now.", false, VString::EMPTY());
+        logger._emitToAppenders(VLoggerLevel::INFO, NULL, 0, true, "Print stack crawl for this logger is auto-disabling now.", VString::EMPTY(), false, VString::EMPTY());
     }
 
     return printStack;

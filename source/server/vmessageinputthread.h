@@ -132,7 +132,7 @@ response send a Bento-based error reply back to the sender.
 class VBentoMessageInputThread : public VMessageInputThread {
     public:
 
-        VBentoMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory);
+        VBentoMessageInputThread(const VString& threadBaseName, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory);
         ~VBentoMessageInputThread() {}
 
     protected:

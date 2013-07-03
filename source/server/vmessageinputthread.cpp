@@ -167,8 +167,8 @@ void VMessageInputThread::_callProcessMessage(VMessageHandler* handler) {
 
 // VBentoMessageInputThread ---------------------------------------------------
 
-VBentoMessageInputThread::VBentoMessageInputThread(const VString& name, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory) :
-    VMessageInputThread(name, socket, ownerThread, server, messageFactory) {
+VBentoMessageInputThread::VBentoMessageInputThread(const VString& threadBaseName, VSocket* socket, VListenerThread* ownerThread, VServer* server, const VMessageFactory* messageFactory) :
+    VMessageInputThread(threadBaseName, socket, ownerThread, server, messageFactory) {
 }
 
 void VBentoMessageInputThread::_handleNoMessageHandler(VMessagePtr message) {

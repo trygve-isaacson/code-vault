@@ -114,10 +114,10 @@ void VLoggerUnit::_testStringLoggers() {
 
     const VStringVector& actualOutputLines = vsvl.getLines();
     this->test(actualOutputLines.size() == 4, "VStringVectorLogger size = 4");
-    this->test(actualOutputLines.at(0).endsWith(FATAL_MESSAGE), "VStringVectorLogger lines[0]");
-    this->test(actualOutputLines.at(1).endsWith(ERROR_MESSAGE), "VStringVectorLogger lines[1]");
-    this->test(actualOutputLines.at(2).endsWith(WARN_MESSAGE), "VStringVectorLogger lines[2]");
-    this->test(actualOutputLines.at(3).endsWith(INFO_MESSAGE), "VStringVectorLogger lines[3]");
+    this->test(actualOutputLines.at(0).contains(FATAL_MESSAGE), "VStringVectorLogger lines[0]");
+    this->test(actualOutputLines.at(1).contains(ERROR_MESSAGE), "VStringVectorLogger lines[1]");
+    this->test(actualOutputLines.at(2).contains(WARN_MESSAGE), "VStringVectorLogger lines[2]");
+    this->test(actualOutputLines.at(3).contains(INFO_MESSAGE), "VStringVectorLogger lines[3]");
 
     this->logStatus("VStringVectorLogger contents follow, each as unit test status element:");
     for (VStringVector::const_iterator i = actualOutputLines.begin(); i != actualOutputLines.end(); ++i)
@@ -218,6 +218,49 @@ void VLoggerUnit::_testMaxActiveLogLevel() {
 
         throw;
     }
+    
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::getName(VLoggerLevel::OFF),    "OFF  ", "level OFF getName");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::getName(VLoggerLevel::FATAL),  "FATAL", "level FATAL getName");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::getName(2),                    "00002", "level 2 getName");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::getName(VLoggerLevel::ERROR),  "ERROR", "level ERROR getName");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::getName(21),                   "ERR21", "level 21 getName");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::getName(VLoggerLevel::WARN),   "WARN ", "level WARN getName");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::getName(41),                   "WRN41", "level 41 getName");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::getName(VLoggerLevel::INFO),   "INFO ", "level INFO getName");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::getName(61),                   "INF61", "level 61 getName");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::getName(VLoggerLevel::DEBUG),  "DEBUG", "level DEBUG getName");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::getName(81),                   "DBG81", "level 81 getName");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::getName(VLoggerLevel::TRACE),  "TRACE", "level TRACE getName");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::getName(VLoggerLevel::ALL),    "TRACE", "level ALL getName");
+
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("0"),       VLoggerLevel::OFF,      "level 0 fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("OFF"),     VLoggerLevel::OFF,      "level OFF fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("off"),     VLoggerLevel::OFF,      "level off fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("1"),       VLoggerLevel::FATAL,    "level 1 fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("FATAL"),   VLoggerLevel::FATAL,    "level FATAL fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("fatal"),   VLoggerLevel::FATAL,    "level fatal fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("2"),       2,                      "level 2 fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("20"),      VLoggerLevel::ERROR,    "level 20 fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("ERROR"),   VLoggerLevel::ERROR,    "level ERROR fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("error"),   VLoggerLevel::ERROR,    "level error fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("21"),      21,                     "level 21 fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("40"),      VLoggerLevel::WARN,     "level 40 fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("WARN"),    VLoggerLevel::WARN,     "level WARN fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("warn"),    VLoggerLevel::WARN,     "level warn fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("41"),      41,                     "level 41 fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("60"),      VLoggerLevel::INFO,     "level 60 fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("INFO"),    VLoggerLevel::INFO,     "level INFO fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("info"),    VLoggerLevel::INFO,     "level info fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("61"),      61,                     "level 61 fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("80"),      VLoggerLevel::DEBUG,    "level 80 fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("DEBUG"),   VLoggerLevel::DEBUG,    "level DEBUG fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("debug"),   VLoggerLevel::DEBUG,    "level debug fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("81"),      81,                     "level 81 fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("100"),     VLoggerLevel::TRACE,    "level 100 fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("TRACE"),   VLoggerLevel::TRACE,    "level TRACE fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("trace"),   VLoggerLevel::TRACE,    "level trace fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("ALL"),     VLoggerLevel::ALL,      "level ALL fromString");
+    VUNIT_ASSERT_EQUAL_LABELED(VLoggerLevel::fromString("all"),     VLoggerLevel::ALL,      "level all fromString");
 }
 
 static VString _createValueString(int i) {

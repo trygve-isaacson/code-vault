@@ -484,7 +484,7 @@ void operator delete[](void* p) throw() {
 
 static void _reportText(const VString& s, bool toLogger, bool toConsole, VTextIOStream* toStream) {
     if (toLogger) {
-        VLOGGER_INFO(s);
+        VLOGGER_NAMED_INFO("vault.VMemoryTracker", s);
     }
 
     if (toConsole) {
@@ -550,7 +550,7 @@ void VMemoryTracker::reportMemoryTracking(const VString& label, bool toLogger, b
                         }
 
                         if (toLogger) {
-                            VLOGGER_HEXDUMP(VLoggerLevel::INFO, summary, dataPtr, hexDumpLength);
+                            VLOGGER_NAMED_HEXDUMP("vault.VMemoryTracker", VLoggerLevel::INFO, summary, dataPtr, hexDumpLength);
                         }
 
                         if (toConsole) {

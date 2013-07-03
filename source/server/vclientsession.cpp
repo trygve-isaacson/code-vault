@@ -21,7 +21,7 @@ http://www.bombaydigital.com/
 VClientSession::VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket, VMessageInputThread* inputThread, VMessageOutputThread* outputThread, const VDuration& standbyTimeLimit, Vs64 maxQueueDataSize)
     : VEnableSharedFromThis<VClientSession>()
     , mName(sessionBaseName)
-    , mLoggerName(VSTRING_ARGS("vault.messages.VClientSession.%s.%s.%s", sessionBaseName.chars(), clientType.chars(), VLogger::getCleansedLoggerName(socket->getHostIPAddress()).chars()))
+    , mLoggerName(VSTRING_ARGS("vault.messages.VClientSession.%s.%s", sessionBaseName.chars(), VLogger::getCleansedLoggerName(socket->getHostIPAddress()).chars()))
     , mMutex(VString::EMPTY()/*name will be set in body*/)
     , mServer(server)
     , mClientType(clientType)

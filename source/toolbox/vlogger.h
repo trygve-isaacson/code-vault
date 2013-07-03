@@ -166,6 +166,10 @@ class VBentoNode;
         trailing space will provide spacing if present, yet the item will be completely missing if
         not printed.
       $message - The actual log message text.
+      $specifiedlogger - The logger name that was specified in the VLOGGER_NAMED_xxx call.
+        May be useful for debugging the logging configuration and flow of log output.
+      $actuallogger - The logger name of the VLogger that actually received and emitted the log statement.
+        May be useful for debugging the logging configuration and flow of log output.
       As an example, the default appender format is:
       "$localtime $level | $thread | $location$message"
     - "time-format" (string)
@@ -203,8 +207,8 @@ class VBentoNode;
 */
 
 // This first set of macros sends output to the default logger.
-#define VLOGGER_LEVEL(level, message) do { if (!VLogger::isDefaultLogLevelActive(level)) break; VLogger::getDefaultLogger()->log(level, NULL, 0, message); } while (false)
-#define VLOGGER_LEVEL_FILELINE(level, message, file, line) do { if (!VLogger::isDefaultLogLevelActive(level)) break; VLogger::getDefaultLogger()->log(level, file, line, message); } while (false)
+#define VLOGGER_LEVEL(level, message) do { if (!VLogger::isDefaultLogLevelActive(level)) break; VLogger::getDefaultLogger()->log(level, NULL, 0, message, VString::EMPTY()); } while (false)
+#define VLOGGER_LEVEL_FILELINE(level, message, file, line) do { if (!VLogger::isDefaultLogLevelActive(level)) break; VLogger::getDefaultLogger()->log(level, file, line, message, VString::EMPTY()); } while (false)
 #define VLOGGER_LINE(level, message) VLOGGER_LEVEL_FILELINE(level, message, __FILE__, __LINE__)
 #define VLOGGER_FATAL_AND_THROW(message) do { VLogger::getDefaultLogger()->log(VLoggerLevel::FATAL, __FILE__, __LINE__, message); throw VStackTraceException(message); } while (false)
 #define VLOGGER_FATAL(message) VLOGGER_LEVEL_FILELINE(VLoggerLevel::FATAL, message, __FILE__, __LINE__)
@@ -213,12 +217,12 @@ class VBentoNode;
 #define VLOGGER_INFO(message) VLOGGER_LEVEL(VLoggerLevel::INFO, message)
 #define VLOGGER_DEBUG(message) VLOGGER_LEVEL(VLoggerLevel::DEBUG, message)
 #define VLOGGER_TRACE(message) VLOGGER_LEVEL(VLoggerLevel::TRACE, message)
-#define VLOGGER_HEXDUMP(level, message, buffer, length) do { if (!VLogger::isDefaultLogLevelActive(level)) break; VLogger::getDefaultLogger()->logHexDump(level, message, buffer, length); } while (false)
+#define VLOGGER_HEXDUMP(level, message, buffer, length) do { if (!VLogger::isDefaultLogLevelActive(level)) break; VLogger::getDefaultLogger()->logHexDump(level, message, VString::EMPTY(), buffer, length); } while (false)
 #define VLOGGER_WOULD_LOG(level) (VLogger::isDefaultLogLevelActive(level))
 
 // This set of macros sends output to a specified named logger.
-#define VLOGGER_NAMED_LEVEL(loggername, level, message) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != NULL) nl->log(level, NULL, 0, message); } while (false)
-#define VLOGGER_NAMED_LEVEL_FILELINE(loggername, level, message, file, line) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != NULL) nl->log(level, file, line, message); } while (false)
+#define VLOGGER_NAMED_LEVEL(loggername, level, message) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != NULL) nl->log(level, NULL, 0, message, loggername); } while (false)
+#define VLOGGER_NAMED_LEVEL_FILELINE(loggername, level, message, file, line) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != NULL) nl->log(level, file, line, message, loggername); } while (false)
 #define VLOGGER_NAMED_LINE(loggername, level, message) VLOGGER_NAMED_LEVEL_FILELINE(loggername, level, message, __FILE__, __LINE__)
 #define VLOGGER_NAMED_FATAL(loggername, message) VLOGGER_NAMED_LEVEL_FILELINE(loggername, VLoggerLevel::FATAL, message, __FILE__, __LINE__)
 #define VLOGGER_NAMED_ERROR(loggername, message) VLOGGER_NAMED_LEVEL_FILELINE(loggername, VLoggerLevel::ERROR, message, __FILE__, __LINE__)
@@ -226,11 +230,11 @@ class VBentoNode;
 #define VLOGGER_NAMED_INFO(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLoggerLevel::INFO, message)
 #define VLOGGER_NAMED_DEBUG(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLoggerLevel::DEBUG, message)
 #define VLOGGER_NAMED_TRACE(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLoggerLevel::TRACE, message)
-#define VLOGGER_NAMED_HEXDUMP(loggername, level, message, buffer, length) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != NULL) nl->logHexDump(level, message, buffer, length); } while (false)
+#define VLOGGER_NAMED_HEXDUMP(loggername, level, message, buffer, length) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != NULL) nl->logHexDump(level, message, loggername, buffer, length); } while (false)
 #define VLOGGER_NAMED_WOULD_LOG(loggername, level) (VLogger::isLogLevelActive(level) && (VLogger::findNamedLoggerForLevel(loggername, level) != NULL))
 
-#define VLOGGER_APPENDER_EMIT(appender, level, message) do { (appender).emit(level, (level <= VLoggerLevel::ERROR) ? __FILE__ : NULL, (level <= VLoggerLevel::ERROR) ? __LINE__ : 0, true, message, false, VString::EMPTY()); } while (false)
-#define VLOGGER_APPENDER_EMIT_FILELINE(appender, level, message, file, line) do { (appender).emit(level, file, line, true, message, false, VString::EMPTY()); } while (false)
+#define VLOGGER_APPENDER_EMIT(appender, level, message) do { (appender).emit(level, (level <= VLoggerLevel::ERROR) ? __FILE__ : NULL, (level <= VLoggerLevel::ERROR) ? __LINE__ : 0, true, message, VString::EMPTY(), VString::EMPTY(), false, VString::EMPTY()); } while (false)
+#define VLOGGER_APPENDER_EMIT_FILELINE(appender, level, message, file, line) do { (appender).emit(level, file, line, true, message, VString::EMPTY(), VString::EMPTY(), false, VString::EMPTY()); } while (false)
 
 /**
 VLogAppender is an abstract base class that defines the API for writing output to a destination.
@@ -282,10 +286,12 @@ class VLogAppender {
         @param  line        if not 0, the __LINE__ value indicating the line number in the source file that emitted the message
         @param  emitMessage if true, the message param should be emitted with the appender's normal formatting (e.g., time stamp, log level)
         @param  message     the message to emit if emitMessage is true
+        @param  specifiedLoggerName if not empty, the logger name supplied by the original caller
+        @param  actualLoggerName if not empty, the name of the logger that is actually calling us
         @param  emitRawLine if true, the rawLine param should be emitted as is
         @param  rawLine     the raw line to message to emit if emitRawLine is true
         */
-        virtual void emit(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine);
+        virtual void emit(int level, const char* file, int line, bool emitMessage, const VString& message, const VString& specifiedLoggerName, const VString& actualLoggerName, bool emitRawLine, const VString& rawLine);
         /**
         This utility API is used to call emit with a raw message.
         @param  message     the message to be emitted in raw form
@@ -309,8 +315,10 @@ class VLogAppender {
         @param  file        if not null, the __FILE__ value indicating the source file that emitted the message
         @param  line        if not 0, the __LINE__ value indicating the line number in the source file that emitted the message
         @param  message     the message to format and then emit to output
+        @param  specifiedLoggerName if not empty, the logger name supplied by the original caller
+        @param  actualLoggerName if not empty, the name of the logger that is actually calling us
         */
-        virtual void _emitMessage(int level, const char* file, int line, const VString& message);
+        virtual void _emitMessage(int level, const char* file, int line, const VString& message, const VString& specifiedLoggerName, const VString& actualLoggerName);
         /**
         Formats a message prior to output. If the standard formatting supplied here is not what is
         desired, an appender can override this method. If this appender has mFormatOutput turned off, then this
@@ -321,9 +329,11 @@ class VLogAppender {
         @param  file        if not null, the __FILE__ value indicating the source file that emitted the message
         @param  line        if not 0, the __LINE__ value indicating the line number in the source file that emitted the message
         @param  message     the message to format
+        @param  specifiedLoggerName if not empty, the logger name supplied by the original caller
+        @param  actualLoggerName if not empty, the name of the logger that is actually calling us
         @return the formatted message string
         */
-        virtual VString _formatMessage(int level, const char* file, int line, const VString& message);
+        virtual VString _formatMessage(int level, const char* file, int line, const VString& message, const VString& specifiedLoggerName, const VString& actualLoggerName);
         /**
         This is the method that most concrete appenders must implement in order to write a message
         (whether it is in raw form or has already been formatted) to the output medium.
@@ -356,6 +366,8 @@ class VLogAppender {
         bool    mFormatUsesLevel;
         bool    mFormatUsesThread;
         bool    mFormatUsesLocation;
+        bool    mFormatUsesSpecifiedLoggerName;
+        bool    mFormatUsesActualLoggerName;
 
     private:
 
@@ -410,9 +422,11 @@ class VLoggerRepetitionFilter {
                                 NULL will suppress file and line in output
         @param  line        the line number that is emitting the log message
         @param  message     the text to emit
+        @param  specifiedLoggerName if not empty, the logger name supplied by original caller
+        @param  actualLoggerName if not empty, the logger name that is actually calling us
         @return true if the caller should proceed to emit this message, false if not
         */
-        bool checkMessage(VNamedLogger& logger, int level, const char* file, int line, const VString& message);
+        bool checkMessage(VNamedLogger& logger, int level, const char* file, int line, const VString& message, const VString& specifiedLoggerName, const VString& actualLoggerName);
 
         /**
         Checks to see if a long time has elapsed since the pending repeat has been sitting
@@ -447,6 +461,8 @@ class VLoggerRepetitionFilter {
         const char* mFile;                      ///< The __FILE__ value of the suppressed messages.
         int         mLine;                      ///< The __LINE__ value of the suppressed messages.
         VString     mMessage;                   ///< The text of the suppressed messages.
+        VString     mSpecifiedLoggerName;       ///< The specified logger name of the first suppressed message.
+        VString     mActualLoggerName;          ///< The actual logger name of the first suppressed message.
 };
 
 /**
@@ -524,8 +540,9 @@ class VNamedLogger : public VEnableSharedFromThis<VNamedLogger> {
         @param  file    the source file name where the message was logged (from __FILE__ symbol)
         @param  line    the line in the source file where the message was logged (from __LINE__ symbol)
         @param  message the message to be logged
+        @param  specifiedLoggerName if not empty, the logger name supplied by caller
         */
-        void log(int level, const char* file, int line, const VString& message);
+        void log(int level, const char* file, int line, const VString& message, const VString& specifiedLoggerName = VString::EMPTY());
         /**
         Logs a message (subject to filtering).
         @param  level   the level of the message
@@ -539,7 +556,7 @@ class VNamedLogger : public VEnableSharedFromThis<VNamedLogger> {
         @param  buffer  a pointer to some data
         @param  length  the number of bytes of the data that should be examined and written in hex form
         */
-        void logHexDump(int level, const VString& message, const Vu8* buffer, Vs64 length);
+        void logHexDump(int level, const VString& message, const VString& specifiedLoggerName, const Vu8* buffer, Vs64 length);
         /**
         Emits a string in its raw form, without filtering; presumably called by a stack trace function.
         @param  message the string to be logged
@@ -590,10 +607,11 @@ class VNamedLogger : public VEnableSharedFromThis<VNamedLogger> {
         @param  line        the line in the source file where the message was logged (from __LINE__ symbol)
         @param  emitMessage true if the message parameter is to be emitted
         @param  message     the message to be emitted if emitMessage is true (the appenders typically format the message)
+        @param  specifiedLoggerName if not empty, the logger name supplied by caller
         @param  emitRawLine true if the rawLine parameter is to be emitted
         @param  rawLine     the raw line to be emitted if emitRawLine is true (the appenders should not format the raw line)
         */
-        virtual void _emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine);
+        virtual void _emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, const VString& specifiedLoggerName, bool emitRawLine, const VString& rawLine);
 
     private:
 
@@ -664,7 +682,25 @@ class VLoggerLevel {
         static const int TRACE = 100;  ///< Level of detail to add trace-level messages.
         static const int ALL   = 100;  ///< Level of detail to output all messages.
 
+        /**
+        Returns the name of the level as a string, used primarily to format the level in log output.
+        Levels that match one of the named constants are returned as the name in all caps, padded with spaces to 5 characters.
+        Levels for in-between values are returned as 5-characters, with the first three being an abbreviation of the next lowest
+        named constant, plus two digits of the actual value. For example: "DBG82" for level 82. Levels above 100 (which are
+        normally invalid) are returned as five padded digits. We pad everything to 5 for well-aligned log output.
+        @param  level   the level to be converted to a string
+        @return obvious
+        */
         static VString getName(int level);
+        /**
+        Returns the level integer from a string representation of the value. The value can be an integer
+        string, or can be one of the specific named values (case-insensitive). Anything else will throw
+        a VRangeException. Padding named values with spaces will not successfully match. In-between value
+        strings such as those returned by getName() (e.g. "DBG82") will not successfully match.
+        @param  value   a string such as "82" or "INFO"
+        @return the level integer that corresponds to the value
+        */
+        static int fromString(const VString& value);
 };
 
 /**
@@ -916,7 +952,7 @@ class VLogger {
         static void commandSetPrintStackLevel(const VString& loggerName, int printStackLevel, int count, const VDuration& timeLimit); ///< Calls through to setPrintStackInfo() for the specified (or all, if loggerName is empty) loggers.
 
         // Used specifically by VNamedLogger::_emitToAppenders to emit to all "global appenders" with correct locking. Should not be called elsewhere.
-        static void emitToGlobalAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine);
+        static void emitToGlobalAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, const VString& specifiedLoggerName, const VString& actualLoggerName, bool emitRawLine, const VString& rawLine);
         
         // Utility function useful in forming a logger name; returns a copy of the input string with dots (our path separators) converted to dashes.
         static VString getCleansedLoggerName(const VString& s);
@@ -1094,7 +1130,7 @@ class VStringLogger : public VNamedLogger {
 
     protected:
 
-        virtual void _emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine);
+        virtual void _emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, const VString& specifiedLoggerName, bool emitRawLine, const VString& rawLine);
 
     private:
 
@@ -1120,7 +1156,7 @@ class VStringVectorLogger : public VNamedLogger {
 
     protected:
 
-        virtual void _emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, bool emitRawLine, const VString& rawLine);
+        virtual void _emitToAppenders(int level, const char* file, int line, bool emitMessage, const VString& message, const VString& specifiedLoggerName, bool emitRawLine, const VString& rawLine);
 
     private:
 
