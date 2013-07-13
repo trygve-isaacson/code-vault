@@ -42,6 +42,12 @@ VString VSystemError::_getSystemErrorMessage(int errorCode) {
     return ::strerror(errorCode);
 }
 
+// static
+bool VSystemError::_isLikePosixError(int posixErrorCode) const {
+    // We are POSIX. No translation necessary.
+    return (posixErrorCode == mErrorCode);
+}
+
 // VAutoreleasePool -----------------------------------------------------------
 
 // VAutoreleasePool is a no-op on Unix.

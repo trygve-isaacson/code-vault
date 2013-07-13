@@ -14,9 +14,9 @@ http://www.bombaydigital.com/
 V_STATIC_INIT_TRACE
 
 // This is to force our staticInit to be called at startup.
-bool VSocket::gStaticInited = VSocket::staticInit();
+bool VSocketBase::gStaticInited = VSocketBase::staticInit();
 
-bool VSocket::staticInit() {
+bool VSocketBase::staticInit() {
     bool    success = true;
     WORD    versionRequested;
     WSADATA wsaData;
@@ -79,141 +79,32 @@ VString VSocketBase::addrinfoToIPAddressString(const VString& hostName, const st
     return result;
 }
 
-VSocket::VSocket()
-    : VSocketBase()
-    {
+bool VSocketBase::_platform_isSocketIDValid(VSocketID socketID) const {
+    return socketID != INVALID_SOCKET;
 }
 
-VSocket::VSocket(VSocketID id)
-    : VSocketBase(id)
-    {
-}
-
-VSocket::~VSocket() {
-    // Note: base class destructor does a close() of the socket if it is open.
-}
-
-#define in_port_t USHORT
-
-void VSocket::_connectToIPAddress(const VString& ipAddress, int portNumber) {
-    // TODO: This function is NEARLY identical to the _unix version. Consolidate. (See also #define just above.)
-    this->setHostIPAddressAndPort(ipAddress, portNumber);
-
-    bool        isIPv4 = VSocketBase::isIPv4NumericString(ipAddress);
-    VSocketID   socketID = ::socket((isIPv4 ? AF_INET : AF_INET6), SOCK_STREAM, 0);
-
-    if (socketID != INVALID_SOCKET) {
-
-        const sockaddr* infoPtr = NULL;
-        socklen_t infoLen = 0;
-        struct sockaddr_in infoIPv4;
-        struct sockaddr_in6 infoIPv6;
-
-        if (isIPv4) {
-            ::memset(&infoIPv4, 0, sizeof(infoIPv4));
-            infoIPv4.sin_family = AF_INET;
-            infoIPv4.sin_port = (in_port_t) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(portNumber));
-            infoIPv4.sin_addr.s_addr = ::inet_addr(ipAddress);
-            infoPtr = (const sockaddr*) &infoIPv4;
-            infoLen = sizeof(infoIPv4);
-        } else {
-            ::memset(&infoIPv6, 0, sizeof(infoIPv6));
-            //infoIPv6.sin6_len = sizeof(infoIPv6); // not defined in Winsock struct
-            infoIPv6.sin6_family = AF_INET6;
-            infoIPv6.sin6_port = (in_port_t) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(portNumber));
-            int ptonResult = ::inet_pton(AF_INET6, ipAddress, &infoIPv6.sin6_addr);
-            if (ptonResult != 1) {
-                throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] _connectToIPAddress: inet_pton() failed.", mSocketName.chars()));
-            }
-            infoPtr = (const sockaddr*) &infoIPv6;
-            infoLen = sizeof(infoIPv6);
-        }
-
-        int result = ::connect(socketID, infoPtr, infoLen);
-
-        if (result != 0) {
-            // Connect failed.
-            VSystemError e = VSystemError::getSocketError(); // Call before calling closeSocket(), which will succeed and clear the error code!
-            vault::closeSocket(socketID);
-            throw VException(e, VSTRING_FORMAT("VSocket[%s] _connectToIPAddress: Connect failed.", mSocketName.chars()));
-        }
-    }
-
-    mSocketID = socketID;
-}
-
-void VSocket::_listen(const VString& bindAddress, int backlog) {
-    // TODO: This function is now identical to the _unix version. Consolidate.
-    VSocketID           listenSockID = kNoSocketID;
-    struct sockaddr_in  info;
-    int                 infoLength = sizeof(info);
-    const int           on = 1;
-
-    ::memset(&info, 0, sizeof(info));
-    info.sin_family = AF_INET;
-    info.sin_port = (u_short) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(mPortNumber));
-
-    if (bindAddress.isEmpty()) {
-        info.sin_addr.s_addr = INADDR_ANY;
-    } else {
-        info.sin_addr.s_addr = inet_addr(bindAddress);
-    }
-
-    listenSockID = ::socket(AF_INET, SOCK_STREAM, 0);
-    if (listenSockID <= 0) {
-        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen socket() failed with id %d.", listenSockID));
-    }
-
-    // Once we've successfully called ::socket(), if something else fails here, we need
-    // to close that socket. We can just throw upon any failed call, and use a try/catch
-    // with re-throw after closure.
-    try {
-        int result = ::setsockopt(listenSockID, SOL_SOCKET, SO_REUSEADDR, (const char*) &on, sizeof(on));
-        if (result != 0) {
-            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen setsockopt() failed -- socket id %d, result %d.", listenSockID, result));
-        }
-
-        result = ::bind(listenSockID, (const sockaddr*) &info, infoLength);
-        if (result != 0) {
-            vault::closeSocket(listenSockID);
-            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen bind() for port %d failed -- socket id %d.", mPortNumber, listenSockID));
-        }
-
-        result = ::listen(listenSockID, backlog);
-        if (result != 0) {
-            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::listen listen() for port %d failed -- socket id %d, result %d.", mPortNumber, listenSockID, result));
-        }
-
-    } catch (...) {
-        vault::closeSocket(listenSockID);
-        throw;
-    }
-
-    mSocketID = listenSockID;
-}
-
-int VSocket::available() {
+int VSocketBase::_platform_available() {
     u_long numBytesAvailable = 0;
 
-    int result = ::ioctlsocket(mSocketID, FIONREAD, &numBytesAvailable);
+    int result = ::v_ioctlsocket(mSocketID, FIONREAD, &numBytesAvailable);
 
     if (result != 0) {
-        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] available: ioctlsocket() failed with result %d.", mSocketName.chars(), result));
+        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] available: v_ioctlsocket() failed with result %d.", mSocketName.chars(), result));
     }
 
     if (numBytesAvailable == 0) {
         //set the socket to be non blocking.
         u_long argp = 1;
-        ::ioctlsocket(mSocketID, FIONBIO, &argp);
+        ::v_ioctlsocket(mSocketID, FIONBIO, &argp);
 
         //See if there is any data in the buffer.
         char recvBuffer[4]; // It's unclear if NULL buffer parameter is runtime safe, even with 0 length parameter. Provide valid buffer pointer to be sure.
-        result = ::recv(mSocketID, recvBuffer, 0 , MSG_PEEK);
+        result = ::recv(mSocketID, recvBuffer, 0, MSG_PEEK);
         VSystemError theSocketError = VSystemError::getSocketError();
 
         //restore the blocking
-        argp = 1;
-        ::ioctlsocket(mSocketID, FIONBIO, &argp);
+        argp = 0;
+        ::v_ioctlsocket(mSocketID, FIONBIO, &argp);
 
         switch (result) {
             case 0:
@@ -233,143 +124,5 @@ int VSocket::available() {
     }
 
     return (int) numBytesAvailable;
-}
-
-int VSocket::read(Vu8* buffer, int numBytesToRead) {
-    if (mSocketID == kNoSocketID) {
-        throw VException(VSTRING_FORMAT("VSocket::read with invalid mSocketID %d", mSocketID));
-    }
-
-    int     bytesRemainingToRead = numBytesToRead;
-    Vu8*    nextBufferPositionPtr = buffer;
-    int     result;
-    int     numBytesRead = 0;
-    fd_set  readset;
-
-    while (bytesRemainingToRead > 0) {
-        // Note that unlike on Unix, verifying mSocketID <= FD_SETSIZE here is inappropriate because
-        // of different Winsock fd_set internals, ID range, and select() API behavior. mSocketID may well be
-        // larger than FD_SETSIZE, and that is OK.
-
-        FD_ZERO(&readset);
-        FD_SET(mSocketID, &readset);
-        result = ::select((int)(mSocketID + 1), &readset, NULL, NULL, (mReadTimeOutActive ? &mReadTimeOut : NULL));
-
-        if (result < 0) {
-            if (errno == EINTR) {
-                // Debug message: read was interrupted but we will cycle around and try again...
-                continue;
-            }
-
-            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::read select failed on socket %d with result = %d.", mSocketID, result));
-        } else if (result == 0) {
-            throw VException(VSTRING_FORMAT("VSocket::read select timed out on socket %d.", mSocketID));
-        }
-
-        if (!FD_ISSET(mSocketID, &readset)) {
-            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::read select got FD_ISSET false on socket %d.", mSocketID));
-        }
-
-        numBytesRead = ::recv(mSocketID, (char*) nextBufferPositionPtr, bytesRemainingToRead, 0);
-
-        if (numBytesRead < 0) {
-            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::read recv failed on socket %d with result %d.", mSocketID, numBytesRead));
-        } else if (numBytesRead == 0) {
-            if (mRequireReadAll) {
-                throw VEOFException(VSTRING_FORMAT("VSocket::read: reached EOF unexpectedly on socket %d, recv of length %d returned 0.", mSocketID, bytesRemainingToRead));
-            } else {
-                break;    // got successful but partial read, caller will have to keep reading
-            }
-        }
-
-        bytesRemainingToRead -= numBytesRead;
-        nextBufferPositionPtr += numBytesRead;
-
-        mNumBytesRead += numBytesRead;
-    }
-
-    mLastEventTime.setNow();
-
-    return (numBytesToRead - bytesRemainingToRead);
-}
-
-int VSocket::write(const Vu8* buffer, int numBytesToWrite) {
-    if (mSocketID == kNoSocketID) {
-        throw VException(VSTRING_FORMAT("VSocket::write with invalid mSocketID %d", mSocketID));
-    }
-
-    const Vu8*  nextBufferPositionPtr = buffer;
-    int         bytesRemainingToWrite = numBytesToWrite;
-    int         numBytesWritten;
-    int         result;
-    fd_set      writeset;
-
-    while (bytesRemainingToWrite > 0) {
-        // See comment at same location in read() above, regarding mSocketID and FD_SETSIZE.
-
-        FD_ZERO(&writeset);
-        FD_SET(mSocketID, &writeset);
-        result = ::select((int)(mSocketID + 1), NULL, &writeset, NULL, (mWriteTimeOutActive ? &mWriteTimeOut : NULL));
-
-        if (result < 0) {
-            if (errno == EINTR) {
-                // Debug message: write was interrupted but we will cycle around and try again...
-                continue;
-            }
-
-            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::write select failed on socket %d, result=%d.", mSocketID, result));
-        } else if (result == 0) {
-            throw VException(VSTRING_FORMAT("VSocket::write select timed out on socket %d", mSocketID));
-        }
-
-        numBytesWritten = ::send(mSocketID, (const char*) nextBufferPositionPtr, bytesRemainingToWrite, 0);
-
-        if (numBytesWritten <= 0) {
-            throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::write send failed on socket %d.", mSocketID));
-        } else if (numBytesWritten != bytesRemainingToWrite) {
-            // Debug message: write was only partially completed so we will cycle around and write the rest...
-        } else {
-            // This is where you could put debug/trace-mode socket write logging output....
-        }
-
-        bytesRemainingToWrite -= numBytesWritten;
-        nextBufferPositionPtr += numBytesWritten;
-
-        mNumBytesWritten += numBytesWritten;
-    }
-
-    return (numBytesToWrite - bytesRemainingToWrite);
-}
-
-void VSocket::discoverHostAndPort() {
-    struct sockaddr_in  info;
-    VSocklenT           infoLength = sizeof(info);
-
-    ::getpeername(mSocketID, (struct sockaddr*) &info, &infoLength);
-
-    int portNumber = (int) V_BYTESWAP_NTOH_S16_GET(static_cast<Vs16>(info.sin_port));
-    const char* ipAddress = ::inet_ntoa(info.sin_addr);
-
-    this->setHostIPAddressAndPort(VSTRING_COPY(ipAddress), portNumber);
-}
-
-void VSocket::closeRead() {
-    int result = ::shutdown(mSocketID, SHUT_RD);
-
-    if (result < 0) {
-        throw VException(VSTRING_FORMAT("VSocket::closeRead unable to shut down socket %d.", mSocketID));
-    }
-}
-
-void VSocket::closeWrite() {
-    int result = ::shutdown(mSocketID, SHUT_WR);
-
-    if (result < 0) {
-        throw VException(VSTRING_FORMAT("VSocket::closeWrite unable to shut down socket %d.", mSocketID));
-    }
-}
-
-void VSocket::setSockOpt(int level, int name, void* valuePtr, int valueLength) {
-    ::setsockopt(mSocketID, level, name, (char*) valuePtr, valueLength);
 }
 

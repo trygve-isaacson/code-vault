@@ -45,3 +45,8 @@ int VSystemError::_getSocketErrorCode() {
 VString VSystemError::_getSystemErrorMessage(int errorCode) {
     return ::strerror(errorCode);
 }
+
+bool VSystemError::_isLikePosixError(int posixErrorCode) const {
+    // We are POSIX. No translation necessary.
+    return (posixErrorCode == mErrorCode);
+}

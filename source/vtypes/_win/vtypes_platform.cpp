@@ -64,6 +64,21 @@ VString VSystemError::_getSystemErrorMessage(int errorCode) {
     return result;
 }
 
+// static
+bool VSystemError::_isLikePosixError(int posixErrorCode) const {
+    // We are not POSIX. Perform translations for error codes we know about.
+    // The list is endless, but these are the ones we need to check internally.
+    switch (posixErrorCode) {
+        case EINTR: return mErrorCode == WSAEINTR; break;
+        case EBADF: return mErrorCode == WSAEBADF; break;
+        case EPIPE: return false; break; // no such thing on Winsock
+        default: break;
+    }
+
+    // Default to exact value test.
+    return (posixErrorCode == mErrorCode);
+}
+
 static void getCurrentTZ(VString& tz) {
     char* tzEnvString = vault::getenv("TZ");
 

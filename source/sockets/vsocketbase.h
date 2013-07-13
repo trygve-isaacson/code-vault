@@ -413,7 +413,7 @@ class VSocketBase {
         it will not block.
         @return the number of bytes currently available for reading
         */
-        virtual int available() = 0;
+        virtual int available() { return this->_platform_available(); }
         /**
         Reads data from the socket.
 
@@ -424,7 +424,7 @@ class VSocketBase {
         @param    numBytesToRead    the number of bytes to read from the socket
         @return    the number of bytes read
         */
-        virtual int read(Vu8* buffer, int numBytesToRead) = 0;
+        virtual int read(Vu8* buffer, int numBytesToRead);
         /**
         Writes data to the socket.
 
@@ -435,7 +435,7 @@ class VSocketBase {
         @param    numBytesToWrite    the number of bytes to write to the socket
         @return    the number of bytes written
         */
-        virtual int write(const Vu8* buffer, int numBytesToWrite) = 0;
+        virtual int write(const Vu8* buffer, int numBytesToWrite);
         /**
         Flushes any unwritten bytes to the socket.
         */
@@ -444,15 +444,15 @@ class VSocketBase {
         Sets the host name and port number properties of this socket by
         asking the lower level services to whom the socket is connected.
         */
-        virtual void discoverHostAndPort() = 0;
+        virtual void discoverHostAndPort();
         /**
         Shuts down just the read side of the connection.
         */
-        virtual void closeRead() = 0;
+        virtual void closeRead();
         /**
         Shuts down just the write side of the connection.
         */
-        virtual void closeWrite() = 0;
+        virtual void closeWrite();
         /**
         Sets a specified socket option.
         @param    level        the option level
@@ -460,7 +460,7 @@ class VSocketBase {
         @param    valuePtr    a pointer to the new option value data
         @param    valueLength    the length of the data pointed to by valuePtr
         */
-        virtual void setSockOpt(int level, int name, void* valuePtr, int valueLength) = 0;
+        virtual void setSockOpt(int level, int name, void* valuePtr, int valueLength);
         /**
         For "int" socket options, this helper function simplifies use of setSockOpt.
         @param  level   the option level
@@ -479,7 +479,7 @@ class VSocketBase {
         /**
         Connects to the server.
         */
-        virtual void _connectToIPAddress(const VString& ipAddress, int portNumber) = 0;
+        virtual void _connectToIPAddress(const VString& ipAddress, int portNumber);
         /**
         Starts listening for incoming connections. Only useful to call
         from a VListenerSocket subclass that exposes a public listen() API.
@@ -488,7 +488,7 @@ class VSocketBase {
                                 supplied IP address (can be useful on a multi-homed server)
         @param  backlog     the backlog value to supply to the ::listen() function
         */
-        virtual void _listen(const VString& bindAddress, int backlog) = 0;
+        virtual void _listen(const VString& bindAddress, int backlog);
 
         VSocketID       mSocketID;              ///< The socket id.
         VString         mHostIPAddress;         ///< The IP address of the host to which the socket is connected.
@@ -506,6 +506,48 @@ class VSocketBase {
         static VString gPreferredNetworkInterfaceName;
         static VString gPreferredLocalIPAddressPrefix;
         static VString gCachedLocalHostIPAddress;
+
+    protected: // will be private when complete
+
+        static bool gStaticInited;  ///< Used internally to initialize at startup.
+        static bool staticInit();   ///< Used internally to initialize at startup.
+    
+        // Work in progress: I'm restructuring VSocket platform-specific code.
+        // Like VFSNode, these are the known-to-be-specific functions. But we
+        // don't need a subclass, just separate implementations.
+        
+        /**
+        Returns true if the specified socket ID (e.g., returned from ::socket())
+        is valid. BSD and Winsock have different ranges of good values.
+        */
+        bool _platform_isSocketIDValid(VSocketID socketID) const;
+        /**
+        Returns the number of bytes that are available to be read on this
+        socket. If you do a read() on that number of bytes, you know that
+        it will not block.
+        @return the number of bytes currently available for reading
+        */
+        int _platform_available();
+};
+
+// TEMPORARY during code migration. Will rename VSocketBase to VSocket and get rid of this.
+class VSocket : public VSocketBase {
+    public:
+
+        /**
+        Constructs the object; does NOT open a connection.
+        */
+        VSocket();
+        /**
+        Constructs the object with an already-opened low-level
+        socket connection identified by its ID.
+        */
+        VSocket(VSocketID id);
+        /**
+        Destructor, cleans up by closing the socket.
+        */
+        virtual ~VSocket();
+
 };
 
 /**
@@ -628,6 +670,29 @@ class VSocketConnectionStrategyThreaded : public VSocketConnectionStrategy {
         VDuration   mTimeoutInterval;
         int         mMaxNumThreads;
 };
+
+// Move this conditional stuff to future vsocket_platform.h which we will include.
+#ifdef VPLATFORM_WIN
+    #define v_ioctlsocket ioctlsocket /* varargs make this easier than an inline function */
+    #define SelectSockIDTypeCast (int)
+    #define SendBufferPtrTypeCast (const char*)
+    #define RecvBufferPtrTypeCast (char*)
+    #define SendRecvByteCountTypeCast
+    #define SendRecvResultTypeCast
+    #define SetSockOptValueTypeCast (const char*)
+
+    // Used in VSocket BSD sock_addr structures, but not defined by Winsock headers.
+    #define in_port_t USHORT
+
+#else
+    #define v_ioctlsocket ioctl /* varargs make this easier than an inline function */
+    #define SelectSockIDTypeCast
+    #define SendBufferPtrTypeCast
+    #define RecvBufferPtrTypeCast
+    #define SendRecvByteCountTypeCast (VSizeType)
+    #define SendRecvResultTypeCast (int)
+    #define SetSockOptValueTypeCast
+#endif
 
 #endif /* vsocketbase_h */
 

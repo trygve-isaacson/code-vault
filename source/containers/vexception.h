@@ -185,6 +185,16 @@ class VSystemError {
         @return obvious
         */
         VString getErrorMessage() const { return mErrorMessage; }
+        /**
+        Returns true if the internal error code is equivalent to the specified POSIX error
+        code constant, for the platform. For example, on Windows an interrupted call would
+        be the constant WSAEINTR, which is equivalent -- but not the same number -- as the
+        POSIX constant EINTR; you could call isPosixError(EINTR) to test for that condition
+        on either platform. You generally just throw an exception when you encounter an
+        error, but in a few cases you need to decide which corrective action or which specific
+        exception to throw, based on the exact error code.
+        */
+        bool isLikePosixError(int posixErrorCode) const { return this->_isLikePosixError(posixErrorCode); }
 
     private:
 
@@ -193,6 +203,8 @@ class VSystemError {
         static int _getSystemErrorCode();
         static int _getSocketErrorCode();
         static VString _getSystemErrorMessage(int errorCode);
+        
+        bool _isLikePosixError(int posixErrorCode) const;
 
         int     mErrorCode;     ///< The stored error code.
         VString mErrorMessage;  ///< The stored error message.
@@ -375,6 +387,12 @@ class VSocketClosedException : public VException {
         @param    errorString    the error message
         */
         VSocketClosedException(int error, const VString& errorString) : VException(error, errorString) {}
+        /**
+        Constructs the exception with default error code and VString message.
+        @param    error         the error construct
+        @param    errorString   the error message
+        */
+        VSocketClosedException(const VSystemError& error, const VString& errorString) : VException(error, errorString) {}
         /**
         Destructor.
         */
