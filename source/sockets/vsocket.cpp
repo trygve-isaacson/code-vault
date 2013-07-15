@@ -12,16 +12,10 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vmutexlocker.h"
 
-// On Mac OS X, we disable SIGPIPE in VSocket::setDefaultSockOpt(), so these flags are 0.
-// On Winsock, it is irrelevant so these flags are 0.
-// For other Unix platforms, we specify it in the flags of each send()/recv() call via this parameter.
-#ifdef VPLATFORM_UNIX
-    #define VSOCKET_DEFAULT_SEND_FLAGS MSG_NOSIGNAL
-    #define VSOCKET_DEFAULT_RECV_FLAGS MSG_NOSIGNAL
-#else
-    #define VSOCKET_DEFAULT_SEND_FLAGS 0
-    #define VSOCKET_DEFAULT_RECV_FLAGS 0
-#endif
+V_STATIC_INIT_TRACE
+
+// This is to force our _platform_staticInit to be called at startup.
+bool VSocket::gStaticInited = VSocket::_platform_staticInit();
 
 // VSocket ----------------------------------------------------------------
 
@@ -105,7 +99,7 @@ VStringVector VSocket::resolveHostName(const VString& hostName) {
     if (result == 0) {
         for (const struct addrinfo* item = info.mInfo; item != NULL; item = item->ai_next) {
             if ((item->ai_family == AF_INET) || (item->ai_family == AF_INET6)) {
-                resolvedAddresses.push_back(VSocket::addrinfoToIPAddressString(hostName, item));
+                resolvedAddresses.push_back(VSocket::_platform_addrinfoToIPAddressString(hostName, item));
             }
         }
     }
@@ -371,7 +365,7 @@ VDuration VSocket::getIdleTime() const {
 }
 
 int VSocket::read(Vu8* buffer, int numBytesToRead) {
-    if (! this->_platform_isSocketIDValid(mSocketID)) {
+    if (! VSocket::_platform_isSocketIDValid(mSocketID)) {
         throw VStackTraceException(VSTRING_FORMAT("VSocket[%s] read: Invalid socket ID %d.", mSocketName.chars(), mSocketID));
     }
 
@@ -434,7 +428,7 @@ int VSocket::read(Vu8* buffer, int numBytesToRead) {
 }
 
 int VSocket::write(const Vu8* buffer, int numBytesToWrite) {
-    if (! this->_platform_isSocketIDValid(mSocketID)) {
+    if (! VSocket::_platform_isSocketIDValid(mSocketID)) {
         throw VStackTraceException(VSTRING_FORMAT("VSocket[%s] write: Invalid socket ID %d.", mSocketName.chars(), mSocketID));
     }
 
@@ -529,7 +523,7 @@ void VSocket::_connectToIPAddress(const VString& ipAddress, int portNumber) {
     bool        isIPv4 = VSocket::isIPv4NumericString(ipAddress);
     VSocketID   socketID = ::socket((isIPv4 ? AF_INET : AF_INET6), SOCK_STREAM, 0);
 
-    if (this->_platform_isSocketIDValid(socketID)) {
+    if (VSocket::_platform_isSocketIDValid(socketID)) {
 
         const sockaddr* infoPtr = NULL;
         socklen_t infoLen = 0;
@@ -588,7 +582,7 @@ void VSocket::_listen(const VString& bindAddress, int backlog) {
     }
 
     listenSockID = ::socket(AF_INET, SOCK_STREAM, 0);
-    if (! this->_platform_isSocketIDValid(listenSockID)) {
+    if (! VSocket::_platform_isSocketIDValid(listenSockID)) {
         throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] listen: socket() failed. Result=%d.", mSocketName.chars(), listenSockID));
     }
 

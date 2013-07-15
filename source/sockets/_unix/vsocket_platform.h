@@ -22,6 +22,17 @@ http://www.bombaydigital.com/
 #include <netdb.h>
 #include <arpa/inet.h>
 
+// On Mac OS X, we disable SIGPIPE in VSocket::setDefaultSockOpt(), so these flags are 0.
+// On Winsock, it is irrelevant so these flags are 0.
+// For other Unix platforms, we specify it in the flags of each send()/recv() call via this parameter.
+#ifdef VPLATFORM_UNIX
+    #define VSOCKET_DEFAULT_SEND_FLAGS MSG_NOSIGNAL
+    #define VSOCKET_DEFAULT_RECV_FLAGS MSG_NOSIGNAL
+#else
+    #define VSOCKET_DEFAULT_SEND_FLAGS 0
+    #define VSOCKET_DEFAULT_RECV_FLAGS 0
+#endif
+
 /*
 There are a couple of Unix APIs we call that take a socklen_t parameter.
 Well, on HP-UX the parameter is defined as an int. The cleanest way of dealing

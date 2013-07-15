@@ -175,7 +175,7 @@ class VSocket {
         VSocket::setPreferredNetworkInterface().
         @return a list of zero or more network interfaces
         */
-        static VNetworkInterfaceList enumerateNetworkInterfaces();
+        static VNetworkInterfaceList enumerateNetworkInterfaces() { return VSocket::_platform_enumerateNetworkInterfaces(); }
         /**
         Converts an IPv4 address string in dot notation to a 4-byte binary value
         that can be stored in a stream. Note that the return value is in network
@@ -216,17 +216,6 @@ class VSocket {
                 returning an empty vector
         */
         static VStringVector resolveHostName(const VString& hostName);
-        /**
-        Returns a string representation of the specified addrinfo internet address.
-        It may be an IPv4 dotted decimal format (n.n.n.n) or IPv6 format.
-        This function is used by resolveHostName() to convert each address it resolves.
-        @param  hostName    optional value to be used in an error message if we need to throw an exception
-        @param  info        the addrinfo containing the low-level information about the address;
-                            you must only pass IPv4 (AF_INET) or IPv6 (AF_INET6) values; other types
-                            will result in an exception being thrown
-        @return a string in IPv4 dotted decimal format (n.n.n.n) or IPv6 format
-        */
-        static VString addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info);
         /**
         Returns true if the supplied numeric IP address string appears to be in IPv4
         dotted decimal format (n.n.n.n). We just check basic contents: dots, decimals,
@@ -501,18 +490,32 @@ class VSocket {
 
     protected: // will be private when complete
 
-        static bool gStaticInited;  ///< Used internally to initialize at startup.
-        static bool staticInit();   ///< Used internally to initialize at startup.
+        static bool gStaticInited;          ///< Used internally to initialize at startup.
+        static bool _platform_staticInit(); ///< Used internally to initialize at startup.
     
-        // Work in progress: I'm restructuring VSocket platform-specific code.
-        // Like VFSNode, these are the known-to-be-specific functions. But we
-        // don't need a subclass, just separate implementations.
-        
+        /**
+        Platform-specific implementation of enumerateNetworkInterfaces() -- see doc
+        comments for public API above.
+        */
+        static VNetworkInterfaceList _platform_enumerateNetworkInterfaces();
+        /**
+        Returns a string representation of the specified addrinfo internet address.
+        It may be an IPv4 dotted decimal format (n.n.n.n) or IPv6 format.
+        This function is used by resolveHostName() to convert each address it resolves.
+        @param  hostName    optional value to be used in an error message if we need to throw an exception
+        @param  info        the addrinfo containing the low-level information about the address;
+                            you must only pass IPv4 (AF_INET) or IPv6 (AF_INET6) values; other types
+                            will result in an exception being thrown
+        @return a string in IPv4 dotted decimal format (n.n.n.n) or IPv6 format
+        */
+        static VString _platform_addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info);
         /**
         Returns true if the specified socket ID (e.g., returned from ::socket())
         is valid. BSD and Winsock have different ranges of good values.
+        @param  socketID    a platform-specific socket ID
+        @return true if the socket ID is considered valid should an API such as ::socket() return it
         */
-        bool _platform_isSocketIDValid(VSocketID socketID) const;
+        static bool _platform_isSocketIDValid(VSocketID socketID);
         /**
         Returns the number of bytes that are available to be read on this
         socket. If you do a read() on that number of bytes, you know that

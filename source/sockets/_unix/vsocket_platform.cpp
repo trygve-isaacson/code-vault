@@ -7,7 +7,8 @@ http://www.bombaydigital.com/
 /** @file */
 
 #include "vsocket.h"
-#include "vtypes_internal.h"
+
+#include "vexception.h"
 
 #include <signal.h>
 
@@ -18,15 +19,8 @@ http://www.bombaydigital.com/
 #include <sys/ioctl.h>
 #include <ifaddrs.h>
 
-#include "vexception.h"
-#include "vmutexlocker.h"
-
-V_STATIC_INIT_TRACE
-
-// This is to force our staticInit to be called at startup.
-bool VSocket::gStaticInited = VSocket::staticInit();
-
-bool VSocket::staticInit() {
+// static
+bool VSocket::_platform_staticInit() {
     //lint -e421 -e923 " Caution -- function 'signal(int, void (*)(int))' is considered dangerous [MISRA Rule 123]"
     ::signal(SIGPIPE, SIG_IGN);
 
@@ -35,7 +29,8 @@ bool VSocket::staticInit() {
     return true;
 }
 
-VNetworkInterfaceList VSocket::enumerateNetworkInterfaces() {
+// static
+VNetworkInterfaceList VSocket::_platform_enumerateNetworkInterfaces() {
     VNetworkInterfaceList interfaces;
     struct ifaddrs* interfacesDataPtr = NULL;
     int result = ::getifaddrs(&interfacesDataPtr);
@@ -71,9 +66,8 @@ VNetworkInterfaceList VSocket::enumerateNetworkInterfaces() {
 }
 
 static const int MAX_ADDRSTRLEN = V_MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
-// Another platform-specific implementation of a function defined by the base class API.
 // static
-VString VSocket::addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info) {
+VString VSocket::_platform_addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info) {
     void* addr;
     if (info->ai_family == AF_INET) {
         addr = (void*) &(((struct sockaddr_in*)info->ai_addr)->sin_addr);
@@ -81,25 +75,26 @@ VString VSocket::addrinfoToIPAddressString(const VString& hostName, const struct
         addr = (void*) &(((struct sockaddr_in6*)info->ai_addr)->sin6_addr);
     } else {
         // We don't know how to access the addr for other family types. They could conceivably be added.
-        throw VException(VSTRING_FORMAT("VSocket::addrinfoToIPAddressString(%s): An invalid family (%d) other than AF_INET or AF_INET6 was specified.", hostName.chars(), info->ai_family));
+        throw VException(VSTRING_FORMAT("VSocket::_platform_addrinfoToIPAddressString(%s): An invalid family (%d) other than AF_INET or AF_INET6 was specified.", hostName.chars(), info->ai_family));
     }
 
     VString result;
     result.preflight(MAX_ADDRSTRLEN);
     const char* buf = ::inet_ntop(info->ai_family, addr, result.buffer(), MAX_ADDRSTRLEN);
     if (buf == NULL) {
-        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::addrinfoToIPAddressString(%s): inet_ntop() failed.", hostName.chars()));
+        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::_platform_addrinfoToIPAddressString(%s): inet_ntop() failed.", hostName.chars()));
     }
     result.postflight(::strlen(buf));
 
     return result;
 }
 
-bool VSocket::_platform_isSocketIDValid(VSocketID socketID) const {
+// static
+bool VSocket::_platform_isSocketIDValid(VSocketID socketID) {
     // On Unix:
     // -1 is typical error return value from ::socket()
     // Also, FD_SETSIZE is max num open sockets, sockid over that is sign of a big problem, and would cause FD_SET() during read() to fail.
-    return (socketID >= 0) && (mSocketID <= FD_SETSIZE);
+    return (socketID >= 0) && (socketID <= FD_SETSIZE);
 }
 
 int VSocket::_platform_available() {

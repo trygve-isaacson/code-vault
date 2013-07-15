@@ -7,16 +7,11 @@ http://www.bombaydigital.com/
 /** @file */
 
 #include "vsocket.h"
-#include "vtypes_internal.h"
 
 #include "vexception.h"
 
-V_STATIC_INIT_TRACE
-
-// This is to force our staticInit to be called at startup.
-bool VSocket::gStaticInited = VSocket::staticInit();
-
-bool VSocket::staticInit() {
+// static
+bool VSocket::_platform_staticInit() {
     bool    success = true;
     WORD    versionRequested;
     WSADATA wsaData;
@@ -33,7 +28,8 @@ bool VSocket::staticInit() {
     return success;
 }
 
-VNetworkInterfaceList VSocket::enumerateNetworkInterfaces() {
+// static
+VNetworkInterfaceList VSocket::_platform_enumerateNetworkInterfaces() {
     VNetworkInterfaceList interfaces;
 
     SOCKET sock = ::WSASocket(AF_INET, SOCK_DGRAM, 0, 0, 0, 0);
@@ -64,7 +60,7 @@ VNetworkInterfaceList VSocket::enumerateNetworkInterfaces() {
 
 static const int MAX_ADDRSTRLEN = V_MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
 // static
-VString VSocket::addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info) {
+VString VSocket::_platform_addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info) {
     VString result;
     result.preflight(MAX_ADDRSTRLEN);
 
@@ -72,14 +68,15 @@ VString VSocket::addrinfoToIPAddressString(const VString& hostName, const struct
     DWORD bufferLength = MAX_ADDRSTRLEN;
     int resultCode = ::WSAAddressToStringA(info->ai_addr, (DWORD) info->ai_addrlen, NULL, result.buffer(), &bufferLength);
     if (resultCode != 0) {
-        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::addrinfoToIPAddressString(%s): WSAAddressToString() failed.", hostName.chars()));
+        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::_platform_addrinfoToIPAddressString(%s): WSAAddressToString() failed.", hostName.chars()));
     }
     result.postflight(bufferLength - 1);
 
     return result;
 }
 
-bool VSocket::_platform_isSocketIDValid(VSocketID socketID) const {
+// static
+bool VSocket::_platform_isSocketIDValid(VSocketID socketID) {
     return socketID != INVALID_SOCKET;
 }
 
