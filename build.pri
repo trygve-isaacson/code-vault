@@ -1,5 +1,5 @@
-# Copyright c1997-2010 Trygve Isaacson. All rights reserved.
-# This file is part of the Code Vault version 3.1
+# Copyright c1997-2013 Trygve Isaacson. All rights reserved.
+# This file is part of the Code Vault version 4.0
 # http://www.bombaydigital.com/
 
 #
@@ -44,8 +44,8 @@ SOURCES += $${VAULT_BASE}/source/containers/_unix/vinstant_platform.cpp
 SOURCES += $${VAULT_BASE}/source/files/_unix/vfsnode_platform.cpp
 HEADERS += $${VAULT_BASE}/source/threads/_unix/vthread_platform.h
 SOURCES += $${VAULT_BASE}/source/threads/_unix/vthread_platform.cpp
-HEADERS += $${VAULT_BASE}/source/sockets/_unix/vsocket.h
-SOURCES += $${VAULT_BASE}/source/sockets/_unix/vsocket.cpp
+HEADERS += $${VAULT_BASE}/source/sockets/_unix/vsocket_platform.h
+SOURCES += $${VAULT_BASE}/source/sockets/_unix/vsocket_platform.cpp
 }
 
 vault_unix {
@@ -66,8 +66,8 @@ SOURCES += $${VAULT_BASE}/source/containers/_unix/vinstant_platform.cpp
 SOURCES += $${VAULT_BASE}/source/files/_unix/vfsnode_platform.cpp
 HEADERS += $${VAULT_BASE}/source/threads/_unix/vthread_platform.h
 SOURCES += $${VAULT_BASE}/source/threads/_unix/vthread_platform.cpp
-HEADERS += $${VAULT_BASE}/source/sockets/_unix/vsocket.h
-SOURCES += $${VAULT_BASE}/source/sockets/_unix/vsocket.cpp
+HEADERS += $${VAULT_BASE}/source/sockets/_unix/vsocket_platform.h
+SOURCES += $${VAULT_BASE}/source/sockets/_unix/vsocket_platform.cpp
 }
 
 vault_win32 {
@@ -88,8 +88,8 @@ SOURCES += $${VAULT_BASE}/source/containers/_win/vinstant_platform.cpp
 SOURCES += $${VAULT_BASE}/source/files/_win/vfsnode_platform.cpp
 HEADERS += $${VAULT_BASE}/source/threads/_win/vthread_platform.h
 SOURCES += $${VAULT_BASE}/source/threads/_win/vthread_platform.cpp
-HEADERS += $${VAULT_BASE}/source/sockets/_win/vsocket.h
-SOURCES += $${VAULT_BASE}/source/sockets/_win/vsocket.cpp
+HEADERS += $${VAULT_BASE}/source/sockets/_win/vsocket_platform.h
+SOURCES += $${VAULT_BASE}/source/sockets/_win/vsocket_platform.cpp
 
 LINKER_LIBRARIES += Psapi.lib
 }
@@ -162,8 +162,8 @@ HEADERS += $${VAULT_BASE}/source/server/vmessagequeue.h
 SOURCES += $${VAULT_BASE}/source/server/vmessagequeue.cpp
 HEADERS += $${VAULT_BASE}/source/server/vserver.h
 SOURCES += $${VAULT_BASE}/source/server/vserver.cpp
-HEADERS += $${VAULT_BASE}/source/sockets/vsocketbase.h
-SOURCES += $${VAULT_BASE}/source/sockets/vsocketbase.cpp
+HEADERS += $${VAULT_BASE}/source/sockets/vsocket.h
+SOURCES += $${VAULT_BASE}/source/sockets/vsocket.cpp
 HEADERS += $${VAULT_BASE}/source/sockets/vsocketfactory.h
 SOURCES += $${VAULT_BASE}/source/sockets/vsocketfactory.cpp
 HEADERS += $${VAULT_BASE}/source/sockets/vsocketstream.h

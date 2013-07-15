@@ -413,11 +413,11 @@ void VPlatformUnit::_runUtilitiesTest() {
 // This way we don't have to assert all three tests separately for each proposed address.
 
 static bool _isIPv4NumericString(const VString& s) {
-    return VSocketBase::isIPv4NumericString(s) && VSocketBase::isIPNumericString(s) && !VSocketBase::isIPv6NumericString(s);
+    return VSocket::isIPv4NumericString(s) && VSocket::isIPNumericString(s) && !VSocket::isIPv6NumericString(s);
 }
 
 static bool _isIPv6NumericString(const VString& s) {
-    return VSocketBase::isIPv6NumericString(s) && VSocketBase::isIPNumericString(s) && !VSocketBase::isIPv4NumericString(s);
+    return VSocket::isIPv6NumericString(s) && VSocket::isIPNumericString(s) && !VSocket::isIPv4NumericString(s);
 }
 
 void VPlatformUnit::_runSocketTests() {
@@ -493,7 +493,7 @@ void VPlatformUnit::_runSocketTests() {
 }
 
 void VPlatformUnit::_runResolveAndConnectHostNameTest(const VString& hostName) {
-    VStringVector names = VSocketBase::resolveHostName(hostName);
+    VStringVector names = VSocket::resolveHostName(hostName);
     VUNIT_ASSERT_FALSE(names.empty());
     for (VStringVector::const_iterator i = names.begin(); i != names.end(); ++i) {
         this->_assertStringIsNumericIPAddressString("Returned resolved address", hostName, (*i));
@@ -538,8 +538,8 @@ void VPlatformUnit::_runResolveAndConnectHostNameTest(const VString& hostName) {
 }
 
 void VPlatformUnit::_assertStringIsNumericIPAddressString(const VString& label, const VString& hostName, const VString& value) {
-    bool isIPv4 = VSocketBase::isIPv4NumericString(value);
-    bool isIPv6 = VSocketBase::isIPv6NumericString(value);
+    bool isIPv4 = VSocket::isIPv4NumericString(value);
+    bool isIPv6 = VSocket::isIPv6NumericString(value);
     VUNIT_ASSERT_TRUE_LABELED(isIPv4 || isIPv6,
                               VSTRING_FORMAT("%s: '%s' -> '%s' is an %s numeric address", label.chars(), hostName.chars(), value.chars(), (isIPv4 ? "IPv4" : "IPv6")));
 }

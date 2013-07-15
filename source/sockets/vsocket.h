@@ -4,54 +4,48 @@ This file is part of the Code Vault version 4.0
 http://www.bombaydigital.com/
 */
 
-#ifndef vsocketbase_h
-#define vsocketbase_h
+#ifndef vsocket_h
+#define vsocket_h
 
 /** @file */
 
 #include "vinstant.h"
 #include "vstring.h"
 
+// This pulls in any platform-specific declarations and includes:
+#include "vsocket_platform.h"
+
 /**
 
     @defgroup vsocket Vault Sockets
 
     The Vault implements platform-independent sockets, for both clients and
-    servers. The abstract base class VSocketBase defines the low-level API for dealing
-    with sockets. It's low-level in the sense that most Vault users will not have
-    to use this API other than calling init() to connect the socket when implementing
-    a client-side connection. Instead, you'll be using classes like VSocketStream to
-    associate a stream with a socket, and the upper layer stream classes to perform
-    the actual socket i/o. And server implementors will similarly just be attaching
-    a stream object to each socket that gets created for an incoming client connection.
+    servers. The class VSocket defines the low-level API for dealing with sockets.
+    It's low-level in the sense that most Vault users will not have to use this API
+    other than calling connectToHostName() or connectToIPAddress() to connect the
+    socket when implementing a client-side connection. Instead, you'll mostly be
+    using classes like VSocketStream to associate a stream with a socket, and the upper
+    layer stream classes to perform the actual socket i/o. And server implementors will
+    similarly just be attaching a stream object to each socket that gets created for an
+    incoming client connection.
 
-    Each socket platform needs to define an implementation of the
-    concrete subclass VSocket, so there is currently one defined when compiling for
-    BSD/Unix sockets and one for WinSock, though these are very similar because their
-    platform APIs are different mostly in small ways.
+    Each socket platform (BSD/Unix sockets, or Winsock) has a slightly different API,
+    but they are very close. The platform-specific quirks are separated out in the
+    vsocket_platform.h and .cpp files per-platform.
 
-    Client code that needs to connect will instantiate a VSocket (whether this is the
-    BSD version or the WinSock version just depends on what platform you are compiling
-    on), and then presumably use a VSocketStream and a VIOStream to do i/o
-    over the socket. Server code will typically create a VListenerThread, which will
-    use a VListenerSocket, and turn each incoming connection into a VSocket and
-    VSocketThread, both created via a factory that you can supply to define the
-    concrete classes that are instantiated for each.
+    Client code that needs to connect will instantiate a VSocket, and then presumably
+    use a VSocketStream and a VIOStream to do i/o over the socket. Server code will
+    typically create a VListenerThread, which will use a VListenerSocket, and turn
+    each incoming connection into a VSocket and VSocketThread, both created via a
+    factory that you can supply to define the concrete classes that are instantiated
+    for each. There are related classes for server-side client session/thread/socket/io
+    management that you will find very helpful, located in the server directory: key
+    classes are VServer, VClientSession, and related classes for messages, message queues,
+    and i/o threads.
 
 */
 
-// We have to define VSocketID here because we don't include platform (it includes us).
-#ifdef VPLATFORM_WIN
-    typedef SOCKET VSocketID;    ///< The platform-dependent definition of a socket identifier.
-    #define V_NO_SOCKET_ID_CONSTANT INVALID_SOCKET ///< Used internally to initialize kNoSocketID
-#else
-    typedef int VSocketID;    ///< The platform-dependent definition of a socket identifier.
-    #define V_NO_SOCKET_ID_CONSTANT -1 ///< Used internally to initialize kNoSocketID
-#endif
-
 typedef Vu32 VNetAddr;    ///< A 32-bit IP address, in network byte order (think of it as an array of 4 bytes, not as a 32-bit integer).
-
-class VSocket;
 
 /**
     @ingroup vsocket
@@ -78,13 +72,11 @@ typedef std::vector<VNetworkInterfaceInfo> VNetworkInterfaceList;
 class VSocketConnectionStrategy;
 
 /**
-VSocketBase is the abstract base class from which each platform's VSocket
-implementation is derived. So you instantiate VSocket objects, but you
-can see the API by looking at the VSocketBase class.
+VSocket is the class that defines a BSD or Winsock socket connection.
 
 The basic way of using a client socket is to instantiate a VSocket (either
-directly or through a VSocketFactory), and then call init() to connect to
-the server.
+directly or through a VSocketFactory), and then call connectToHostName() or
+connectToIPAddress() to connect to the desired server.
 
 The basic way of using a server socket is to instantiate a VListenerThread
 and supplying it a VSocketFactory and a subclass of VSocketThreadFactory
@@ -128,7 +120,7 @@ socket is:
 2. loop on recv until it returns 0 or any error
 3. call close (or closesocket + WSACleanup on Win (is WSACleanup gone in WS2?))
 */
-class VSocketBase {
+class VSocket {
     public:
 
         /**
@@ -265,7 +257,7 @@ class VSocketBase {
         call one of the connect() functions to cause it to connect using the appropriate strategy.
         You could also call setSockID() with an already-open low-level socket ID.
         */
-        VSocketBase();
+        VSocket();
         /**
         The other way to construct a VSocket is to supply it an already-opened low-level socket ID.
         The VSocket will take ownership of the socket, and unless you later call setSockID(kNoSocketID),
@@ -274,11 +266,11 @@ class VSocketBase {
         socket connection identified by its ID.
         @param  id  an existing already-opened low-level socket ID
         */
-        VSocketBase(VSocketID id);
+        VSocket(VSocketID id);
         /**
         Destructor, cleans up by closing the socket.
         */
-        virtual ~VSocketBase();
+        virtual ~VSocket();
 
         /**
         Connects to the server using the specified numeric IP address and port. If the connection
@@ -530,26 +522,6 @@ class VSocketBase {
         int _platform_available();
 };
 
-// TEMPORARY during code migration. Will rename VSocketBase to VSocket and get rid of this.
-class VSocket : public VSocketBase {
-    public:
-
-        /**
-        Constructs the object; does NOT open a connection.
-        */
-        VSocket();
-        /**
-        Constructs the object with an already-opened low-level
-        socket connection identified by its ID.
-        */
-        VSocket(VSocketID id);
-        /**
-        Destructor, cleans up by closing the socket.
-        */
-        virtual ~VSocket();
-
-};
-
 /**
 VSocketInfo is essentially a structure that just contains a copy of
 information about a VSocket as it existed at the point in time when
@@ -605,7 +577,7 @@ class VSocketConnectionStrategy {
                                 simply call this object's connectToIPAddress() and leave the results
                                 in place if successful
         */
-        virtual void connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const = 0;
+        virtual void connect(const VString& hostName, int portNumber, VSocket& socketToConnect) const = 0;
 
         // For testing purposes, you can inject a specific set of IP addresses, which
         // will cause the hostName supplied with connect() to be ignored. You could supply
@@ -628,7 +600,7 @@ class VSocketConnectionStrategySingle : public VSocketConnectionStrategy {
         virtual ~VSocketConnectionStrategySingle() {}
 
         // VSocketConnectionStrategy implementation:
-        virtual void connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const;
+        virtual void connect(const VString& hostName, int portNumber, VSocket& socketToConnect) const;
 };
 
 /**
@@ -644,7 +616,7 @@ class VSocketConnectionStrategyLinear : public VSocketConnectionStrategy {
         virtual ~VSocketConnectionStrategyLinear() {}
 
         // VSocketConnectionStrategy implementation:
-        virtual void connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const;
+        virtual void connect(const VString& hostName, int portNumber, VSocket& socketToConnect) const;
 
     private:
         const VDuration mTimeout;
@@ -663,7 +635,7 @@ class VSocketConnectionStrategyThreaded : public VSocketConnectionStrategy {
         virtual ~VSocketConnectionStrategyThreaded() {}
 
         // VSocketConnectionStrategy implementation:
-        virtual void connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const;
+        virtual void connect(const VString& hostName, int portNumber, VSocket& socketToConnect) const;
 
     private:
 
@@ -671,28 +643,5 @@ class VSocketConnectionStrategyThreaded : public VSocketConnectionStrategy {
         int         mMaxNumThreads;
 };
 
-// Move this conditional stuff to future vsocket_platform.h which we will include.
-#ifdef VPLATFORM_WIN
-    #define v_ioctlsocket ioctlsocket /* varargs make this easier than an inline function */
-    #define SelectSockIDTypeCast (int)
-    #define SendBufferPtrTypeCast (const char*)
-    #define RecvBufferPtrTypeCast (char*)
-    #define SendRecvByteCountTypeCast
-    #define SendRecvResultTypeCast
-    #define SetSockOptValueTypeCast (const char*)
-
-    // Used in VSocket BSD sock_addr structures, but not defined by Winsock headers.
-    #define in_port_t USHORT
-
-#else
-    #define v_ioctlsocket ioctl /* varargs make this easier than an inline function */
-    #define SelectSockIDTypeCast
-    #define SendBufferPtrTypeCast
-    #define RecvBufferPtrTypeCast
-    #define SendRecvByteCountTypeCast (VSizeType)
-    #define SendRecvResultTypeCast (int)
-    #define SetSockOptValueTypeCast
-#endif
-
-#endif /* vsocketbase_h */
+#endif /* vsocket_h */
 

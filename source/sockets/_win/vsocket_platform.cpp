@@ -14,9 +14,9 @@ http://www.bombaydigital.com/
 V_STATIC_INIT_TRACE
 
 // This is to force our staticInit to be called at startup.
-bool VSocketBase::gStaticInited = VSocketBase::staticInit();
+bool VSocket::gStaticInited = VSocket::staticInit();
 
-bool VSocketBase::staticInit() {
+bool VSocket::staticInit() {
     bool    success = true;
     WORD    versionRequested;
     WSADATA wsaData;
@@ -33,19 +33,19 @@ bool VSocketBase::staticInit() {
     return success;
 }
 
-VNetworkInterfaceList VSocketBase::enumerateNetworkInterfaces() {
+VNetworkInterfaceList VSocket::enumerateNetworkInterfaces() {
     VNetworkInterfaceList interfaces;
 
     SOCKET sock = ::WSASocket(AF_INET, SOCK_DGRAM, 0, 0, 0, 0);
     if (sock == SOCKET_ERROR) {
-        throw VException(VSystemError::getSocketError(), "VSocketBase::enumerateNetworkInterfaces: WSASocket failed.");
+        throw VException(VSystemError::getSocketError(), "VSocket::enumerateNetworkInterfaces: WSASocket failed.");
     }
 
     INTERFACE_INFO interfaceInfo[20];
     unsigned long numBytesReturned;
     int result = ::WSAIoctl(sock, SIO_GET_INTERFACE_LIST, 0, 0, &interfaceInfo, sizeof(interfaceInfo), &numBytesReturned, 0, 0);
     if (result == SOCKET_ERROR) {
-        throw VException(VSystemError::getSocketError(), "VSocketBase::enumerateNetworkInterfaces: WSAIoctl failed.");
+        throw VException(VSystemError::getSocketError(), "VSocket::enumerateNetworkInterfaces: WSAIoctl failed.");
     }
 
     int numInterfaces = numBytesReturned / sizeof(INTERFACE_INFO);
@@ -64,7 +64,7 @@ VNetworkInterfaceList VSocketBase::enumerateNetworkInterfaces() {
 
 static const int MAX_ADDRSTRLEN = V_MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
 // static
-VString VSocketBase::addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info) {
+VString VSocket::addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info) {
     VString result;
     result.preflight(MAX_ADDRSTRLEN);
 
@@ -72,18 +72,18 @@ VString VSocketBase::addrinfoToIPAddressString(const VString& hostName, const st
     DWORD bufferLength = MAX_ADDRSTRLEN;
     int resultCode = ::WSAAddressToStringA(info->ai_addr, (DWORD) info->ai_addrlen, NULL, result.buffer(), &bufferLength);
     if (resultCode != 0) {
-        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocketBase::addrinfoToIPAddressString(%s): WSAAddressToString() failed.", hostName.chars()));
+        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::addrinfoToIPAddressString(%s): WSAAddressToString() failed.", hostName.chars()));
     }
     result.postflight(bufferLength - 1);
 
     return result;
 }
 
-bool VSocketBase::_platform_isSocketIDValid(VSocketID socketID) const {
+bool VSocket::_platform_isSocketIDValid(VSocketID socketID) const {
     return socketID != INVALID_SOCKET;
 }
 
-int VSocketBase::_platform_available() {
+int VSocket::_platform_available() {
     u_long numBytesAvailable = 0;
 
     int result = ::v_ioctlsocket(mSocketID, FIONREAD, &numBytesAvailable);

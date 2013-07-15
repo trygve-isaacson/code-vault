@@ -24,9 +24,9 @@ http://www.bombaydigital.com/
 V_STATIC_INIT_TRACE
 
 // This is to force our staticInit to be called at startup.
-bool VSocketBase::gStaticInited = VSocketBase::staticInit();
+bool VSocket::gStaticInited = VSocket::staticInit();
 
-bool VSocketBase::staticInit() {
+bool VSocket::staticInit() {
     //lint -e421 -e923 " Caution -- function 'signal(int, void (*)(int))' is considered dangerous [MISRA Rule 123]"
     ::signal(SIGPIPE, SIG_IGN);
 
@@ -35,18 +35,12 @@ bool VSocketBase::staticInit() {
     return true;
 }
 
-// This is the one VSocketBase function that must implemented per platform, so we do it here.
-// This kind of highlights that the original VSocketBase <- VSocket hierarchy is probably due
-// for restructuring so that we simply break the implementation of 1 class into two .cpp files
-// where the second file contains the per-platform implementation, but named by the same class,
-// as we do now with, for example, VFSNode and its platform-specific parts.
-// static
-VNetworkInterfaceList VSocketBase::enumerateNetworkInterfaces() {
+VNetworkInterfaceList VSocket::enumerateNetworkInterfaces() {
     VNetworkInterfaceList interfaces;
     struct ifaddrs* interfacesDataPtr = NULL;
     int result = ::getifaddrs(&interfacesDataPtr);
     if (result != 0) {
-        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocketBase::enumerateNetworkInterfaces: getifaddrs() failed with result %d.", result));
+        throw VStackTraceException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::enumerateNetworkInterfaces: getifaddrs() failed with result %d.", result));
     }
 
     struct ifaddrs* intfPtr = interfacesDataPtr;
@@ -79,7 +73,7 @@ VNetworkInterfaceList VSocketBase::enumerateNetworkInterfaces() {
 static const int MAX_ADDRSTRLEN = V_MAX(INET_ADDRSTRLEN, INET6_ADDRSTRLEN);
 // Another platform-specific implementation of a function defined by the base class API.
 // static
-VString VSocketBase::addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info) {
+VString VSocket::addrinfoToIPAddressString(const VString& hostName, const struct addrinfo* info) {
     void* addr;
     if (info->ai_family == AF_INET) {
         addr = (void*) &(((struct sockaddr_in*)info->ai_addr)->sin_addr);
@@ -87,28 +81,28 @@ VString VSocketBase::addrinfoToIPAddressString(const VString& hostName, const st
         addr = (void*) &(((struct sockaddr_in6*)info->ai_addr)->sin6_addr);
     } else {
         // We don't know how to access the addr for other family types. They could conceivably be added.
-        throw VException(VSTRING_FORMAT("VSocketBase::addrinfoToIPAddressString(%s): An invalid family (%d) other than AF_INET or AF_INET6 was specified.", hostName.chars(), info->ai_family));
+        throw VException(VSTRING_FORMAT("VSocket::addrinfoToIPAddressString(%s): An invalid family (%d) other than AF_INET or AF_INET6 was specified.", hostName.chars(), info->ai_family));
     }
 
     VString result;
     result.preflight(MAX_ADDRSTRLEN);
     const char* buf = ::inet_ntop(info->ai_family, addr, result.buffer(), MAX_ADDRSTRLEN);
     if (buf == NULL) {
-        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocketBase::addrinfoToIPAddressString(%s): inet_ntop() failed.", hostName.chars()));
+        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::addrinfoToIPAddressString(%s): inet_ntop() failed.", hostName.chars()));
     }
     result.postflight(::strlen(buf));
 
     return result;
 }
 
-bool VSocketBase::_platform_isSocketIDValid(VSocketID socketID) const {
+bool VSocket::_platform_isSocketIDValid(VSocketID socketID) const {
     // On Unix:
     // -1 is typical error return value from ::socket()
     // Also, FD_SETSIZE is max num open sockets, sockid over that is sign of a big problem, and would cause FD_SET() during read() to fail.
     return (socketID >= 0) && (mSocketID <= FD_SETSIZE);
 }
 
-int VSocketBase::_platform_available() {
+int VSocket::_platform_available() {
     int numBytesAvailable = 0;
 
     int result = ::v_ioctlsocket(mSocketID, FIONREAD, &numBytesAvailable);

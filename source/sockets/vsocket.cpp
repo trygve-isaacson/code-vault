@@ -12,7 +12,7 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vmutexlocker.h"
 
-// On Mac OS X, we disable SIGPIPE in VSocketBase::setDefaultSockOpt(), so these flags are 0.
+// On Mac OS X, we disable SIGPIPE in VSocket::setDefaultSockOpt(), so these flags are 0.
 // On Winsock, it is irrelevant so these flags are 0.
 // For other Unix platforms, we specify it in the flags of each send()/recv() call via this parameter.
 #ifdef VPLATFORM_UNIX
@@ -23,26 +23,26 @@ http://www.bombaydigital.com/
     #define VSOCKET_DEFAULT_RECV_FLAGS 0
 #endif
 
-// VSocketBase ----------------------------------------------------------------
+// VSocket ----------------------------------------------------------------
 
-VString VSocketBase::gPreferredNetworkInterfaceName("en0");
-VString VSocketBase::gPreferredLocalIPAddressPrefix;
-VString VSocketBase::gCachedLocalHostIPAddress;
+VString VSocket::gPreferredNetworkInterfaceName("en0");
+VString VSocket::gPreferredLocalIPAddressPrefix;
+VString VSocket::gCachedLocalHostIPAddress;
 
 // static
-void VSocketBase::setPreferredNetworkInterface(const VString& interfaceName) {
+void VSocket::setPreferredNetworkInterface(const VString& interfaceName) {
     gPreferredNetworkInterfaceName = interfaceName;
 }
 
 // static
-void VSocketBase::setPreferredLocalIPAddressPrefix(const VString& addressPrefix) {
+void VSocket::setPreferredLocalIPAddressPrefix(const VString& addressPrefix) {
     gPreferredLocalIPAddressPrefix = addressPrefix;
 }
 
 // static
-void VSocketBase::getLocalHostIPAddress(VString& ipAddress, bool refresh) {
+void VSocket::getLocalHostIPAddress(VString& ipAddress, bool refresh) {
     if (refresh || gCachedLocalHostIPAddress.isEmpty()) {
-        VNetworkInterfaceList interfaces = VSocketBase::enumerateNetworkInterfaces();
+        VNetworkInterfaceList interfaces = VSocket::enumerateNetworkInterfaces();
         for (VNetworkInterfaceList::const_iterator i = interfaces.begin(); i != interfaces.end(); ++i) {
             // We want the first interface, but we keep going and use the preferred one if found.
             if ((i == interfaces.begin()) || ((*i).mName == gPreferredNetworkInterfaceName) || ((*i).mAddress.startsWith(gPreferredLocalIPAddressPrefix))) {
@@ -60,13 +60,13 @@ void VSocketBase::getLocalHostIPAddress(VString& ipAddress, bool refresh) {
 }
 
 // static
-VNetAddr VSocketBase::ipAddressStringToNetAddr(const VString& ipAddress) {
+VNetAddr VSocket::ipAddressStringToNetAddr(const VString& ipAddress) {
     in_addr_t addr = ::inet_addr(ipAddress);
     return (VNetAddr) addr;
 }
 
 // static
-void VSocketBase::netAddrToIPAddressString(VNetAddr netAddr, VString& ipAddress) {
+void VSocket::netAddrToIPAddressString(VNetAddr netAddr, VString& ipAddress) {
     in_addr addr;
 
     addr.s_addr = (in_addr_t) netAddr;
@@ -95,7 +95,7 @@ class AddrInfoHintsHelper {
 };
 
 // static
-VStringVector VSocketBase::resolveHostName(const VString& hostName) {
+VStringVector VSocket::resolveHostName(const VString& hostName) {
     VStringVector resolvedAddresses;
 
     AddrInfoHintsHelper     hints(AF_UNSPEC, SOCK_STREAM, 0, 0); // accept IPv4 or IPv6, we'll skip any others on receipt; stream connections only, not udp.
@@ -111,11 +111,11 @@ VStringVector VSocketBase::resolveHostName(const VString& hostName) {
     }
 
     if (result != 0) {
-        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocketBase::resolveHostName(%s): getaddrinfo returned %d.", hostName.chars(), result));
+        throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::resolveHostName(%s): getaddrinfo returned %d.", hostName.chars(), result));
     }
 
     if (resolvedAddresses.empty()) {
-        throw VException(VSTRING_FORMAT("VSocketBase::resolveHostName(%s): getaddrinfo did not resolve any addresses.", hostName.chars()));
+        throw VException(VSTRING_FORMAT("VSocket::resolveHostName(%s): getaddrinfo did not resolve any addresses.", hostName.chars()));
     }
 
     return resolvedAddresses;
@@ -125,7 +125,7 @@ VStringVector VSocketBase::resolveHostName(const VString& hostName) {
 This is a somewhat cursory check. The exact sequence and order of dots and decimals is not verified.
 */
 // static
-bool VSocketBase::isIPv4NumericString(const VString& s) {
+bool VSocket::isIPv4NumericString(const VString& s) {
     int numDots = 0;
     int numDecimalDigits = 0;
 
@@ -157,7 +157,7 @@ So we check that every character is a colon, a dot, or a hexadecimal.
 And there must be two colons, so an explicit minimum length of 2 test is superfluous.
 */
 // static
-bool VSocketBase::isIPv6NumericString(const VString& s) {
+bool VSocket::isIPv6NumericString(const VString& s) {
     int numColons = 0;
 
     for (int i = 0; i < s.length(); ++i) {
@@ -178,7 +178,7 @@ Scan the string once, looking for signs that it's neither an IPv4 nor IPv6 numer
 If checking for either, this is faster than checking separately.
 */
 // static
-bool VSocketBase::isIPNumericString(const VString& s) {
+bool VSocket::isIPNumericString(const VString& s) {
     int numColons = 0;
     int numDots = 0;
     int numDecimalDigits = 0;
@@ -222,7 +222,7 @@ bool VSocketBase::isIPNumericString(const VString& s) {
     return (numDots == 3) && (numDecimalDigits >= 4); // A minimum of 4 digits separated by dots: "1.2.3.4"
 }
 
-VSocketBase::VSocketBase()
+VSocket::VSocket()
     : mSocketID(kNoSocketID)
     , mHostIPAddress()
     , mPortNumber(0)
@@ -238,7 +238,7 @@ VSocketBase::VSocketBase()
     {
 }
 
-VSocketBase::VSocketBase(VSocketID id)
+VSocket::VSocket(VSocketID id)
     : mSocketID(id)
     , mHostIPAddress()
     , mPortNumber(0)
@@ -254,54 +254,54 @@ VSocketBase::VSocketBase(VSocketID id)
     {
 }
 
-VSocketBase::~VSocketBase() {
-    VSocketBase::close();
+VSocket::~VSocket() {
+    this->close();
 }
 
-void VSocketBase::setHostIPAddressAndPort(const VString& hostIPAddress, int portNumber) {
+void VSocket::setHostIPAddressAndPort(const VString& hostIPAddress, int portNumber) {
     mHostIPAddress = hostIPAddress;
     mPortNumber = portNumber;
     mSocketName.format("%s:%d", hostIPAddress.chars(), portNumber);
 }
 
-void VSocketBase::connectToIPAddress(const VString& ipAddress, int portNumber) {
+void VSocket::connectToIPAddress(const VString& ipAddress, int portNumber) {
     this->_connectToIPAddress(ipAddress, portNumber);
     this->setDefaultSockOpt();
 }
 
-void VSocketBase::connectToHostName(const VString& hostName, int portNumber) {
+void VSocket::connectToHostName(const VString& hostName, int portNumber) {
     this->connectToHostName(hostName, portNumber, VSocketConnectionStrategySingle());
 }
 
-void VSocketBase::connectToHostName(const VString& hostName, int portNumber, const VSocketConnectionStrategy& connectionStrategy) {
+void VSocket::connectToHostName(const VString& hostName, int portNumber, const VSocketConnectionStrategy& connectionStrategy) {
     connectionStrategy.connect(hostName, portNumber, *this);
 }
 
-VString VSocketBase::getHostIPAddress() const {
+VString VSocket::getHostIPAddress() const {
     return mHostIPAddress;
 }
 
-int VSocketBase::getPortNumber() const {
+int VSocket::getPortNumber() const {
     return mPortNumber;
 }
 
-void VSocketBase::close() {
+void VSocket::close() {
     if (mSocketID != kNoSocketID) {
         vault::closeSocket(mSocketID);
         mSocketID = kNoSocketID;
     }
 }
 
-void VSocketBase::flush() {
+void VSocket::flush() {
     // If subclass needs to flush, it will override this method.
 }
 
-void VSocketBase::setIntSockOpt(int level, int name, int value) {
+void VSocket::setIntSockOpt(int level, int name, int value) {
     int intValue = value;
     this->setSockOpt(level, name, static_cast<void*>(&intValue), sizeof(intValue));
 }
 
-void VSocketBase::setLinger(int val) {
+void VSocket::setLinger(int val) {
     struct linger lingerParam;
 
     lingerParam.l_onoff = 1;
@@ -316,25 +316,25 @@ void VSocketBase::setLinger(int val) {
     this->setSockOpt(SOL_SOCKET, SO_LINGER, static_cast<void*>(&lingerParam), sizeof(lingerParam));
 }
 
-void VSocketBase::clearReadTimeOut() {
+void VSocket::clearReadTimeOut() {
     mReadTimeOutActive = false;
 }
 
-void VSocketBase::setReadTimeOut(const struct timeval& timeout) {
+void VSocket::setReadTimeOut(const struct timeval& timeout) {
     mReadTimeOutActive = true;
     mReadTimeOut = timeout;
 }
 
-void VSocketBase::clearWriteTimeOut() {
+void VSocket::clearWriteTimeOut() {
     mWriteTimeOutActive = false;
 }
 
-void VSocketBase::setWriteTimeOut(const struct timeval& timeout) {
+void VSocket::setWriteTimeOut(const struct timeval& timeout) {
     mWriteTimeOutActive = true;
     mWriteTimeOut = timeout;
 }
 
-void VSocketBase::setDefaultSockOpt() {
+void VSocket::setDefaultSockOpt() {
     // set buffer sizes
     this->setIntSockOpt(SOL_SOCKET, SO_RCVBUF, kDefaultBufferSize);
     this->setIntSockOpt(SOL_SOCKET, SO_SNDBUF, kDefaultBufferSize);
@@ -357,20 +357,20 @@ void VSocketBase::setDefaultSockOpt() {
     this->setIntSockOpt(IPPROTO_TCP, TCP_NODELAY, kDefaultNoDelay);
 }
 
-Vs64 VSocketBase::numBytesRead() const {
+Vs64 VSocket::numBytesRead() const {
     return mNumBytesRead;
 }
 
-Vs64 VSocketBase::numBytesWritten() const {
+Vs64 VSocket::numBytesWritten() const {
     return mNumBytesWritten;
 }
 
-VDuration VSocketBase::getIdleTime() const {
+VDuration VSocket::getIdleTime() const {
     VInstant now;
     return now - mLastEventTime;
 }
 
-int VSocketBase::read(Vu8* buffer, int numBytesToRead) {
+int VSocket::read(Vu8* buffer, int numBytesToRead) {
     if (! this->_platform_isSocketIDValid(mSocketID)) {
         throw VStackTraceException(VSTRING_FORMAT("VSocket[%s] read: Invalid socket ID %d.", mSocketName.chars(), mSocketID));
     }
@@ -433,7 +433,7 @@ int VSocketBase::read(Vu8* buffer, int numBytesToRead) {
     return (numBytesToRead - bytesRemainingToRead);
 }
 
-int VSocketBase::write(const Vu8* buffer, int numBytesToWrite) {
+int VSocket::write(const Vu8* buffer, int numBytesToWrite) {
     if (! this->_platform_isSocketIDValid(mSocketID)) {
         throw VStackTraceException(VSTRING_FORMAT("VSocket[%s] write: Invalid socket ID %d.", mSocketName.chars(), mSocketID));
     }
@@ -488,7 +488,7 @@ int VSocketBase::write(const Vu8* buffer, int numBytesToWrite) {
     return (numBytesToWrite - bytesRemainingToWrite);
 }
 
-void VSocketBase::discoverHostAndPort() {
+void VSocket::discoverHostAndPort() {
     struct sockaddr_in  info;
     VSocklenT           infoLength = sizeof(info);
 
@@ -503,7 +503,7 @@ void VSocketBase::discoverHostAndPort() {
     this->setHostIPAddressAndPort(VSTRING_COPY(ipAddress), portNumber);
 }
 
-void VSocketBase::closeRead() {
+void VSocket::closeRead() {
     int result = ::shutdown(mSocketID, SHUT_RD);
 
     if (result < 0) {
@@ -511,7 +511,7 @@ void VSocketBase::closeRead() {
     }
 }
 
-void VSocketBase::closeWrite() {
+void VSocket::closeWrite() {
     int result = ::shutdown(mSocketID, SHUT_WR);
 
     if (result < 0) {
@@ -519,15 +519,14 @@ void VSocketBase::closeWrite() {
     }
 }
 
-void VSocketBase::setSockOpt(int level, int name, void* valuePtr, int valueLength) {
+void VSocket::setSockOpt(int level, int name, void* valuePtr, int valueLength) {
     (void) ::setsockopt(mSocketID, level, name, SetSockOptValueTypeCast valuePtr, valueLength);
 }
 
-void VSocketBase::_connectToIPAddress(const VString& ipAddress, int portNumber) {
-    // TODO: This function is NEARLY identical to the _win version. Consolidate.
+void VSocket::_connectToIPAddress(const VString& ipAddress, int portNumber) {
     this->setHostIPAddressAndPort(ipAddress, portNumber);
 
-    bool        isIPv4 = VSocketBase::isIPv4NumericString(ipAddress);
+    bool        isIPv4 = VSocket::isIPv4NumericString(ipAddress);
     VSocketID   socketID = ::socket((isIPv4 ? AF_INET : AF_INET6), SOCK_STREAM, 0);
 
     if (this->_platform_isSocketIDValid(socketID)) {
@@ -572,8 +571,7 @@ void VSocketBase::_connectToIPAddress(const VString& ipAddress, int portNumber) 
     mSocketID = socketID;
 }
 
-void VSocketBase::_listen(const VString& bindAddress, int backlog) {
-    // TODO: This function is now identical to the _win version. Consolidate.
+void VSocket::_listen(const VString& bindAddress, int backlog) {
     VSocketID           listenSockID = kNoSocketID;
     struct sockaddr_in  info;
     int                 infoLength = sizeof(info);
@@ -622,31 +620,13 @@ void VSocketBase::_listen(const VString& bindAddress, int backlog) {
     mSocketID = listenSockID;
 }
 
-VSocketID VSocketBase::getSockID() const {
+VSocketID VSocket::getSockID() const {
     return mSocketID;
 }
 
-void VSocketBase::setSockID(VSocketID id) {
+void VSocket::setSockID(VSocketID id) {
     mSocketID = id;
 }
-
-// VSocket --------------------------------------------------------------------
-// TEMPORARY during code migration. Will rename VSocketBase to VSocket and get rid of this.
-
-VSocket::VSocket()
-    : VSocketBase()
-    {
-}
-
-VSocket::VSocket(VSocketID id)
-    : VSocketBase(id)
-    {
-}
-
-VSocket::~VSocket() {
-    // Note: base class destructor does a close() of the socket if it is open.
-}
-
 
 // VSocketInfo ----------------------------------------------------------------
 
@@ -662,8 +642,8 @@ VSocketInfo::VSocketInfo(const VSocket& socket)
 
 // VSocketConnectionStrategySingle --------------------------------------------
 
-void VSocketConnectionStrategySingle::connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const {
-    VStringVector ipAddresses = (mDebugIPAddresses.empty() ? VSocketBase::resolveHostName(hostName) : mDebugIPAddresses);
+void VSocketConnectionStrategySingle::connect(const VString& hostName, int portNumber, VSocket& socketToConnect) const {
+    VStringVector ipAddresses = (mDebugIPAddresses.empty() ? VSocket::resolveHostName(hostName) : mDebugIPAddresses);
     socketToConnect.connectToIPAddress(ipAddresses[0], portNumber);
 }
 
@@ -675,11 +655,11 @@ VSocketConnectionStrategyLinear::VSocketConnectionStrategyLinear(const VDuration
     {
 }
 
-void VSocketConnectionStrategyLinear::connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const {
+void VSocketConnectionStrategyLinear::connect(const VString& hostName, int portNumber, VSocket& socketToConnect) const {
     // Timeout should never cause expiration before we do DNS resolution or try the first IP address.
     // Therefore, we calculate the expiration time, but then to DNS first, and check timeout after each failed connect.
     VInstant expirationTime = VInstant() + mTimeout;
-    VStringVector ipAddresses = (mDebugIPAddresses.empty() ? VSocketBase::resolveHostName(hostName) : mDebugIPAddresses);
+    VStringVector ipAddresses = (mDebugIPAddresses.empty() ? VSocket::resolveHostName(hostName) : mDebugIPAddresses);
     for (VStringVector::const_iterator i = ipAddresses.begin(); i != ipAddresses.end(); ++i) {
         try {
             socketToConnect.connectToIPAddress(*i, portNumber);
@@ -844,7 +824,7 @@ VSocketConnectionStrategyThreadedRunner::VSocketConnectionStrategyThreadedRunner
     , mIPAddressesYetToTry()
     , mConnectionCompleted(false)
     , mAllWorkersFailed(false)
-    , mConnectedSocketID(VSocketBase::kNoSocketID)
+    , mConnectedSocketID(VSocket::kNoSocketID)
     , mConnectedSocketIPAddress()
     , mWorkers()
     {
@@ -859,7 +839,7 @@ void VSocketConnectionStrategyThreadedRunner::run() {
 
     /* locking scope */ {
         VMutexLocker locker(&mMutex, "VSocketConnectionStrategyThreadedRunner::run() starting initial workers");
-        VStringVector ipAddresses = (mDebugIPAddresses.empty() ? VSocketBase::resolveHostName(mHostNameToConnect) : mDebugIPAddresses);
+        VStringVector ipAddresses = (mDebugIPAddresses.empty() ? VSocket::resolveHostName(mHostNameToConnect) : mDebugIPAddresses);
         int numWorkersRemaining = mMaxNumThreads;
         for (size_t i = 0; i < ipAddresses.size(); ++i) {
             //for (size_t i1 = ipAddresses.size(); i1 > 0; --i1) { int i = i1-1; // try backwards to get that google.com IPv6 address
@@ -930,7 +910,7 @@ void VSocketConnectionStrategyThreadedRunner::_workerSucceeded(VSocketConnection
 
         mConnectedSocketID = openedSocket.getSockID();
         mConnectedSocketIPAddress = openedSocket.getHostIPAddress();
-        openedSocket.setSockID(VSocketBase::kNoSocketID); // So when it destructs on return from this function, it will NOT close the adopted socket ID.
+        openedSocket.setSockID(VSocket::kNoSocketID); // So when it destructs on return from this function, it will NOT close the adopted socket ID.
 
         mConnectionCompleted = true;
     }
@@ -989,7 +969,7 @@ VSocketConnectionStrategyThreaded::VSocketConnectionStrategyThreaded(const VDura
     {
 }
 
-void VSocketConnectionStrategyThreaded::connect(const VString& hostName, int portNumber, VSocketBase& socketToConnect) const {
+void VSocketConnectionStrategyThreaded::connect(const VString& hostName, int portNumber, VSocket& socketToConnect) const {
 
     VSocketConnectionStrategyThreadedRunner* runner = new VSocketConnectionStrategyThreadedRunner(mTimeoutInterval, mMaxNumThreads, hostName, portNumber, mDebugIPAddresses);
     runner->start();
@@ -999,7 +979,7 @@ void VSocketConnectionStrategyThreaded::connect(const VString& hostName, int por
     }
 
     VSocketID sockID = runner->getConnectedSockID();
-    if (sockID == VSocketBase::kNoSocketID) {
+    if (sockID == VSocket::kNoSocketID) {
         throw VException("VSocketConnectionStrategyThreaded::connect: Failed to connect to all addresses.");
     } else {
         socketToConnect.setSockID(sockID);
