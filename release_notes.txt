@@ -25,7 +25,7 @@ VAULT-0031
 - Performance is improved by 55%-60% for small strings.
 - Memory usage is improved by 57%-67% for small strings.
 - A "small" string is defined as 10 chars or fewer on 32-bit, 18 chars or fewer on 64-bit.
-- The file extras/vcpp_autoexp_snippets.txt has been updated for this change. Apply to your Visual Studio autoexp.dat file.
+- Updated extras/vcpp_autoexp_snippets.txt (for the VC++ debugger) to match the new VString internals.
 
 ---------- VERSION 4.0d8 ----------
 Trygve Isaacson, July 2013
@@ -61,9 +61,9 @@ VAULT-0031
 - Significant events are logged at DEBUG level.
 - All log statements use dot-separated path-like names for fine-grained control.
 VAULT-0034
-* Fixed bug in posting message to session that is not yet online.
+* Fixed bug in posting message to session that is not yet online that was introduced in 4.0d1.
 VAULT-0035
-* Fixed bug in attaching IO threads to VClientSession.
+* Fixed bug in attaching IO threads to VClientSession that was introduced in 4.0d1.
 
 ---------- VERSION 4.0d6 ----------
 Trygve Isaacson, June 2013
@@ -92,7 +92,7 @@ VAULT-0029
 * Miscellaneous
 - Updated copyright dates and version strings.
 - Reapply Astyle formatting, with edits for preferred initializer list bracing and preprocessor indentation.
-- Fixed a bug in VClientSession::postOutputMessage() that was introduced in 4.0a1.
+- Fixed a bug in VClientSession::postOutputMessage() that was introduced in 4.0d1.
 
 ---------- VERSION 4.0d5 ----------
 Trygve Isaacson, May 2013
