@@ -264,7 +264,7 @@ class VString {
         /**
         Destructor.
         */
-        virtual ~VString();
+        ~VString();
 
         /**
         Basic assignment operator.
@@ -1042,8 +1042,12 @@ class VString {
         Transfers ownership of the string's buffer to the caller and sets the string
         to empty (with no buffer). This is a way of extracting a char buffer from a
         VString such that the VString can be destructed and the caller retains the
-        buffer.
-        @return the buffer pointer, which is now owned by the caller and no longer
+        buffer. If the VString is an empty string such that it doesn't have a heap
+        buffer, this function will create and return a buffer containing a null-terminated
+        C string, so you do not need to check for a NULL function result; however,
+        it is more efficient if you avoid calling this function when the VString is
+        an empty string.
+        @return a buffer pointer, which is now owned by the caller and no longer
                     referenced by the VString object (which is now an "empty" string)
         */
         char* orphanDataBuffer();
@@ -1106,25 +1110,94 @@ class VString {
         void _assignFromCFString(const CFStringRef& s);
 #endif
 
-        int     mStringLength;  ///< The length of the string.
-        int     mBufferLength;  ///< The length of the buffer (at least 1 longer than the string).
-        char*   mBuffer;        ///< The character buffer, containing the string plus a null terminator, and possibly unused bytes beyond that.
-
-#ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
         /*
-        For implementations of vsnprintf that don't comply with IEEE 1003.1
-        behavior when n=0 and s=NULL, we need a large-ish static
-        buffer that is protected by a mutex that we can use instead. See
-        VString::determineSprintfLength(). As of Code Vault 2.5, Windows is
-        the only platform that needs this workaround.
+        New Vault 4.0 feature: SSO (small string optimization).
+        Prior to 4.0, VString already optimized empty strings, avoiding heap allocation for that case, and dealing
+        with a few special cases around not having a buffer. It also took care to allocate needed heap space in
+        chunks so as to avoid excessive re-allocation for strings that grew repeatedly.
+        With 4.0, the SSO feature means that for small strings ( <= 10 characters in a 32-bit build, <= 18 characters
+        in a 64-bit build) it can store the string data internally inside the VString without allocating a heap buffer,
+        and without adding any new size overhead to VString itself. In short, the "buffer size" and "buffer pointer"
+        instance variables used to manage the heap buffer have their space inside VString re-purposed for storing
+        the characters of the short string. If the string gets too large, then heap allocation is required as before.
+        
+        Internally, we use a union to overlay the data, and have an internal flag in the union, mUsingInternalBuffer,
+        that tells us which buffer (and which part of the union) is in effect. To make most efficient use of space
+        and avoid adding overhead, I have carefully examined how the compilers lay out and align the data, and I have
+        ordered the union data to avoid bloat. If not for that concern, I would have put the mStringLength and
+        mUsingInternalBuffer outside the union since they apply to both parts of the union; however, that would have
+        an the effect on union alignment on 64-bit of wasting several bytes. So instead, those two instance variables
+        are overlaid in both parts of the union but only the ones named in the first ("mI") part are referenced in the
+        code.
         */
-#ifndef V_EFFICIENT_SPRINTF
-        static const int kSprintfBufferSize = 32768;    ///< Size of the static printf buffer used when efficient sprintf is not available.
-        static char gSprintfBuffer[kSprintfBufferSize]; ///< A static buffer used when efficient sprintf is not available.
-        static VMutex* gSprintfBufferMutex;             ///< Mutex to protect the static buffer from multiple threads.
-#endif
-#endif
+        
+        // The internal buffer lengths are carefully chosen to fit within the existing object footprint's unused space.
+        // 32-bit and 64-bit builds have different alignment/padding, so they have different amounts of unused space.
+        // For testing, you can set the size to 1 to prevent use of the internal buffer other than for empty strings.
+        #ifdef VCOMPILER_64BIT
+            #define VSTRING_INTERNAL_BUFFER_SIZE 19
+        #else
+            #define VSTRING_INTERNAL_BUFFER_SIZE 11
+        #endif
 
+        // Internal low-level utility functions for bookkeeping the union data.
+        
+        /**
+        Performs constructor-time initialization of the internal union data. This must be called by every constructor.
+        We can't use initializer list syntax in the constructors because we are using structs and a union. It might
+        be possible to use C++11 struct initializer syntax but that would not work in many or most compilers today.
+        */
+        void _construct();
+        /**
+        Returns a pointer to the (read-only) buffer that is in use (internal or external). It will never be null,
+        even for an empty string which is usually in the internal buffer space. The buffer is immutable and so this
+        API should be used in any const function that needs to read the buffer, or a non-const function when it is
+        only reading the buffer. This function is named _get() for conciseness of code in the internal implementation.
+        It means to obtain "getter" read-only access to the buffer.
+        @return a valid pointer to an immutable null-terminated C string buffer, which may be the internal buffer or an external buffer
+        */
+        const char* _get() const { return mU.mI.mUsingInternalBuffer ? mU.mI.mInternalBuffer : mU.mX.mHeapBufferPtr; }
+        /**
+        Returns a pointer to the (writeable) buffer that is in use (internal or external). It will never be null,
+        even for an empty string which is usually in the internal buffer space. The buffer is mutable and so this
+        API should be used in any non-const function where it needs to write to the buffer. This function is
+        named _set() for conciseness of code in the internal implementation. It means to obtain "setter" read-write
+        access to the buffer.
+        @return a valid pointer to a mutable null-terminated C string buffer, which may be the internal buffer or an external buffer
+        */
+        char* _set() { return mU.mI.mUsingInternalBuffer ? mU.mI.mInternalBuffer : mU.mX.mHeapBufferPtr; }
+        /**
+        Returns the buffer length of the buffer that is in use (internal or external). The length is the capacity of
+        the buffer including a null terminator; another way of saying this that the length is one greater than the
+        maximum "string length" the buffer can hold. The actual string length of the chars in the buffer at the time
+        of this call cannot be inferred; length() or mI.mStringLength tells you that. This function is used internally
+        primarily just to supply a limit on the vsnprintf() function as well as a couple of other error checks. The
+        preflight() code is more explicit about the difference in internal and external buffers.
+        @return the string buffer's total length
+        */
+        int _getBufferLength() const { return mU.mI.mUsingInternalBuffer ? VSTRING_INTERNAL_BUFFER_SIZE : mU.mX.mHeapBufferLength; }
+
+        // Finally, the union that defines our internal structure.
+        union {
+
+            // When mI.mUsingInternalBuffer == true, we use mI.mInternalBuffer to store the string data.
+            struct {
+                int     mStringLength;                                  ///< The length of the string; this is always valid.
+                bool    mUsingInternalBuffer;                           ///< True if mI.mInternalBuffer is valid, vs. mX.mHeapBufferPtr; this is always valid.
+                char    mInternalBuffer[VSTRING_INTERNAL_BUFFER_SIZE];  ///< The embedded character buffer, when mI.mUsingInternalBuffer is true; when mI.mUsingInternalBuffer is false, it is n/a and may appear to contain garbage.
+            } mI; ///< Union part for overall bookkeeping, and internal SSO buffer space.
+            
+            // When mI.mUsingInternalBuffer == false, we use mX.mHeapBufferLength and mX.mHeapBufferPtr to store the string data.
+            struct {
+                int     mStringLength_Alias;                            ///< Do not use. Occupies same memory as mI.mStringLength, which should be used instead.
+                bool    mUsingInternalBuffer_Alias;                     ///< Do not use. Occupies same memory as mI.mUsingInternalBuffer, which should be used instead.
+                int     mHeapBufferLength;                              ///< The size of the mHeapBufferPtr new[] allocated memory; when mI.mUsingInternalBuffer is true, it is n/a and may appear to contain garbage.
+                char*   mHeapBufferPtr;                                 ///< Pointer to our new[] allocated memory; when mI.mUsingInternalBuffer is true, it is n/a and may appear to contain garbage.
+            } mX; ///< Union part for heap-allocated buffer space.
+
+        } mU; ///< Union for overlaying mI internal and mX external views of string buffer storage. mI.mStringLength and mI.mUsingInternalBuffer are always valid and authoritative.
+        
+        friend class VStringUnit; ///< Let it examine our internals under test.
 };
 
 inline bool operator==(const VString& lhs, const VString& rhs) { return ::strcmp(lhs, rhs) == 0; }      ///< Compares lhs and rhs for equality. @param    lhs    a string @param    rhs    a string @return true if lhs and rhs are equal according to strcmp()
@@ -1153,7 +1226,7 @@ inline bool operator>(const VString& lhs, const VString& rhs) { return operator<
 inline bool operator>(const VString& lhs, const char* rhs) { return operator<(rhs, lhs); }      ///< Compares lhs and rhs. @param    lhs    a string @param    rhs    a C string @return true if lhs > rhs according to strcmp()
 inline bool operator>(const char* lhs, const VString& rhs) { return operator<(rhs, lhs); }      ///< Compares lhs and rhs. @param    lhs    a C string @param    rhs    a string @return true if lhs > rhs according to strcmp()
 
-std::istream& operator>>(std::istream& in, VString& s);                                             ///< Creates the string by reading an istream. @param    in    the input stream @param    s    the string @return the input stream
+inline std::istream& operator>>(std::istream& in, VString& s) { s.readFromIStream(in); return in; }        ///< Creates the string by reading an istream. @param    in    the input stream @param    s    the string @return the input stream
 inline std::ostream& operator<<(std::ostream& out, const VString& s) { return out << s.chars(); }   ///< Writes the string to an ostream. @param    out    the output stream @param s    the string @return the output stream
 inline VString& operator<<(VString& s, std::istream& in) { s.appendFromIStream(in); return s; }     ///< Appends to the string by reading an istream. @param    s    the string @param    in    the input stream @return the string
 

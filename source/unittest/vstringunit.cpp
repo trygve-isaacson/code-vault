@@ -10,6 +10,14 @@ http://www.bombaydigital.com/
 #include "vchar.h"
 #include "vexception.h"
 
+static int _getOffset(void* objectPtr, void* fieldPtr) {
+    Vs64 objAddr = (Vs64) objectPtr;
+    Vs64 fieldAddr = (Vs64) fieldPtr;
+    Vs64 delta = fieldAddr - objAddr;
+
+    return (int) delta;
+}
+
 VStringUnit::VStringUnit(bool logOnSuccess, bool throwOnError) :
     VUnit("VStringUnit", logOnSuccess, throwOnError) {
 }
@@ -353,6 +361,26 @@ void VStringUnit::run() {
     this->test(s, VString::EMPTY(), "trim test 6");
 
     int    numCreatures;
+    // Test replacing the whole string with another value, with empty, and again with repetition.
+    // Have the replacement be smaller, to test that we can replace multiple where the "cursor" is not always moving to the right.
+    s = "fish";
+    numCreatures = s.replace("fish", "dog");
+    this->test(s, "dog", "replace test comparison a->b");
+    this->test(numCreatures == 1, "replace test count a->b");
+    s = "fish";
+    numCreatures = s.replace("fish", "");
+    this->test(s, "", "replace test comparison a->empty");
+    this->test(numCreatures == 1, "replace test count a->empty");
+    s = "fishfishfish";
+    numCreatures = s.replace("fish", "dog");
+    this->test(s, "dogdogdog", "replace test comparison aaa->bbb");
+    this->test(numCreatures == 3, "replace test count aaa->bbb");
+    s = "fishfishfish";
+    numCreatures = s.replace("fish", "");
+    this->test(s, "", "replace test comparison aaa->emptyemptyempty");
+    this->test(numCreatures == 3, "replace test count aaa->emptyemptyempty");
+
+    // Another sequence of replacement tests.
     s = "one fish, two fish, red fish, blue fish, fishfishfish";
     // Test replacing with longer string.
     numCreatures = s.replace("fish", "dog");
@@ -386,6 +414,7 @@ void VStringUnit::run() {
     numCreatures = s.replace(VChar('k'), VChar('K'));
     this->test(s, "onE , two , rEd , bluE , ", "replace test 8a");
     this->test(numCreatures == 0, "replace test 8b");
+
     // Test array operator assignment.
     s[0] = 'O';
     s[6] = 'T';
@@ -619,11 +648,23 @@ void VStringUnit::run() {
         this->test(true, "postflight -1 exception for null buffer");
     }
 
+    /* With SSO support in VString, the following test is no longer valid,
+    because a string will always have a buffer. Below we replace this with
+    a similar test that does a postflight that is sure to be way out of
+    range of the buffer.
+    
     try {
         rangeTester.postflight(1); // should throw a VRangeException
         this->test(false, "postflight >0 exception for null buffer");
-    } catch (const VRangeException& /*ex*/) {
+    } catch (const VRangeException&) {
         this->test(true, "postflight >0 exception for null buffer");
+    }
+    */
+    try {
+        rangeTester.postflight(INT_MAX); // should throw a VRangeException
+        this->test(false, "postflight INT_MAX exception for internal buffer");
+    } catch (const VRangeException& /*ex*/) {
+        this->test(true, "postflight INT_MAX exception for internal buffer");
     }
 
     // Note: Now that VString uses chunk-sized allocations, a test
@@ -814,5 +855,24 @@ void VStringUnit::run() {
     // Change to vararg constructor to allow "%" to avoid unwanted formatting.
     VString percentSign("%");
     this->test(percentSign == '%', "percent sign literal constructor");
+
+    VString sss;
+#ifdef VCOMPILER_64BIT
+    this->logStatus("64-bit offsets & sizes:");
+#else
+    this->logStatus("32-bit offsets & sizes:");
+#endif
+    this->logStatus(VSTRING_FORMAT("VString                       : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss),                                   sizeof(VString)));
+    this->logStatus(VSTRING_FORMAT(" .mU                          : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU),                                sizeof(sss.mU)));
+    this->logStatus(VSTRING_FORMAT("  .mI                         : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mI),                             sizeof(sss.mU.mI)));
+    this->logStatus(VSTRING_FORMAT("   .mStringLength             : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mI.mStringLength),               sizeof(sss.mU.mI.mStringLength)));
+    this->logStatus(VSTRING_FORMAT("   .mUsingInternalBuffer      : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mI.mUsingInternalBuffer),        sizeof(sss.mU.mI.mUsingInternalBuffer)));
+    this->logStatus(VSTRING_FORMAT("   .mInternalBuffer           : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mI.mInternalBuffer),             sizeof(sss.mU.mI.mInternalBuffer)));
+    this->logStatus(VSTRING_FORMAT("  .mX                         : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mX),                             sizeof(sss.mU.mX)));
+    this->logStatus(VSTRING_FORMAT("   .mStringLength_Alias       : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mX.mStringLength_Alias),         sizeof(sss.mU.mX.mStringLength_Alias)));
+    this->logStatus(VSTRING_FORMAT("   .mUsingInternalBuffer_Alias: " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mX.mUsingInternalBuffer_Alias),  sizeof(sss.mU.mX.mUsingInternalBuffer_Alias)));
+    this->logStatus(VSTRING_FORMAT("   .mHeapBufferLength         : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mX.mHeapBufferLength),           sizeof(sss.mU.mX.mHeapBufferLength)));
+    this->logStatus(VSTRING_FORMAT("   .mHeapBufferPtr            : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mX.mHeapBufferPtr),              sizeof(sss.mU.mX.mHeapBufferPtr)));
+    
 }
 
