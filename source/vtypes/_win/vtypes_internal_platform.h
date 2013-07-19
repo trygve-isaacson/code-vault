@@ -56,14 +56,6 @@ even if we cannot link and run.
 #include <direct.h> // _mkdir(), _rmdir()
 #include <assert.h> // assert()
 
-#ifdef VCOMPILER_MSVC
-    #pragma warning(disable: 6386)  // the library file doesn't past muster
-#endif
-#include <ws2tcpip.h> // For the WSA calls in enumerateNetworkInterfaces(), and addrinfo in vsocketbase.cpp when on Windows.
-#ifdef VCOMPILER_MSVC
-    #pragma warning(default: 6386)
-#endif
-
 #undef FD_ZERO
 #define FD_ZERO(p) memset(p, 0, sizeof(*(p)))
 

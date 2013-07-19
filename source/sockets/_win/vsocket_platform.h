@@ -12,6 +12,14 @@ http://www.bombaydigital.com/
 // This file is intended to be include *by* the generic vsocket.h to get
 // any platform-specific declarations or includes.
 
+#ifdef VCOMPILER_MSVC
+    #pragma warning(disable: 6386)  // the library file doesn't past muster
+#endif
+#include <ws2tcpip.h> // For the WSA calls in enumerateNetworkInterfaces(), and addrinfo in vsocketbase.cpp when on Windows.
+#ifdef VCOMPILER_MSVC
+    #pragma warning(default: 6386)
+#endif
+
 // On Mac OS X, we disable SIGPIPE in VSocket::setDefaultSockOpt(), so these flags are 0.
 // On Winsock, it is irrelevant so these flags are 0.
 // For other Unix platforms, we specify it in the flags of each send()/recv() call via this parameter.
