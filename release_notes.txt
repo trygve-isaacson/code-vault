@@ -1,5 +1,46 @@
 CODE VAULT RELEASE NOTES
 
+---------- VERSION 4.0 ------------
+Trygve Isaacson, July 2013
+
+See specific 4.0 development release notes below for complete details. Major features summary:
+- VClientSession/VServer, and VMessage broadcasting, use smart pointers instead of internal reference counting and locking.
+- Vault fully supports 64-bit builds without compiler warnings.
+- VSystemError provides API for extracting system/socket errors in a platform-independent way.
+- VSocket implements DNS name resolution.
+- VSocket supports IPv6.
+- VSocket supports connection strategies; provided strategies include a parallel, threaded strategy.
+- VInstant supports user-supplied time stamp formats, using the Java SimpleDateFormat formatting directives.
+- VLogger allows user-configured output format, including the time stamp.
+- Vault internally uses logger path names to allow more configurable control of log output filtering.
+- VString implements a "small string optimization" (SSO) for better performance and less memory usage.
+
+---------- VERSION 4.0d9 ----------
+Trygve Isaacson, July 2013
+
+VAULT-0031
+* SSO (small string optimization) implementation.
+- VString can store small strings internally, avoiding heap buffer allocation.
+- The memory footprint of VString objects is unchanged.
+- Performance is improved by 55%-60% for small strings.
+- Memory usage is improved by 57%-67% for small strings.
+- A "small" string is defined as 10 chars or fewer on 32-bit, 18 chars or fewer on 64-bit.
+- The file extras/vcpp_autoexp_snippets.txt has been updated for this change. Apply to your Visual Studio autoexp.dat file.
+
+---------- VERSION 4.0d8 ----------
+Trygve Isaacson, July 2013
+
+VAULT-0028
+* Consolidated common socket code.
+- Merged some common Unix and Windows socket code to avoid duplication.
+VAULT-0031
+* Refined logging with dot-separated logger path names
+- every Vault logger emission has a specific naming scheme
+- allows better control of log output and filtering in logging configuration
+VAULT-0032
+* Refer to shared_ptr template indirectly
+- vconfigure.h now lets you indicate whether you want boost or std version of shared_ptr et al.
+
 ---------- VERSION 4.0d7 ----------
 Trygve Isaacson, July 2013
 
