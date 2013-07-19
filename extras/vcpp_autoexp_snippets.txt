@@ -80,11 +80,18 @@ VBentoStringArray	=name=<mName> value=<mValue>
 
 VString{
 	preview ( 
-        #if ($e.mBuffer == 0) (
+        #if ($e.mU.mI.mStringLength == 0) (
             #("<empty string>")
         )
         #else (
-			[$e.mBuffer,s]
+
+            #if ($e.mU.mI.mUsingInternalBuffer) (
+                [$e.mU.mI.mInternalBuffer,s]
+            )
+            #else (
+                [$e.mU.mX.mHeapBufferPtr,s]
+            )
+
         )
 	)
 }
