@@ -150,6 +150,16 @@ void VPlatformUnit::_reportEnvironment() {
     this->logStatus("VAULT_SIMPLE_USER_THREAD_MAIN is not set.");
 #endif
 
+    if (VString::NATIVE_LINE_ENDING() == VString::UNIX_LINE_ENDING()) {
+        this->logStatus("NATIVE_LINE_ENDING == UNIX_LINE_ENDING.");
+    } else if (VString::NATIVE_LINE_ENDING() == VString::MAC_CLASSIC_LINE_ENDING()) {
+        this->logStatus("NATIVE_LINE_ENDING == MAC_CLASSIC_LINE_ENDING.");
+    } else if (VString::NATIVE_LINE_ENDING() == VString::DOS_LINE_ENDING()) {
+        this->logStatus("NATIVE_LINE_ENDING == DOS_LINE_ENDING.");
+    } else {
+        this->logStatus("NATIVE_LINE_ENDING is not one of the expected three!"); // Implies this unit test doesn't know about some new native line ending constant that has been defined.
+    }
+
 }
 
 static int _wrap_vsnprintf(char* dest, size_t count, const char* formatText, ...) {

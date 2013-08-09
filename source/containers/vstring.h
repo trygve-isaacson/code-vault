@@ -184,8 +184,27 @@ class VString {
         static const VString& EMPTY();
         /**
         Returns a reference to the read-only VString constant holding the platform-native line ending character(s).
+        If we are running on DOS/Windows it will be 0x0D0A. If we are running on Unix (including Mac OS X) it will be 0x0A.
+        This is normally what you should use if you need to explicitly reference the preferred text file line ending
+        for the current platform. In the rare case where you need to use a particular format (for example, if writing
+        a file with a platform- or format-specific style, then you could use one of the platform specific accessors
+        that are defined below.
         */
         static const VString& NATIVE_LINE_ENDING();
+        /**
+        Returns a reference to the read-only VString constant holding the Unix-style 0x0A line ending character.
+        This is also what we consider the "native" line ending on Mac OS X.
+        */
+        static const VString& UNIX_LINE_ENDING();
+        /**
+        Returns a reference to the read-only VString constant holding the classic Mac Classic-style 0x0D line ending character.
+        Note that this is different from our "native" Unix-style line ending on Mac OS X.
+        */
+        static const VString& MAC_CLASSIC_LINE_ENDING();
+        /**
+        Returns a reference to the read-only VString constant holding the DOS-style 0x0D0A line ending characters.
+        */
+        static const VString& DOS_LINE_ENDING();
 
         /**
         Constructs an empty string.

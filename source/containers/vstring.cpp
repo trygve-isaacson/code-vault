@@ -56,6 +56,24 @@ const VString& VString::NATIVE_LINE_ENDING() {
     return kLineEndingString;
 }
 
+// static
+const VString& VString::UNIX_LINE_ENDING() {
+    static const VString kUnixLineEndingString((char) 0x0A);
+    return kUnixLineEndingString;
+}
+
+// static
+const VString& VString::MAC_CLASSIC_LINE_ENDING() {
+    static const VString kMacClassicLineEndingString((char) 0x0D);
+    return kMacClassicLineEndingString;
+}
+
+// static
+const VString& VString::DOS_LINE_ENDING() {
+    static const VString kDOSLineEndingString(VSTRING_ARGS("%c%c", (char) 0x0D, (char) 0x0A));
+    return kDOSLineEndingString;
+}
+
 VString::VString()
     {
     this->_construct();
