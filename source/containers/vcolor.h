@@ -11,7 +11,7 @@ http://www.bombaydigital.com/
 
 #include "vtypes.h"
 
-#include "vexception.h"
+#include "vstring.h"
 #include "vbinaryiostream.h"
 
 #ifdef VAULT_QT_SUPPORT

@@ -14,7 +14,8 @@ http://www.bombaydigital.com/
 #include "vserver.h"
 #include "vbinaryiostream.h"
 #include "vmessage.h"
-#include "vmessagehandler.h"
+
+class VMessageHandler;
 
 /**
     @ingroup vsocket

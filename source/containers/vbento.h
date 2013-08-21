@@ -9,8 +9,6 @@ http://www.bombaydigital.com/
 
 /** @file */
 
-#include "vbinaryiostream.h"
-#include "vtextiostream.h"
 #include "vmemorystream.h"
 #include "vhex.h"
 #include "vinstant.h"
@@ -18,6 +16,9 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vgeometry.h"
 #include "vcolor.h"
+
+class VBinaryIOStream;
+class VTextIOStream;
 
 /*
 VBento

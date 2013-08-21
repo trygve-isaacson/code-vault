@@ -8,6 +8,9 @@ http://www.bombaydigital.com/
 
 #include "vassert.h"
 
+#include "vlogger.h"
+#include "vexception.h"
+
 static void _failedAssert(const VString& failMessage, const char* file, int line) {
     VLOGGER_LEVEL_FILELINE(VLoggerLevel::ERROR, failMessage, file, line);
 #ifdef V_ASSERT_THROWS_EXCEPTION

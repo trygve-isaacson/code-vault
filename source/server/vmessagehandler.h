@@ -11,7 +11,6 @@ http://www.bombaydigital.com/
 #include "vstring.h"
 #include "vmutex.h"
 #include "vmutexlocker.h"
-#include "vlogger.h"
 #include "vmessage.h"
 #include "vclientsession.h"
 

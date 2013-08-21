@@ -11,6 +11,7 @@ http://www.bombaydigital.com/
 #include "vthread.h"
 #include "vmutexlocker.h"
 #include "vsettings.h"
+#include "vbento.h"
 
 #include <boost/scoped_ptr.hpp>
 

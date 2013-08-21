@@ -21,8 +21,8 @@ in the Vault.
 #include "vinstant.h"
 #include "vchar.h"
 #include "vcolor.h"
-#include "vlogger.h"
 
+class VLogAppender;
 class VLogger;
 class VTextIOStream;
 

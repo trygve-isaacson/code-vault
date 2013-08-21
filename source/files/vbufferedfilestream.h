@@ -11,7 +11,7 @@ http://www.bombaydigital.com/
 
 #include "vabstractfilestream.h"
 
-#include "vfsnode.h"
+class VFSNode;
 
 /**
     @ingroup vstream_derived vfilesystem

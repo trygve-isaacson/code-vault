@@ -9,6 +9,8 @@ http://www.bombaydigital.com/
 #include "vplatformunit.h"
 #include "vtypes_internal.h"
 
+#include "vexception.h"
+
 VPlatformUnit::VPlatformUnit(bool logOnSuccess, bool throwOnError) :
     VUnit("VPlatformUnit", logOnSuccess, throwOnError) {
 }

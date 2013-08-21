@@ -6,6 +6,7 @@ http://www.bombaydigital.com/
 
 #include "vshutdownregistry.h"
 
+#include "vmutex.h"
 #include "vmutexlocker.h"
 
 VShutdownRegistry* VShutdownRegistry::gInstance = NULL;

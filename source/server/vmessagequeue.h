@@ -19,9 +19,6 @@ http://www.bombaydigital.com/
     @ingroup vsocket
 */
 
-//class VMessage;
-
-
 /**
 VMessageQueue is a thread-safe FIFO queue of messages. Multiple threads may
 post messages to the queue (push to the back of the queue) using postMessage()

@@ -13,9 +13,9 @@ http://www.bombaydigital.com/
 
 #include "vstring.h"
 #include "vmutex.h"
-#include "vinstant.h"
 #include "vlogger.h"
 
+class VDuration;
 class VManagementInterface;
 class VBentoNode;
 

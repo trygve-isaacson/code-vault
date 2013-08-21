@@ -8,7 +8,6 @@ http://www.bombaydigital.com/
 #define vshutdownregistry_h
 
 #include "vtypes.h"
-#include "vmutex.h"
 
 /**
     @ingroup toolbox

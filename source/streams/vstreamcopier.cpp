@@ -8,6 +8,7 @@ http://www.bombaydigital.com/
 
 #include "vstreamcopier.h"
 #include "vstream.h"
+#include "viostream.h"
 
 VStreamCopier::VStreamCopier()
     : mChunkSize(0)

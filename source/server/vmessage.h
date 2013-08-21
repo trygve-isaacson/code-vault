@@ -11,7 +11,6 @@ http://www.bombaydigital.com/
 #include "vstring.h"
 #include "vbinaryiostream.h"
 #include "vmemorystream.h"
-#include "vlogger.h"
 
 /** @file */
 

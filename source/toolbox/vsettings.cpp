@@ -11,7 +11,9 @@ http://www.bombaydigital.com/
 #include "vexception.h"
 #include "vmemorystream.h"
 #include "vtextiostream.h"
+#include "vbinaryiostream.h"
 #include "vchar.h"
+#include "vbento.h"
 
 V_STATIC_INIT_TRACE
 

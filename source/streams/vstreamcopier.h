@@ -9,7 +9,10 @@ http://www.bombaydigital.com/
 
 /** @file */
 
-#include "viostream.h"
+#include "vtypes.h"
+
+class VStream;
+class VIOStream;
 
 /**
     @defgroup vstream_util Stream Utilities

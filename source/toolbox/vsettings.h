@@ -10,8 +10,10 @@ http://www.bombaydigital.com/
 /** @file */
 
 #include "vstring.h"
-#include "vbento.h"
+#include "vgeometry.h"
+#include "vcolor.h"
 
+class VBentoNode;
 class VTextIOStream;
 
 /**

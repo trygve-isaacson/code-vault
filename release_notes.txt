@@ -1,7 +1,15 @@
 CODE VAULT RELEASE NOTES
 
+---------- VERSION 4.1d1 ----------
+Trygve Isaacson, August 2013
+
+VAULT-0037
+* Add VString API for platform-specific line endings.
+VAULT-0038
+* Optimize include statements to reduce compile times.
+
 ---------- VERSION 4.0 ------------
-Trygve Isaacson, July 2013
+Trygve Isaacson, August 2013
 
 See specific 4.0 development release notes below for complete details. Major features summary:
 - VClientSession/VServer, and VMessage broadcasting, use smart pointers instead of internal reference counting and locking.

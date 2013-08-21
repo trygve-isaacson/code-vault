@@ -11,11 +11,12 @@ http://www.bombaydigital.com/
 
 #include "vsocketthread.h"
 #include "vsocketstream.h"
-#include "vserver.h"
 #include "vbinaryiostream.h"
 #include "vmessage.h"
 #include "vmessagequeue.h"
 #include "vclientsession.h"
+
+class VServer;
 
 /**
     @ingroup vsocket

@@ -7,6 +7,7 @@ http://www.bombaydigital.com/
 #include "vtypes_internal.h"
 
 #include "vfsnode.h"
+#include "vexception.h"
 
 // This is a useful place to put a breakpoint when things aren't going as planned.
 static void _debugCheck(bool success) {

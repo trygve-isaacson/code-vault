@@ -7,6 +7,7 @@ http://www.bombaydigital.com/
 #include "vmessageinputthread.h"
 
 #include "vexception.h"
+#include "vmessagehandler.h"
 #include "vlogger.h"
 #include "vmessage.h"
 #include "vclientsession.h"
