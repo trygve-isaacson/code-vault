@@ -10,6 +10,7 @@ http://www.bombaydigital.com/
 #include "vtypes_internal.h"
 
 #include "vchar.h"
+#include "vcodepoint.h"
 #include "vexception.h"
 #include "vlogger.h"
 
@@ -234,6 +235,15 @@ VString::VString(const CFStringRef& s)
 }
 #endif /* VAULT_CORE_FOUNDATION_SUPPORT */
 
+VString::VString(const VCodePoint& cp)
+    {
+    this->_construct();
+
+    (*this) += cp.toString();
+
+    ASSERT_INVARIANT();
+}
+
 VString::~VString() {
     if (!mU.mI.mUsingInternalBuffer) {
         delete [] mU.mX.mHeapBufferPtr;
@@ -315,6 +325,11 @@ VString& VString::operator=(const CFStringRef& s) {
     return *this;
 }
 #endif /* VAULT_CORE_FOUNDATION_SUPPORT */
+
+VString& VString::operator=(const VCodePoint& cp) {
+    (*this) = cp.toString();
+    return *this;
+}
 
 VString& VString::operator=(const VChar& c) {
     ASSERT_INVARIANT();
@@ -488,6 +503,12 @@ VString VString::operator+(const boost::format& fmt) const {
 }
 #endif /* VAULT_BOOST_STRING_FORMATTING_SUPPORT */
 
+VString VString::operator+(const VCodePoint& cp) const {
+    VString newString(*this);
+    newString += cp.toString();
+    return newString;
+}
+
 VString& VString::operator+=(const VChar& c) {
     ASSERT_INVARIANT();
 
@@ -558,6 +579,13 @@ VString& VString::operator+=(const boost::format& fmt) {
     return *this;
 }
 #endif /* VAULT_BOOST_STRING_FORMATTING_SUPPORT */
+
+VString& VString::operator+=(const VCodePoint& cp) {
+    VString appendage = cp.toString();
+    (*this) += appendage;
+
+    return *this;
+}
 
 VString& VString::operator+=(int i) {
     ASSERT_INVARIANT();
@@ -691,6 +719,70 @@ void VString::appendFromIStream(std::istream& in) {
     }
 
     ASSERT_INVARIANT();
+}
+
+VString::iterator VString::begin() {
+    ASSERT_INVARIANT();
+    
+    VString::iterator result(*this, true/*is forward iterator*/);
+    
+    ASSERT_INVARIANT();
+
+    return result;
+}
+
+VString::const_iterator VString::begin() const {
+    ASSERT_INVARIANT();
+    
+    return VString::const_iterator(*this, true/*isForwardIterator*/);
+}
+
+VString::iterator VString::end() {
+    ASSERT_INVARIANT();
+    
+    VString::iterator result(*this, true/*isForwardIterator*/, true/*goToEnd*/);
+    
+    ASSERT_INVARIANT();
+
+    return result;
+}
+
+VString::const_iterator VString::end() const {
+    ASSERT_INVARIANT();
+    
+    return VString::const_iterator(*this, true/*isForwardIterator*/, true/*goToEnd*/);
+}
+
+VString::iterator VString::rbegin() {
+    ASSERT_INVARIANT();
+    
+    VString::iterator result(*this, false/*not isForwardIterator*/);
+    
+    ASSERT_INVARIANT();
+
+    return result;
+}
+
+VString::const_iterator VString::rbegin() const {
+    ASSERT_INVARIANT();
+    
+    return VString::const_iterator(*this, false/*not isForwardIterator*/);
+}
+
+VString::iterator VString::rend() {
+    ASSERT_INVARIANT();
+    
+    VString::iterator result(*this, false/*not isForwardIterator*/, true/*goToEnd*/);
+    
+    ASSERT_INVARIANT();
+
+    return result;
+}
+
+VString::const_iterator VString::rend() const {
+    ASSERT_INVARIANT();
+    
+    return VString::const_iterator(*this, false/*not isForwardIterator*/, true/*goToEnd*/);
 }
 
 #ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT

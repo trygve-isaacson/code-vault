@@ -8,7 +8,9 @@ http://www.bombaydigital.com/
 
 #include "vstringunit.h"
 #include "vchar.h"
+#include "vunicode.h"
 #include "vexception.h"
+#include "vhex.h"
 
 static int _getOffset(void* objectPtr, void* fieldPtr) {
     Vs64 objAddr = (Vs64) objectPtr;
@@ -874,5 +876,142 @@ void VStringUnit::run() {
     this->logStatus(VSTRING_FORMAT("   .mHeapBufferLength         : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mX.mHeapBufferLength),           sizeof(sss.mU.mX.mHeapBufferLength)));
     this->logStatus(VSTRING_FORMAT("   .mHeapBufferPtr            : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mX.mHeapBufferPtr),              sizeof(sss.mU.mX.mHeapBufferPtr)));
     
+    // Unicode access tests.
+    
+    VCodePoint simpleNewline('\n');
+    VCodePoint simpleSmallA('a');
+    VCodePoint simpleCapitalA(65);
+    VCodePoint simpleECircumflex(VChar(0xE9)); // Use VChar int constructor to avoid use of char value > 127.
+    VCodePoint hexformNewline("U+0A");
+    VCodePoint hexformSmallA("U+61");
+    VCodePoint hexformCapitalA("U+41");
+    VCodePoint hexformECircumflex("U+E9");
+    VCodePoint hexformOmega("U+03A9");
+    VCodePoint hexformKoala("U+1F428");
+    // The four example cases on <http://en.wikipedia.org/wiki/Utf-8>
+    VCodePoint dollar("U+0024");
+    VCodePoint cent("U+00A2");
+    VCodePoint euro("U+20AC");
+    VCodePoint han("U+24B62");
+
+    VUNIT_ASSERT_TRUE_LABELED(simpleNewline == hexformNewline, "code point equality - newline");
+    VUNIT_ASSERT_EQUAL_LABELED(simpleNewline.intValue(), 0x0A, "code point value - newline");
+    VUNIT_ASSERT_TRUE_LABELED(simpleSmallA == hexformSmallA, "code point equality - small a");
+    VUNIT_ASSERT_EQUAL_LABELED(simpleSmallA.intValue(), 0x61, "code point value - small a");
+    VUNIT_ASSERT_TRUE_LABELED(simpleCapitalA == hexformCapitalA, "code point equality - capital a");
+    VUNIT_ASSERT_EQUAL_LABELED(simpleCapitalA.intValue(), 0x41, "code point value - capital a");
+    VUNIT_ASSERT_TRUE_LABELED(simpleECircumflex == hexformECircumflex, "code point equality - e circumflex");
+    VUNIT_ASSERT_EQUAL_LABELED(simpleECircumflex.intValue(), 0xE9, "code point value - e circumflex");
+    VUNIT_ASSERT_EQUAL_LABELED(hexformOmega.intValue(), 0x03A9, "code point value - omega");
+    VUNIT_ASSERT_EQUAL_LABELED(hexformKoala.intValue(), 0x01F428, "code point value - koala");
+    
+    VString sNewline(simpleNewline);
+    VString sSmallA(simpleSmallA);
+    VString sCapitalA(simpleCapitalA);
+    VString sECircumflex(simpleECircumflex);
+    VString sOmega(hexformOmega);
+    VString sKoala(hexformKoala);
+    
+    // Interestingly, the following three currency symbols (plus Han character) exercise
+    // the 1-, 2-, 3-, and 4-byte UTF-8 formats. The dollar sign is ASCII so it requires
+    // one byte, the cent sign is in the 128-255 range so it requires two bytes, and the
+    // euro sign is a large number so it requires three bytes; the Han symbol is in a
+    // very high number block requiring 4 bytes.
+
+    VString sDollar(dollar);
+    VString sCent(cent);
+    VString sEuro(euro);
+    VString sHan(han);
+    
+    VString hexDollar; VHex::bufferToHexString(sDollar.getDataBuffer(), sDollar.length(), hexDollar, true);
+    VUNIT_ASSERT_EQUAL_LABELED(hexDollar, "0x24", "code point to string - dollar");
+    VString hexCent; VHex::bufferToHexString(sCent.getDataBuffer(), sCent.length(), hexCent, true);
+    VUNIT_ASSERT_EQUAL_LABELED(hexCent, "0xC2A2", "code point to string - cent");
+    VString hexEuro; VHex::bufferToHexString(sEuro.getDataBuffer(), sEuro.length(), hexEuro, true);
+    VUNIT_ASSERT_EQUAL_LABELED(hexEuro, "0xE282AC", "code point to string - euro");
+    VString hexHan; VHex::bufferToHexString(sHan.getDataBuffer(), sHan.length(), hexHan, true);
+    VUNIT_ASSERT_EQUAL_LABELED(hexHan, "0xF0A4ADA2", "code point to string - han");
+    
+    VString utf8Test = VString("D") + dollar + VString("C") + cent + VString("E") + euro + VString("H") + han;
+    VUNIT_ASSERT_EQUAL_LABELED(dollar, *(utf8Test.begin() + 1),     "iterator D addition");
+    VUNIT_ASSERT_EQUAL_LABELED(cent,    *(utf8Test.begin() + 3),    "iterator C addition");
+    VUNIT_ASSERT_EQUAL_LABELED(euro,    *(utf8Test.begin() + 5),    "iterator E addition");
+    VUNIT_ASSERT_EQUAL_LABELED(han,     *(utf8Test.begin() + 7),    "iterator H addition");
+    VUNIT_ASSERT_EQUAL_LABELED(han,     *(utf8Test.end() - 1),      "iterator H subtraction");
+    VUNIT_ASSERT_EQUAL_LABELED(euro,    *(utf8Test.end() - 3),      "iterator E subtraction");
+    VUNIT_ASSERT_EQUAL_LABELED(cent,    *(utf8Test.end() - 5),      "iterator C subtraction");
+    VUNIT_ASSERT_EQUAL_LABELED(dollar,  *(utf8Test.end() - 7),      "iterator D subtraction");
+    VString::iterator utf8Iterator = utf8Test.begin();
+    ++utf8Iterator;
+    VUNIT_ASSERT_EQUAL_LABELED(dollar, *utf8Iterator, "iterator D increment");
+    ++utf8Iterator;
+    ++utf8Iterator;
+    VUNIT_ASSERT_EQUAL_LABELED(cent, *utf8Iterator, "iterator C increment");
+    ++utf8Iterator;
+    ++utf8Iterator;
+    VUNIT_ASSERT_EQUAL_LABELED(euro, *utf8Iterator, "iterator E increment");
+    ++utf8Iterator;
+    ++utf8Iterator;
+    VUNIT_ASSERT_EQUAL_LABELED(han, *utf8Iterator, "iterator H increment");
+    ++utf8Iterator;
+    VUNIT_ASSERT_TRUE_LABELED(utf8Iterator == utf8Test.end(), "iterator increment to end");
+    --utf8Iterator;
+    VUNIT_ASSERT_EQUAL_LABELED(han, *utf8Iterator, "iterator H decrement");
+    --utf8Iterator;
+    --utf8Iterator;
+    VUNIT_ASSERT_EQUAL_LABELED(euro, *utf8Iterator, "iterator E decrement");
+    --utf8Iterator;
+    --utf8Iterator;
+    VUNIT_ASSERT_EQUAL_LABELED(cent, *utf8Iterator, "iterator C decrement");
+    --utf8Iterator;
+    --utf8Iterator;
+    VUNIT_ASSERT_EQUAL_LABELED(dollar, *utf8Iterator, "iterator D decrement");
+    --utf8Iterator;
+    VUNIT_ASSERT_TRUE_LABELED(utf8Iterator == utf8Test.begin(), "iterator decrement to begin");
+    
+    // Test that we generate an exception if we iterate out of bounds.
+    try {
+        VString::iterator beginIterator = utf8Test.begin();
+        --beginIterator;
+        VUNIT_ASSERT_TRUE_LABELED(false, "failed to catch expected out of bounds begin-1 iteration");
+    } catch (const VRangeException&) {
+        VUNIT_ASSERT_TRUE_LABELED(true, "caught expected out of bounds begin-1 iteration");
+    }
+    
+    try {
+        VString::iterator beginIterator = utf8Test.end();
+        ++beginIterator;
+        VUNIT_ASSERT_TRUE_LABELED(false, "failed to catch expected out of bounds end+1 iteration");
+    } catch (const VRangeException&) {
+        VUNIT_ASSERT_TRUE_LABELED(true, "caught expected out of bounds end+1 iteration");
+    }
+    
+    VString stringWithMultibyteCharacters;
+    stringWithMultibyteCharacters += "Dollar = '";
+    stringWithMultibyteCharacters += dollar;
+    stringWithMultibyteCharacters += "'. ";
+    stringWithMultibyteCharacters += "Cent = '";
+    stringWithMultibyteCharacters += cent;
+    stringWithMultibyteCharacters += "'. ";
+    stringWithMultibyteCharacters += "Euro = '";
+    stringWithMultibyteCharacters += euro;
+    stringWithMultibyteCharacters += "'. ";
+    stringWithMultibyteCharacters += "Han = '";
+    stringWithMultibyteCharacters += han;
+    stringWithMultibyteCharacters += "'. ";
+    VString reconstructedStringWithMultibyteCharacters;
+    
+    //std::cout << "String with dollar, cent, euro, han, by iterating over code points: \"";
+    //for (VStringIterator si = VStringIterator(stringWithMultibyteCharacters); si != si.end(); ++si) {
+    for (VString::iterator si = stringWithMultibyteCharacters.begin(); si != stringWithMultibyteCharacters.end(); ++si) {
+        VCodePoint cp = (*si);
+        reconstructedStringWithMultibyteCharacters += cp;
+        VString cps(cp);
+        //std::cout << cps;
+    }
+    //std::cout << "\"";
+
+    VUNIT_ASSERT_EQUAL_LABELED(stringWithMultibyteCharacters, reconstructedStringWithMultibyteCharacters, "reconstructed string");
+    this->logStatus(stringWithMultibyteCharacters);
 }
 

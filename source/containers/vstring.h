@@ -11,8 +11,10 @@ http://www.bombaydigital.com/
 
 #include "vtypes.h"
 
+#include "vcodepoint.h"
+#include "vstringiterator.h"
+
 class VChar;
-class VString;
 
 /**
 VStringVector is simply a vector of VString objects. Note that the vector
@@ -281,6 +283,12 @@ class VString {
         VString(const CFStringRef& s);
 #endif
         /**
+        Constructs a string from a Unicode code point (a single character value).
+        @param    cp    the code point to use
+        */
+        VString(const VCodePoint& cp);
+
+        /**
         Destructor.
         */
         ~VString();
@@ -319,6 +327,11 @@ class VString {
         */
         VString& operator=(const CFStringRef& s);
 #endif
+        /**
+        Assigns from a Unicode code point (a single character value).
+        @param    cp    the code point to use
+        */
+        VString& operator=(const VCodePoint& cp);
 
         /**
         Assigns the string from a character.
@@ -396,28 +409,33 @@ class VString {
 
 
         /**
-        Appends a string + char
+        Creates a string from this string + (appending) a char.
         @param    rhs    the string to append
         */
-        VString operator+ (const char c) const;
+        VString operator+(const char c) const;
         /**
-        Appends 2 strings
+        Creates a string from this string + (appending) a (const char*) buffer.
         @param    rhs    the string to append
         */
-        VString operator+ (const char* s) const;
+        VString operator+(const char* s) const;
         /**
-        Appends 2 strings
+        Creates a string from this string + (appending) another string.
         @param    rhs    the string to append
         */
-        VString operator+ (const VString& s) const;
+        VString operator+(const VString& s) const;
 
 #ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
         /**
-        Appends 2 strings
+        Creates a string from this string + (appending) a boost format string.
         @param fmt the formatter to append
         */
         VString operator+(const boost::format& fmt) const;
 #endif
+        /**
+        Creates a string from this string + (appending) a unicode code point.
+        @param    cp    the code point to append
+        */
+        VString operator+(const VCodePoint& cp) const;
 
         /**
         Appends a character to the string.
@@ -447,6 +465,11 @@ class VString {
         */
         VString& operator+=(const boost::format& fmt);
 #endif
+        /**
+        Appends to the string from a Unicode code point (a single character value).
+        @param    cp    the code point to use
+        */
+        VString& operator+=(const VCodePoint& cp);
 
         /**
         Appends to the string from an int.
@@ -512,6 +535,21 @@ class VString {
         @param    in    the input stream
         */
         void appendFromIStream(std::istream& in);
+        
+        typedef VStringIterator<VString&> iterator;
+        typedef VStringIterator<const VString&> const_iterator;
+        typedef VStringIterator<VString&> reverse_iterator;
+        typedef VStringIterator<const VString&> const_reverse_iterator;
+        
+        iterator begin();
+        const_iterator begin() const;
+        iterator end();
+        const_iterator end() const;
+
+        reverse_iterator rbegin();
+        const_reverse_iterator rbegin() const;
+        reverse_iterator rend();
+        const_reverse_iterator rend() const;
 
 #ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
         /**
