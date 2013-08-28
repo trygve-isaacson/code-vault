@@ -12,6 +12,7 @@ http://www.bombaydigital.com/
 #include "vmutex.h"
 #include "vmutexlocker.h"
 #include "vstring.h"
+#include "vexception.h"
 
 #include <psapi.h> // for GetProcessMemoryInfo used by VgetMemoryUsage
 
