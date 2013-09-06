@@ -8,7 +8,6 @@ http://www.bombaydigital.com/
 
 #include "vstringunit.h"
 #include "vchar.h"
-#include "vunicode.h"
 #include "vexception.h"
 #include "vhex.h"
 
@@ -868,11 +867,11 @@ void VStringUnit::run() {
     this->logStatus(VSTRING_FORMAT(" .mU                          : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU),                                sizeof(sss.mU)));
     this->logStatus(VSTRING_FORMAT("  .mI                         : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mI),                             sizeof(sss.mU.mI)));
     this->logStatus(VSTRING_FORMAT("   .mStringLength             : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mI.mStringLength),               sizeof(sss.mU.mI.mStringLength)));
-    this->logStatus(VSTRING_FORMAT("   .mUsingInternalBuffer      : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mI.mUsingInternalBuffer),        sizeof(sss.mU.mI.mUsingInternalBuffer)));
+    this->logStatus(VSTRING_FORMAT("   .mNumCodePoints            : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mI.mNumCodePoints),               sizeof(sss.mU.mI.mStringLength)));
     this->logStatus(VSTRING_FORMAT("   .mInternalBuffer           : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mI.mInternalBuffer),             sizeof(sss.mU.mI.mInternalBuffer)));
     this->logStatus(VSTRING_FORMAT("  .mX                         : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mX),                             sizeof(sss.mU.mX)));
     this->logStatus(VSTRING_FORMAT("   .mStringLength_Alias       : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mX.mStringLength_Alias),         sizeof(sss.mU.mX.mStringLength_Alias)));
-    this->logStatus(VSTRING_FORMAT("   .mUsingInternalBuffer_Alias: " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mX.mUsingInternalBuffer_Alias),  sizeof(sss.mU.mX.mUsingInternalBuffer_Alias)));
+    this->logStatus(VSTRING_FORMAT("   .mNumCodePoints_Alias      : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mX.mNumCodePoints_Alias),         sizeof(sss.mU.mX.mStringLength_Alias)));
     this->logStatus(VSTRING_FORMAT("   .mHeapBufferLength         : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mX.mHeapBufferLength),           sizeof(sss.mU.mX.mHeapBufferLength)));
     this->logStatus(VSTRING_FORMAT("   .mHeapBufferPtr            : " VSTRING_FORMATTER_INT " / " VSTRING_FORMATTER_SIZE, _getOffset(&sss, &sss.mU.mX.mHeapBufferPtr),              sizeof(sss.mU.mX.mHeapBufferPtr)));
     
@@ -986,6 +985,36 @@ void VStringUnit::run() {
         VUNIT_ASSERT_TRUE_LABELED(true, "caught expected out of bounds end+1 iteration");
     }
     
+    // Reverse iterator tests.
+    // First, mutate the string to prove that its internal code point count is maintained, since
+    // the reverse iterator relies on it.
+    VString::iterator ri = utf8Test.rbegin();
+    VUNIT_ASSERT_EQUAL_LABELED((*ri), han, "reverse_iterator start H");
+    ++ri;
+    ++ri;
+    VUNIT_ASSERT_EQUAL_LABELED((*ri), euro, "reverse_iterator increment E");
+    ++ri;
+    ++ri;
+    VUNIT_ASSERT_EQUAL_LABELED((*ri), cent, "reverse_iterator increment C");
+    ++ri;
+    ++ri;
+    VUNIT_ASSERT_EQUAL_LABELED((*ri), dollar, "reverse_iterator increment D");
+    ++ri;
+    ++ri;
+    VUNIT_ASSERT_TRUE_LABELED(ri == utf8Test.rend(), "reverse_iterator increment to end");
+    --ri;
+    --ri;
+    VUNIT_ASSERT_EQUAL_LABELED((*ri), dollar, "reverse_iterator decrement D");
+    --ri;
+    --ri;
+    VUNIT_ASSERT_EQUAL_LABELED((*ri), cent, "reverse_iterator decrement C");
+    --ri;
+    --ri;
+    VUNIT_ASSERT_EQUAL_LABELED((*ri), euro, "reverse_iterator decrement E");
+    --ri;
+    --ri;
+    VUNIT_ASSERT_EQUAL_LABELED((*ri), han, "reverse_iterator decrement H");
+    
     VString stringWithMultibyteCharacters;
     stringWithMultibyteCharacters += "Dollar = '";
     stringWithMultibyteCharacters += dollar;
@@ -1010,8 +1039,26 @@ void VStringUnit::run() {
         //std::cout << cps;
     }
     //std::cout << "\"";
-
+    
     VUNIT_ASSERT_EQUAL_LABELED(stringWithMultibyteCharacters, reconstructedStringWithMultibyteCharacters, "reconstructed string");
     this->logStatus(stringWithMultibyteCharacters);
+    
+    // Test code point count bookkeeping after mutation.
+    int initialLength = stringWithMultibyteCharacters.length();
+    VUNIT_ASSERT_EQUAL_LABELED(stringWithMultibyteCharacters.getNumCodePoints(), 49, "initial num code points");
+    stringWithMultibyteCharacters.replace("Dollar", "Pound");   // 1 less character in replacement
+    stringWithMultibyteCharacters.replace("$", VCodePoint("U+00A3"));   // 1-for-1 substitution of single byte code point with multi-byte code point
+    VUNIT_ASSERT_EQUAL_LABELED(stringWithMultibyteCharacters.getNumCodePoints(), 48, "recalculated num code points");
+    // Check the length as well. It's not that the length doesn't change, but we replaced "Dollar" with "Pound" (1 less) and '$' with U+00A3 which is a two-byte sequence (1 more)
+    VUNIT_ASSERT_EQUAL_LABELED(stringWithMultibyteCharacters.length(), initialLength, "expected length after replace");
+    this->logStatus(stringWithMultibyteCharacters);
+
+    std::wstring ws1 = utf8Test.widen();
+    //std::cout << ws1 << std::endl;
+    VString roundTrip(ws1);
+    std::wstring ws2 = roundTrip.widen();
+
+    VUNIT_ASSERT_EQUAL_LABELED(utf8Test, roundTrip, "VString -> wstring -> VString round trip");
+    VUNIT_ASSERT_TRUE_LABELED(ws1 == ws2, "wstring -> VString -> wstring round trip");
 }
 

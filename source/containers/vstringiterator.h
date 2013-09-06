@@ -57,21 +57,17 @@ class VStringIterator {
         VStringIterator(const VStringIterator& iter)
             : mSource(iter.mSource)
             , mIsForwardIterator(iter.mIsForwardIterator)
-            , mNumCodePoints(iter.mNumCodePoints)
             , mCurrentCodePointOffset(iter.mCurrentCodePointOffset)
             , mSourceLength(iter.mSourceLength)
             {
         }
 
-        VStringIterator(vstring_ref source, int isForwardIterator, bool goToEnd=false)
+        VStringIterator(vstring_ref source, bool isForwardIterator, bool goToEnd=false)
             : mSource(source)
             , mIsForwardIterator(isForwardIterator)
-            , mNumCodePoints(0)
             , mCurrentCodePointOffset(0)
             , mSourceLength(source.length())
             {
-            this->_scanCodePoints();
-            
             // If going to end on forward iterator, or not going to end on reverse iterator, then seek to end of our data.
             if (goToEnd == isForwardIterator) {
                 this->_seekToEnd();
@@ -84,7 +80,6 @@ class VStringIterator {
             if (this != &iter) {
                 mSource = iter.mSource;
                 mIsForwardIterator = iter.mIsForwardIterator;
-                mNumCodePoints = iter.mNumCodePoints;
                 mCurrentCodePointOffset = iter.mCurrentCodePointOffset;
                 mSourceLength = iter.mSourceLength;
             }
@@ -96,7 +91,8 @@ class VStringIterator {
             if (mIsForwardIterator) {
                 return VCodePoint(mSource.getDataBufferConst(), mCurrentCodePointOffset);
             } else {
-                return VCodePoint(mSource.getDataBufferConst(), mCurrentCodePointOffset-1); // TODO!!! scan backwards to find cp start
+                int previousCodePointOffset = VCodePoint::getPreviousUTF8CodePointOffset(mSource.getDataBufferConst(), mCurrentCodePointOffset);
+                return VCodePoint(mSource.getDataBufferConst(), previousCodePointOffset);
             }
         }
 
@@ -132,8 +128,6 @@ class VStringIterator {
             return *this;
         }
         
-        int getNumCodePoints() const { return mNumCodePoints; }
-
         void _seekToEnd() {
             mCurrentCodePointOffset = mSourceLength;
         }
@@ -148,16 +142,6 @@ class VStringIterator {
     
     private:
     
-        void _scanCodePoints() {
-            int sourceLength = mSource.length();
-            int offset = 0;
-            while (offset < sourceLength) {
-                VCodePoint cp(mSource.getDataBufferConst(), offset);
-                ++mNumCodePoints;
-                offset += cp.getUTF8Length();
-            }
-        }
-
         void _increment(int n) {
             if (mIsForwardIterator) {
                 this->_moveOffsetForwardInBuffer(n);
@@ -206,14 +190,13 @@ class VStringIterator {
 
                     --bufferPtr;
                     --mCurrentCodePointOffset;
-                } while ((*bufferPtr & 0xC0) == 0x80); // 0xC0 mask value of 0x80 (10xxxxxx) detects UTF-8 continuation bytes; anything else is start of a character (single or multi-byte).
+                } while (VCodePoint::isUTF8ContinuationByte(*bufferPtr)); 
 
             }
         }
     
         vstring_ref mSource;                    ///< The string we are iterating over. May be a const& or non-const&.
-        int         mIsForwardIterator;         ///< Set true for forward iteration, false for reverse iteration.
-        int         mNumCodePoints;             ///< The number of code points in the string. Calculated upon iterator construction.
+        bool        mIsForwardIterator;         ///< Set true for forward iteration, false for reverse iteration.
         int         mCurrentCodePointOffset;    ///< The 0-based offset into the string's byte array where the next character is.
         int         mSourceLength;              ///< The VString::length() of mSource, meaning our iterator end() value.
 };

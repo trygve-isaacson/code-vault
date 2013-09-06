@@ -18,19 +18,19 @@ http://www.bombaydigital.com/
 
 VCodePoint::VCodePoint(int i)
     : mIntValue(i)
-    , mUTF8Length(VCodePoint::_determineUTF8Length(mIntValue))
+    , mUTF8Length(VCodePoint::getUTF8LengthFromCodePointValue(mIntValue))
     {
 }
 
 VCodePoint::VCodePoint(char c)
     : mIntValue(VChar(c).intValue())
-    , mUTF8Length(VCodePoint::_determineUTF8Length(mIntValue))
+    , mUTF8Length(VCodePoint::getUTF8LengthFromCodePointValue(mIntValue))
     {
 }
 
 VCodePoint::VCodePoint(const VChar& c)
     : mIntValue(c.intValue())
-    , mUTF8Length(VCodePoint::_determineUTF8Length(mIntValue))
+    , mUTF8Length(VCodePoint::getUTF8LengthFromCodePointValue(mIntValue))
     {
 }
 
@@ -75,7 +75,7 @@ VCodePoint::VCodePoint(const VString& hexNotation)
         ++valueByteIndex;
     }
 
-    mUTF8Length = VCodePoint::_determineUTF8Length(mIntValue);
+    mUTF8Length = VCodePoint::getUTF8LengthFromCodePointValue(mIntValue);
 }
 
 VCodePoint::VCodePoint(const Vu8* buffer, int startOffset)
@@ -84,81 +84,23 @@ VCodePoint::VCodePoint(const Vu8* buffer, int startOffset)
     {
     const Vu8* source = buffer + startOffset;
 
-    int numBytesToRead = 1;
     Vu8 source0 = source[0];
+    int numBytesToRead = VCodePoint::getUTF8LengthFromUTF8StartByte(source0);
     
-    // In UTF-8 the number of leading 1 bits on the first byte tells us how many "extra" bytes make up the code point in the buffer.
-    if (((source0 & 0x80) != 0x00) && ((source0 & 0x40) != 0x00)) { // test for binary 11?????? (2 bits found so far)
-        ++numBytesToRead;
-        
-        if ((source0 & 0x20) != 0x00) { // test for binary ??1????? (3 bits found so far)
-            ++numBytesToRead;
-        
-            if ((source0 & 0x10) != 0x00) { // test for binary ???1???? (4 bits found total)
-                ++numBytesToRead;
-            }
-        }
-    }
-    
-    if (numBytesToRead == 1) {
-        mIntValue = source0;
-
-    } else if (numBytesToRead == 2) {
-        mIntValue |= ((source0 & 0x1F) << 6);
-        mIntValue |=  (source[1] & 0x3F);
-
-    } else if (numBytesToRead == 3) {
-        mIntValue |= ((source0 & 0x0F) << 12);
-        mIntValue |= ((source[1] & 0x3F) << 6);
-        mIntValue |=  (source[2] & 0x3F);
-
-    } else /* numBytesToRead is 4 */ {
-        mIntValue |= ((source0 & 0x07) << 18);
-        mIntValue |= ((source[1] & 0x3F) << 12);
-        mIntValue |= ((source[2] & 0x3F) << 6);
-        mIntValue |=  (source[3] & 0x3F);
-    }
-
-    mUTF8Length = numBytesToRead;
+    this->_initFromBytes(numBytesToRead, source0,
+        (numBytesToRead > 1) ? source[1] : 0,
+        (numBytesToRead > 2) ? source[2] : 0,
+        (numBytesToRead > 3) ? source[3] : 0);
 }
 
 VCodePoint::VCodePoint(VBinaryIOStream& stream) {
-    int numBytesToRead = 1;
     Vu8 source0 = stream.readU8();
+    int numBytesToRead = VCodePoint::getUTF8LengthFromUTF8StartByte(source0);
     
-    // In UTF-8 the number of leading 1 bits on the first byte tells us how many "extra" bytes make up the code point in the buffer.
-    if (((source0 & 0x80) != 0x00) && ((source0 & 0x40) != 0x00)) { // test for binary 11?????? (2 bits found so far)
-        ++numBytesToRead;
-        
-        if ((source0 & 0x20) != 0x00) { // test for binary ??1????? (3 bits found so far)
-            ++numBytesToRead;
-        
-            if ((source0 & 0x10) != 0x00) { // test for binary ???1???? (4 bits found total)
-                ++numBytesToRead;
-            }
-        }
-    }
-    
-    if (numBytesToRead == 1) {
-        mIntValue = source0;
-
-    } else if (numBytesToRead == 2) {
-        mIntValue |= ((source0 & 0x1F) << 6);
-        mIntValue |=  (stream.readU8() & 0x3F);
-
-    } else if (numBytesToRead == 3) {
-        mIntValue |= ((source0 & 0x0F) << 12);
-        mIntValue |= ((stream.readU8() & 0x3F) << 6);
-        mIntValue |=  (stream.readU8() & 0x3F);
-
-    } else /* numBytesToRead is 4 */ {
-        mIntValue |= ((source0 & 0x07) << 18);
-        mIntValue |= ((stream.readU8() & 0x3F) << 12);
-        mIntValue |= ((stream.readU8() & 0x3F) << 6);
-        mIntValue |=  (stream.readU8() & 0x3F);
-    }
-
-    mUTF8Length = numBytesToRead;
+    this->_initFromBytes(numBytesToRead, source0,
+        (numBytesToRead > 1) ? stream.readU8() : 0,
+        (numBytesToRead > 2) ? stream.readU8() : 0,
+        (numBytesToRead > 3) ? stream.readU8() : 0);
 }
 
 VString VCodePoint::toString() const {
@@ -169,51 +111,125 @@ VString VCodePoint::toString() const {
     //      n / 0x40 effectively strips off the low 6 bits
     //      n % 0x40 effectively strips off all but the low 6 bits
     //      n / 0x40 % 0x40 effectively yields the "next" 6 bits by combining those two operations
+    
+    switch (VCodePoint::getUTF8LengthFromCodePointValue(mIntValue)) {
 
-    if (mIntValue < 0x80) {                             // -> result is 1 byte that encodes 7 bits untransformed
-        s += (char) (mIntValue);                        // first byte binary:   0xxxxxxx (with 7 used bits)
+        case 1:
+            s += (char) (mIntValue);                        // first byte binary:   0xxxxxxx (with 7 used bits)
+            break;
 
-    } else if (mIntValue < 0x00000800) {                // -> result is 2 bytes that encode 11 bits
-        s += (char) (0xC0 + mIntValue / 0x40);          // first byte binary:   110xxxxx (with highest 5 bits)
-        s += (char) (0x80 + mIntValue % 0x40);          // second byte binary:  10xxxxxx (with next 6 bits)
+        case 2:
+            s += (char) (0xC0 + mIntValue / 0x40);          // first byte binary:   110xxxxx (with highest 5 bits)
+            s += (char) (0x80 + mIntValue % 0x40);          // second byte binary:  10xxxxxx (with next 6 bits)
+            break;
 
-    //} else if (mIntValue - 0x0000D800 < 0x00000800) {
-    //    throw VRangeException(VSTRING_FORMAT("VCodePoint::toString() for an invalid UTF-8 code point 0x%X", mIntValue));
+        case 3:
+            s += (char) (0xE0 + mIntValue / 0x1000);        // first byte binary:   1110xxxx (with highest 4 bits)
+            s += (char) (0x80 + mIntValue / 0x40 % 0x40);   // second byte binary:  10xxxxxx (with next 6 bits)
+            s += (char) (0x80 + mIntValue % 0x40);          // third byte binary:   10xxxxxx (with next 6 bits)
+            break;
 
-    } else if (mIntValue < 0x00010000) {                // -> result is 3 bytes that encode 16 bits
-        s += (char) (0xE0 + mIntValue / 0x1000);        // first byte binary:   1110xxxx (with highest 4 bits)
-        s += (char) (0x80 + mIntValue / 0x40 % 0x40);   // second byte binary:  10xxxxxx (with next 6 bits)
-        s += (char) (0x80 + mIntValue % 0x40);          // third byte binary:   10xxxxxx (with next 6 bits)
-
-    } else if (mIntValue < 0x00110000) {                // -> result is 4 bytes that encode 21 bits
-        s += (char) (0xF0 + mIntValue / 0x40000);       // first byte binary:   11110xxx (with highest 3 bits)
-        s += (char) (0x80 + mIntValue / 0x1000 % 0x40); // second byte binary:  10xxxxxx (with next 6 bits)
-        s += (char) (0x80 + mIntValue / 0x40 % 0x40);   // third byte binary:   10xxxxxx (with next 6 bits)
-        s += (char) (0x80 + mIntValue % 0x40);          // fourth byte binary:  10xxxxxx (with next 6 bits)
-
-    } else {
-        throw VRangeException(VSTRING_FORMAT("VCodePoint::toString() for an invalid UTF-8 code point 0x%X", mIntValue));
+        case 4:
+            s += (char) (0xF0 + mIntValue / 0x40000);       // first byte binary:   11110xxx (with highest 3 bits)
+            s += (char) (0x80 + mIntValue / 0x1000 % 0x40); // second byte binary:  10xxxxxx (with next 6 bits)
+            s += (char) (0x80 + mIntValue / 0x40 % 0x40);   // third byte binary:   10xxxxxx (with next 6 bits)
+            s += (char) (0x80 + mIntValue % 0x40);          // fourth byte binary:  10xxxxxx (with next 6 bits)
+            break;
+            
+        default:
+            throw VRangeException(VSTRING_FORMAT("VCodePoint::toString() for an invalid UTF-8 code point 0x%X", mIntValue));
+            break;
     }
 
     return s;
 }
 
 // static
-int VCodePoint::_determineUTF8Length(int intValue) {
+int VCodePoint::getUTF8LengthFromUTF8StartByte(Vu8 startByte) {
+    // In UTF-8 the number of leading 1 bits on the first byte tells us how many "extra" bytes make up the code point in the buffer.
+    int utf8Length = 1;
+
+    if (((startByte & 0x80) != 0x00) && ((startByte & 0x40) != 0x00)) { // test for binary 11?????? (2 bits found so far)
+        ++utf8Length;
+        
+        if ((startByte & 0x20) != 0x00) { // test for binary ??1????? (3 bits found so far)
+            ++utf8Length;
+        
+            if ((startByte & 0x10) != 0x00) { // test for binary ???1???? (4 bits found total)
+                ++utf8Length;
+            }
+        }
+    }
+    
+    return utf8Length;
+}
+
+// static
+int VCodePoint::getUTF8LengthFromCodePointValue(int intValue) {
     if (intValue < 0x80) {
         return 1;
-
     } else if (intValue < 0x00000800) {
         return 2;
-
     } else if (intValue < 0x00010000) {
         return 3;
-
     } else if (intValue < 0x00110000) {
         return 4;
-
     } else {
-        throw VRangeException(VSTRING_FORMAT("VCodePoint::_determineUTF8Length() for an invalid UTF-8 code point 0x%X", intValue));
+        throw VRangeException(VSTRING_FORMAT("VCodePoint::getUTF8LengthFromCodePointValue() for an invalid UTF-8 code point 0x%X", intValue));
     }
 }
 
+// static
+bool VCodePoint::isUTF8ContinuationByte(Vu8 byteValue) {
+    // 0xC0 mask value of 0x80 (10xxxxxx) detects UTF-8 continuation bytes; anything else is start of a character (single or multi-byte).
+    return ((byteValue & 0xC0) == 0x80);
+}
+
+// static
+int VCodePoint::countUTF8CodePoints(const Vu8* buffer, int numBytes) {
+    int numCodePoints = 0;
+    int offset = 0;
+    while (offset < numBytes) {
+        VCodePoint cp(buffer, offset);
+        ++numCodePoints;
+        offset += cp.getUTF8Length();
+    }
+
+    return numCodePoints;
+}
+
+// static
+int VCodePoint::getPreviousUTF8CodePointOffset(const Vu8* buffer, int offset) {
+    int previousOffset = offset - 1;
+    
+    while ((previousOffset > 0) && VCodePoint::isUTF8ContinuationByte(buffer[previousOffset])) {
+        --previousOffset;
+    }
+    
+    return previousOffset;
+}
+
+void VCodePoint::_initFromBytes(int numBytesToUse, Vu8 byte0, Vu8 byte1, Vu8 byte2, Vu8 byte3) {
+    mIntValue = 0;
+
+    if (numBytesToUse == 1) {
+        mIntValue = byte0;
+
+    } else if (numBytesToUse == 2) {
+        mIntValue |= ((byte0 & 0x1F) << 6);
+        mIntValue |=  (byte1 & 0x3F);
+
+    } else if (numBytesToUse == 3) {
+        mIntValue |= ((byte0 & 0x0F) << 12);
+        mIntValue |= ((byte1 & 0x3F) << 6);
+        mIntValue |=  (byte2 & 0x3F);
+
+    } else /* numBytesToUse is 4 */ {
+        mIntValue |= ((byte0 & 0x07) << 18);
+        mIntValue |= ((byte1 & 0x3F) << 12);
+        mIntValue |= ((byte2 & 0x3F) << 6);
+        mIntValue |=  (byte3 & 0x3F);
+    }
+
+    mUTF8Length = numBytesToUse;
+}

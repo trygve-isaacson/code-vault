@@ -259,6 +259,12 @@ class VString {
 
 #endif /* VAULT_VARARG_STRING_FORMATTING_SUPPORT */
 
+        /**
+        Constructs from a "wide" string, converting from UTF-16/32 to our internal UTF-8.
+        @param    ws    the wide string to copy
+        */
+        VString(const std::wstring& ws);
+
 #ifdef VAULT_QT_SUPPORT
         /**
         Constructs a string from a QString.
@@ -349,6 +355,11 @@ class VString {
         */
         VString& operator=(const char* s);
         /**
+        Assigns the string from a "wide" string, converting from UTF-16/32 to our internal UTF-8.
+        @param    ws    the wide string to copy
+        */
+        VString& operator=(const std::wstring& ws);
+        /**
         Assigns the string from an int.
         @param    i    the integer value to be formatted
         */
@@ -410,17 +421,22 @@ class VString {
 
         /**
         Creates a string from this string + (appending) a char.
-        @param    rhs    the string to append
+        @param    c     the char to append
         */
         VString operator+(const char c) const;
         /**
         Creates a string from this string + (appending) a (const char*) buffer.
-        @param    rhs    the string to append
+        @param    s     the string to append
         */
         VString operator+(const char* s) const;
         /**
+        Creates a string from this string + (appending) "wide" string, converting it from UTF-16/32 to our internal UTF-8.
+        @param    ws    the wide string to append
+        */
+        VString operator+(const std::wstring& ws) const;
+        /**
         Creates a string from this string + (appending) another string.
-        @param    rhs    the string to append
+        @param    s     the string to append
         */
         VString operator+(const VString& s) const;
 
@@ -457,6 +473,11 @@ class VString {
         @param    s    pointer to the C string to copy
         */
         VString& operator+=(const char* s);
+        /**
+        Appends a "wide" string to the string, converting it from UTF-16/32 to our internal UTF-8..
+        @param    ws   pointer to the wide string to copy
+        */
+        VString& operator+=(const std::wstring& ws);
 
 #ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
         /**
@@ -560,6 +581,51 @@ class VString {
         void format(const char* formatText, ...);
 #endif
 
+        // New preferred APIs that are VCodePoint-oriented rather than byte index-oriented.
+        // The old APIs are fine for many operations even with UTF-8 data, but are not UTF-8 savvy.
+        // Need to think about how to do this. Could have a new-vs-old #define to turn new mode
+        // on, which would make most APIs use code point offsets (or iterator position?) instead
+        // of buffer index. Maybe iterator position is the way to go and just overload, with symbol
+        // to optionally disable APIs that might encourage UTF-problematic usage.
+        int getNumCodePoints() const;
+#if 0
+        void insert(const VCodePoint& cp, const VString::iterator& pos);
+        void insertAtCodePoint(const VString& s, const VString::iterator& pos);
+        void truncateCodePointLength(int maxNumCodePoints);
+        VCodePoint at(const VString::const_iterator& pos) const;
+        //VCodePoint operator[](int i) const; // nope, will conflict with existing operator[](int i)
+        bool startsWith(const VCodePoint& cp) const;
+        bool startsWithIgnoreCase(const VCodePoint& cp) const;
+        bool endsWith(const VCodePoint& cp) const;
+        bool endsWithIgnoreCase(const VCodePoint& cp) const;
+        int codePointIndexOf(const VCodePoint& cp, int fromCodePointIndex = 0) const;
+        int codePointIndexOfIgnoreCase(const VCodePoint& cp, int fromCodePointIndex = 0) const;
+        int codePointIndexOf(char c, int fromCodePointIndex = 0) const;
+        int codePointIndexOfIgnoreCase(char c, int fromCodePointIndex = 0) const;
+        int codePointIndexOf(const VString& s, int fromCodePointIndex = 0) const;
+        int codePointIndexOfIgnoreCase(const VString& s, int fromCodePointIndex = 0) const;
+        int lastCodePointIndexOf(const VCodePoint& cp, int fromCodePointIndex = -1) const;
+        int lastCodePointIndexOfIgnoreCase(const VCodePoint& cp, int fromCodePointIndex = -1) const;
+        int lastCodePointIndexOf(char c, int fromCodePointIndex = -1) const;
+        int lastCodePointIndexOfIgnoreCase(char c, int fromCodePointIndex = -1) const;
+        int lastCodePointIndexOf(const VString& s, int fromCodePointIndex = -1) const;
+        int lastCodePointIndexOfIgnoreCase(const VString& s, int fromCodePointIndex = -1) const;
+        bool codePointRegionMatches(const VString::const_iterator& thisPos, const VString& otherString, const VString::const_iterator& otherPos, int regionNumCodePoints, bool caseSensitive = true) const;
+        bool containsCP(const VCodePoint& cp, int fromCodePointIndex = 0) const;
+        bool containsCP(char c, int fromCodePointIndex = 0) const;
+        bool containsCP(const VString& s, int fromCodePointIndex = 0) const;
+        bool containsIgnoreCaseCP(const VCodePoint& cp, int fromCodePointIndex = 0) const;
+        bool containsIgnoreCaseCP(char c, int fromCodePointIndex = 0) const;
+        bool containsIgnoreCaseCP(const VString& s, int fromCodePointIndex = 0) const;
+        int replace(const VCodePoint& cp, const VCodePoint& cp, bool caseSensitiveSearch = true);
+        void setAtCodePointIndex(int codePointIndex, const VCodePoint& cp);
+        void getSubstringAtCodePointIndex(VString& toString, int startCodePointIndex/* = 0*/, int endCodePointIndex = -1) const;
+        void substringInPlaceAtCodePointIndex(int startIndex/* = 0*/, int endIndex = -1);
+        void split(VStringVector& result, const VCodePoint& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
+        VStringVector split(const VCodePoint& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
+        // copyToBuffer - must not copy partial code point if truncating during copy
+#endif
+
         /**
         Inserts the specified character into the string at the
         specified offset (default is at the front of the string),
@@ -583,8 +649,8 @@ class VString {
         void insert(const VString& s, int offset = 0);
 
         /**
-        Returns the string length.
-        @return the string length
+        Returns the string length in bytes.
+        @return the string length in bytes
         */
         int length() const;
         /**
@@ -656,6 +722,12 @@ class VString {
         @return the char buffer pointer
         */
         const char* chars() const;
+        
+        /**
+        Returns a "wide" string built from the VString, converting from our internal UTF-8 to UTF-16/32.
+        @return the wstring
+        */
+        std::wstring widen() const;
 
 #ifdef VAULT_QT_SUPPORT
         /**
@@ -1163,6 +1235,13 @@ class VString {
         static int _determineSprintfLength(const char* formatText, va_list args);
 #endif
 
+        /**
+        This is where we do the conversion and assignment for all APIs that
+        create a VString from a "wide" string, which is in UTF-16/32 form. We
+        convert to our internal UTF-8.
+        */
+        void _assignFromWideString(const std::wstring& ws);
+
 #ifdef VAULT_CORE_FOUNDATION_SUPPORT
         void _assignFromCFString(const CFStringRef& s);
 #endif
@@ -1172,7 +1251,7 @@ class VString {
         Prior to 4.0, VString already optimized empty strings, avoiding heap allocation for that case, and dealing
         with a few special cases around not having a buffer. It also took care to allocate needed heap space in
         chunks so as to avoid excessive re-allocation for strings that grew repeatedly.
-        With 4.0, the SSO feature means that for small strings ( <= 10 characters in a 32-bit build, <= 18 characters
+        With 4.0, the SSO feature means that for small strings ( <= 6 characters in a 32-bit build, <= 14 characters
         in a 64-bit build) it can store the string data internally inside the VString without allocating a heap buffer,
         and without adding any new size overhead to VString itself. In short, the "buffer size" and "buffer pointer"
         instance variables used to manage the heap buffer have their space inside VString re-purposed for storing
@@ -1192,9 +1271,9 @@ class VString {
         // 32-bit and 64-bit builds have different alignment/padding, so they have different amounts of unused space.
         // For testing, you can set the size to 1 to prevent use of the internal buffer other than for empty strings.
         #ifdef VCOMPILER_64BIT
-            #define VSTRING_INTERNAL_BUFFER_SIZE 19
+            #define VSTRING_INTERNAL_BUFFER_SIZE 15
         #else
-            #define VSTRING_INTERNAL_BUFFER_SIZE 11
+            #define VSTRING_INTERNAL_BUFFER_SIZE 7
         #endif
 
         // Internal low-level utility functions for bookkeeping the union data.
@@ -1233,23 +1312,27 @@ class VString {
         @return the string buffer's total length
         */
         int _getBufferLength() const { return mU.mI.mUsingInternalBuffer ? VSTRING_INTERNAL_BUFFER_SIZE : mU.mX.mHeapBufferLength; }
+        
+        void _determineNumCodePoints() const;
 
         // Finally, the union that defines our internal structure.
         union {
 
             // When mI.mUsingInternalBuffer == true, we use mI.mInternalBuffer to store the string data.
             struct {
-                int     mStringLength;                                  ///< The length of the string; this is always valid.
-                bool    mUsingInternalBuffer;                           ///< True if mI.mInternalBuffer is valid, vs. mX.mHeapBufferPtr; this is always valid.
-                char    mInternalBuffer[VSTRING_INTERNAL_BUFFER_SIZE];  ///< The embedded character buffer, when mI.mUsingInternalBuffer is true; when mI.mUsingInternalBuffer is false, it is n/a and may appear to contain garbage.
+                int         mStringLength;                                  ///< The length of the string; this is always valid.
+                mutable int mNumCodePoints;                                 ///< The number of UTF-8 code points in the string; this is lazily calculated and a value of -1 means we must scan to calculate it. It gets set to 0 whenever mStringLength is set to 0, and set to -1 whenever mStringLength is set to something else.
+                bool        mUsingInternalBuffer : 1;                       ///< True if mI.mInternalBuffer is valid, vs. mX.mHeapBufferPtr; this is always valid. It is a bitfield so that we don't have to explicitly do bit masking, and the debugger will display it correctly.
+                int         mPadBits : 7;                                   ///< Unused bits in mI, overlaps with mX.mHeapBufferLength which is valid when mI.mUsingInternalBuffer is false.
+                char        mInternalBuffer[VSTRING_INTERNAL_BUFFER_SIZE];  ///< The embedded character buffer, when mI.mUsingInternalBuffer is true; when mI.mUsingInternalBuffer is false, it is n/a and may appear to contain garbage.
             } mI; ///< Union part for overall bookkeeping, and internal SSO buffer space.
             
             // When mI.mUsingInternalBuffer == false, we use mX.mHeapBufferLength and mX.mHeapBufferPtr to store the string data.
             struct {
-                int     mStringLength_Alias;                            ///< Do not use. Occupies same memory as mI.mStringLength, which should be used instead.
-                bool    mUsingInternalBuffer_Alias;                     ///< Do not use. Occupies same memory as mI.mUsingInternalBuffer, which should be used instead.
-                int     mHeapBufferLength;                              ///< The size of the mHeapBufferPtr new[] allocated memory; when mI.mUsingInternalBuffer is true, it is n/a and may appear to contain garbage.
-                char*   mHeapBufferPtr;                                 ///< Pointer to our new[] allocated memory; when mI.mUsingInternalBuffer is true, it is n/a and may appear to contain garbage.
+                int         mStringLength_Alias;                            ///< Do not use. Occupies same memory as mI.mStringLength, which should be used instead.
+                int         mNumCodePoints_Alias;                           ///< Do not use. Occupies same memory as mI.mNumCodePoints, which should be used instead.
+                int         mHeapBufferLength;                              ///< The size of the mHeapBufferPtr new[] allocated memory; when mI.mUsingInternalBuffer is true, it is n/a and may appear to contain garbage.
+                char*       mHeapBufferPtr;                                 ///< Pointer to our new[] allocated memory; when mI.mUsingInternalBuffer is true, it is n/a and may appear to contain garbage.
             } mX; ///< Union part for heap-allocated buffer space.
 
         } mU; ///< Union for overlaying mI internal and mX external views of string buffer storage. mI.mStringLength and mI.mUsingInternalBuffer are always valid and authoritative.

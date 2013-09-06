@@ -202,6 +202,14 @@ VString::VString(const char* formatText, ...)
 }
 #endif /* VAULT_VARARG_STRING_FORMATTING_SUPPORT */
 
+VString::VString(const std::wstring& ws) {
+    this->_construct();
+
+    this->_assignFromWideString(ws);
+
+    ASSERT_INVARIANT();
+}
+
 #ifdef VAULT_QT_SUPPORT
 VString::VString(const QString& s)
     {
@@ -376,6 +384,16 @@ VString& VString::operator=(const char* s) {
     return *this;
 }
 
+VString& VString::operator=(const std::wstring& ws) {
+    ASSERT_INVARIANT();
+    
+    this->_assignFromWideString(ws);
+
+    ASSERT_INVARIANT();
+
+    return *this;
+}
+
 VString& VString::operator=(int i) {
     ASSERT_INVARIANT();
 
@@ -490,6 +508,12 @@ VString VString::operator+(const char* s) const {
     return newString;
 }
 
+VString VString::operator+(const std::wstring& ws) const {
+    VString newString(*this);
+    newString += VString(ws);
+    return newString;
+}
+
 VString VString::operator+(const VString& s) const {
     VString newString(VSTRING_ARGS("%s%s", this->chars(), s.chars()));
     return newString;
@@ -560,6 +584,13 @@ VString& VString::operator+=(const char* s) {
     this->_setLength(theLength + mU.mI.mStringLength);
 
     ASSERT_INVARIANT();
+
+    return *this;
+}
+
+VString& VString::operator+=(const std::wstring& ws) {
+    VString appendage(ws);
+    (*this) += appendage;
 
     return *this;
 }
@@ -800,6 +831,14 @@ void VString::format(const char* formatText, ...) {
 }
 #endif /* VAULT_VARARG_STRING_FORMATTING_SUPPORT */
 
+int VString::getNumCodePoints() const {
+    if (mU.mI.mNumCodePoints == -1) {
+        this->_determineNumCodePoints();
+    }
+    
+    return mU.mI.mNumCodePoints;
+}
+
 void VString::insert(char c, int offset) {
     ASSERT_INVARIANT();
 
@@ -945,6 +984,44 @@ const char* VString::chars() const {
     ASSERT_INVARIANT();
 
     return _get();
+}
+
+std::wstring VString::widen() const {
+    ASSERT_INVARIANT();
+
+    wchar_t* tempBuffer = NULL;
+    try {
+        (void) setlocale(LC_ALL, "en_US.utf8");
+        std::mbstate_t state = std::mbstate_t();
+        const char* sourcePtr = _get();
+
+        size_t numWideChars = std::mbsrtowcs(NULL, &sourcePtr, 0, &state);
+        if (numWideChars == -1) {
+            throw VStackTraceException(VSystemError(), VSTRING_FORMAT("VString::wide unable to convert '%s'.", this->chars()));
+        }
+        
+        tempBuffer = new wchar_t[1 + numWideChars]; // +1 for null terminator
+        tempBuffer[numWideChars] = 0; // place the null terminator
+        numWideChars = std::mbsrtowcs(tempBuffer, &sourcePtr, numWideChars, &state);
+        if (numWideChars == -1) {
+            throw VStackTraceException(VSystemError(), VSTRING_FORMAT("VString::wide unable to convert '%s'.", this->chars()));
+        }
+
+    } catch (const VStackTraceException& /*ex*/) {
+        delete [] tempBuffer;
+        throw;
+    } catch (const std::exception& ex) {
+        delete [] tempBuffer;
+        throw VStackTraceException(VSystemError(), VSTRING_FORMAT("VString::wide caught exception converting '%s': %s", this->chars(), ex.what()));
+    } catch (...) {
+        delete [] tempBuffer;
+        throw VStackTraceException(VSystemError(), VSTRING_FORMAT("VString::wide caught exception converting '%s'.", this->chars()));
+    }
+    
+    std::wstring wideString = tempBuffer;
+    delete [] tempBuffer;
+    
+    return wideString;
 }
 
 #ifdef VAULT_QT_SUPPORT
@@ -1773,6 +1850,7 @@ char* VString::orphanDataBuffer() {
 
         mU.mI.mInternalBuffer[0] = '\0';
         mU.mI.mStringLength = 0;
+        mU.mI.mNumCodePoints = 0;
 
     } else {
         // hand back our heap buffer, and then switch to our internal buffer as empty
@@ -1783,6 +1861,7 @@ char* VString::orphanDataBuffer() {
         mU.mI.mUsingInternalBuffer = true;
         mU.mI.mInternalBuffer[0] = '\0';
         mU.mI.mStringLength = 0;
+        mU.mI.mNumCodePoints = 0;
     }
     
     ASSERT_INVARIANT();
@@ -1855,6 +1934,7 @@ void VString::_setLength(int stringLength) {
 
     // At this point we have validated the stringLength, even if mBuffer is NULL.
     mU.mI.mStringLength = stringLength;
+    mU.mI.mNumCodePoints = -1; // force recalc by next call to getNumCodePoints() if ever called
 }
 
 Vs64 VString::_parseSignedInteger() const {
@@ -1993,6 +2073,30 @@ int VString::_determineSprintfLength(const char* formatText, va_list args) {
 
 #endif /* VAULT_VARARG_STRING_FORMATTING_SUPPORT */
 
+void VString::_assignFromWideString(const std::wstring& ws) {
+    if (ws.empty()) {
+        (*this) = VString::EMPTY();
+        return;
+    }
+
+    (void) setlocale(LC_ALL, "en_US.utf8");
+    std::mbstate_t state = std::mbstate_t();
+
+    const wchar_t* wcharPtr = ws.c_str();
+    size_t newStringLength = std::wcsrtombs(NULL, &wcharPtr, 0, &state);
+    if (newStringLength == -1) {
+        throw VStackTraceException(VSystemError(), VSTRING_FORMAT("VString::_assignFromWideString unable to convert '%ls'.", wcharPtr));
+    }
+
+    this->preflight(newStringLength);
+    newStringLength = std::wcsrtombs(_set(), &wcharPtr, 1 + newStringLength, &state);
+    if (newStringLength == -1) {
+        throw VStackTraceException(VSystemError(), VSTRING_FORMAT("VString::_assignFromWideString unable to convert '%ls'.", wcharPtr));
+    }
+
+    this->postflight(newStringLength);
+}
+
 #ifdef VAULT_CORE_FOUNDATION_SUPPORT
 void VString::_assignFromCFString(const CFStringRef& s) {
     const char* cfStringBuffer = CFStringGetCStringPtr(s, kCFStringEncodingUTF8);
@@ -2043,7 +2147,16 @@ void VString::_construct() {
     mU.mX.mHeapBufferPtr = NULL;
 
     mU.mI.mStringLength = 0;
+    mU.mI.mNumCodePoints = 0;
     mU.mI.mUsingInternalBuffer = true;
+    mU.mI.mPadBits = 0;
     mU.mI.mInternalBuffer[0] = '\0';
 }
 
+void VString::_determineNumCodePoints() const {
+    if (this->isEmpty()) { // optimize away need to call countUTF8CodePoints() and have it set up counting loop in the first place
+        mU.mI.mNumCodePoints = 0;
+    } else {
+        mU.mI.mNumCodePoints = VCodePoint::countUTF8CodePoints(this->getDataBufferConst(), this->length());
+    }
+}
