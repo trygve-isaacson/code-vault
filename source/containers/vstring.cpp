@@ -205,7 +205,7 @@ VString::VString(const char* formatText, ...)
 VString::VString(const std::wstring& ws) {
     this->_construct();
 
-    this->_assignFromWideString(ws);
+    this->_assignFromUTF16WideString(ws);
 
     ASSERT_INVARIANT();
 }
@@ -387,7 +387,7 @@ VString& VString::operator=(const char* s) {
 VString& VString::operator=(const std::wstring& ws) {
     ASSERT_INVARIANT();
     
-    this->_assignFromWideString(ws);
+    this->_assignFromUTF16WideString(ws);
 
     ASSERT_INVARIANT();
 
@@ -986,42 +986,17 @@ const char* VString::chars() const {
     return _get();
 }
 
-std::wstring VString::widen() const {
+std::wstring VString::toUTF16() const {
     ASSERT_INVARIANT();
-
-    wchar_t* tempBuffer = NULL;
-    try {
-        (void) setlocale(LC_ALL, "en_US.utf8");
-        std::mbstate_t state = std::mbstate_t();
-        const char* sourcePtr = _get();
-
-        size_t numWideChars = std::mbsrtowcs(NULL, &sourcePtr, 0, &state);
-        if (numWideChars == -1) {
-            throw VStackTraceException(VSystemError(), VSTRING_FORMAT("VString::wide unable to convert '%s'.", this->chars()));
-        }
-        
-        tempBuffer = new wchar_t[1 + numWideChars]; // +1 for null terminator
-        tempBuffer[numWideChars] = 0; // place the null terminator
-        numWideChars = std::mbsrtowcs(tempBuffer, &sourcePtr, numWideChars, &state);
-        if (numWideChars == -1) {
-            throw VStackTraceException(VSystemError(), VSTRING_FORMAT("VString::wide unable to convert '%s'.", this->chars()));
-        }
-
-    } catch (const VStackTraceException& /*ex*/) {
-        delete [] tempBuffer;
-        throw;
-    } catch (const std::exception& ex) {
-        delete [] tempBuffer;
-        throw VStackTraceException(VSystemError(), VSTRING_FORMAT("VString::wide caught exception converting '%s': %s", this->chars(), ex.what()));
-    } catch (...) {
-        delete [] tempBuffer;
-        throw VStackTraceException(VSystemError(), VSTRING_FORMAT("VString::wide caught exception converting '%s'.", this->chars()));
+    
+    std::wstring utf16WideString;
+    
+    for (VString::const_iterator i = this->begin(); i != this->end(); ++i) {
+        VCodePoint cp = (*i);
+        utf16WideString += cp.toUTF16WideString();
     }
     
-    std::wstring wideString = tempBuffer;
-    delete [] tempBuffer;
-    
-    return wideString;
+    return utf16WideString;
 }
 
 #ifdef VAULT_QT_SUPPORT
@@ -2073,28 +2048,16 @@ int VString::_determineSprintfLength(const char* formatText, va_list args) {
 
 #endif /* VAULT_VARARG_STRING_FORMATTING_SUPPORT */
 
-void VString::_assignFromWideString(const std::wstring& ws) {
-    if (ws.empty()) {
-        (*this) = VString::EMPTY();
-        return;
+void VString::_assignFromUTF16WideString(const std::wstring& utf16WideString) {
+
+    int numCodeUnits = utf16WideString.length();
+    for (int i = 0; i < numCodeUnits; ++i) {
+        VCodePoint cp(utf16WideString, i);
+        if (cp.getUTF16Length() == 2) {
+            ++i; // Skip past trail surrogate we just "consumed".
+        }
+        (*this) += cp;
     }
-
-    (void) setlocale(LC_ALL, "en_US.utf8");
-    std::mbstate_t state = std::mbstate_t();
-
-    const wchar_t* wcharPtr = ws.c_str();
-    size_t newStringLength = std::wcsrtombs(NULL, &wcharPtr, 0, &state);
-    if (newStringLength == -1) {
-        throw VStackTraceException(VSystemError(), VSTRING_FORMAT("VString::_assignFromWideString unable to convert '%ls'.", wcharPtr));
-    }
-
-    this->preflight(newStringLength);
-    newStringLength = std::wcsrtombs(_set(), &wcharPtr, 1 + newStringLength, &state);
-    if (newStringLength == -1) {
-        throw VStackTraceException(VSystemError(), VSTRING_FORMAT("VString::_assignFromWideString unable to convert '%ls'.", wcharPtr));
-    }
-
-    this->postflight(newStringLength);
 }
 
 #ifdef VAULT_CORE_FOUNDATION_SUPPORT

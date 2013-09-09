@@ -28,7 +28,7 @@ to manipulate UTF-8 VStrings with proper semantics.
 class VCodePoint {
 
     public:
-        
+    
         /**
         Creates the code point by specifying the integer value.
         For example, ASCII 'a' is 97 or 0x61, and GREEK CAPITAL LETTER OMEGA is 937 or 0x03A9.
@@ -66,12 +66,22 @@ class VCodePoint {
         */
         explicit VCodePoint(const Vu8* buffer, int startOffset);
         /**
-        Creates the code point by reading one or more bytes from the supplied stream, where the
-        stream contains a valid UTF-8 formatted code point. For example, if the code point is ASCII it will be
+        Creates the code point by reading one or more bytes from the supplied stream, where the stream contains a
+        valid UTF-8 formatted code point. For example, if the code point is ASCII it will be
         a single byte; otherwise, the first byte will be the start of a 1- to 4-byte UTF-8 sequence.
         @param  stream  the stream to read from
         */
         explicit VCodePoint(VBinaryIOStream& stream);
+        /**
+        Creates the code point by reading one or two code units from the supplied wide string, where the string
+        contains a valid UTF-16 formatted code point. A UTF-16 code point may be composed of a single code unit
+        for the "simpler" characters, or two code units for the rest. If the wide string ends in the middle of
+        a two-unit code point, a VEOFException will be thrown if you attempt to read the split code point at the
+        end of the wide string.
+        @param  utf16WideString the UTF-16 encode wide string to read
+        @param  atIndex         the index into the string from which to read the one or two code units
+        */
+        explicit VCodePoint(const std::wstring& utf16WideString, int atIndex);
 
         /**
         Returns the length of this code point if it is formatted as UTF-8. The answer is always in the range 1 to 4.
@@ -79,24 +89,37 @@ class VCodePoint {
         */
         int getUTF8Length() const { return mUTF8Length; }
         /**
+        Returns the number of code units in this code point if it is formatted as UTF-16. The answer is always 1 or 2.
+        @return obvious
+        */
+        int getUTF16Length() const { return mUTF16Length; }
+        /**
         Returns the code point integer value.
         @return obvious
         */
         int intValue() const { return mIntValue; }
         /**
-        Returns a VString, that is the UTF-8 form of the code point as a short VString of 1 to 4 bytes.
+        Returns a VString, that is to say the UTF-8 form of the code point as a short VString of 1 to 4 bytes.
         This is how you take a code point and turn it into a string that can be inserted or appended into
         another, longer, string.
         @return the code point in UTF-8 VString form
         */
         VString toString() const;
+        /**
+        Returns a std::wstring in UTF-16 format, that is to say a small array of one or two UTF-16 code units.
+        This is how you take a code point and turn it into a wstring that can be inserted or appended into
+        another, longer, wstring. If you need to interface with Windows "wide" APIs, wstring is used; normally
+        you will just take a VString and get the entire wstring from it via VString::toUTF16().
+        @return the code point in UTF-16 std::wstring form
+        */
+        std::wstring toUTF16WideString() const;
 
         /**
         Returns true if the two code points are the same.
         */
         friend inline bool operator==(const VCodePoint& p1, const VCodePoint& p2);
         
-        // Helper utility functions:
+        // Helper utility functions for dealing with UTF-8 buffers in VString and VStringIterator:
         
         /**
         Returns the UTF-8 length of a code point given the first UTF-8 byte of the code point.
@@ -112,7 +135,7 @@ class VCodePoint {
         */
         static int getUTF8LengthFromCodePointValue(int intValue);
         /**
-        Returns true if the specified byte from a UTF-8 byte stream is a a continuation byte;
+        Returns true if the specified byte from a UTF-8 byte stream is a continuation byte;
         that is to say, if it is not a byte value that starts a code point sequence.
         @param  byteValue   a byte from a UTF-8 byte stream
         @return true if the byte is NOT the start of a code point; false if it IS the start of a code point
@@ -138,22 +161,57 @@ class VCodePoint {
         */
         static int getPreviousUTF8CodePointOffset(const Vu8* buffer, int offset);
 
+        /**
+        Returns the UTF-16 length of a code point given the first UTF-16 code unit of the code point.
+        The length can be simply deduced by the value in the code unit.
+        @param  startUnit   the first code unit of a 1- or 2-byte UTF-16 code point sequence
+        @return the number of code units in the UTF-16 sequence
+        */
+        //static int getUTF16LengthFromUTF16StartUnit(Vu16 startUnit);
+        /**
+        Returns the UTF-16 length of a code point given the code point's integer value.
+        @param  intValue    a code point value
+        @return the number of code units in the corresponding UTF-16 sequence
+        */
+        static int getUTF16LengthFromCodePointValue(int intValue);
+        /**
+        Returns true if the specified code unit from a UTF-16 sequence is a surrogate;
+        that is to say, if it is part of a 2-unit sequence rather than being itself a complete
+        1-unit sequence. Generally you will use this to identify the lead surrogate, and then
+        read the trail surrogate by getting the next unit in the sequence.
+        @param  codeUnit    a code unit from a UTF-16 sequence
+        @return true if the code unit is NOT a complete code point; false if it IS a surrogate
+        */
+        static bool isUTF16SurrogateCodeUnit(wchar_t codeUnit);
+
     private:
     
         /**
         For use by our constructors (typically the stream and buffer based constructors), initializes
-        mIntValue and mUTF8Length from a byte count and up to 4 bytes. The callers should pass 0 for
-        any bytes that are not useful; numBytesToUse indicates which bytes are useful.
-        @param  numBytesToUse   range 1 to 4, indicates how many bytes form the code point
+        our internals from a byte count and up to 4 bytes of UTF-8 encoding. The caller
+        should pass 0 for any bytes that are not useful; numBytesToUse indicates which bytes are useful.
+        @param  numBytesToUse   range 1 to 4, indicates how many UTF-8 bytes form the code point
         @param  byte0           byte[0] of the sequence
         @param  byte1           byte[1] of the sequence, if numBytesToUse >= 2; ignored otherwise
         @param  byte2           byte[2] of the sequence, if numBytesToUse >= 3; ignored otherwise
         @param  byte3           byte[3] of the sequence, if numBytesToUse = 4; ignored otherwise
         */
-        void _initFromBytes(int numBytesToUse, Vu8 byte0, Vu8 byte1, Vu8 byte2, Vu8 byte3);
+        void _initFromUTF8Bytes(int numBytesToUse, Vu8 byte0, Vu8 byte1, Vu8 byte2, Vu8 byte3);
+        
+        /**
+        For use by our constructors (typically the stream and buffer based constructors), initializes
+        our internals from a parameter count and up to 2 UTF-16 code units in the form of Vu16 values.
+        The caller should pass 0 for any code units that are not useful; numUnitsToUse indicates which
+        code units are useful.
+        @param  numUnitsToUse   range 1 to 2, indicates how many UTF-16 code units form the code point
+        @param  leadSurrogate   unit[0] of the sequence
+        @param  trailSurrogate  unit[1] of the sequence, if numBytesToUse = 2; ignored otherwise
+        */
+        void _initFromUTF16Surrogates(wchar_t leadSurrogate, wchar_t trailSurrogate);
     
         int mIntValue;      ///< The Unicode integer value of the code point.
-        int mUTF8Length;    ///< The number of bytes the code point will occupy in UTF-8 form.
+        int mUTF8Length;    ///< The number of bytes the code point will occupy in UTF-8 form. (1 to 4)
+        int mUTF16Length;   ///< The number of code units the code point will occupy in UTF-16 form. (1 or 2)
 };
 
 inline bool operator==(const VCodePoint& p1, const VCodePoint& p2) { return p1.mIntValue == p2.mIntValue; }

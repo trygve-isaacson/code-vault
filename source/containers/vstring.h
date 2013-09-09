@@ -724,10 +724,11 @@ class VString {
         const char* chars() const;
         
         /**
-        Returns a "wide" string built from the VString, converting from our internal UTF-8 to UTF-16/32.
-        @return the wstring
+        Returns a "wide" string built from the VString, converting from our
+        internal UTF-8 to UTF-16 code units. One code unit per wchar_t element.
+        @return the wstring formed as UTF16 code units
         */
-        std::wstring widen() const;
+        std::wstring toUTF16() const;
 
 #ifdef VAULT_QT_SUPPORT
         /**
@@ -1237,10 +1238,10 @@ class VString {
 
         /**
         This is where we do the conversion and assignment for all APIs that
-        create a VString from a "wide" string, which is in UTF-16/32 form. We
+        create a VString from a "wide" string, which is in UTF-16 form. We
         convert to our internal UTF-8.
         */
-        void _assignFromWideString(const std::wstring& ws);
+        void _assignFromUTF16WideString(const std::wstring& utf16WideString);
 
 #ifdef VAULT_CORE_FOUNDATION_SUPPORT
         void _assignFromCFString(const CFStringRef& s);

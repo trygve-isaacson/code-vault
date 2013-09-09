@@ -19,24 +19,28 @@ http://www.bombaydigital.com/
 VCodePoint::VCodePoint(int i)
     : mIntValue(i)
     , mUTF8Length(VCodePoint::getUTF8LengthFromCodePointValue(mIntValue))
+    , mUTF16Length(VCodePoint::getUTF16LengthFromCodePointValue(mIntValue))
     {
 }
 
 VCodePoint::VCodePoint(char c)
     : mIntValue(VChar(c).intValue())
     , mUTF8Length(VCodePoint::getUTF8LengthFromCodePointValue(mIntValue))
+    , mUTF16Length(VCodePoint::getUTF16LengthFromCodePointValue(mIntValue))
     {
 }
 
 VCodePoint::VCodePoint(const VChar& c)
     : mIntValue(c.intValue())
     , mUTF8Length(VCodePoint::getUTF8LengthFromCodePointValue(mIntValue))
+    , mUTF16Length(VCodePoint::getUTF16LengthFromCodePointValue(mIntValue))
     {
 }
 
 VCodePoint::VCodePoint(const VString& hexNotation)
     : mIntValue(0)
     , mUTF8Length(0)
+    , mUTF16Length(0)
     {
     // If the string starts with "U+" we skip it.
     // From there we assume the rest is hexadecimal, at most 8 digits.
@@ -76,18 +80,20 @@ VCodePoint::VCodePoint(const VString& hexNotation)
     }
 
     mUTF8Length = VCodePoint::getUTF8LengthFromCodePointValue(mIntValue);
+    mUTF16Length = VCodePoint::getUTF16LengthFromCodePointValue(mIntValue);
 }
 
 VCodePoint::VCodePoint(const Vu8* buffer, int startOffset)
     : mIntValue(0)
     , mUTF8Length(0)
+    , mUTF16Length(0)
     {
     const Vu8* source = buffer + startOffset;
 
     Vu8 source0 = source[0];
     int numBytesToRead = VCodePoint::getUTF8LengthFromUTF8StartByte(source0);
     
-    this->_initFromBytes(numBytesToRead, source0,
+    this->_initFromUTF8Bytes(numBytesToRead, source0,
         (numBytesToRead > 1) ? source[1] : 0,
         (numBytesToRead > 2) ? source[2] : 0,
         (numBytesToRead > 3) ? source[3] : 0);
@@ -97,10 +103,23 @@ VCodePoint::VCodePoint(VBinaryIOStream& stream) {
     Vu8 source0 = stream.readU8();
     int numBytesToRead = VCodePoint::getUTF8LengthFromUTF8StartByte(source0);
     
-    this->_initFromBytes(numBytesToRead, source0,
+    this->_initFromUTF8Bytes(numBytesToRead, source0,
         (numBytesToRead > 1) ? stream.readU8() : 0,
         (numBytesToRead > 2) ? stream.readU8() : 0,
         (numBytesToRead > 3) ? stream.readU8() : 0);
+}
+
+VCodePoint::VCodePoint(const std::wstring& utf16WideString, int atIndex) {
+    wchar_t firstUnit = utf16WideString[atIndex];
+    if (!VCodePoint::isUTF16SurrogateCodeUnit(firstUnit)) {
+        mIntValue = firstUnit;
+    } else {
+        if (utf16WideString.length() <= (atIndex + 1)) {
+            throw VEOFException("Reached end of utf16WideString in the middle of a two-unit code point."); // Note: Stream-oriented reading is the way to avoid this case when reading in chunks.
+        }
+        
+        this->_initFromUTF16Surrogates(firstUnit, utf16WideString[atIndex + 1]);
+    }
 }
 
 VString VCodePoint::toString() const {
@@ -141,6 +160,31 @@ VString VCodePoint::toString() const {
             break;
     }
 
+    return s;
+}
+
+std::wstring VCodePoint::toUTF16WideString() const {
+    std::wstring s;
+    
+    switch (VCodePoint::getUTF16LengthFromCodePointValue(mIntValue)) {
+
+        case 1:
+            s += (wchar_t) (mIntValue); // first byte binary:   same as code point value
+            break;
+
+        case 2: {
+            int leadSurrogate =  ((mIntValue - 0x10000) >> 10) + 0xD800;
+            int trailSurrogate = ((mIntValue - 0x10000) & 0x03FF) + 0xDC00;
+            s += (wchar_t) leadSurrogate;
+            s += (wchar_t) trailSurrogate;
+            }
+            break;
+
+        default:
+            throw VRangeException(VSTRING_FORMAT("VCodePoint::toString() for an invalid UTF-8 code point 0x%X", mIntValue));
+            break;
+    }
+    
     return s;
 }
 
@@ -209,7 +253,33 @@ int VCodePoint::getPreviousUTF8CodePointOffset(const Vu8* buffer, int offset) {
     return previousOffset;
 }
 
-void VCodePoint::_initFromBytes(int numBytesToUse, Vu8 byte0, Vu8 byte1, Vu8 byte2, Vu8 byte3) {
+// static
+bool VCodePoint::isUTF16SurrogateCodeUnit(wchar_t codeUnit) {
+    /*
+    In UTF-16 two known ranges of values occupy a single code unit. Anything else uses two code units.
+    The single unit ranges are:
+        U+0000 to U+D7FF
+        U+E000 to U+FFFF
+    Therefore, only values in the remaining range indicate a lead surrogate:
+        U+D800 to U+DFFF
+    And anything above U+FFFF is a trail surrogate.
+    */
+    return
+        ((codeUnit >= 0xD800) && (codeUnit <= 0xDFFF)) ||   // lead surrogate range
+        (codeUnit >= 0x10000);                              // trail surrogate range
+}
+
+// static
+int VCodePoint::getUTF16LengthFromCodePointValue(int intValue) {
+    if (((intValue >= 0x0000) && (intValue <= 0xD7FF)) ||
+        ((intValue >= 0xE000) && (intValue <= 0xFFFF))) {
+        return 1;
+    }
+
+    return 2;
+}
+
+void VCodePoint::_initFromUTF8Bytes(int numBytesToUse, Vu8 byte0, Vu8 byte1, Vu8 byte2, Vu8 byte3) {
     mIntValue = 0;
 
     if (numBytesToUse == 1) {
@@ -232,4 +302,15 @@ void VCodePoint::_initFromBytes(int numBytesToUse, Vu8 byte0, Vu8 byte1, Vu8 byt
     }
 
     mUTF8Length = numBytesToUse;
+    mUTF16Length = VCodePoint::getUTF16LengthFromCodePointValue(mIntValue);
+}
+
+void VCodePoint::_initFromUTF16Surrogates(wchar_t leadSurrogate, wchar_t trailSurrogate) {
+    int x = (leadSurrogate & ((1 << 6) -1)) << 10 | trailSurrogate & ((1 << 10) -1);
+    int w = (leadSurrogate >> 6) & ((1 << 5) - 1);
+    int u = w + 1;
+    mIntValue = u << 16 | x;
+
+    mUTF8Length = VCodePoint::getUTF8LengthFromCodePointValue(mIntValue);
+    mUTF16Length = 2;
 }

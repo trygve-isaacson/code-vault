@@ -1030,15 +1030,11 @@ void VStringUnit::run() {
     stringWithMultibyteCharacters += "'. ";
     VString reconstructedStringWithMultibyteCharacters;
     
-    //std::cout << "String with dollar, cent, euro, han, by iterating over code points: \"";
-    //for (VStringIterator si = VStringIterator(stringWithMultibyteCharacters); si != si.end(); ++si) {
     for (VString::iterator si = stringWithMultibyteCharacters.begin(); si != stringWithMultibyteCharacters.end(); ++si) {
         VCodePoint cp = (*si);
         reconstructedStringWithMultibyteCharacters += cp;
         VString cps(cp);
-        //std::cout << cps;
     }
-    //std::cout << "\"";
     
     VUNIT_ASSERT_EQUAL_LABELED(stringWithMultibyteCharacters, reconstructedStringWithMultibyteCharacters, "reconstructed string");
     this->logStatus(stringWithMultibyteCharacters);
@@ -1053,12 +1049,45 @@ void VStringUnit::run() {
     VUNIT_ASSERT_EQUAL_LABELED(stringWithMultibyteCharacters.length(), initialLength, "expected length after replace");
     this->logStatus(stringWithMultibyteCharacters);
 
-    std::wstring ws1 = utf8Test.widen();
-    //std::cout << ws1 << std::endl;
+    std::wstring ws1 = utf8Test.toUTF16();
     VString roundTrip(ws1);
-    std::wstring ws2 = roundTrip.widen();
+    std::wstring ws2 = roundTrip.toUTF16();
 
     VUNIT_ASSERT_EQUAL_LABELED(utf8Test, roundTrip, "VString -> wstring -> VString round trip");
     VUNIT_ASSERT_TRUE_LABELED(ws1 == ws2, "wstring -> VString -> wstring round trip");
+    
+    // Test case taken from wstring_convert sample at http://cppreference.com/w/cpp/locale/wstring_convert/from_bytes
+    VString localeExample("z");                 // latin small letter z
+    localeExample += VCodePoint("U+00DF");      // latin small letter sharp s
+    localeExample += VCodePoint("U+6C34");      // han character 'water, liquid, lotion, juice'
+    localeExample += VCodePoint("U+0001D10B");  // musical symbol segno
+    
+    // should be same as "\x7A\xC3\x9F\xE6\xB0\xB4\xF0\x9D\x84\x8B"
+    VUNIT_ASSERT_EQUAL_LABELED((int) localeExample.length(), 10, "localeExample.length()");
+    VUNIT_ASSERT_EQUAL_LABELED((VChar) localeExample[0], VChar(0x7A), "localeExample[0]");
+    VUNIT_ASSERT_EQUAL_LABELED((VChar) localeExample[1], VChar(0xC3), "localeExample[1]");
+    VUNIT_ASSERT_EQUAL_LABELED((VChar) localeExample[2], VChar(0x9F), "localeExample[2]");
+    VUNIT_ASSERT_EQUAL_LABELED((VChar) localeExample[3], VChar(0xE6), "localeExample[3]");
+    VUNIT_ASSERT_EQUAL_LABELED((VChar) localeExample[4], VChar(0xB0), "localeExample[4]");
+    VUNIT_ASSERT_EQUAL_LABELED((VChar) localeExample[5], VChar(0xB4), "localeExample[5]");
+    VUNIT_ASSERT_EQUAL_LABELED((VChar) localeExample[6], VChar(0xF0), "localeExample[6]");
+    VUNIT_ASSERT_EQUAL_LABELED((VChar) localeExample[7], VChar(0x9D), "localeExample[7]");
+    VUNIT_ASSERT_EQUAL_LABELED((VChar) localeExample[8], VChar(0x84), "localeExample[8]");
+    VUNIT_ASSERT_EQUAL_LABELED((VChar) localeExample[9], VChar(0x8B), "localeExample[9]");
+    
+    std::wstring wideExample = localeExample.toUTF16();
+    VUNIT_ASSERT_EQUAL_LABELED((int) wideExample.length(), 5, "wideExample.length()");
+    VUNIT_ASSERT_EQUAL_LABELED((int) wideExample[0], 0x7A, "wideExample[0]");
+    VUNIT_ASSERT_EQUAL_LABELED((int) wideExample[1], 0xDF, "wideExample[1]");
+    VUNIT_ASSERT_EQUAL_LABELED((int) wideExample[2], 0x6C34, "wideExample[2]");
+    VUNIT_ASSERT_EQUAL_LABELED((int) wideExample[3], 0xD834, "wideExample[3]");
+    VUNIT_ASSERT_EQUAL_LABELED((int) wideExample[4], 0xDD0B, "wideExample[4]");
+    
+    VUNIT_ASSERT_EQUAL_LABELED(localeExample.length(), 10, "localeExample.length()");
+    VUNIT_ASSERT_EQUAL_LABELED(localeExample.getNumCodePoints(), 4, "localeExample.getNumCodePoints()");
+    VUNIT_ASSERT_EQUAL_LABELED((*(localeExample.begin() + 0)).intValue(), 0x7A, "localeExample[0]");
+    VUNIT_ASSERT_EQUAL_LABELED((*(localeExample.begin() + 1)).intValue(), 0xDF, "localeExample[1]");
+    VUNIT_ASSERT_EQUAL_LABELED((*(localeExample.begin() + 2)).intValue(), 0x6C34, "localeExample[2]");
+    VUNIT_ASSERT_EQUAL_LABELED((*(localeExample.begin() + 3)).intValue(), 0x0001D10B, "localeExample[3]");
 }
 
