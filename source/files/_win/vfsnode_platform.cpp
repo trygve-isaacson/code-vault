@@ -19,15 +19,55 @@ http://www.bombaydigital.com/
     #pragma warning(default: 6387)
 #endif
 
+/* OS APIs called, due for wrapping:
+
+_wgetcwd
+SHGetFolderPathW
+mkdir
+GetModuleFileNameW
+wrap_stat
+GetFileAttributesW
+wrap_mkdir
+wrap_rmdir
+wrap_unlink
+wrap_rename
+FindFirstFileW
+FindNextFileW
+FindClose
+
+I think I will redefine VFileSystemAPI to use VString parameters instead of char*.
+Then take the vault namespace low level OS wrapper functions and do the same.
+Then the Win32 versions of those can do the last-moment wide string conversion.
+This keeps the rest of the code VString-centric so it doesn't expose the conversion junk.
+
+*/
+
 /*
-Note: We explicitly reference several the "A"-suffix data type and APIs here, because
-we are using a non-Unicode path string, and even if this version of Windows supports
-and is configured for Unicode, we must reference the non-Unicode APIs here. Examples:
-    ::SHGetFolderPathA()
-    ::GetModuleFileNameA()
-    ::GetFileAttributesA()
-    ::FindFirstFileA()
-    ::FindNextFileA()
+Notes on use of Win32 "wide" APIs:
+
+Win32 has three flavors of each string-based API.
+The single-byte char, or "ANSI" versions, have an "A" suffix.
+  For example: FindFirstFileA(const char* path, WIN32_FIND_DATAA* data)
+  (WIN32_FIND_DATAA has instance variables containing char)
+  These use ANSI C char strings that must be in the "current" code page.
+The two-byte char, or "wide" versions, have a "W" suffix.
+  For example: FindFirstFileW(const wchar_t* path, WIN32_FIND_DATAW* data)
+  (WIN32_FIND_DATAW has instance variables containing wchar_t)
+  These use UTF-16 wchar_t strings, so they take Unicode in UTF-16 format.
+A version of each API without any suffix at all is macro-based and defined
+as the "A" version if UNICODE is not defined, or the "W" version if UNICODE is defined.
+  For example: FindFirstFile() is defined as either FindFirstFileA() or FindFirstFileW()
+
+We call the "W" versions directly, since our paths are all VString objects internally,
+which store Unicode in UTF-8 format, and we can easily convert to/from UTF-16 when we call
+the Win32 APIs here.
+For APIs where we pass the string, we just convert on-the-fly as the parameter:
+  SetterW(s.toUTF16().c_str());
+For APIs where we get a string back, we pass a wchar_t buffer and then construct a
+VString from it afterwards:
+  wchar_t buf[LENGTH];
+  GetterW(buf);
+  VString s(buf);
 */
 
 /* Note: according to Microsoft KB article 177506, only the following characters
@@ -78,8 +118,12 @@ void VFSNode::_platform_denormalizePath(VString& path) {
 // static
 VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName) {
     if (id == CURRENT_WORKING_DIRECTORY) {
-        char cwdPath[MAX_PATH];
-        (void)/*char* pathPtr =*/ vault::getcwd(cwdPath, sizeof(cwdPath));
+        wchar_t cwdPath[MAX_PATH];
+        wchar_t* result = _wgetcwd(cwdPath, sizeof(cwdPath));
+        if (result == NULL) {
+            throw VStackTraceException(VSystemError(), "VFSNode::_platform_getKnownDirectoryNode: _wgetcwd failed.");
+        }
+
         VString cwdPathString(cwdPath);
         VFSNode::normalizePath(cwdPathString);
         VFSNode cwdNode(cwdPathString);
@@ -93,8 +137,8 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
         return executableDirectory;
     }
 
-    char pathBuffer[MAX_PATH];
-    HRESULT result = ::SHGetFolderPathA(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, static_cast<LPSTR>(pathBuffer));
+    wchar_t pathBuffer[MAX_PATH];
+    HRESULT result = ::SHGetFolderPathW(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, pathBuffer);
 
     if (result != S_OK) {
         throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode: Unable to find current user Application Data folder. Error code %d.", (int) result));
@@ -167,14 +211,13 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
 
 // static
 VFSNode VFSNode::_platform_getExecutable() {
-    VString exePath;
-    exePath.preflight(_MAX_PATH);   // preallocate buffer space
-    DWORD result = ::GetModuleFileNameA(HMODULE(NULL), LPSTR(exePath.buffer()), DWORD(_MAX_PATH));
+    wchar_t exePathBuffer[MAX_PATH];
+    DWORD result = ::GetModuleFileNameW(HMODULE(NULL), exePathBuffer, DWORD(MAX_PATH));
 
     if (result == 0)
         throw VStackTraceException(VSystemError(), "VFSNode::_platform_getExecutable: Unable to determine exe path.");
 
-    exePath.postflight(result); // result is actual length of returned string data
+    VString exePath(exePathBuffer);
     VFSNode::normalizePath(exePath); // must supply normalized form to VFSNode below
     VFSNode exeNode(exePath);
     return exeNode;
@@ -188,8 +231,9 @@ bool VFSNode::_platform_getNodeInfo(VFSNodeInfo& info) const {
         info.mCreationDate = CONST_S64(1000) * static_cast<Vs64>(statData.st_ctime);
         info.mModificationDate = CONST_S64(1000) * static_cast<Vs64>(statData.st_mtime);
         info.mFileSize = statData.st_size;
-        info.mIsFile = ((GetFileAttributesA(mPath) & FILE_ATTRIBUTE_DIRECTORY) == 0);
-        info.mIsDirectory = ((GetFileAttributesA(mPath) & FILE_ATTRIBUTE_DIRECTORY) != 0);
+        DWORD attributes = ::GetFileAttributesW(mPath.toUTF16().c_str());
+        info.mIsFile = ((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0);
+        info.mIsDirectory = ((attributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
         info.mErrNo = 0;
     } else {
         info.mErrNo = errno;
@@ -226,17 +270,13 @@ void VFSNode::_platform_renameNode(const VString& newPath) const {
 // FindFirstFile(), FindNextFile(), FindClose() functions.
 
 void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) const {
-    // FIXME: This code has not been made UNICODE/DBCS compatible.
-    // The problem areas are in the strings, and for now we just
-    // brute-force cast so that the compiler is happy.
-
     VString nodeName;
     VString searchPath(VSTRING_ARGS("%s/*", mPath.chars()));
 
     VFSNode::denormalizePath(searchPath);    // make it have DOS syntax
 
-    WIN32_FIND_DATAA data;
-    HANDLE dir = ::FindFirstFileA((LPCSTR) searchPath.chars(), &data);
+    WIN32_FIND_DATAW data;
+    HANDLE dir = ::FindFirstFileW(searchPath.toUTF16().c_str(), &data);
 
     if (dir == INVALID_HANDLE_VALUE) {
         DWORD error = ::GetLastError();
@@ -254,7 +294,7 @@ void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) 
         do {
             VThread::yield(); // be nice if we're iterating over a huge directory
 
-            nodeName = (char*) data.cFileName;
+            nodeName = data.cFileName; // assign VString from wide char string
 
             // Skip current and parent pseudo-entries. Otherwise client must
             // know too much detail in order to avoid traversal problems.
@@ -265,7 +305,7 @@ void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) 
                 keepGoing = callback.handleNextNode(childNode);
             }
 
-        } while (keepGoing && ::FindNextFileA(dir, &data)); // see Unicode comment above
+        } while (keepGoing && ::FindNextFileW(dir, &data));
     } catch (...) {
         ::FindClose(dir);
         throw;
