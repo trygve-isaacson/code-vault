@@ -2050,6 +2050,8 @@ int VString::_determineSprintfLength(const char* formatText, va_list args) {
 
 void VString::_assignFromUTF16WideString(const std::wstring& utf16WideString) {
 
+    *this = VString::EMPTY();
+
     int numCodeUnits = utf16WideString.length();
     for (int i = 0; i < numCodeUnits; ++i) {
         VCodePoint cp(utf16WideString, i);

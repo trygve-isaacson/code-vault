@@ -114,7 +114,7 @@ VCodePoint::VCodePoint(const std::wstring& utf16WideString, int atIndex) {
     if (!VCodePoint::isUTF16SurrogateCodeUnit(firstUnit)) {
         mIntValue = firstUnit;
     } else {
-        if (utf16WideString.length() <= (atIndex + 1)) {
+        if (static_cast<int>(utf16WideString.length()) <= (atIndex + 1)) {
             throw VEOFException("Reached end of utf16WideString in the middle of a two-unit code point."); // Note: Stream-oriented reading is the way to avoid this case when reading in chunks.
         }
         
