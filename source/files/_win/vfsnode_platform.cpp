@@ -119,8 +119,8 @@ void VFSNode::_platform_denormalizePath(VString& path) {
 VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName) {
     if (id == CURRENT_WORKING_DIRECTORY) {
         wchar_t cwdPath[MAX_PATH];
-        wchar_t* result = _wgetcwd(cwdPath, sizeof(cwdPath));
-        if (result == NULL) {
+        wchar_t* cwdResult = _wgetcwd(cwdPath, MAX_PATH);
+        if (cwdResult == NULL) {
             throw VStackTraceException(VSystemError(), "VFSNode::_platform_getKnownDirectoryNode: _wgetcwd failed.");
         }
 
@@ -138,10 +138,10 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
     }
 
     wchar_t pathBuffer[MAX_PATH];
-    HRESULT result = ::SHGetFolderPathW(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, pathBuffer);
+    HRESULT gfpResult = ::SHGetFolderPathW(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, pathBuffer);
 
-    if (result != S_OK) {
-        throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode: Unable to find current user Application Data folder. Error code %d.", (int) result));
+    if (gfpResult != S_OK) {
+        throw VStackTraceException(VSTRING_FORMAT("VFSNode::_platform_getKnownDirectoryNode: Unable to find current user Application Data folder. Error code %d.", (int) gfpResult));
     }
 
     VString path(pathBuffer);
