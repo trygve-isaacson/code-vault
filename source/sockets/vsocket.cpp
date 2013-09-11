@@ -528,7 +528,12 @@ void VSocket::_connectToIPAddress(const VString& ipAddress, int portNumber) {
         const sockaddr* infoPtr = NULL;
         socklen_t infoLen = 0;
         struct sockaddr_in infoIPv4;
+#ifdef VPLATFORM_WIN
+        addrinfo addrInfo;
+        AddrInfoLifeCycleHelper addrInfoResults;
+#else
         struct sockaddr_in6 infoIPv6;
+#endif
 
         if (isIPv4) {
             ::memset(&infoIPv4, 0, sizeof(infoIPv4));
@@ -538,10 +543,24 @@ void VSocket::_connectToIPAddress(const VString& ipAddress, int portNumber) {
             infoPtr = (const sockaddr*) &infoIPv4;
             infoLen = sizeof(infoIPv4);
         } else {
+#ifdef VPLATFORM_WIN
+//#ifdef _WIN32_WINNT <= 0x501 // Cannot use inet_pton until Vista
+            VString portString = VSTRING_INT(portNumber);
+            ::memset(&addrInfo, 0, sizeof(addrInfo));
+            addrInfo.ai_family = AF_INET6;
+            addrInfo.ai_flags |= AI_NUMERICHOST;
+            int getaddrinfoResult = ::getaddrinfo(ipAddress, portString, &addrInfo, &addrInfoResults.mInfo);
+            if (getaddrinfoResult != 0) {
+                throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket[%s] _connectToIPAddress: getaddrinfo() failed.", mSocketName.chars()));
+            }
+            infoPtr = (const sockaddr*) addrInfoResults.mInfo->ai_addr;
+            infoLen = addrInfoResults.mInfo->ai_addrlen;
+#else
+
             ::memset(&infoIPv6, 0, sizeof(infoIPv6));
-#ifndef VPLATFORM_WIN /* sin6_len is not defined in the Winsock definition! */
+//#ifndef VPLATFORM_WIN /* sin6_len is not defined in the Winsock definition! */
             infoIPv6.sin6_len = sizeof(infoIPv6);
-#endif
+//#endif
             infoIPv6.sin6_family = AF_INET6;
             infoIPv6.sin6_port = (in_port_t) V_BYTESWAP_HTON_S16_GET(static_cast<Vs16>(portNumber));
             int ptonResult = ::inet_pton(AF_INET6, ipAddress, &infoIPv6.sin6_addr);
@@ -550,6 +569,7 @@ void VSocket::_connectToIPAddress(const VString& ipAddress, int portNumber) {
             }
             infoPtr = (const sockaddr*) &infoIPv6;
             infoLen = sizeof(infoIPv6);
+#endif
         }
 
         int result = ::connect(socketID, infoPtr, infoLen);
