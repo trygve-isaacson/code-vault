@@ -49,6 +49,7 @@ inline ssize_t read(int fd, void* buffer, size_t numBytes) { return ::read(fd, b
 inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::write(fd, buffer, numBytes); }
 inline off_t lseek(int fd, off_t offset, int whence) { return ::lseek(fd, offset, whence); }
 inline int open(const char* path, int flags, mode_t mode) { return ::open(path, flags, mode); }
+inline FILE* fopen(const char* path, const char* mode) { return ::fopen(path, mode); }
 inline int close(int fd) { return ::close(fd); }
 inline int mkdir(const char* path, mode_t mode) { return ::mkdir(path, mode); }
 inline int rmdir(const char* path) { return ::rmdir(path); }

@@ -80,6 +80,76 @@ bool VSystemError::_isLikePosixError(int posixErrorCode) const {
     return (posixErrorCode == mErrorCode);
 }
 
+// VPlatformAPI -----------------------------------------------------------------
+
+// static
+VString VPlatformAPI::getcwd() {
+
+    wchar_t cwdPath[MAX_PATH];
+    wchar_t* cwdResult = ::_wgetcwd(cwdPath, MAX_PATH);
+    if (cwdResult == NULL) {
+        throw VException(VSystemError(), "Call to _wgetcwd failed.");
+    }
+    
+    return VFSNode::normalizePath(VString(cwdPath));
+}
+
+// static
+int VPlatformAPI::open(const VString& path, int flags, mode_t mode) {
+    return ::_wopen(VFSNode::denormalizePath(path).toUTF16().c_str(), flags, mode);
+}
+
+// static
+FILE* VPlatformAPI::fopen(const VString& path, const char* mode) {
+	return ::_wfopen(VFSNode::denormalizePath(path).toUTF16().c_str(), VString(mode).toUTF16().c_str());
+}
+
+// static
+int VPlatformAPI::mkdir(const VString& path, mode_t /*mode*/) {
+    return ::_wmkdir(VFSNode::denormalizePath(path).toUTF16().c_str());
+}
+
+// static
+int VPlatformAPI::rmdir(const VString& path) {
+    return ::_wrmdir(VFSNode::denormalizePath(path).toUTF16().c_str());
+}
+
+// static
+int VPlatformAPI::unlink(const VString& path) {
+    return ::_wunlink(VFSNode::denormalizePath(path).toUTF16().c_str());
+}
+
+// static
+int VPlatformAPI::rename(const VString& oldName, const VString& newName) {
+    return ::_wrename(VFSNode::denormalizePath(oldName).toUTF16().c_str(), VFSNode::denormalizePath(newName).toUTF16().c_str());
+}
+
+// static
+int VPlatformAPI::stat(const VString& path, struct stat* buf) {
+	// Win32 wide char API macro diversions for stat are a hairball.
+	// To work with standard struct stat, we'll need to copy instance variables.
+	struct _stat localBuf;
+    int result = ::_wstat(VFSNode::denormalizePath(path).toUTF16().c_str(), &localBuf);
+	if (result == 0) {
+		buf->st_atime = localBuf.st_atime;
+        buf->st_dev = localBuf.st_dev;
+        buf->st_ino = localBuf.st_ino;
+        buf->st_mode = localBuf.st_mode;
+        buf->st_nlink = localBuf.st_nlink;
+        buf->st_uid = localBuf.st_uid;
+        buf->st_gid = localBuf.st_gid;
+        buf->st_rdev = localBuf.st_rdev;
+        buf->st_size = localBuf.st_size;
+        buf->st_atime = localBuf.st_atime;
+        buf->st_mtime = localBuf.st_mtime;
+        buf->st_ctime = localBuf.st_ctime;
+	}
+
+	return result;
+}
+
+// miscellaneous --------------------------------------------------------------
+
 static void getCurrentTZ(VString& tz) {
     char* tzEnvString = vault::getenv("TZ");
 
@@ -125,6 +195,9 @@ time_t timegm(struct tm* t) {
 #include "vexception.h"
 int vault::open(const char* path, int flags, mode_t mode) {
     throw VException(VSTRING_FORMAT("Error opening '%s': POSIX open() is not supported by CodeWarrior on Windows.", path));
+}
+FILE* vault::fopen(const char* path, mode_t mode) {
+    throw VException(VSTRING_FORMAT("Error opening '%s': POSIX fopen() is not supported by CodeWarrior on Windows.", path));
 }
 #endif
 

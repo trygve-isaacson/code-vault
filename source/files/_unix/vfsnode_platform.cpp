@@ -33,13 +33,15 @@ http://www.bombaydigital.com/
 #endif /* VPLATFORM_MAC */
 
 // static
-void VFSNode::_platform_normalizePath(VString& /*path*/) {
+VString VFSNode::_platform_normalizePath(const VString& path) {
     // Paths are already in our "normalized" form on Unix.
+    return path;
 }
 
 // static
-void VFSNode::_platform_denormalizePath(VString& /*path*/) {
+VString VFSNode::_platform_denormalizePath(const VString& path) {
     // Paths are already in our "normalized" form on Unix.
+    return path;
 }
 
 #ifdef VPLATFORM_MAC
@@ -49,10 +51,7 @@ extern VString _V_NSHomeDirectory(); // Implemented in private vtypes_platform.m
 // static
 VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName) {
     if (id == CURRENT_WORKING_DIRECTORY) {
-        char cwdPath[PATH_MAX];
-        (void)/*char* pathPtr =*/ vault::getcwd(cwdPath, sizeof(cwdPath));
-        VFSNode cwdNode(cwdPath);
-        return cwdNode;
+        return VFSNode(VPlatformAPI::getcwd());
     }
 
     if (id == EXECUTABLE_DIRECTORY) {
@@ -170,8 +169,7 @@ VFSNode VFSNode::_platform_getExecutable() {
     executablePath.postflight((int) ::strlen(buffer));
 
     // todo: could then convert to a "real path" in case returned path has sym links
-    VFSNode::normalizePath(executablePath); // must supply normalized form to VFSNode below
-    return VFSNode(executablePath);
+    return VFSNode(VFSNode::normalizePath(executablePath)); // must supply normalized form to VFSNode below
 }
 
 #else /* end of Mac OS X implementation of VFSNode::_platform_getKnownDirectoryNode and VFSNode::_platform_getExecutable */
@@ -183,10 +181,7 @@ VFSNode VFSNode::_platform_getExecutable() {
 // static
 VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName) {
     if (id == CURRENT_WORKING_DIRECTORY) {
-        char cwdPath[PATH_MAX];
-        (void)/*char* pathPtr =*/ vault::getcwd(cwdPath, sizeof(cwdPath));
-        VFSNode cwdNode(cwdPath);
-        return cwdNode;
+        return VFSNode(VSystemAPI::getcwd());
     }
 
     if (id == EXECUTABLE_DIRECTORY) {
@@ -291,15 +286,14 @@ VFSNode VFSNode::_platform_getExecutable() {
     }
 
     executablePath.postflight(len);
-    VFSNode::normalizePath(executablePath); // must supply normalized form to VFSNode below
-    return VFSNode(executablePath);
+    return VFSNode(VFSNode::normalizePath(executablePath)); // must supply normalized form to VFSNode below
 }
 
 #endif /* end of generic Unix implementation of VFSNode::_platform_getKnownDirectoryNode and VFSNode::_platform_getExecutable */
 
 bool VFSNode::_platform_getNodeInfo(VFSNodeInfo& info) const {
     struct stat statData;
-    int result = VFileSystemAPI::wrap_stat(mPath, &statData);
+    int result = VFileSystem::stat(mPath, &statData);
 
     if (result >= 0) {
         info.mCreationDate = CONST_S64(1000) * static_cast<Vs64>(statData.st_ctime);
@@ -316,24 +310,24 @@ bool VFSNode::_platform_getNodeInfo(VFSNodeInfo& info) const {
 }
 
 void VFSNode::_platform_createDirectory() const {
-    int result = VFileSystemAPI::wrap_mkdir(mPath, (S_IFDIR | S_IRWXO | S_IRWXG | S_IRWXU));
+    int result = VFileSystem::mkdir(mPath, (S_IFDIR | S_IRWXO | S_IRWXG | S_IRWXU));
 
     if (result != 0)
         throw VException(VSystemError(), VSTRING_FORMAT("VFSNode::_platform_createDirectory failed with result %d for '%s'.", result, mPath.chars()));
 }
 
 bool VFSNode::_platform_removeDirectory() const {
-    int result = VFileSystemAPI::wrap_rmdir(mPath);
+    int result = VFileSystem::rmdir(mPath);
     return (result == 0);
 }
 
 bool VFSNode::_platform_removeFile() const {
-    int result = VFileSystemAPI::wrap_unlink(mPath);
+    int result = VFileSystem::unlink(mPath);
     return (result == 0);
 }
 
 void VFSNode::_platform_renameNode(const VString& newPath) const {
-    int result = VFileSystemAPI::wrap_rename(mPath, newPath);
+    int result = VFileSystem::rename(mPath, newPath);
 
     if (result != 0)
         throw VException(VSystemError(), VSTRING_FORMAT("VFSNode::_platform_renameNode failed with result %d renaming '%s' to '%s'.", result, mPath.chars(), newPath.chars()));

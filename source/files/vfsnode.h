@@ -120,22 +120,24 @@ class VFSNode {
     public:
 
         /**
-        Takes a platform-specific directory path and modifies it to be
-        int the normalized form necessary for use with VFSNode. If you
+        Takes a platform-specific directory path and returns
+        the normalized form necessary for use with VFSNode. If you
         are given a path from the user or OS that is in the OS path
-        format (for example, a DOS path), you need to normalize it
-        before supplying it to VFSNode. Note that this facility does
-        not allow DOS style "drive letters" but is designed to handle
-        relative DOS paths.
+        format (for example, a DOS path with backslashes), you need to normalize it
+        (with slashes as path separators) before supplying it to VFSNode.
         @param    path    a string containing a platform-specific path,
                         which will be modified in place into normalized form
+        @return the normalized form of the path
         */
-        static void normalizePath(VString& path);
+        static VString normalizePath(const VString& path);
         /**
         The reverse of normalizePath -- takes a normalized path and undoes
         the normalization, turning it into a platform-specific path.
+        @param    path    a string containing a normalized path,
+                        which will be modified in place into platform-specific form
+        @return the denormalized form of the path
         */
-        static void denormalizePath(VString& path);
+        static VString denormalizePath(const VString& path);
 
         /**
         These values identify different known folders whose location you can
@@ -535,13 +537,13 @@ class VFSNode {
         form, but on Windows, we must convert backslash to slash, etc.
         @param path the path string to be modified
         */
-        static void _platform_normalizePath(VString& path);
+        static VString _platform_normalizePath(const VString& path);
         /**
         Converts a path string from "normalized" form into the platform native
         form.
         @param path the path string to be modified
         */
-        static void _platform_denormalizePath(VString& path);
+        static VString _platform_denormalizePath(const VString& path);
         /**
         Returns a node identifying an identified directory, creating it if it does not exist.
         @param  id          the directory identifier

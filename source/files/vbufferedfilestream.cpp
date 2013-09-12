@@ -7,7 +7,7 @@ http://www.bombaydigital.com/
 /** @file */
 
 #include "vbufferedfilestream.h"
-#include "vtypes_internal_platform.h"
+#include "vtypes_internal.h"
 
 #include "vexception.h"
 
@@ -46,7 +46,7 @@ void VBufferedFileStream::setFile(FILE* f, bool closeOnDestruct) {
 }
 
 void VBufferedFileStream::openReadOnly() {
-    mFile = VBufferedFileStream::_wrap_fopen(mNode.getPath(), "rb");
+    mFile = VFileSystem::fopen(mNode.getPath(), "rb");
 
     this->_throwIfOpenFailed("VBufferedFileStream::openReadOnly", mNode.getPath());
 }
@@ -59,13 +59,13 @@ void VBufferedFileStream::openReadWrite() {
     existence first, and then open it exactly the way we intend.
     */
 
-    mFile = VBufferedFileStream::_wrap_fopen(mNode.getPath(), mNode.exists() ? "r+b" : "w+b");
+    mFile = VFileSystem::fopen(mNode.getPath(), mNode.exists() ? "r+b" : "w+b");
 
     this->_throwIfOpenFailed("VBufferedFileStream::openReadWrite", mNode.getPath());
 }
 
 void VBufferedFileStream::openWrite() {
-    mFile = VBufferedFileStream::_wrap_fopen(mNode.getPath(), "wb");
+    mFile = VFileSystem::fopen(mNode.getPath(), "wb");
 
     this->_throwIfOpenFailed("VBufferedFileStream::openWrite", mNode.getPath());
 }
@@ -76,7 +76,7 @@ bool VBufferedFileStream::isOpen() const {
 
 void VBufferedFileStream::close() {
     if (this->isOpen()) {
-        (void) VBufferedFileStream::_wrap_fclose(mFile);
+        (void) VFileSystem::fclose(mFile);
         mFile = NULL;
     }
 }
@@ -103,7 +103,7 @@ Vs64 VBufferedFileStream::read(Vu8* targetBuffer, Vs64 numBytesToRead) {
             requestCount = static_cast<size_t>(numBytesRemaining);
         }
 
-        actualCount = VBufferedFileStream::_wrap_fread(targetBuffer + numBytesRead, 1, requestCount, mFile);
+        actualCount = VFileSystem::fread(targetBuffer + numBytesRead, 1, requestCount, mFile);
 
         numBytesRead += actualCount;
         numBytesRemaining -= actualCount;
@@ -135,7 +135,7 @@ Vs64 VBufferedFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite) {
             requestCount = static_cast<size_t>(numBytesRemaining);
         }
 
-        actualCount = VBufferedFileStream::_wrap_fwrite(buffer + numBytesWritten, 1, requestCount, mFile);
+        actualCount = VFileSystem::fwrite(buffer + numBytesWritten, 1, requestCount, mFile);
 
         numBytesWritten += actualCount;
         numBytesRemaining -= actualCount;
@@ -153,7 +153,7 @@ Vs64 VBufferedFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite) {
 }
 
 void VBufferedFileStream::flush() {
-    int result = VBufferedFileStream::_wrap_fflush(mFile);
+    int result = VFileSystem::fflush(mFile);
 
     if (result != 0) {
         VString path;
@@ -194,11 +194,11 @@ bool VBufferedFileStream::skip(Vs64 numBytesToSkip) {
 
 bool VBufferedFileStream::seek(Vs64 offset, int whence) {
     // FIXME: need to deal with Vs64-to-long conversion
-    return (VBufferedFileStream::_wrap_fseek(mFile, static_cast<long>(offset), whence) == 0);
+    return (VFileSystem::fseek(mFile, static_cast<long>(offset), whence) == 0);
 }
 
 Vs64 VBufferedFileStream::getIOOffset() const {
-    return VBufferedFileStream::_wrap_ftell(mFile);
+    return VFileSystem::ftell(mFile);
 }
 
 Vs64 VBufferedFileStream::available() const {
@@ -211,167 +211,5 @@ Vs64 VBufferedFileStream::available() const {
     const_cast<VBufferedFileStream*>(this)->seek(currentOffset, SEEK_SET);    // restore original position
 
     return eofOffset - currentOffset;
-}
-
-// This a useful place to put a breakpoint when things aren't going as planned.
-static void _debugCheck(bool success) {
-    if (! success) {
-        VSystemError e;
-    }
-}
-
-// static
-FILE* VBufferedFileStream::_wrap_fopen(const char* nativePath, const char* mode) {
-    if ((nativePath == NULL) || (nativePath[0] == 0))
-        return NULL;
-
-    FILE*   f = NULL;
-    bool    done = false;
-
-    while (! done) {
-        f = ::fopen(nativePath, mode);
-
-        if ((f != NULL) || (errno != EINTR)) {
-            done = true;
-        }
-    }
-
-    _debugCheck(f != NULL);
-
-    return f;
-}
-
-// static
-int VBufferedFileStream::_wrap_fclose(FILE* f) {
-    if (f == NULL)
-        return EOF;
-
-    int     result = 0;
-    bool    done = false;
-
-    while (! done) {
-        result = ::fclose(f);
-
-        if ((result == 0) || (errno != EINTR)) {
-            done = true;
-        }
-    }
-
-    _debugCheck(result == 0);
-
-    return result;
-}
-
-// static
-size_t VBufferedFileStream::_wrap_fread(void* buffer, size_t size, size_t numItems, FILE* f) {
-    if ((buffer == NULL) || (f == NULL)) {
-        return 0;
-    }
-
-    size_t  result = 0;
-    bool    done = false;
-
-    while (! done) {
-        result = ::fread(buffer, size, numItems, f);
-
-        if ((result != numItems) && (ferror(f) != 0) && (errno == EINTR)) {
-            done = false;
-        } else {
-            done = true;
-        }
-    }
-
-    _debugCheck(result == numItems);
-
-    return result;
-}
-
-// static
-size_t VBufferedFileStream::_wrap_fwrite(const void* buffer, size_t size, size_t numItems, FILE* f) {
-    size_t  result = 0L;
-    bool    done = false;
-
-    if ((buffer == NULL) || (f == NULL)) {
-        return 0L;
-    }
-
-    while (! done) {
-        result = ::fwrite(buffer, size, numItems, f);
-
-        if ((result != numItems) && (ferror(f) != 0) && (errno == EINTR)) {
-            done = false;
-        } else {
-            done = true;
-        }
-    }
-
-    _debugCheck(result == numItems);
-
-    return result;
-}
-
-// static
-int VBufferedFileStream::_wrap_fseek(FILE* f, long int offset, int whence) {
-    int     result = 0;
-    bool    done = false;
-
-    if (f == NULL) {
-        return EOF;
-    }
-
-    while (! done) {
-        result = ::fseek(f, offset, whence);
-
-        if ((result != -1) || (errno != EINTR)) {
-            done = true;
-        }
-    }
-
-    _debugCheck(result == 0);
-
-    return result;
-}
-
-// static
-int VBufferedFileStream::_wrap_fflush(FILE* f) {
-    int     result = 0;
-    bool    done = false;
-
-    if (f == NULL) {
-        return EOF;
-    }
-
-    while (! done) {
-        result = ::fflush(f);
-
-        if ((result == 0) || (errno != EINTR)) {
-            done = true;
-        }
-    }
-    _debugCheck(result == 0);
-
-    return result;
-}
-
-// static
-long int VBufferedFileStream::_wrap_ftell(FILE* f) {
-    long int    result = 0;
-    bool        done = false;
-
-    if (f == NULL) {
-        return 0;
-    }
-
-    while (! done) {
-        result = ::ftell(f);
-
-        if ((result >= 0) || (errno != EINTR)) {
-            done = true;
-        }
-    }
-
-    _debugCheck(result != -1);
-
-    return result;
 }
 

@@ -120,13 +120,13 @@ bool VFSNodeFindCallback::handleNextNode(const VFSNode& node) {
 // VFSNode -------------------------------------------------------------------
 
 // static
-void VFSNode::normalizePath(VString& path) {
-    VFSNode::_platform_normalizePath(path);
+VString VFSNode::normalizePath(const VString& path) {
+    return VFSNode::_platform_normalizePath(path);
 }
 
 // static
-void VFSNode::denormalizePath(VString& path) {
-    VFSNode::_platform_denormalizePath(path);
+VString VFSNode::denormalizePath(const VString& path) {
+    return VFSNode::_platform_denormalizePath(path);
 }
 
 // static

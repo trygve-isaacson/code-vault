@@ -129,6 +129,7 @@ inline int vsnprintf(char* buffer, size_t length, const char* format, va_list ar
 #define O_CREAT 0
 #define O_TRUNC 0
 extern int open(const char* path, int flags, mode_t mode); // Per comments above: this always throws.
+extern FILE* fopen(const char* path, const char* mode); // Per comments above: this always throws.
 
 #elif _MSC_VER >= 1400
 // VC++ 8.0 makes many of these function names start with an underscore.
@@ -140,6 +141,7 @@ inline ssize_t read(int fd, void* buffer, size_t numBytes) { return ::_read(fd, 
 inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::_write(fd, buffer, static_cast<unsigned int>(numBytes)); }
 inline off_t lseek(int fd, off_t offset, int whence) { return ::_lseek(fd, offset, whence); }
 inline int open(const char* path, int flags, mode_t mode) { return ::_open(path, flags, mode); }
+inline FILE* fopen(const char* path, const char* mode) { return ::fopen(path, mode); }
 inline int close(int fd) { return ::_close(fd); }
 inline int mkdir(const char* path, mode_t /*mode*/) { return ::_mkdir(path); }
 inline int rmdir(const char* path) { return ::_rmdir(path); }
@@ -160,6 +162,7 @@ inline ssize_t read(int fd, void* buffer, size_t numBytes) { return ::read(fd, b
 inline ssize_t write(int fd, const void* buffer, size_t numBytes) { return ::write(fd, buffer, static_cast<unsigned int>(numBytes)); }
 inline off_t lseek(int fd, off_t offset, int whence) { return ::lseek(fd, offset, whence); }
 inline int open(const char* path, int flags, mode_t mode) { return ::_open(path, flags, mode); }
+inline FILE* fopen(const char* path, const char* mode) { return ::fopen(path, mode); }
 inline int close(int fd) { return ::close(fd); }
 inline int mkdir(const char* path, mode_t /*mode*/) { return ::mkdir(path); }
 inline int rmdir(const char* path) { return ::_rmdir(path); }

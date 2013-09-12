@@ -17,12 +17,12 @@ static void _debugCheck(bool success) {
 }
 
 // static
-int VFileSystemAPI::wrap_mkdir(const char* path, mode_t mode) {
+int VFileSystem::mkdir(const VString& path, mode_t mode) {
     int     result = 0;
     bool    done = false;
 
     while (! done) {
-        result = vault::mkdir(path, mode);
+        result = VPlatformAPI::mkdir(path, mode);
 
         if ((result == 0) || (errno != EINTR))
             done = true;
@@ -50,12 +50,12 @@ int VFileSystemAPI::wrap_mkdir(const char* path, mode_t mode) {
 }
 
 // static
-int VFileSystemAPI::wrap_rename(const char* oldName, const char* newName) {
+int VFileSystem::rename(const VString& oldName, const VString& newName) {
     int     result = 0;
     bool    done = false;
 
     while (! done) {
-        result = vault::rename(oldName, newName);
+        result = VPlatformAPI::rename(oldName, newName);
 
         if ((result == 0) || (errno != EINTR))
             done = true;
@@ -67,12 +67,12 @@ int VFileSystemAPI::wrap_rename(const char* oldName, const char* newName) {
 }
 
 // static
-int VFileSystemAPI::wrap_stat(const char* path, struct stat* buf) {
+int VFileSystem::stat(const VString& path, struct stat* buf) {
     int     result = 0;
     bool    done = false;
 
     while (! done) {
-        result = vault::stat(path, buf);
+        result = VPlatformAPI::stat(path, buf);
 
         if ((result == 0) || (errno != EINTR))
             done = true;
@@ -84,12 +84,12 @@ int VFileSystemAPI::wrap_stat(const char* path, struct stat* buf) {
 }
 
 // static
-int VFileSystemAPI::wrap_unlink(const char* path) {
+int VFileSystem::unlink(const VString& path) {
     int     result = 0;
     bool    done = false;
 
     while (! done) {
-        result = vault::unlink(path);
+        result = VPlatformAPI::unlink(path);
 
         if ((result == 0) || (errno != EINTR))
             done = true;
@@ -101,12 +101,12 @@ int VFileSystemAPI::wrap_unlink(const char* path) {
 }
 
 // static
-int VFileSystemAPI::wrap_rmdir(const char* path) {
+int VFileSystem::rmdir(const VString& path) {
     int     result = 0;
     bool    done = false;
 
     while (! done) {
-        result = vault::rmdir(path);
+        result = VPlatformAPI::rmdir(path);
 
         if ((result == 0) || (errno != EINTR))
             done = true;
@@ -118,8 +118,8 @@ int VFileSystemAPI::wrap_rmdir(const char* path) {
 }
 
 // static
-int VFileSystemAPI::wrap_open(const char* path, int flags) {
-    if ((path == NULL) || (path[0] == 0))
+int VFileSystem::open(const VString& path, int flags) {
+    if (path.isEmpty())
         return -1;
 
     int     fd = -1;
@@ -127,9 +127,9 @@ int VFileSystemAPI::wrap_open(const char* path, int flags) {
 
     while (! done) {
         if (flags == WRITE_CREATE_MODE)
-            fd = vault::open(path, WRITE_CREATE_MODE, OPEN_CREATE_PERMISSIONS);
+            fd = VPlatformAPI::open(path, WRITE_CREATE_MODE, OPEN_CREATE_PERMISSIONS);
         else
-            fd = vault::open(path, flags, 0);
+            fd = VPlatformAPI::open(path, flags, 0);
 
         if ((fd != -1) || (errno != EINTR))
             done = true;
@@ -141,7 +141,7 @@ int VFileSystemAPI::wrap_open(const char* path, int flags) {
 }
 
 // static
-ssize_t VFileSystemAPI::wrap_read(int fd, void* buffer, size_t numBytes) {
+ssize_t VFileSystem::read(int fd, void* buffer, size_t numBytes) {
     ssize_t result = 0;
     bool    done = false;
 
@@ -158,7 +158,7 @@ ssize_t VFileSystemAPI::wrap_read(int fd, void* buffer, size_t numBytes) {
 }
 
 // static
-ssize_t VFileSystemAPI::wrap_write(int fd, const void* buffer, size_t numBytes) {
+ssize_t VFileSystem::write(int fd, const void* buffer, size_t numBytes) {
     ssize_t result = 0;
     bool    done = false;
 
@@ -175,7 +175,7 @@ ssize_t VFileSystemAPI::wrap_write(int fd, const void* buffer, size_t numBytes) 
 }
 
 // static
-off_t VFileSystemAPI::wrap_lseek(int fd, off_t offset, int whence) {
+off_t VFileSystem::lseek(int fd, off_t offset, int whence) {
     off_t   result = 0;
     bool    done = false;
 
@@ -192,7 +192,7 @@ off_t VFileSystemAPI::wrap_lseek(int fd, off_t offset, int whence) {
 }
 
 // static
-int VFileSystemAPI::wrap_close(int fd) {
+int VFileSystem::close(int fd) {
     int     result = 0;
     bool    done = false;
 
@@ -208,3 +208,157 @@ int VFileSystemAPI::wrap_close(int fd) {
     return result;
 }
 
+// static
+FILE* VFileSystem::fopen(const VString& nativePath, const char* mode) {
+    if (nativePath.isEmpty())
+        return NULL;
+
+    FILE*   f = NULL;
+    bool    done = false;
+
+    while (! done) {
+        f = VPlatformAPI::fopen(nativePath, mode);
+
+        if ((f != NULL) || (errno != EINTR)) {
+            done = true;
+        }
+    }
+
+    _debugCheck(f != NULL);
+
+    return f;
+}
+
+// static
+int VFileSystem::fclose(FILE* f) {
+    if (f == NULL)
+        return EOF;
+
+    int     result = 0;
+    bool    done = false;
+
+    while (! done) {
+        result = ::fclose(f);
+
+        if ((result == 0) || (errno != EINTR)) {
+            done = true;
+        }
+    }
+
+    _debugCheck(result == 0);
+
+    return result;
+}
+
+// static
+size_t VFileSystem::fread(void* buffer, size_t size, size_t numItems, FILE* f) {
+    if ((buffer == NULL) || (f == NULL)) {
+        return 0;
+    }
+
+    size_t  result = 0;
+    bool    done = false;
+
+    while (! done) {
+        result = ::fread(buffer, size, numItems, f);
+
+        if ((result != numItems) && (ferror(f) != 0) && (errno == EINTR)) {
+            done = false;
+        } else {
+            done = true;
+        }
+    }
+
+    _debugCheck(result == numItems);
+
+    return result;
+}
+
+// static
+size_t VFileSystem::fwrite(const void* buffer, size_t size, size_t numItems, FILE* f) {
+    size_t  result = 0L;
+    bool    done = false;
+
+    if ((buffer == NULL) || (f == NULL)) {
+        return 0L;
+    }
+
+    while (! done) {
+        result = ::fwrite(buffer, size, numItems, f);
+
+        if ((result != numItems) && (ferror(f) != 0) && (errno == EINTR)) {
+            done = false;
+        } else {
+            done = true;
+        }
+    }
+
+    _debugCheck(result == numItems);
+
+    return result;
+}
+
+// static
+int VFileSystem::fseek(FILE* f, long int offset, int whence) {
+    int     result = 0;
+    bool    done = false;
+
+    if (f == NULL) {
+        return EOF;
+    }
+
+    while (! done) {
+        result = ::fseek(f, offset, whence);
+
+        if ((result != -1) || (errno != EINTR)) {
+            done = true;
+        }
+    }
+
+    _debugCheck(result == 0);
+
+    return result;
+}
+
+// static
+int VFileSystem::fflush(FILE* f) {
+    int     result = 0;
+    bool    done = false;
+
+    if (f == NULL) {
+        return EOF;
+    }
+
+    while (! done) {
+        result = ::fflush(f);
+
+        if ((result == 0) || (errno != EINTR)) {
+            done = true;
+        }
+    }
+    _debugCheck(result == 0);
+
+    return result;
+}
+
+// static
+long int VFileSystem::ftell(FILE* f) {
+    long int    result = 0;
+    bool        done = false;
+
+    if (f == NULL) {
+        return 0;
+    }
+
+    while (! done) {
+        result = ::ftell(f);
+
+        if ((result >= 0) || (errno != EINTR)) {
+            done = true;
+        }
+    }
+
+    _debugCheck(result != -1);
+
+    return result;
+}

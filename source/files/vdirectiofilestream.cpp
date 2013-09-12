@@ -44,7 +44,7 @@ void VDirectIOFileStream::setFile(int fd, bool closeOnDestruct) {
 }
 
 void VDirectIOFileStream::openReadOnly() {
-    mFile = VFileSystemAPI::wrap_open(mNode.getPath(), READ_ONLY_MODE);
+    mFile = VFileSystem::open(mNode.getPath(), READ_ONLY_MODE);
 
     this->_throwIfOpenFailed("VDirectIOFileStream::openReadOnly", mNode.getPath());
 }
@@ -57,13 +57,13 @@ void VDirectIOFileStream::openReadWrite() {
     existence first, and then open it exactly the way we intend.
     */
 
-    mFile = VFileSystemAPI::wrap_open(mNode.getPath(), mNode.exists() ? READWRITE_MODE : WRITE_CREATE_MODE);
+    mFile = VFileSystem::open(mNode.getPath(), mNode.exists() ? READWRITE_MODE : WRITE_CREATE_MODE);
 
     this->_throwIfOpenFailed("VDirectIOFileStream::openReadWrite", mNode.getPath());
 }
 
 void VDirectIOFileStream::openWrite() {
-    mFile = VFileSystemAPI::wrap_open(mNode.getPath(), WRITE_CREATE_MODE);
+    mFile = VFileSystem::open(mNode.getPath(), WRITE_CREATE_MODE);
 
     this->_throwIfOpenFailed("VDirectIOFileStream::openWrite", mNode.getPath());
 }
@@ -74,7 +74,7 @@ bool VDirectIOFileStream::isOpen() const {
 
 void VDirectIOFileStream::close() {
     if (this->isOpen()) {
-        (void) VFileSystemAPI::wrap_close(mFile);
+        (void) VFileSystem::close(mFile);
         mFile = -1;
     }
 }
@@ -103,7 +103,7 @@ Vs64 VDirectIOFileStream::read(Vu8* targetBuffer, Vs64 numBytesToRead) {
             requestCount = static_cast<size_t>(numBytesRemaining);
         }
 
-        actualCount = static_cast<size_t>(VFileSystemAPI::wrap_read(mFile, targetBuffer + numBytesRead, requestCount));
+        actualCount = static_cast<size_t>(VFileSystem::read(mFile, targetBuffer + numBytesRead, requestCount));
 
         numBytesRead += actualCount;
         numBytesRemaining -= actualCount;
@@ -137,7 +137,7 @@ Vs64 VDirectIOFileStream::write(const Vu8* buffer, Vs64 numBytesToWrite) {
             requestCount = static_cast<size_t>(numBytesRemaining);
         }
 
-        actualCount = static_cast<size_t>(VFileSystemAPI::wrap_write(mFile, buffer + numBytesWritten, requestCount));
+        actualCount = static_cast<size_t>(VFileSystem::write(mFile, buffer + numBytesWritten, requestCount));
 
         numBytesWritten += actualCount;
         numBytesRemaining -= actualCount;
@@ -193,11 +193,11 @@ bool VDirectIOFileStream::skip(Vs64 numBytesToSkip) {
 
 bool VDirectIOFileStream::seek(Vs64 offset, int whence) {
     // FIXME: need to deal with Vs64-to-off_t conversion
-    return (VFileSystemAPI::wrap_lseek(mFile, static_cast<off_t>(offset), whence) == 0);
+    return (VFileSystem::lseek(mFile, static_cast<off_t>(offset), whence) == 0);
 }
 
 Vs64 VDirectIOFileStream::getIOOffset() const {
-    return VFileSystemAPI::wrap_lseek(mFile, static_cast<off_t>(0), SEEK_CUR);
+    return VFileSystem::lseek(mFile, static_cast<off_t>(0), SEEK_CUR);
 }
 
 Vs64 VDirectIOFileStream::available() const {

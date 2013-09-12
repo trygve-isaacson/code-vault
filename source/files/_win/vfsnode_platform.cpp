@@ -19,41 +19,27 @@ http://www.bombaydigital.com/
     #pragma warning(default: 6387)
 #endif
 
-/* OS APIs called, due for wrapping:
-
-_wgetcwd
-SHGetFolderPathW
-mkdir
-GetModuleFileNameW
-wrap_stat
-GetFileAttributesW
-wrap_mkdir
-wrap_rmdir
-wrap_unlink
-wrap_rename
-FindFirstFileW
-FindNextFileW
-FindClose
-
-I think I will redefine VFileSystemAPI to use VString parameters instead of char*.
-Then take the vault namespace low level OS wrapper functions and do the same.
-Then the Win32 versions of those can do the last-moment wide string conversion.
-This keeps the rest of the code VString-centric so it doesn't expose the conversion junk.
-
-*/
-
 /*
 Notes on use of Win32 "wide" APIs:
+
+We define APIs in VFileSystem for common functions across platforms, and these
+take VStrings and call through to VPlatformAPI which can do any necessary conversion.
+
+But there are few Win32 APIs we call here that are not exposed in a cross-platform way
+in VFileSystem because they are not general-purpose. So we must do the necessary
+conversions here, in this manner:
 
 Win32 has three flavors of each string-based API.
 The single-byte char, or "ANSI" versions, have an "A" suffix.
   For example: FindFirstFileA(const char* path, WIN32_FIND_DATAA* data)
   (WIN32_FIND_DATAA has instance variables containing char)
   These use ANSI C char strings that must be in the "current" code page.
+  They are not compatible with arbitrary string data; only the current code page.
 The two-byte char, or "wide" versions, have a "W" suffix.
   For example: FindFirstFileW(const wchar_t* path, WIN32_FIND_DATAW* data)
   (WIN32_FIND_DATAW has instance variables containing wchar_t)
   These use UTF-16 wchar_t strings, so they take Unicode in UTF-16 format.
+  They will work with any UTF-16 character, regardless of the current code page.
 A version of each API without any suffix at all is macro-based and defined
 as the "A" version if UNICODE is not defined, or the "W" version if UNICODE is defined.
   For example: FindFirstFile() is defined as either FindFirstFileA() or FindFirstFileW()
@@ -100,34 +86,29 @@ _   Underscore
 */
 
 // static
-void VFSNode::_platform_normalizePath(VString& path) {
+VString VFSNode::_platform_normalizePath(const VString& path) {
     // For the moment, we get almost all the functionality we need by
     // simply converting backslash to slash if we are compiled for Windows.
     // Mac OS X support is free since it's Unix. Mac OS 9 support would
     // have to deal with ':'. DOS drive letters and Mac OS 9 root/relative
     // paths would complicate things a little for things like getParentPath.
-    path.replace("\\", "/");
+    VString normalized(path);
+    normalized.replace("\\", "/");
+    return normalized;
 }
 
 // static
-void VFSNode::_platform_denormalizePath(VString& path) {
+VString VFSNode::_platform_denormalizePath(const VString& path) {
     // See comments above.
-    path.replace("/", "\\");
+    VString denormalized(path);
+    denormalized.replace("/", "\\");
+    return denormalized;
 }
 
 // static
 VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, const VString& companyName, const VString& appName) {
     if (id == CURRENT_WORKING_DIRECTORY) {
-        wchar_t cwdPath[MAX_PATH];
-        wchar_t* cwdResult = _wgetcwd(cwdPath, MAX_PATH);
-        if (cwdResult == NULL) {
-            throw VStackTraceException(VSystemError(), "VFSNode::_platform_getKnownDirectoryNode: _wgetcwd failed.");
-        }
-
-        VString cwdPathString(cwdPath);
-        VFSNode::normalizePath(cwdPathString);
-        VFSNode cwdNode(cwdPathString);
-        return cwdNode;
+        return VFSNode(VPlatformAPI::getcwd());
     }
 
     if (id == EXECUTABLE_DIRECTORY) {
@@ -145,8 +126,7 @@ VFSNode VFSNode::_platform_getKnownDirectoryNode(KnownDirectoryIdentifier id, co
     }
 
     VString path(pathBuffer);
-    VFSNode::_platform_normalizePath(path);
-    VFSNode appDataFolder(path);
+    VFSNode appDataFolder(VFSNode::normalizePath(path));
 
     // User's folder is one level up from user's Application Data folder.
     VFSNode currentUserFolder;
@@ -218,14 +198,13 @@ VFSNode VFSNode::_platform_getExecutable() {
         throw VStackTraceException(VSystemError(), "VFSNode::_platform_getExecutable: Unable to determine exe path.");
 
     VString exePath(exePathBuffer);
-    VFSNode::normalizePath(exePath); // must supply normalized form to VFSNode below
-    VFSNode exeNode(exePath);
+    VFSNode exeNode(VFSNode::normalizePath(exePath));
     return exeNode;
 }
 
 bool VFSNode::_platform_getNodeInfo(VFSNodeInfo& info) const {
     struct stat statData;
-    int result = VFileSystemAPI::wrap_stat(mPath, &statData);
+    int result = VFileSystem::stat(mPath, &statData);
 
     if (result >= 0) {
         info.mCreationDate = CONST_S64(1000) * static_cast<Vs64>(statData.st_ctime);
@@ -243,24 +222,24 @@ bool VFSNode::_platform_getNodeInfo(VFSNodeInfo& info) const {
 }
 
 void VFSNode::_platform_createDirectory() const {
-    int result = VFileSystemAPI::wrap_mkdir(mPath, (S_IFDIR | S_IRWXO | S_IRWXG | S_IRWXU));
+    int result = VFileSystem::mkdir(mPath, (S_IFDIR | S_IRWXO | S_IRWXG | S_IRWXU));
 
     if (result != 0)
         throw VException(VSystemError(), VSTRING_FORMAT("VFSNode::_platform_createDirectory failed with result %d for '%s'.", result, mPath.chars()));
 }
 
 bool VFSNode::_platform_removeDirectory() const {
-    int result = VFileSystemAPI::wrap_rmdir(mPath);
+    int result = VFileSystem::rmdir(mPath);
     return (result == 0);
 }
 
 bool VFSNode::_platform_removeFile() const {
-    int result = VFileSystemAPI::wrap_unlink(mPath);
+    int result = VFileSystem::unlink(mPath);
     return (result == 0);
 }
 
 void VFSNode::_platform_renameNode(const VString& newPath) const {
-    int result = VFileSystemAPI::wrap_rename(mPath, newPath);
+    int result = VFileSystem::rename(mPath, newPath);
 
     if (result != 0)
         throw VException(VSystemError(), VSTRING_FORMAT("VFSNode::_platform_renameNode failed with result %d renaming '%s' to '%s'.", result, mPath.chars(), newPath.chars()));
@@ -270,11 +249,7 @@ void VFSNode::_platform_renameNode(const VString& newPath) const {
 // FindFirstFile(), FindNextFile(), FindClose() functions.
 
 void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) const {
-    VString nodeName;
-    VString searchPath(VSTRING_ARGS("%s/*", mPath.chars()));
-
-    VFSNode::denormalizePath(searchPath);    // make it have DOS syntax
-
+    VString searchPath(VFSNode::denormalizePath(VSTRING_FORMAT("%s/*", mPath.chars())));    // Supply DOS path syntax to Win32 API
     WIN32_FIND_DATAW data;
     HANDLE dir = ::FindFirstFileW(searchPath.toUTF16().c_str(), &data);
 
@@ -294,7 +269,7 @@ void VFSNode::_platform_directoryIterate(VDirectoryIterationCallback& callback) 
         do {
             VThread::yield(); // be nice if we're iterating over a huge directory
 
-            nodeName = data.cFileName; // assign VString from wide char string
+            VString nodeName = data.cFileName; // assign VString from wide char string
 
             // Skip current and parent pseudo-entries. Otherwise client must
             // know too much detail in order to avoid traversal problems.

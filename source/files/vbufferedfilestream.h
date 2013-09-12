@@ -153,19 +153,6 @@ class VBufferedFileStream : public VAbstractFileStream {
         VBufferedFileStream(const VBufferedFileStream& other);
         VBufferedFileStream& operator=(const VBufferedFileStream& other);
 
-        /*
-        These wrapper functions handle signal interruptions that may occur on
-        some Unix systems, and they also provide a common breakpoint location
-        for debugging i/o errors.
-        */
-        static FILE*    _wrap_fopen(const char* nativePath, const char* mode);                      ///< Calls POSIX fopen in a way that is safe even if a signal is caught inside the function.
-        static int      _wrap_fclose(FILE* f);                                                      ///< Calls POSIX fclose in a way that is safe even if a signal is caught inside the function.
-        static size_t   _wrap_fread(void* buffer, size_t size, size_t numItems, FILE* f);           ///< Calls POSIX fread in a way that is safe even if a signal is caught inside the function.
-        static size_t   _wrap_fwrite(const void* buffer, size_t size, size_t numItems, FILE* f);    ///< Calls POSIX fwrite in a way that is safe even if a signal is caught inside the function.
-        static int      _wrap_fseek(FILE* f, long int offset, int whence);                          ///< Calls POSIX fseek in a way that is safe even if a signal is caught inside the function.
-        static int      _wrap_fflush(FILE* f);                                                      ///< Calls POSIX fflush in a way that is safe even if a signal is caught inside the function.
-        static long int _wrap_ftell(FILE* f);                                                       ///< Calls POSIX ftell in a way that is safe even if a signal is caught inside the function.
-
         FILE*   mFile;              ///< The Unix API file handle.
         bool    mCloseOnDestruct;   ///< True if we'll close on destruct, set false on setFile.
 
