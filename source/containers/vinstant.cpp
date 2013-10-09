@@ -941,6 +941,16 @@ bool VInstant::isTimeFrozen() {
 
 const VChar VDate::kLocalDateSeparator('/');
 
+// static
+VDate VDate::createFromDateString(const VString& dateString, const VChar& delimiter) {
+    VStringVector parts = dateString.split(delimiter);
+    if (parts.size() < 3) {
+        throw VRangeException(VSTRING_FORMAT("Unable to parse date from '%s'.", dateString.chars()));
+    }
+    
+    return VDate(parts[0].parseInt(), parts[1].parseInt(), parts[2].parseInt());
+}
+
 VDate::VDate()
     : mYear(0)
     , mMonth(1)

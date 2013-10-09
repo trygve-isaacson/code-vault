@@ -343,6 +343,46 @@ VDuration VSettingsNode::getDuration(const VString& path) const {
     return VDuration(); // (will never reach this statement because of throw)
 }
 
+VDate VSettingsNode::getDate(const VString& path, const VDate& defaultValue) const {
+    const VSettingsNode* nodeForPath = this->findNode(path);
+
+    if (nodeForPath != NULL)
+        return nodeForPath->getDateValue();
+    else
+        return defaultValue;
+}
+
+VDate VSettingsNode::getDate(const VString& path) const {
+    const VSettingsNode* nodeForPath = this->findNode(path);
+
+    if (nodeForPath != NULL)
+        return nodeForPath->getDateValue();
+
+    this->throwNotFound("Date", path);
+
+    return VDate(); // (will never reach this statement because of throw)
+}
+
+VInstant VSettingsNode::getInstant(const VString& path, const VInstant& defaultValue) const {
+    const VSettingsNode* nodeForPath = this->findNode(path);
+
+    if (nodeForPath != NULL)
+        return nodeForPath->getInstantValue();
+    else
+        return defaultValue;
+}
+
+VInstant VSettingsNode::getInstant(const VString& path) const {
+    const VSettingsNode* nodeForPath = this->findNode(path);
+
+    if (nodeForPath != NULL)
+        return nodeForPath->getInstantValue();
+
+    this->throwNotFound("Date", path);
+
+    return VInstant(); // (will never reach this statement because of throw)
+}
+
 bool VSettingsNode::nodeExists(const VString& path) const {
     return (this->findNode(path) != NULL);
 }
@@ -728,6 +768,14 @@ VDuration VSettings::getDurationValue() const {
     throw VStackTraceException("Tried to get raw duration value on top level settings object.");
 }
 
+VDate VSettings::getDateValue() const {
+    throw VStackTraceException("Tried to get raw date value on top level settings object.");
+}
+
+VInstant VSettings::getInstantValue() const {
+    throw VStackTraceException("Tried to get raw instant value on top level settings object.");
+}
+
 void VSettings::addChildNode(VSettingsNode* node) {
     mNodes.push_back(node);
 }
@@ -1037,6 +1085,24 @@ VDuration VSettingsTag::getDurationValue() const {
     return cdataNode->getDurationValue();
 }
 
+VDate VSettingsTag::getDateValue() const {
+    VSettingsNode* cdataNode = this->_findChildTag("<cdata>");
+
+    if (cdataNode == NULL)
+        this->throwNotFound("Date", "<cdata>");
+
+    return cdataNode->getDateValue();
+}
+
+VInstant VSettingsTag::getInstantValue() const {
+    VSettingsNode* cdataNode = this->_findChildTag("<cdata>");
+
+    if (cdataNode == NULL)
+        this->throwNotFound("Instant", "<cdata>");
+
+    return cdataNode->getInstantValue();
+}
+
 void VSettingsTag::setLiteral(const VString& value) {
     VSettingsNode* cdataNode = this->_findChildTag("<cdata>");
 
@@ -1175,6 +1241,20 @@ VDuration VSettingsAttribute::getDurationValue() const {
     return VDuration::createFromDurationString(mValue);
 }
 
+VDate VSettingsAttribute::getDateValue() const {
+    return VDate::createFromDateString(mValue, '-');
+}
+
+VInstant VSettingsAttribute::getInstantValue() const {
+    VInstant when;
+    if (mValue.contains("UTC")) {
+        when.setUTCString(mValue);
+    } else {
+        when.setLocalString(mValue);
+    }
+    return when;
+}
+
 void VSettingsAttribute::setLiteral(const VString& value) {
     mHasValue = true;
     mValue = value;
@@ -1249,6 +1329,20 @@ VColor VSettingsCDATA::getColorValue() const {
 
 VDuration VSettingsCDATA::getDurationValue() const {
     return VDuration::createFromDurationString(mCDATA);
+}
+
+VDate VSettingsCDATA::getDateValue() const {
+    return VDate::createFromDateString(mCDATA, '-');
+}
+
+VInstant VSettingsCDATA::getInstantValue() const {
+    VInstant when;
+    if (mCDATA.contains("UTC")) {
+        when.setUTCString(mCDATA);
+    } else {
+        when.setLocalString(mCDATA);
+    }
+    return when;
 }
 
 void VSettingsCDATA::setLiteral(const VString& value) {
@@ -1577,7 +1671,7 @@ void VSettingsXMLParser::emitAttributeValue() {
 
 void VSettingsXMLParser::emitCloseTagName() {
     if (mCurrentTag->getName() != mElement)
-        this->stateError("Closing tag name does not balance opening tag.");
+        this->stateError(VSTRING_FORMAT("Closing tag name '%s' does not balance opening tag '%s'.", mElement.chars(), mCurrentTag->getName().chars()));
 
     mCurrentTag = mCurrentTag->getParent();
 }

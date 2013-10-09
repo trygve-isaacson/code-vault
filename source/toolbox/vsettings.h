@@ -104,6 +104,12 @@ class VSettingsNode {
         virtual VDuration getDuration(const VString& path, const VDuration& defaultValue) const;
         virtual VDuration getDuration(const VString& path) const;
         virtual VDuration getDurationValue() const = 0;
+        virtual VDate getDate(const VString& path, const VDate& defaultValue) const;
+        virtual VDate getDate(const VString& path) const;
+        virtual VDate getDateValue() const = 0;
+        virtual VInstant getInstant(const VString& path, const VInstant& defaultValue) const;
+        virtual VInstant getInstant(const VString& path) const;
+        virtual VInstant getInstantValue() const = 0;
         virtual bool nodeExists(const VString& path) const;
 
         virtual void addIntValue(const VString& path, int value);
@@ -188,6 +194,8 @@ class VSettings : public VSettingsNode {
         virtual VPolygon getPolygonValue() const;
         virtual VColor getColorValue() const;
         virtual VDuration getDurationValue() const;
+        virtual VDate getDateValue() const;
+        virtual VInstant getInstantValue() const;
 
         virtual void addChildNode(VSettingsNode* node);
 
@@ -240,6 +248,8 @@ class VSettingsTag : public VSettingsNode {
         virtual VPolygon getPolygonValue() const;
         virtual VColor getColorValue() const;
         virtual VDuration getDurationValue() const;
+        virtual VDate getDateValue() const;
+        virtual VInstant getInstantValue() const;
 
         virtual void setLiteral(const VString& value);
 
@@ -284,6 +294,8 @@ class VSettingsAttribute : public VSettingsNode {
         virtual VPolygon getPolygonValue() const;
         virtual VColor getColorValue() const;
         virtual VDuration getDurationValue() const;
+        virtual VDate getDateValue() const;
+        virtual VInstant getInstantValue() const;
 
         virtual void setLiteral(const VString& value);
 
@@ -321,6 +333,8 @@ class VSettingsCDATA : public VSettingsNode {
         virtual VPolygon getPolygonValue() const;
         virtual VColor getColorValue() const;
         virtual VDuration getDurationValue() const;
+        virtual VDate getDateValue() const;
+        virtual VInstant getInstantValue() const;
 
         virtual void setLiteral(const VString& value);
 

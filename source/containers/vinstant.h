@@ -909,6 +909,8 @@ a VInstant.
 */
 class VDate {
     public:
+    
+        static VDate createFromDateString(const VString& dateString, const VChar& delimiter);
 
         /**
         Constructs a date with values set to 0000-01-01 (useless but legal state

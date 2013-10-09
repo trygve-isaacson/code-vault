@@ -1,5 +1,26 @@
 CODE VAULT RELEASE NOTES
 
+---------- VERSION 4.1d3 ----------
+Trygve Isaacson, October 2013
+
+VAULT-0042
+* Added support for dates in VSettings, with VDate construction from string.
+
+---------- VERSION 4.1d2 ----------
+Trygve Isaacson, September 2013
+
+VAULT-0041
+* Fix Windows XP startup IPv6 DLL bug.
+VAULT-0039
+* Improved Unicode-aware APIs and support.
+- VString continues to use UTF-8 bytes internally.
+- As before, most C string functions and VString APIs work seamlessly with UTF-8.
+- VCodePoint stores any Unicode code point; conversion with UTF-8, UTF-16.
+- VString APIs for construct, append, etc. with VCodePoint.
+- VStringIterator iterates over VString, returning VCodePoint elements.
+- VString APIs for construct, append, get, etc. with std::wstring (UTF-16).
+- You will want to pass std::wstring to "wide" OS APIs on Windows.
+
 ---------- VERSION 4.1d1 ----------
 Trygve Isaacson, August 2013
 
