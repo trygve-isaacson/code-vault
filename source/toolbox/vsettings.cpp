@@ -378,7 +378,7 @@ VInstant VSettingsNode::getInstant(const VString& path) const {
     if (nodeForPath != NULL)
         return nodeForPath->getInstantValue();
 
-    this->throwNotFound("Date", path);
+    this->throwNotFound("Instant", path);
 
     return VInstant(); // (will never reach this statement because of throw)
 }
