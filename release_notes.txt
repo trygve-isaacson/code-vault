@@ -50,7 +50,7 @@ Trygve Isaacson, July 2013
 VAULT-0031
 * SSO (small string optimization) implementation.
 - VString can store small strings internally, avoiding heap buffer allocation.
-- The memory footprint of VString objects is unchanged.
+- The base memory footprint of VString objects is unchanged.
 - Performance is improved by 55%-60% for small strings.
 - Memory usage is improved by 57%-67% for small strings.
 - A "small" string is defined as 10 chars or fewer on 32-bit, 18 chars or fewer on 64-bit.
