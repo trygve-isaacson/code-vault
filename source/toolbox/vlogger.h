@@ -19,6 +19,10 @@ http://www.bombaydigital.com/
 #ifdef VPLATFORM_WIN
     #undef ERROR
 #endif
+// Xcode 5 steals this symbol name globally. Take it back.
+#ifdef VPLATFORM_MAC
+    #undef DEBUG
+#endif
 
 class VSettings;
 class VSettingsNode;

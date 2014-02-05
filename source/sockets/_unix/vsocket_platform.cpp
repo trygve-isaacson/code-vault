@@ -84,7 +84,7 @@ VString VSocket::_platform_addrinfoToIPAddressString(const VString& hostName, co
     if (buf == NULL) {
         throw VException(VSystemError::getSocketError(), VSTRING_FORMAT("VSocket::_platform_addrinfoToIPAddressString(%s): inet_ntop() failed.", hostName.chars()));
     }
-    result.postflight(::strlen(buf));
+    result.postflight((int) ::strlen(buf));
 
     return result;
 }
