@@ -43,7 +43,7 @@ Instead, if you need to be Unicode-aware in your string manipulation, you would 
 Internal implementation notes:
 Think of the string as an array of n code points. (In reality they are of different sizes.)
 We of course keep an index into the string's array of bytes, but always incrementing and decrementing across actual
-code pointe boundaries.
+code point boundaries.
 - For forward iteration, "begin" has the byte index of code point index 0, and "end" has the byte index of code point index n.
     Operator *() simply examines code point [i], which involves scanning the current index byte and possibly what follows.
 - For reverse iteration, "begin" has the byte index of code point index n, and "end" has the byte index of code point index 0.

@@ -1261,11 +1261,11 @@ class VString {
         Internally, we use a union to overlay the data, and have an internal flag in the union, mUsingInternalBuffer,
         that tells us which buffer (and which part of the union) is in effect. To make most efficient use of space
         and avoid adding overhead, I have carefully examined how the compilers lay out and align the data, and I have
-        ordered the union data to avoid bloat. If not for that concern, I would have put the mStringLength and
-        mUsingInternalBuffer outside the union since they apply to both parts of the union; however, that would have
-        an the effect on union alignment on 64-bit of wasting several bytes. So instead, those two instance variables
-        are overlaid in both parts of the union but only the ones named in the first ("mI") part are referenced in the
-        code.
+        ordered the union data to avoid bloat. If not for that concern, I would have put mStringLength, mNumCodePoints,
+        and mUsingInternalBuffer outside the union since they apply to both parts of the union; however, that would have
+        an the effect on union alignment on 64-bit of wasting several bytes. So instead, those instance variables
+        are overlaid in both parts of the union, or put in the first part, but only the ones named in the first ("mI")
+        part are referenced in the code.
         */
         
         // The internal buffer lengths are carefully chosen to fit within the existing object footprint's unused space.
@@ -1290,7 +1290,7 @@ class VString {
         even for an empty string which is usually in the internal buffer space. The buffer is immutable and so this
         API should be used in any const function that needs to read the buffer, or a non-const function when it is
         only reading the buffer. This function is named _get() for conciseness of code in the internal implementation.
-        It means to obtain "getter" read-only access to the buffer.
+        It means to obtain "getter" (read-only) access to the buffer.
         @return a valid pointer to an immutable null-terminated C string buffer, which may be the internal buffer or an external buffer
         */
         const char* _get() const { return mU.mI.mUsingInternalBuffer ? mU.mI.mInternalBuffer : mU.mX.mHeapBufferPtr; }
@@ -1298,7 +1298,7 @@ class VString {
         Returns a pointer to the (writeable) buffer that is in use (internal or external). It will never be null,
         even for an empty string which is usually in the internal buffer space. The buffer is mutable and so this
         API should be used in any non-const function where it needs to write to the buffer. This function is
-        named _set() for conciseness of code in the internal implementation. It means to obtain "setter" read-write
+        named _set() for conciseness of code in the internal implementation. It means to obtain "setter" (read-write)
         access to the buffer.
         @return a valid pointer to a mutable null-terminated C string buffer, which may be the internal buffer or an external buffer
         */
@@ -1313,7 +1313,11 @@ class VString {
         @return the string buffer's total length
         */
         int _getBufferLength() const { return mU.mI.mUsingInternalBuffer ? VSTRING_INTERNAL_BUFFER_SIZE : mU.mX.mHeapBufferLength; }
-        
+        /**
+        Computes the number of code points in the string and stores it in mI.mNumCodePoints; meant to be called internally, lazily,
+        by getNumCodePoints() if mI.mNumCodePoints is -1. If the string is empty, the answer is 0; otherwise, the function iterates
+        over the string buffer and counts the code points found.
+        */
         void _determineNumCodePoints() const;
 
         // Finally, the union that defines our internal structure.
