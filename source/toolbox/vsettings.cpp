@@ -14,6 +14,7 @@ http://www.bombaydigital.com/
 #include "vbinaryiostream.h"
 #include "vchar.h"
 #include "vbento.h"
+#include "vfilewriter.h"
 
 V_STATIC_INIT_TRACE
 
@@ -602,12 +603,9 @@ void VSettings::readFromFile(const VFSNode& file) {
 }
 
 void VSettings::writeToFile(const VFSNode& file) const {
-    VMemoryStream buffer;
-    VTextIOStream out(buffer);
-    this->writeToStream(out);
-    buffer.seek0();
-    VBinaryIOStream binaryStream(buffer);
-    VFSNode::safelyOverwriteFile(file, buffer.getEOFOffset(), binaryStream);
+    VFileWriter writer(file);
+    this->writeToStream(writer.getTextOutputStream());
+    writer.save();
 }
 
 void VSettings::readFromStream(VTextIOStream& inputStream) {
