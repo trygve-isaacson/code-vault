@@ -631,10 +631,16 @@ class VAutoreleasePool {
     #define VSharedPtr              boost::shared_ptr
     #define VWeakPtr                boost::weak_ptr
     #define VEnableSharedFromThis   boost::enable_shared_from_this
+    #define VStaticPtrCast          boost::static_pointer_cast
+    #define VDynamicPtrCast         boost::dynamic_pointer_cast
+    #define VConstPtrCast           boost::const_pointer_cast
 #else
     #define VSharedPtr              std::shared_ptr
     #define VWeakPtr                std::weak_ptr
     #define VEnableSharedFromThis   std::enable_shared_from_this
+    #define VStaticPtrCast          std::static_pointer_cast
+    #define VDynamicPtrCast         std::dynamic_pointer_cast
+    #define VConstPtrCast           std::const_pointer_cast
 #endif
 
 /*
