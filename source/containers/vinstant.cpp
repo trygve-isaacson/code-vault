@@ -406,15 +406,15 @@ const VString& VInstant::LOCAL_TIME_ZONE_ID() {
 Vs64 VInstant::gSimulatedClockOffset(0);
 Vs64 VInstant::gFrozenClockValue(0);
 
-MRemoteTimeZoneConverter* VInstant::gRemoteTimeZoneConverter = NULL;
+IVRemoteTimeZoneConverter* VInstant::gRemoteTimeZoneConverter = NULL;
 
 // static
-void VInstant::setRemoteTimeZoneConverter(MRemoteTimeZoneConverter* converter) {
+void VInstant::setRemoteTimeZoneConverter(IVRemoteTimeZoneConverter* converter) {
     gRemoteTimeZoneConverter = converter;
 }
 
 // static
-MRemoteTimeZoneConverter* VInstant::getRemoteTimeZoneConverter() {
+IVRemoteTimeZoneConverter* VInstant::getRemoteTimeZoneConverter() {
     return gRemoteTimeZoneConverter;
 }
 

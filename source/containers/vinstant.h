@@ -281,11 +281,8 @@ call VInstant::setRemoteTimeZoneConverter(). Then you can pass RTZ specifiers
 to the VInstant APIs that allow them, and VInstant will call back to
 the installed RTZ converter interface.
 */
-class MRemoteTimeZoneConverter {
+class IVRemoteTimeZoneConverter {
     public:
-
-        MRemoteTimeZoneConverter() {}
-        virtual ~MRemoteTimeZoneConverter() {}
 
         /**
         Converts an offset (ms from 1970 UTC, same as VInstant "value") to
@@ -312,6 +309,12 @@ class MRemoteTimeZoneConverter {
                             time zone
         */
         virtual Vs64 offsetFromRTZStruct(const VString& timeZoneID, const VInstantStruct& when) = 0;
+
+    protected:
+
+        IVRemoteTimeZoneConverter() {}
+        virtual ~IVRemoteTimeZoneConverter() {}
+
 };
 
 /**
@@ -673,14 +676,14 @@ class VInstant {
         pass NULL to disable use of RTZ conversion (by default, no converter is
         installed).
         */
-        static void setRemoteTimeZoneConverter(MRemoteTimeZoneConverter* converter);
+        static void setRemoteTimeZoneConverter(IVRemoteTimeZoneConverter* converter);
         /**
         Returns the currently installed Remote Time Zone Converter, which may be
         NULL. You might use this to delete the old converter if you are installing
         a new one. VInstant uses whatever converter is installed (if it's not NULL)
         at the time it needs it.
         */
-        static MRemoteTimeZoneConverter* getRemoteTimeZoneConverter();
+        static IVRemoteTimeZoneConverter* getRemoteTimeZoneConverter();
 
         // Time simulation features. Note that if "frozen time" is in effect, the
         // "clock offset" information is not used.
@@ -873,7 +876,7 @@ class VInstant {
 
         static Vs64 gSimulatedClockOffset; ///< Value applied by _platform_now() and _platform_snapshot() to simulate non-real-time flow.
         static Vs64 gFrozenClockValue;     ///< If non-zero, the "current time" returned is always this value; time is effectively frozen.
-        static MRemoteTimeZoneConverter* gRemoteTimeZoneConverter; ///< The converter for RTZ conversion, or NULL.
+        static IVRemoteTimeZoneConverter* gRemoteTimeZoneConverter; ///< The converter for RTZ conversion, or NULL.
 
         // Let VDate call the getTimeValue() bottleneck for getting the day of
         // week, but don't make it a public API since it's exposing the tm

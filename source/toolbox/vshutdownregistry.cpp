@@ -39,7 +39,7 @@ void VShutdownRegistry::shutdown() {
     }
 }
 
-void VShutdownRegistry::registerHandler(MShutdownHandler* handler) {
+void VShutdownRegistry::registerHandler(IVShutdownHandler* handler) {
     VMutexLocker locker(_mutexInstance(), "VShutdownRegistry::registerHandler()");
 
     mHandlers.push_back(handler);
@@ -63,7 +63,7 @@ VShutdownRegistry::~VShutdownRegistry() {
     }
 
     for (ShutdownHandlerList::iterator i = mHandlers.begin(); i != mHandlers.end(); ++i) {
-        MShutdownHandler*    handler = (*i);
+        IVShutdownHandler*    handler = (*i);
 
         bool deleteHandler = handler->mDeleteAfterShutdown; // save first; _shutdown() could delete handler
         handler->_shutdown();

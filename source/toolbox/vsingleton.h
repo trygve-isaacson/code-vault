@@ -79,10 +79,10 @@ instance. These are typically design bugs that need to be re-thought.
 </ul>
 <p>
 @see VShutdownRegistry
-@see MShutdownHandler
+@see IVShutdownHandler
 */
 template <class T>
-class VSingleton : public MShutdownHandler {
+class VSingleton : public IVShutdownHandler {
     public:
 
         /** Specifies whether the VSingleton can be deleted. */
@@ -105,7 +105,7 @@ class VSingleton : public MShutdownHandler {
                    ThreadSafetyPolicy threadSafetyPolicy,
                    ShutdownPolicy shutdownPolicy,
                    ResurrectionPolicy resurrectionPolicy = kDontAllowResurrection)
-            : MShutdownHandler(holderDeletionPolicy == kDeleteHolderAtShutdown)
+            : IVShutdownHandler(holderDeletionPolicy == kDeleteHolderAtShutdown)
             , mThreadSafe(threadSafetyPolicy == kThreadSafeAccess)
             , mWantShutdown(shutdownPolicy == kRegisterForShutdown)
             , mAllowResurrection(resurrectionPolicy == kAllowResurrection)
@@ -151,7 +151,7 @@ class VSingleton : public MShutdownHandler {
     protected:
 
         /**
-        Implementation of MShutdownHandler interface.
+        Implementation of IVShutdownHandler interface.
         To shut down the singleton means to delete the instance.
         */
         virtual void _shutdown() {

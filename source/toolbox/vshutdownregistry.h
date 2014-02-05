@@ -14,21 +14,21 @@ http://www.bombaydigital.com/
 */
 
 /**
-MShutdownHandler is the mix-in class (interface) for objects
+IVShutdownHandler is the mix-in class (interface) for objects
 that are registered with the shutdown registry. The concrete
 subclass must simply implement the _shutdown() function and
 do its cleanup there.
 @see VShutdownRegistry
 */
-class MShutdownHandler {
+class IVShutdownHandler {
     public:
 
-        MShutdownHandler(bool deleteHandlerAfterShutdown = true) :
+    protected:
+
+        IVShutdownHandler(bool deleteHandlerAfterShutdown = true) :
             mDeleteAfterShutdown(deleteHandlerAfterShutdown) {}
 
-        virtual ~MShutdownHandler() {}
-
-    protected:
+        virtual ~IVShutdownHandler() {}
 
         /**
         Called by the shutdown registry to tell the object to clean up
@@ -46,7 +46,7 @@ class MShutdownHandler {
 };
 
 /** This type stores a list of shutdown handler pointers. */
-typedef std::vector<MShutdownHandler*> ShutdownHandlerList;
+typedef std::vector<IVShutdownHandler*> ShutdownHandlerList;
 
 /** This defines the function type that can be installed as a simple
 shutdown hook. */
@@ -86,7 +86,7 @@ class VShutdownRegistry {
         handler's _shutdown() will be called to shut down when the
         registry is told to shut down.
         */
-        void registerHandler(MShutdownHandler* handler);
+        void registerHandler(IVShutdownHandler* handler);
 
         /**
         Registers a shutdown function with the shutdown registry. The
@@ -135,7 +135,7 @@ is safe to do.
 </ol>
 */
 template <class T>
-class VSingletonShutdownHandler : public MShutdownHandler {
+class VSingletonShutdownHandler : public IVShutdownHandler {
     public:
 
         /**
@@ -145,7 +145,7 @@ class VSingletonShutdownHandler : public MShutdownHandler {
             heap objects, false for global variables
         */
         VSingletonShutdownHandler(bool deleteHandlerAfterShutdown = true)
-            : MShutdownHandler(deleteHandlerAfterShutdown)
+            : IVShutdownHandler(deleteHandlerAfterShutdown)
             {
             VShutdownRegistry::instance()->registerHandler(this);
         }
@@ -155,7 +155,7 @@ class VSingletonShutdownHandler : public MShutdownHandler {
     protected:
 
         /**
-        Implementation of MShutdownHandler interface.
+        Implementation of IVShutdownHandler interface.
         To shut down the singleton means to delete the instance.
         */
         virtual void _shutdown() { T::deleteInstance(); }
