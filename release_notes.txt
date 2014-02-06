@@ -1,5 +1,23 @@
 CODE VAULT RELEASE NOTES
 
+---------- VERSION 4.1d4 ----------
+Trygve Isaacson, February 2014
+
+VAULT-0043
+* Rename mix-in classes as "interface" definitions.
+VAULT-0044
+* Fix compiler warnings from latest Xcode5 and Clang.
+VAULT-0045
+* Define aliases for shared_ptr casts for Boost and C++11.
+VAULT-0046
+* New file i/o helper class VFileWriter.
+- Makes it simple to safely overwrite a file with new contents.
+VAULT-0047
+* Define serialization interfaces.
+- Standardized i/o interface names and functions for i/o streams.
+- Use new interface names for all Vault objects that serialize.
+- Includes VBento and VSettings, as well as objects that support them.
+
 ---------- VERSION 4.1d3 ----------
 Trygve Isaacson, October 2013
 
