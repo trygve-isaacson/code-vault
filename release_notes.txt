@@ -12,11 +12,6 @@ VAULT-0045
 VAULT-0046
 * New file i/o helper class VFileWriter.
 - Makes it simple to safely overwrite a file with new contents.
-VAULT-0047
-* Define serialization interfaces.
-- Standardized i/o interface names and functions for i/o streams.
-- Use new interface names for all Vault objects that serialize.
-- Includes VBento and VSettings, as well as objects that support them.
 
 ---------- VERSION 4.1d3 ----------
 Trygve Isaacson, October 2013
