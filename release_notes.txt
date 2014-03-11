@@ -60,7 +60,7 @@ See specific 4.0 development release notes below for complete details. Major fea
 ---------- VERSION 4.0d9 ----------
 Trygve Isaacson, July 2013
 
-VAULT-0031
+VAULT-0036
 * SSO (small string optimization) implementation.
 - VString can store small strings internally, avoiding heap buffer allocation.
 - The base memory footprint of VString objects is unchanged.
