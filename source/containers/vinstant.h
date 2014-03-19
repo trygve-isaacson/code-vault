@@ -260,6 +260,45 @@ class VInstantStruct {
     public:
         VInstantStruct() : mYear(0), mMonth(1), mDay(1), mHour(0), mMinute(0), mSecond(0), mMillisecond(0), mDayOfWeek(0) {}
         VInstantStruct(const VDate& date, const VTimeOfDay& timeOfDay);
+        
+        /**
+        Returns the UTC Epoch Offset of this Time Struct, treating the Time
+        Struct as an instant in the UTC time zone. The mDayOfWeek field is ignored.
+        @return the UTC Epoch Offset of this UTC time struct
+        */
+        Vs64 getOffsetFromUTCStruct() const;
+        /**
+        Returns the UTC Epoch Offset of this Time Struct, treating the Time
+        Struct as an instant in the machine's local time zone. The mDayOfWeek field
+        is ignored.
+        @return the UTC Epoch Offset of this local time struct
+        */
+        Vs64 getOffsetFromLocalStruct() const;
+        /**
+        Fills in a Time Struct to represent the specified UTC Epoch Offset in the
+        UTC time zone.
+        @param  offset  a UTC Epoch Offset
+        */
+        void setUTCStructFromOffset(Vs64 offset);
+        /**
+        Fills in this Time Struct to represent the specified UTC Epoch Offset in the
+        machine's local time zone.
+        @param  offset  a UTC Epoch Offset
+        */
+        void setLocalStructFromOffset(Vs64 offset);
+        
+        /**
+        Copies this Time Struct into a "struct tm" POSIX structure.
+        @param  fields  the tm struct to initialize
+        */
+        void getTmStruct(struct tm& fields) const;
+        /**
+        Sets up this Time Struct from a "struct tm" POSIX structure.
+        @param  fields      the tm struct to copy
+        @param  millisecond the ms value to use, since tm only has second resolution; normally zero except for some conversions
+        */
+        void setFromTmStruct(const struct tm& fields, int millisecond);
+
         int mYear;          ///< The year.
         int mMonth;         ///< The month (1 to 12).
         int mDay;           ///< The day of the month (1 to 31).
@@ -268,6 +307,61 @@ class VInstantStruct {
         int mSecond;        ///< The second of the minute (0 to 59).
         int mMillisecond;   ///< The millisecond within the second (0 to 999).
         int mDayOfWeek;     ///< See enum in VInstant: kSunday=0..kSaturday=6.
+
+    private:
+
+        // These are the 3 platform-defined helper functions for converting between
+        // offsets and UTC or local broken-down time struct. There isn't one for
+        // "from UTC struct" because it is not per-platform; if timegm is available
+        // we call it, otherwise we implement it directly.
+
+        /**
+        Returns the UTC Epoch Offset of the specified Time Struct, treating the Time
+        Struct as an instant in the machine's local time zone. The mDayOfWeek field
+        is ignored.
+        @return the UTC Epoch Offset of the specified local time struct
+        */
+        static Vs64 _platform_offsetFromLocalStruct(const VInstantStruct& when);
+        /**
+        Fills in a Time Struct to represent the specified UTC Epoch Offset in the
+        machine's local time zone.
+        @param    offset    a UTC Epoch Offset
+        @param    when    the Time Struct to fill in with the local time zone
+                        representation of the offset
+        */
+        static void _platform_offsetToLocalStruct(Vs64 offset, VInstantStruct& when);
+        /**
+        Fills in a Time Struct to represent the specified UTC Epoch Offset in the
+        UTC time zone.
+        @param    offset    a UTC Epoch Offset
+        @param    when    the Time Struct to fill in with the UTC time zone
+                        representation of the offset
+        */
+        static void _platform_offsetToUTCStruct(Vs64 offset, VInstantStruct& when);
+
+        /**
+        Provides a robust interface to localtime without the thread safety pitfalls,
+        using the re-entrant version if available. Throws an exception if the date
+        specified is out of range for the platform's time implementation.
+        (Specifically, Win32 does not support dates prior to 1970!)
+        The result structure contains the broken-down time corresponding to the
+        supplied offset, in local time.
+        @param    epochOffset        number of seconds since 1/1/1970 UTC
+        @param    resultStorage    pointer to tm struct to be filled out in local time
+        */
+        static void _threadsafe_localtime(const time_t epochOffset, struct tm* resultStorage);
+        /**
+        Provides a robust interface to gmtime without the thread safety pitfalls,
+        using the re-entrant version if available. Throws an exception if the date
+        specified is out of range for the platform's time implementation.
+        (Specifically, Win32 does not support dates prior to 1970!)
+        The result structure contains the broken-down time corresponding to the
+        supplied offset, in GMT time.
+        @param    epochOffset        number of seconds since 1/1/1970 UTC
+        @param    resultStorage    pointer to tm struct to be filled out in GMT time
+        */
+        static void _threadsafe_gmtime(const time_t epochOffset, struct tm* resultStorage);
+
 };
 
 /**
@@ -766,29 +860,6 @@ class VInstant {
         Vs64 mValue; ///< Milliseconds since: UTC 1970 00:00:00.000. Actual resolution may only be seconds, depending on OS. Using {64-bit,ms} means our definition does not have painful range limits like {32-bit,sec}.
 
         /**
-        Provides a robust interface to localtime without the thread safety pitfalls,
-        using the re-entrant version if available. Throws an exception if the date
-        specified is out of range for the platform's time implementation.
-        (Specifically, Win32 does not support dates prior to 1970!)
-        The result structure contains the broken-down time corresponding to the
-        supplied offset, in local time.
-        @param    epochOffset        number of seconds since 1/1/1970 UTC
-        @param    resultStorage    pointer to tm struct to be filled out in local time
-        */
-        static void threadsafe_localtime(const time_t epochOffset, struct tm* resultStorage);
-        /**
-        Provides a robust interface to gmtime without the thread safety pitfalls,
-        using the re-entrant version if available. Throws an exception if the date
-        specified is out of range for the platform's time implementation.
-        (Specifically, Win32 does not support dates prior to 1970!)
-        The result structure contains the broken-down time corresponding to the
-        supplied offset, in GMT time.
-        @param    epochOffset        number of seconds since 1/1/1970 UTC
-        @param    resultStorage    pointer to tm struct to be filled out in GMT time
-        */
-        static void threadsafe_gmtime(const time_t epochOffset, struct tm* resultStorage);
-
-        /**
         Returns true if i1 and i2 can be compared using simple value comparison.
         (It's false if either one has mKind != kActualValue.)
         */
@@ -837,35 +908,6 @@ class VInstant {
         @return the current UTC Epoch Offset in milliseconds
         */
         static Vs64 _platform_now();
-        /**
-        Returns the UTC Epoch Offset of the specified Time Struct, treating the Time
-        Struct as an instant in the machine's local time zone. The mDayOfWeek field
-        is ignored.
-        @return the UTC Epoch Offset of the specified local time struct
-        */
-        static Vs64 _platform_offsetFromLocalStruct(const VInstantStruct& when);
-        /**
-        Returns the UTC Epoch Offset of the specified Time Struct, treating the Time
-        Struct as an instant in the UTC time zone. The mDayOfWeek field is ignored.
-        @return the UTC Epoch Offset of the specified UTC time struct
-        */
-        static Vs64 _platform_offsetFromUTCStruct(const VInstantStruct& when);
-        /**
-        Fills in a Time Struct to represent the specified UTC Epoch Offset in the
-        machine's local time zone.
-        @param    offset    a UTC Epoch Offset
-        @param    when    the Time Struct to fill in with the local time zone
-                        representation of the offset
-        */
-        static void _platform_offsetToLocalStruct(Vs64 offset, VInstantStruct& when);
-        /**
-        Fills in a Time Struct to represent the specified UTC Epoch Offset in the
-        UTC time zone.
-        @param    offset    a UTC Epoch Offset
-        @param    when    the Time Struct to fill in with the UTC time zone
-                        representation of the offset
-        */
-        static void _platform_offsetToUTCStruct(Vs64 offset, VInstantStruct& when);
         /**
         Returns a current time value with millisecond resolution; the base value
         is unspecified, and this is only to be used to count time deltas between

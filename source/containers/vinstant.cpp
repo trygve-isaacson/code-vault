@@ -356,6 +356,61 @@ VDuration VDuration::_complexAbs(const VDuration& d) {
 
 // VInstantStruct ------------------------------------------------------------
 
+#ifdef VPLATFORM_WIN
+    #define V_USE_TIMEGM_REPLACEMENT
+#endif
+#ifdef VPLATFORM_UNIX_HPUX
+    #define V_USE_TIMEGM_REPLACEMENT
+#endif
+
+#ifdef V_USE_TIMEGM_REPLACEMENT
+
+static const time_t SECONDS_PER_MINUTE                  = 60;
+static const time_t SECONDS_PER_HOUR                    = 60 * SECONDS_PER_MINUTE;
+static const time_t SECONDS_PER_DAY                     = 24 * SECONDS_PER_HOUR;
+static const time_t SECONDS_PER_YEAR_FOR_NON_LEAP_YEAR  = 365 * SECONDS_PER_DAY;
+static const time_t SECONDS_PER_YEAR_FOR_LEAP_YEAR      = 366 * SECONDS_PER_DAY;
+
+static const time_t DAYS_PER_MONTH_FOR_NON_LEAP_YEAR[12]   = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+static const time_t DAYS_PER_MONTH_FOR_LEAP_YEAR[12]       = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+static const int EPOCH_YEAR = 1970;
+
+static bool _isLeapYear(int year) {
+    return ((year % 4) == 0) &&
+            (((year % 100) != 0) || ((year % 400) == 0));
+}
+
+// More efficient to work directly with VInstantStruct than convert back-and-forth with a 'struct tm'.
+static Vs64 _timegm_instantStructToMilliseconds(const VInstantStruct& when) {
+    time_t resultSecondsFromEpoch = 0;
+
+    if (when.mYear >= EPOCH_YEAR) {
+        for (int year = EPOCH_YEAR; year < when.mYear; ++year) {
+            resultSecondsFromEpoch += (_isLeapYear(year) ? SECONDS_PER_YEAR_FOR_LEAP_YEAR : SECONDS_PER_YEAR_FOR_NON_LEAP_YEAR);
+        }
+    } else if (when.mYear < EPOCH_YEAR) {
+        // Note that on Windows, most time APIs will return an error for values before 1970. However, we can handle them here easily.
+        for (int year = EPOCH_YEAR; year >= when.mYear; --year) {
+            resultSecondsFromEpoch -= (_isLeapYear(year) ? SECONDS_PER_YEAR_FOR_LEAP_YEAR : SECONDS_PER_YEAR_FOR_NON_LEAP_YEAR);
+        }
+    }
+
+    for (int monthIndex = 0; monthIndex < when.mMonth - 1; ++monthIndex) { // Note: mMonth range is 1..12, tm.m_mon range is 0..11.
+        resultSecondsFromEpoch += (_isLeapYear(when.mYear) ? (DAYS_PER_MONTH_FOR_LEAP_YEAR[monthIndex] * SECONDS_PER_DAY) : (DAYS_PER_MONTH_FOR_NON_LEAP_YEAR[monthIndex] * SECONDS_PER_DAY));
+    }
+
+    resultSecondsFromEpoch += ((when.mDay - 1) * SECONDS_PER_DAY);
+    resultSecondsFromEpoch += (when.mHour * SECONDS_PER_HOUR);
+    resultSecondsFromEpoch += (when.mMinute * SECONDS_PER_MINUTE);
+    resultSecondsFromEpoch += when.mSecond;
+    
+    Vs64 result = (CONST_S64(1000) * static_cast<Vs64>(resultSecondsFromEpoch)) + static_cast<Vs64>(when.mMillisecond);
+    return result;
+}
+
+#endif /* V_USE_TIMEGM_REPLACEMENT */
+
 VInstantStruct::VInstantStruct(const VDate& date, const VTimeOfDay& timeOfDay) :
     mYear(date.getYear()),
     mMonth(date.getMonth()),
@@ -365,6 +420,97 @@ VInstantStruct::VInstantStruct(const VDate& date, const VTimeOfDay& timeOfDay) :
     mSecond(timeOfDay.getSecond()),
     mMillisecond(timeOfDay.getMillisecond()),
     mDayOfWeek(0) {
+}
+
+Vs64 VInstantStruct::getOffsetFromUTCStruct() const {
+
+#ifdef V_USE_TIMEGM_REPLACEMENT
+    return _timegm_instantStructToMilliseconds(*this);
+#else
+    struct tm fields;
+
+    this->getTmStruct(fields);
+
+    Vs64 result = CONST_S64(1000) * static_cast<Vs64>(::timegm(&fields));
+
+    result += (Vs64) mMillisecond;
+
+    return result;
+#endif /* V_USE_TIMEGM_REPLACEMENT */
+}
+
+Vs64 VInstantStruct::getOffsetFromLocalStruct() const {
+    return VInstantStruct::_platform_offsetFromLocalStruct(*this);
+}
+
+void VInstantStruct::setUTCStructFromOffset(Vs64 offset) {
+    VInstantStruct::_platform_offsetToUTCStruct(offset, *this);
+}
+
+void VInstantStruct::setLocalStructFromOffset(Vs64 offset) {
+    VInstantStruct::_platform_offsetToLocalStruct(offset, *this);
+}
+
+void VInstantStruct::getTmStruct(struct tm& fields) const {
+    ::memset(&fields, 0, sizeof(fields));
+
+    fields.tm_year  = mYear - 1900; // tm_year field is years since 1900
+    fields.tm_mon   = mMonth - 1;   // tm_mon field is 0..11
+    fields.tm_mday  = mDay;
+    fields.tm_hour  = mHour;
+    fields.tm_min   = mMinute;
+    fields.tm_sec   = mSecond;
+    fields.tm_isdst = -1;
+}
+
+void VInstantStruct::setFromTmStruct(const struct tm& fields, int millisecond) {
+    mYear           = fields.tm_year + 1900;    // tm_year field is years since 1900
+    mMonth          = fields.tm_mon + 1;        // tm_mon field is 0..11
+    mDay            = fields.tm_mday;
+    mHour           = fields.tm_hour;
+    mMinute         = fields.tm_min;
+    mSecond         = fields.tm_sec;
+    mMillisecond    = millisecond;
+    mDayOfWeek      = fields.tm_wday;
+}
+
+// static
+void VInstantStruct::_threadsafe_localtime(const time_t epochOffset, struct tm* resultStorage) {
+    time_t      offset = epochOffset;
+    struct tm*  result;
+
+#ifdef V_HAVE_REENTRANT_TIME
+    result = ::localtime_r(&offset, resultStorage);
+#else
+    result = ::localtime(&offset);
+#endif
+
+    if (result == NULL)
+        throw VStackTraceException(VSTRING_FORMAT("VInstant::threadsafe_localtime: input time value " VSTRING_FORMATTER_INT " is out of range.", (int) offset));
+
+// Only copy result if we're NOT using reentrant version that already wrote result.
+#ifndef V_HAVE_REENTRANT_TIME
+    *resultStorage = *result;
+#endif
+}
+
+// static
+void VInstantStruct::_threadsafe_gmtime(const time_t epochOffset, struct tm* resultStorage) {
+    struct tm* result;
+
+#ifdef V_HAVE_REENTRANT_TIME
+    result = ::gmtime_r(&epochOffset, resultStorage);
+#else
+    result = ::gmtime(&epochOffset);
+#endif
+
+    if (result == NULL)
+        throw VStackTraceException(VSTRING_FORMAT("VInstant::threadsafe_gmtime: input time value " VSTRING_FORMATTER_INT " is out of range.", (int) epochOffset));
+
+// Only copy result if we're NOT using reentrant version that already wrote result.
+#ifndef V_HAVE_REENTRANT_TIME
+    *resultStorage = *result;
+#endif
 }
 
 // VInstant ------------------------------------------------------------------
@@ -469,13 +615,13 @@ void VInstant::setTrueNow() {
 
 VInstantStruct VInstant::getUTCInstantFields() const {
     VInstantStruct when;
-    VInstant::_platform_offsetToUTCStruct(mValue, when);
+    when.setUTCStructFromOffset(mValue);
     return when;
 }
 
 VInstantStruct VInstant::getLocalInstantFields() const {
     VInstantStruct when;
-    VInstant::_platform_offsetToLocalStruct(mValue, when);
+    when.setLocalStructFromOffset(mValue);
     return when;
 }
 
@@ -563,7 +709,7 @@ void VInstant::setUTCString(const VString& s) {
 
         (void) ::sscanf(s, SSCANF_FORMAT_UTC_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
 
-        mValue = VInstant::_platform_offsetFromUTCStruct(when);
+        mValue = when.getOffsetFromUTCStruct();
     }
 }
 
@@ -584,7 +730,7 @@ void VInstant::setLocalString(const VString& s) {
 
         (void) ::sscanf(s, SSCANF_FORMAT_LOCAL_WITH_MILLISECONDS, &when.mYear, &when.mMonth, &when.mDay, &when.mHour, &when.mMinute, &when.mSecond, &when.mMillisecond);
 
-        mValue = VInstant::_platform_offsetFromLocalStruct(when);
+        mValue = when.getOffsetFromLocalStruct();
     }
 }
 
@@ -592,9 +738,9 @@ void VInstant::getValues(VDate& date, VTimeOfDay& timeOfDay, const VString& time
     VInstantStruct when;
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
-        VInstant::_platform_offsetToLocalStruct(mValue, when);
+        when.setLocalStructFromOffset(mValue);
     else if (timeZoneID == VInstant::UTC_TIME_ZONE_ID())
-        VInstant::_platform_offsetToUTCStruct(mValue, when);
+        when.setUTCStructFromOffset(mValue);
     else if (gRemoteTimeZoneConverter == NULL)
         throw VStackTraceException(VSTRING_FORMAT("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
@@ -612,9 +758,9 @@ VDate VInstant::getDate(const VString& timeZoneID) const {
     VInstantStruct when;
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
-        VInstant::_platform_offsetToLocalStruct(mValue, when);
+        when.setLocalStructFromOffset(mValue);
     else if (timeZoneID == VInstant::UTC_TIME_ZONE_ID())
-        VInstant::_platform_offsetToUTCStruct(mValue, when);
+        when.setUTCStructFromOffset(mValue);
     else if (gRemoteTimeZoneConverter == NULL)
         throw VStackTraceException(VSTRING_FORMAT("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
@@ -631,9 +777,9 @@ VTimeOfDay VInstant::getTimeOfDay(const VString& timeZoneID) const {
     VInstantStruct when;
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
-        VInstant::_platform_offsetToLocalStruct(mValue, when);
+        when.setLocalStructFromOffset(mValue);
     else if (timeZoneID == VInstant::UTC_TIME_ZONE_ID())
-        VInstant::_platform_offsetToUTCStruct(mValue, when);
+        when.setUTCStructFromOffset(mValue);
     else if (gRemoteTimeZoneConverter == NULL)
         throw VStackTraceException(VSTRING_FORMAT("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
@@ -654,9 +800,9 @@ VDateAndTime VInstant::getDateAndTime(const VString& timeZoneID) const {
         *this == VInstant::NEVER_OCCURRED())
         throw VStackTraceException(VSTRING_FORMAT("Request for specific time values with non-specific time '%s'.", this->getLocalString().chars()));
     else if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
-        VInstant::_platform_offsetToLocalStruct(mValue, when);
+        when.setLocalStructFromOffset(mValue);
     else if (timeZoneID == VInstant::UTC_TIME_ZONE_ID())
-        VInstant::_platform_offsetToUTCStruct(mValue, when);
+        when.setUTCStructFromOffset(mValue);
     else if (gRemoteTimeZoneConverter == NULL)
         throw VStackTraceException(VSTRING_FORMAT("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
@@ -673,9 +819,9 @@ void VInstant::setDateAndTime(const VDateAndTime& dt, const VString& timeZoneID)
     VInstantStruct when(dt.getDate(), dt.getTimeOfDay());
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
-        mValue = VInstant::_platform_offsetFromLocalStruct(when);
+        mValue = when.getOffsetFromLocalStruct();
     else if (timeZoneID == VInstant::UTC_TIME_ZONE_ID())
-        mValue = VInstant::_platform_offsetFromUTCStruct(when);
+        mValue = when.getOffsetFromUTCStruct();
     else if (gRemoteTimeZoneConverter == NULL)
         throw VStackTraceException(VSTRING_FORMAT("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
@@ -686,9 +832,9 @@ void VInstant::setValues(const VDate& date, const VTimeOfDay& timeOfDay, const V
     VInstantStruct when(date, timeOfDay);
 
     if (timeZoneID == VInstant::LOCAL_TIME_ZONE_ID())
-        mValue = VInstant::_platform_offsetFromLocalStruct(when);
+        mValue = when.getOffsetFromLocalStruct();
     else if (timeZoneID == VInstant::UTC_TIME_ZONE_ID())
-        mValue = VInstant::_platform_offsetFromUTCStruct(when);
+        mValue = when.getOffsetFromUTCStruct();
     else if (gRemoteTimeZoneConverter == NULL)
         throw VStackTraceException(VSTRING_FORMAT("Request for remote time zone conversion (%s) without a converter.", timeZoneID.chars()));
     else
@@ -704,10 +850,10 @@ Vs64 VInstant::getLocalOffsetMilliseconds() const {
     */
 
     VInstantStruct localStruct;
-    VInstant::_platform_offsetToLocalStruct(mValue, localStruct);
+    localStruct.setLocalStructFromOffset(mValue);
 
     VInstantStruct utcStruct;
-    VInstant::_platform_offsetToUTCStruct(mValue, utcStruct);
+    utcStruct.setUTCStructFromOffset(mValue);
 
     // Now we have two structs for the instant.
     // A little math will tell us the difference in h/m/s.
@@ -743,45 +889,6 @@ Vs64 VInstant::getLocalOffsetMilliseconds() const {
     */
 
     return (Vs64)(deltaSeconds * 1000);
-}
-
-// static
-void VInstant::threadsafe_localtime(const time_t epochOffset, struct tm* resultStorage) {
-    time_t      offset = epochOffset;
-    struct tm*  result;
-
-#ifdef V_HAVE_REENTRANT_TIME
-    result = ::localtime_r(&offset, resultStorage);
-#else
-    result = ::localtime(&offset);
-#endif
-
-    if (result == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("VInstant::threadsafe_localtime: input time value " VSTRING_FORMATTER_INT " is out of range.", (int) offset));
-
-// Only copy result if we're NOT using reentrant version that already wrote result.
-#ifndef V_HAVE_REENTRANT_TIME
-    *resultStorage = *result;
-#endif
-}
-
-// static
-void VInstant::threadsafe_gmtime(const time_t epochOffset, struct tm* resultStorage) {
-    struct tm* result;
-
-#ifdef V_HAVE_REENTRANT_TIME
-    result = ::gmtime_r(&epochOffset, resultStorage);
-#else
-    result = ::gmtime(&epochOffset);
-#endif
-
-    if (result == NULL)
-        throw VStackTraceException(VSTRING_FORMAT("VInstant::threadsafe_gmtime: input time value " VSTRING_FORMATTER_INT " is out of range.", (int) epochOffset));
-
-// Only copy result if we're NOT using reentrant version that already wrote result.
-#ifndef V_HAVE_REENTRANT_TIME
-    *resultStorage = *result;
-#endif
 }
 
 // static
@@ -1017,10 +1124,10 @@ int VDate::getDayOfWeek() const {
     when.mMillisecond = 0;
 
     // First get the UTC offset of that UTC date.
-    Vs64 offset = VInstant::_platform_offsetFromUTCStruct(when);
+    Vs64 offset = when.getOffsetFromUTCStruct();
 
     // Now reverse to get the mDayOfWeek filled out.
-    VInstant::_platform_offsetToUTCStruct(offset, when);
+    when.setUTCStructFromOffset(offset);
 
     return when.mDayOfWeek;
 }

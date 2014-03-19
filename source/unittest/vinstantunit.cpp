@@ -263,9 +263,11 @@ void VInstantUnit::_runTimeZoneConversionTests() {
     utc0Plus1Instant += VDuration::DAY(); // one day later
     utc0Plus1Instant.getValues(utc0Date, utc0Time, VInstant::UTC_TIME_ZONE_ID()); // see what that is in Greenwich (should be 1970 Jan 2 00:00:00)
     utc0Plus1Instant.getValues(utc0Date, utc0Time, VInstant::LOCAL_TIME_ZONE_ID()); // see what that is in local time (should be 1970 Jan 2 00:00:00 minus local time zone delta)
-    VDate        utc1Date(1970, 1, 2);
-    VTimeOfDay    utc1Time(0, 0, 0, 0);
-    utc0Plus1Instant.setValues(utc1Date, utc1Time, VInstant::UTC_TIME_ZONE_ID()); // see if setting Jan 2 UTC works out to 86400000
+    VDate       utc1Date(1970, 1, 2);
+    VTimeOfDay  utc1Time(0, 0, 0, 0);
+    VInstant    utc1Instant;
+    utc1Instant.setValues(utc1Date, utc1Time, VInstant::UTC_TIME_ZONE_ID()); // see if setting Jan 2 UTC works out to 86400000
+    VUNIT_ASSERT_EQUAL_LABELED(utc0Plus1Instant, utc1Instant, "utc day 0 plus 1 is utc day 1");
 
     // Create a date and time, specified in both local and gm.
     VDate        july_14_2004(2004, 7, 14);
@@ -287,19 +289,13 @@ void VInstantUnit::_runTimeZoneConversionTests() {
     // should differ by 8 hours in the winter (standard), 7 hours in the summer (daylight).
 
     // Verify symmetry of UTC<->Local conversion in the core platform-specific code.
-    Vs64            nowOffset = VInstant::_platform_now();
-    VInstantStruct    nowUTCStruct;
-    VInstantStruct    nowLocalStruct;
-
-    VInstant::_platform_offsetToUTCStruct(nowOffset, nowUTCStruct);
-    VInstant::_platform_offsetToLocalStruct(nowOffset, nowLocalStruct);
-
-    Vs64    utcCheckOffset = VInstant::_platform_offsetFromUTCStruct(nowUTCStruct);
-    Vs64    localCheckOffset = VInstant::_platform_offsetFromLocalStruct(nowLocalStruct);
-
-    this->test(nowOffset == utcCheckOffset, "platform UTC conversion cycle");
-    this->test(nowOffset == localCheckOffset, "platform local conversion cycle");
-
+    this->_testInstantRangeRoundTripConversion("Testing current time", VInstant(), VDuration::HOUR(), 24);
+    
+    VInstant daylightSwitchTestInstant;
+    daylightSwitchTestInstant.setValues(VDate(2014, 3, 9), VTimeOfDay(0, 0, 0, 0), VInstant::UTC_TIME_ZONE_ID());
+    daylightSwitchTestInstant -= VDuration::DAY();
+    this->_testInstantRangeRoundTripConversion("Testing near daylight switch", daylightSwitchTestInstant, 30 * VDuration::MINUTE(), 96);
+    
     // We know exactly what the correct value for July 14 2004 noon UTC is:
     this->test(july_14_2004_noon_utc.getValue() == CONST_S64(1089806400000), "utc epoch known offset");
     // (The value for July 14 2004 local time depends on our local time zone.)
@@ -772,5 +768,36 @@ void VInstantUnit::_testInstantFormatter(const VString& label, const VInstant& i
         VString s = formatter.formatLocalString(instant);
         VString assertLabel(VSTRING_ARGS("Exercising '%s' (local) '%s' -> '%s'", label.chars(), format.chars(), s.chars()));
         VUNIT_ASSERT_EQUAL_LABELED(s, expectedLocalOutput, assertLabel);
+    }
+}
+
+void VInstantUnit::_testInstantRangeRoundTripConversion(const VString& label, const VInstant& startInstant, const VDuration& increment, int numIncrements) {
+    
+    for (int i = 0; i < numIncrements; ++i) {
+        VInstant when = startInstant + (i * increment);
+        Vs64 whenOffset = when.getValue();
+
+        VInstantStruct whenUTCStruct;
+        whenUTCStruct.setUTCStructFromOffset(whenOffset);
+        Vs64 whenUTCCheckOffset = whenUTCStruct.getOffsetFromUTCStruct();
+        VUNIT_ASSERT_EQUAL_LABELED(whenOffset, whenUTCCheckOffset, VSTRING_FORMAT("%s: %d utc   '%s'", label.chars(), i, when.getUTCString().chars()));
+        
+        VInstantStruct whenLocalStruct;
+        whenLocalStruct.setLocalStructFromOffset(whenOffset);
+        Vs64 whenLocalCheckOffset = whenLocalStruct.getOffsetFromLocalStruct();
+
+        // Calculate the local vs. UTC hour delta for examination if there is a problem. We expect that during a daylight transition,
+        // the delta will change during our iteration. This simple display calculation will not work across a month boundary but will
+        // be useful when debugging across a daylight boundary.
+        VString deltaDisplay;
+        if (whenUTCStruct.mMonth == whenLocalStruct.mMonth) {
+            int utcDaysHoursMinutes = (whenUTCStruct.mDay * 24 * 60) + (whenUTCStruct.mHour * 60) + whenUTCStruct.mMinute;
+            int localDaysHoursMinutes = (whenLocalStruct.mDay * 24 * 60) + (whenLocalStruct.mHour * 60) + whenLocalStruct.mMinute;
+            int deltaHours = (localDaysHoursMinutes - utcDaysHoursMinutes) / 60;
+            int deltaMinutes = V_ABS((localDaysHoursMinutes - utcDaysHoursMinutes) % 60);
+            deltaDisplay.format("%02d%02d", deltaHours, deltaMinutes);
+        }
+
+        VUNIT_ASSERT_EQUAL_LABELED(whenOffset, whenLocalCheckOffset, VSTRING_FORMAT("%s: %d local '%s' %s", label.chars(), i, when.getLocalString().chars(), deltaDisplay.chars()));
     }
 }

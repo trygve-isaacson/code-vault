@@ -45,6 +45,7 @@ class VInstantUnit : public VUnit {
         void _runInstantFormatterTests();
 
         void _testInstantFormatter(const VString& label, const VInstant& instant, const VString& format, const VString& expectedUTCOutput, const VString& expectedLocalOutput);
+        void _testInstantRangeRoundTripConversion(const VString& label, const VInstant& startInstant, const VDuration& increment, int numIncrements);
 };
 
 #endif /* vinstantunit_h */
