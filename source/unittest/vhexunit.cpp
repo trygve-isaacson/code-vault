@@ -40,14 +40,14 @@ void VHexUnit::run() {
         zeroTo255HexString += temp;
     }
 
-    this->test(hexString == zeroTo255HexString, "bufferToHexString");
+    VUNIT_ASSERT_EQUAL_LABELED(hexString, zeroTo255HexString, "bufferToHexString");
 
     // Convert the hex string back to bytes and validate.
     VMemoryStream    bytes(256);
     VHex::hexStringToBuffer(hexString, bytes.getBuffer());
     bytes.setEOF(CONST_S64(256));    // EOF equal required for VMemoryStream equality test
 
-    this->test(bytes == memoryStream, "hexStringToBuffer");
+    VUNIT_ASSERT_TRUE_LABELED(bytes == memoryStream, "hexStringToBuffer");
 
     // Call the hex dump function to print the data to a text stream.
     VMemoryStream    dumpBuffer;
@@ -71,6 +71,6 @@ void VHexUnit::run() {
 
     VHex::readHexDump(dumpStream, reconstructedStream);
 
-    this->test(memoryStream == reconstructedBuffer, "VHex::readHexDump reconstructs data");
+    VUNIT_ASSERT_TRUE_LABELED(memoryStream == reconstructedBuffer, "VHex::readHexDump reconstructs data");
 }
 

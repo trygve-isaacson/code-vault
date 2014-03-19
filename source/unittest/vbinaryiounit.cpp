@@ -40,31 +40,31 @@ void VBinaryIOUnit::run() {
 
     (void) stream.seek0();
 
-    Vs8        s8 = stream.readS8();
-    Vu8        u8 = stream.readU8();
+    Vs8     s8 = stream.readS8();
+    Vu8     u8 = stream.readU8();
     Vs16    s16 = stream.readS16();
     Vu16    u16 = stream.readU16();
     Vs32    s32 = stream.readS32();
     Vu32    u32 = stream.readU32();
     Vs64    s64 = stream.readS64();
     Vu64    u64 = stream.readU64();
-    VFloat    f5 = stream.readFloat();
-    VDouble    f6 = stream.readDouble();
+    VFloat  f5 = stream.readFloat();
+    VDouble f6 = stream.readDouble();
     bool    b = stream.readBool();
-    VString    s = stream.readString();
+    VString s = stream.readString();
 
-    this->test(s8 == -8, "s8");
-    this->test(u8 == 208, "u8");
-    this->test(s16 == -16, "s16");
-    this->test(u16 == 40016, "u16");
-    this->test(s32 == -32L, "s32");
-    this->test(u32 == 4000000032UL, "u32");
-    this->test(s64 == CONST_S64(-64), "s64");
-    this->test(u64 == static_cast<Vu64>(V_MAX_S64) + CONST_U64(64), "u64");
-    this->test(f5 == kFloatValue, "float");
-    this->test(f6 == kDoubleValue, "double");
-    this->test(b == true, "bool");
-    this->test(s == "Zevon", "string");
+    VUNIT_ASSERT_EQUAL_LABELED(s8, (Vs8) -8, "s8");
+    VUNIT_ASSERT_EQUAL_LABELED(u8, (Vu8) 208, "u8");
+    VUNIT_ASSERT_EQUAL_LABELED(s16, (Vs16) -16, "s16");
+    VUNIT_ASSERT_EQUAL_LABELED(u16, (Vu16) 40016, "u16");
+    VUNIT_ASSERT_EQUAL_LABELED(s32, (Vs32) -32L, "s32");
+    VUNIT_ASSERT_EQUAL_LABELED(u32, (Vu32) 4000000032UL, "u32");
+    VUNIT_ASSERT_EQUAL_LABELED(s64, (Vs64) CONST_S64(-64), "s64");
+    VUNIT_ASSERT_EQUAL_LABELED(u64, (Vu64) static_cast<Vu64>(V_MAX_S64) + CONST_U64(64), "u64");
+    VUNIT_ASSERT_EQUAL_LABELED(f5, kFloatValue, "float");
+    VUNIT_ASSERT_EQUAL_LABELED(f6, kDoubleValue, "double");
+    VUNIT_ASSERT_EQUAL_LABELED(b, true, "bool");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "Zevon", "string");
 
     // Let's also verify a known 64-bit double-precision binary layout,
     // so that we catch any future platform oddities.
@@ -81,13 +81,13 @@ void VBinaryIOUnit::run() {
     bytes[5] = stream.readU8();
     bytes[6] = stream.readU8();
     bytes[7] = stream.readU8();
-    this->test(bytes[0] == 0x40, "double byte[0]");
-    this->test(bytes[1] == 0x09, "double byte[1]");
-    this->test(bytes[2] == 0x21, "double byte[2]");
-    this->test(bytes[3] == 0xFB, "double byte[3]");
-    this->test(bytes[4] == 0x4D, "double byte[4]");
-    this->test(bytes[5] == 0x12, "double byte[5]");
-    this->test(bytes[6] == 0xD8, "double byte[6]");
-    this->test(bytes[7] == 0x4A, "double byte[7]");
+    VUNIT_ASSERT_EQUAL_LABELED(bytes[0], (Vu8) 0x40, "double byte[0]");
+    VUNIT_ASSERT_EQUAL_LABELED(bytes[1], (Vu8) 0x09, "double byte[1]");
+    VUNIT_ASSERT_EQUAL_LABELED(bytes[2], (Vu8) 0x21, "double byte[2]");
+    VUNIT_ASSERT_EQUAL_LABELED(bytes[3], (Vu8) 0xFB, "double byte[3]");
+    VUNIT_ASSERT_EQUAL_LABELED(bytes[4], (Vu8) 0x4D, "double byte[4]");
+    VUNIT_ASSERT_EQUAL_LABELED(bytes[5], (Vu8) 0x12, "double byte[5]");
+    VUNIT_ASSERT_EQUAL_LABELED(bytes[6], (Vu8) 0xD8, "double byte[6]");
+    VUNIT_ASSERT_EQUAL_LABELED(bytes[7], (Vu8) 0x4A, "double byte[7]");
 }
 

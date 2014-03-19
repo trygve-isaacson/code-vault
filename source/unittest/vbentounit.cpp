@@ -531,7 +531,7 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         caseInsensitiveCheckName.toLowerCase();
         VUNIT_ASSERT_TRUE_LABELED(node.findNode(caseInsensitiveCheckName) != NULL, labelPrefix);
 
-        this->test(node.getParentNode() == NULL, VSTRING_FORMAT("%s parent of root is null", labelPrefix.chars()));
+        VUNIT_ASSERT_NULL_LABELED(node.getParentNode(), VSTRING_FORMAT("%s parent of root is null", labelPrefix.chars()));
 
         VReadOnlyMemoryStream binary1Reader = node.getBinary(ATTRIBUTE_NAME_BINARY_1);
         this->test(binary1Reader == gTestBinaryData1, VSTRING_FORMAT("%s binary 1 data equality", labelPrefix.chars()));
@@ -540,7 +540,7 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         VBinaryIOStream binary1IO(binary1Reader);
         VString binary1Text;
         binary1IO.readString(binary1Text);
-        this->test(binary1Text == ATTRIBUTE_VALUE_BINARY_1_TEXT, VSTRING_FORMAT("%s binary 1 text comparison", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(binary1Text, ATTRIBUTE_VALUE_BINARY_1_TEXT, VSTRING_FORMAT("%s binary 1 text comparison", labelPrefix.chars()));
 
         VReadOnlyMemoryStream binary2Reader = node.getBinary(ATTRIBUTE_NAME_BINARY_2);
         this->test(binary2Reader == gTestBinaryData2, VSTRING_FORMAT("%s binary 2 data equality", labelPrefix.chars()));
@@ -550,23 +550,23 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         VBinaryIOStream binary2IO(binary2Reader);
         VString binary2Text;
         binary2IO.readString(binary2Text);
-        this->test(binary2Text == ATTRIBUTE_VALUE_BINARY_2_TEXT, VSTRING_FORMAT("%s binary 2 text comparison", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(binary2Text, ATTRIBUTE_VALUE_BINARY_2_TEXT, VSTRING_FORMAT("%s binary 2 text comparison", labelPrefix.chars()));
 
         const VBentoNode* child = node.findNode(NODE_NAME_CHILD);
-        this->test(child != NULL, VSTRING_FORMAT("%s child", labelPrefix.chars()));
+        VUNIT_ASSERT_NOT_NULL_LABELED(child, VSTRING_FORMAT("%s child", labelPrefix.chars()));
         if (child != NULL)    // in case we aren't aborting on earlier failures
-            this->test(child->getS32(ATTRIBUTE_NAME_CHILD_INT) == ATTRIBUTE_VALUE_CHILD_INT, VSTRING_FORMAT("%s ch32", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(child->getS32(ATTRIBUTE_NAME_CHILD_INT), ATTRIBUTE_VALUE_CHILD_INT, VSTRING_FORMAT("%s ch32", labelPrefix.chars()));
 
         this->test(child->getParentNode() == &node, VSTRING_FORMAT("%s child has correct parent", labelPrefix.chars()));
 
         const VBentoNode* intarray = node.findNode(NODE_NAME_INT_ARRAY);
-        this->test(intarray != NULL, VSTRING_FORMAT("%s intarray", labelPrefix.chars()));
+        VUNIT_ASSERT_NOT_NULL_LABELED(intarray, VSTRING_FORMAT("%s intarray", labelPrefix.chars()));
         if (intarray != NULL) {
-            this->test(intarray->getNodes().size() == 10, VSTRING_FORMAT("%s intarray length", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(intarray->getNodes().size(), (size_t) 10, VSTRING_FORMAT("%s intarray length", labelPrefix.chars()));
             int arrayIndex = 0;
             for (VBentoNodePtrVector::const_iterator i = intarray->getNodes().begin(); i != intarray->getNodes().end(); ++i) {
-                this->test((*i)->getName() == NODE_NAME_INT_ARRAY_ELEMENT, VSTRING_FORMAT("%s intarray element name", labelPrefix.chars()));
-                this->test((*i)->getS32(ATTRIBUTE_NAME_ARRAY_INT) == arrayIndex, VSTRING_FORMAT("%s intarray element %d", labelPrefix.chars(), arrayIndex));
+                VUNIT_ASSERT_EQUAL_LABELED((*i)->getName(), NODE_NAME_INT_ARRAY_ELEMENT, VSTRING_FORMAT("%s intarray element name", labelPrefix.chars()));
+                VUNIT_ASSERT_EQUAL_LABELED((*i)->getS32(ATTRIBUTE_NAME_ARRAY_INT), arrayIndex, VSTRING_FORMAT("%s intarray element %d", labelPrefix.chars(), arrayIndex));
                 ++arrayIndex;
             }
         }
@@ -578,17 +578,17 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         // VBentoS8Array tests.
         {
             const Vs8Array& s8Array = initializedArrays->getS8Array(ATTRIBUTE_NAME_S8_ARRAY);
-            this->test(s8Array.size() == 3, VSTRING_FORMAT("%s initialized s8Array size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(s8Array.size(), (size_t) 3, VSTRING_FORMAT("%s initialized s8Array size", labelPrefix.chars()));
             this->test(s8Array[0] == 0 && s8Array[1] == 1 && s8Array[2] == 2, VSTRING_FORMAT("%s initialized s8Array values", labelPrefix.chars()));
         }
         {
             const Vs8Array& s8Array = assignedArrays->getS8Array(ATTRIBUTE_NAME_S8_ARRAY);
-            this->test(s8Array.size() == 3, VSTRING_FORMAT("%s assigned s8Array size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(s8Array.size(), (size_t) 3, VSTRING_FORMAT("%s assigned s8Array size", labelPrefix.chars()));
             this->test(s8Array[0] == 0 && s8Array[1] == 1 && s8Array[2] == 2, VSTRING_FORMAT("%s assigned s8Array values", labelPrefix.chars()));
         }
         {
             const Vs8Array& s8Array = appendedArrays->getS8Array(ATTRIBUTE_NAME_S8_ARRAY);
-            this->test(s8Array.size() == 6, VSTRING_FORMAT("%s appended s8Array size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(s8Array.size(), (size_t) 6, VSTRING_FORMAT("%s appended s8Array size", labelPrefix.chars()));
             this->test(s8Array[0] == 0 && s8Array[1] == 1 && s8Array[2] == 2 &&
                        s8Array[3] == 0 && s8Array[4] == 1 && s8Array[5] == 2, VSTRING_FORMAT("%s appended s8Array values", labelPrefix.chars()));
         }
@@ -596,17 +596,17 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         // VBentoS16Array tests.
         {
             const Vs16Array& s16Array = initializedArrays->getS16Array(ATTRIBUTE_NAME_S16_ARRAY);
-            this->test(s16Array.size() == 3, VSTRING_FORMAT("%s initialized s16Array size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(s16Array.size(), (size_t) 3, VSTRING_FORMAT("%s initialized s16Array size", labelPrefix.chars()));
             this->test(s16Array[0] == 10 && s16Array[1] == 20 && s16Array[2] == 30, VSTRING_FORMAT("%s initialized s16Array values", labelPrefix.chars()));
         }
         {
             const Vs16Array& s16Array = assignedArrays->getS16Array(ATTRIBUTE_NAME_S16_ARRAY);
-            this->test(s16Array.size() == 3, VSTRING_FORMAT("%s assigned s16Array size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(s16Array.size(), (size_t) 3, VSTRING_FORMAT("%s assigned s16Array size", labelPrefix.chars()));
             this->test(s16Array[0] == 10 && s16Array[1] == 20 && s16Array[2] == 30, VSTRING_FORMAT("%s assigned s16Array values", labelPrefix.chars()));
         }
         {
             const Vs16Array& s16Array = appendedArrays->getS16Array(ATTRIBUTE_NAME_S16_ARRAY);
-            this->test(s16Array.size() == 6, VSTRING_FORMAT("%s appended s16Array size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(s16Array.size(), (size_t) 6, VSTRING_FORMAT("%s appended s16Array size", labelPrefix.chars()));
             this->test(s16Array[0] == 10 && s16Array[1] == 20 && s16Array[2] == 30 &&
                        s16Array[3] == 10 && s16Array[4] == 20 && s16Array[5] == 30, VSTRING_FORMAT("%s appended s16Array values", labelPrefix.chars()));
         }
@@ -614,17 +614,17 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         // VBentoS32Array tests.
         {
             const Vs32Array& s32Array = initializedArrays->getS32Array(ATTRIBUTE_NAME_S32_ARRAY);
-            this->test(s32Array.size() == 3, VSTRING_FORMAT("%s initialized s32Array size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(s32Array.size(), (size_t) 3, VSTRING_FORMAT("%s initialized s32Array size", labelPrefix.chars()));
             this->test(s32Array[0] == 100 && s32Array[1] == 200 && s32Array[2] == 300, VSTRING_FORMAT("%s initialized s32Array values", labelPrefix.chars()));
         }
         {
             const Vs32Array& s32Array = assignedArrays->getS32Array(ATTRIBUTE_NAME_S32_ARRAY);
-            this->test(s32Array.size() == 3, VSTRING_FORMAT("%s assigned s32Array size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(s32Array.size(), (size_t) 3, VSTRING_FORMAT("%s assigned s32Array size", labelPrefix.chars()));
             this->test(s32Array[0] == 100 && s32Array[1] == 200 && s32Array[2] == 300, VSTRING_FORMAT("%s assigned s32Array values", labelPrefix.chars()));
         }
         {
             const Vs32Array& s32Array = appendedArrays->getS32Array(ATTRIBUTE_NAME_S32_ARRAY);
-            this->test(s32Array.size() == 6, VSTRING_FORMAT("%s appended s32Array size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(s32Array.size(), (size_t) 6, VSTRING_FORMAT("%s appended s32Array size", labelPrefix.chars()));
             this->test(s32Array[0] == 100 && s32Array[1] == 200 && s32Array[2] == 300 &&
                        s32Array[3] == 100 && s32Array[4] == 200 && s32Array[5] == 300, VSTRING_FORMAT("%s appended s32Array values", labelPrefix.chars()));
         }
@@ -632,17 +632,17 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         // VBentoS64Array tests.
         {
             const Vs64Array& s64Array = initializedArrays->getS64Array(ATTRIBUTE_NAME_S64_ARRAY);
-            this->test(s64Array.size() == 3, VSTRING_FORMAT("%s initialized s64Array size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(s64Array.size(), (size_t) 3, VSTRING_FORMAT("%s initialized s64Array size", labelPrefix.chars()));
             this->test(s64Array[0] == CONST_S64(1000) && s64Array[1] == CONST_S64(2000) && s64Array[2] == CONST_S64(3000), VSTRING_FORMAT("%s initialized s64Array values", labelPrefix.chars()));
         }
         {
             const Vs64Array& s64Array = assignedArrays->getS64Array(ATTRIBUTE_NAME_S64_ARRAY);
-            this->test(s64Array.size() == 3, VSTRING_FORMAT("%s assigned s64Array size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(s64Array.size(), (size_t) 3, VSTRING_FORMAT("%s assigned s64Array size", labelPrefix.chars()));
             this->test(s64Array[0] == CONST_S64(1000) && s64Array[1] == CONST_S64(2000) && s64Array[2] == CONST_S64(3000), VSTRING_FORMAT("%s assigned s64Array values", labelPrefix.chars()));
         }
         {
             const Vs64Array& s64Array = appendedArrays->getS64Array(ATTRIBUTE_NAME_S64_ARRAY);
-            this->test(s64Array.size() == 6, VSTRING_FORMAT("%s appended s64Array size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(s64Array.size(), (size_t) 6, VSTRING_FORMAT("%s appended s64Array size", labelPrefix.chars()));
             this->test(s64Array[0] == CONST_S64(1000) && s64Array[1] == CONST_S64(2000) && s64Array[2] == CONST_S64(3000) &&
                        s64Array[3] == CONST_S64(1000) && s64Array[4] == CONST_S64(2000) && s64Array[5] == CONST_S64(3000), VSTRING_FORMAT("%s appended s64Array values", labelPrefix.chars()));
         }
@@ -650,17 +650,17 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         // VBentoStringArray tests.
         {
             const VStringVector& stringArray = initializedArrays->getStringArray(ATTRIBUTE_NAME_STRING_ARRAY);
-            this->test(stringArray.size() == 3, VSTRING_FORMAT("%s initialized stringArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(stringArray.size(), (size_t) 3, VSTRING_FORMAT("%s initialized stringArray size", labelPrefix.chars()));
             this->test(stringArray[0] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT0 && stringArray[1] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT1 && stringArray[2] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT2, VSTRING_FORMAT("%s initialized stringArray values", labelPrefix.chars()));
         }
         {
             const VStringVector& stringArray = assignedArrays->getStringArray(ATTRIBUTE_NAME_STRING_ARRAY);
-            this->test(stringArray.size() == 3, VSTRING_FORMAT("%s assigned stringArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(stringArray.size(), (size_t) 3, VSTRING_FORMAT("%s assigned stringArray size", labelPrefix.chars()));
             this->test(stringArray[0] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT0 && stringArray[1] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT1 && stringArray[2] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT2, VSTRING_FORMAT("%s assigned stringArray values", labelPrefix.chars()));
         }
         {
             const VStringVector& stringArray = appendedArrays->getStringArray(ATTRIBUTE_NAME_STRING_ARRAY);
-            this->test(stringArray.size() == 6, VSTRING_FORMAT("%s appended stringArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(stringArray.size(), (size_t) 6, VSTRING_FORMAT("%s appended stringArray size", labelPrefix.chars()));
             this->test(stringArray[0] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT0 && stringArray[1] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT1 && stringArray[2] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT2 &&
                        stringArray[3] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT0 && stringArray[4] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT1 && stringArray[5] == ATTRIBUTE_VALUE_STRING_ARRAY_TEXT2, VSTRING_FORMAT("%s appended stringArray values", labelPrefix.chars()));
         }
@@ -668,17 +668,17 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         // VBentoBoolArray tests.
         {
             const VBoolArray& boolArray = initializedArrays->getBoolArray(ATTRIBUTE_NAME_BOOL_ARRAY);
-            this->test(boolArray.size() == 3, VSTRING_FORMAT("%s initialized boolArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(boolArray.size(), (size_t) 3, VSTRING_FORMAT("%s initialized boolArray size", labelPrefix.chars()));
             this->test(boolArray[0] == true && boolArray[1] == false && boolArray[2] == true, VSTRING_FORMAT("%s initialized boolArray values", labelPrefix.chars()));
         }
         {
             const VBoolArray& boolArray = assignedArrays->getBoolArray(ATTRIBUTE_NAME_BOOL_ARRAY);
-            this->test(boolArray.size() == 3, VSTRING_FORMAT("%s assigned boolArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(boolArray.size(), (size_t) 3, VSTRING_FORMAT("%s assigned boolArray size", labelPrefix.chars()));
             this->test(boolArray[0] == true && boolArray[1] == false && boolArray[2] == true, VSTRING_FORMAT("%s assigned boolArray values", labelPrefix.chars()));
         }
         {
             const VBoolArray& boolArray = appendedArrays->getBoolArray(ATTRIBUTE_NAME_BOOL_ARRAY);
-            this->test(boolArray.size() == 6, VSTRING_FORMAT("%s appended boolArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(boolArray.size(), (size_t) 6, VSTRING_FORMAT("%s appended boolArray size", labelPrefix.chars()));
             this->test(boolArray[0] == true && boolArray[1] == false && boolArray[2] == true &&
                        boolArray[3] == true && boolArray[4] == false && boolArray[5] == true, VSTRING_FORMAT("%s appended boolArray values", labelPrefix.chars()));
         }
@@ -686,17 +686,17 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         // VBentoDoubleArray tests.
         {
             const VDoubleArray& doubleArray = initializedArrays->getDoubleArray(ATTRIBUTE_NAME_DOUBLE_ARRAY);
-            this->test(doubleArray.size() == 3, VSTRING_FORMAT("%s initialized doubleArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(doubleArray.size(), (size_t) 3, VSTRING_FORMAT("%s initialized doubleArray size", labelPrefix.chars()));
             this->test(doubleArray[0] == 123.456 && doubleArray[1] == 456.789 && doubleArray[2] == 246.135, VSTRING_FORMAT("%s initialized doubleArray values", labelPrefix.chars()));
         }
         {
             const VDoubleArray& doubleArray = assignedArrays->getDoubleArray(ATTRIBUTE_NAME_DOUBLE_ARRAY);
-            this->test(doubleArray.size() == 3, VSTRING_FORMAT("%s assigned doubleArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(doubleArray.size(), (size_t) 3, VSTRING_FORMAT("%s assigned doubleArray size", labelPrefix.chars()));
             this->test(doubleArray[0] == 123.456 && doubleArray[1] == 456.789 && doubleArray[2] == 246.135, VSTRING_FORMAT("%s assigned doubleArray values", labelPrefix.chars()));
         }
         {
             const VDoubleArray& doubleArray = appendedArrays->getDoubleArray(ATTRIBUTE_NAME_DOUBLE_ARRAY);
-            this->test(doubleArray.size() == 6, VSTRING_FORMAT("%s appended doubleArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(doubleArray.size(), (size_t) 6, VSTRING_FORMAT("%s appended doubleArray size", labelPrefix.chars()));
             this->test(doubleArray[0] == 123.456 && doubleArray[1] == 456.789 && doubleArray[2] == 246.135 &&
                        doubleArray[3] == 123.456 && doubleArray[4] == 456.789 && doubleArray[5] == 246.135, VSTRING_FORMAT("%s appended doubleArray values", labelPrefix.chars()));
         }
@@ -707,17 +707,17 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         const VDuration kDuration2 = VDuration::HOUR() * 77;
         {
             const VDurationVector& durationArray = initializedArrays->getDurationArray(ATTRIBUTE_NAME_DURATION_ARRAY);
-            this->test(durationArray.size() == 3, VSTRING_FORMAT("%s initialized durationArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(durationArray.size(), (size_t) 3, VSTRING_FORMAT("%s initialized durationArray size", labelPrefix.chars()));
             this->test(durationArray[0] == kDuration0 && durationArray[1] == kDuration1 && durationArray[2] == kDuration2, VSTRING_FORMAT("%s initialized durationArray values", labelPrefix.chars()));
         }
         {
             const VDurationVector& durationArray = assignedArrays->getDurationArray(ATTRIBUTE_NAME_DURATION_ARRAY);
-            this->test(durationArray.size() == 3, VSTRING_FORMAT("%s assigned durationArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(durationArray.size(), (size_t) 3, VSTRING_FORMAT("%s assigned durationArray size", labelPrefix.chars()));
             this->test(durationArray[0] == kDuration0 && durationArray[1] == kDuration1 && durationArray[2] == kDuration2, VSTRING_FORMAT("%s assigned durationArray values", labelPrefix.chars()));
         }
         {
             const VDurationVector& durationArray = appendedArrays->getDurationArray(ATTRIBUTE_NAME_DURATION_ARRAY);
-            this->test(durationArray.size() == 6, VSTRING_FORMAT("%s appended durationArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(durationArray.size(), (size_t) 6, VSTRING_FORMAT("%s appended durationArray size", labelPrefix.chars()));
             this->test(durationArray[0] == kDuration0 && durationArray[1] == kDuration1 && durationArray[2] == kDuration2 &&
                        durationArray[3] == kDuration0 && durationArray[4] == kDuration1 && durationArray[5] == kDuration2, VSTRING_FORMAT("%s appended durationArray values", labelPrefix.chars()));
         }
@@ -725,199 +725,199 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         // VBentoInstantArray tests.
         {
             const VInstantVector& instantArray = initializedArrays->getInstantArray(ATTRIBUTE_NAME_INSTANT_ARRAY);
-            this->test(instantArray.size() == 3, VSTRING_FORMAT("%s initialized instantArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(instantArray.size(), (size_t) 3, VSTRING_FORMAT("%s initialized instantArray size", labelPrefix.chars()));
             this->test(instantArray[0] == VInstant::NEVER_OCCURRED() && instantArray[1] == VInstant::INFINITE_PAST() && instantArray[2] == gInstantNoon2005June1UTC, VSTRING_FORMAT("%s initialized instantArray values", labelPrefix.chars()));
         }
         {
             const VInstantVector& instantArray = assignedArrays->getInstantArray(ATTRIBUTE_NAME_INSTANT_ARRAY);
-            this->test(instantArray.size() == 3, VSTRING_FORMAT("%s assigned instantArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(instantArray.size(), (size_t) 3, VSTRING_FORMAT("%s assigned instantArray size", labelPrefix.chars()));
             this->test(instantArray[0] == VInstant::NEVER_OCCURRED() && instantArray[1] == VInstant::INFINITE_PAST() && instantArray[2] == gInstantNoon2005June1UTC, VSTRING_FORMAT("%s assigned instantArray values", labelPrefix.chars()));
         }
         {
             const VInstantVector& instantArray = appendedArrays->getInstantArray(ATTRIBUTE_NAME_INSTANT_ARRAY);
-            this->test(instantArray.size() == 6, VSTRING_FORMAT("%s appended instantArray size", labelPrefix.chars()));
+            VUNIT_ASSERT_EQUAL_LABELED(instantArray.size(), (size_t) 6, VSTRING_FORMAT("%s appended instantArray size", labelPrefix.chars()));
             this->test(instantArray[0] == VInstant::NEVER_OCCURRED() && instantArray[1] == VInstant::INFINITE_PAST() && instantArray[2] == gInstantNoon2005June1UTC &&
                        instantArray[3] == VInstant::NEVER_OCCURRED() && instantArray[4] == VInstant::INFINITE_PAST() && instantArray[5] == gInstantNoon2005June1UTC, VSTRING_FORMAT("%s appended instantArray values", labelPrefix.chars()));
         }
 
         // Test non-throwing missing value handling.
-        this->test(node.getS8("non-existent", -42) == -42, VSTRING_FORMAT("%s default s8", labelPrefix.chars())); // <0 to verify correct sign handling
-        this->test(node.getU8("non-existent", 200) == 200, VSTRING_FORMAT("%s default u8", labelPrefix.chars())); // >127 to verify correct sign handling
-        this->test(node.getS16("non-existent", 999) == 999, VSTRING_FORMAT("%s default s16", labelPrefix.chars()));
-        this->test(node.getU16("non-existent", 999) == 999, VSTRING_FORMAT("%s default u16", labelPrefix.chars()));
-        this->test(node.getS32("non-existent", 999) == 999, VSTRING_FORMAT("%s default s32", labelPrefix.chars()));
-        this->test(node.getU32("non-existent", 999) == 999, VSTRING_FORMAT("%s default u32", labelPrefix.chars()));
-        this->test(node.getS64("non-existent", 999) == 999, VSTRING_FORMAT("%s default s64", labelPrefix.chars()));
-        this->test(node.getU64("non-existent", 999) == 999, VSTRING_FORMAT("%s default u64", labelPrefix.chars()));
-        this->test(node.getBool("non-existent", true) == true, VSTRING_FORMAT("%s default bool", labelPrefix.chars()));
-        this->test(node.getString("non-existent", "999") == "999", VSTRING_FORMAT("%s default string", labelPrefix.chars()));
-        this->test(node.getInt("non-existent", 999) == 999, VSTRING_FORMAT("%s default int", labelPrefix.chars()));
-        this->test(node.getFloat("non-existent", kTestFloatValue) == kTestFloatValue, VSTRING_FORMAT("%s default float", labelPrefix.chars()));
-        this->test(node.getDouble("non-existent", kTestDoubleValue) == kTestDoubleValue, VSTRING_FORMAT("%s default double", labelPrefix.chars()));
-        this->test(node.getChar("non-existent", 'x') == 'x', VSTRING_FORMAT("%s default char", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getS8("non-existent", -42), (Vs8) -42, VSTRING_FORMAT("%s default s8", labelPrefix.chars())); // <0 to verify correct sign handling
+        VUNIT_ASSERT_EQUAL_LABELED(node.getU8("non-existent", 200), (Vu8) 200, VSTRING_FORMAT("%s default u8", labelPrefix.chars())); // >127 to verify correct sign handling
+        VUNIT_ASSERT_EQUAL_LABELED(node.getS16("non-existent", 999), (Vs16) 999, VSTRING_FORMAT("%s default s16", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getU16("non-existent", 999), (Vu16) 999, VSTRING_FORMAT("%s default u16", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getS32("non-existent", 999), (Vs32) 999, VSTRING_FORMAT("%s default s32", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getU32("non-existent", 999), (Vu32) 999, VSTRING_FORMAT("%s default u32", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getS64("non-existent", 999), (Vs64) 999, VSTRING_FORMAT("%s default s64", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getU64("non-existent", 999), (Vu64) 999, VSTRING_FORMAT("%s default u64", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getBool("non-existent", true), true, VSTRING_FORMAT("%s default bool", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getString("non-existent", "999"), "999", VSTRING_FORMAT("%s default string", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getInt("non-existent", 999), 999, VSTRING_FORMAT("%s default int", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getFloat("non-existent", kTestFloatValue), kTestFloatValue, VSTRING_FORMAT("%s default float", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getDouble("non-existent", kTestDoubleValue), kTestDoubleValue, VSTRING_FORMAT("%s default double", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getChar("non-existent", 'x'), 'x', VSTRING_FORMAT("%s default char", labelPrefix.chars()));
         VDuration defaultDuration = VDuration::MILLISECOND() * 986;
-        this->test(node.getDuration("non-existent", defaultDuration) == defaultDuration, VSTRING_FORMAT("%s default duration", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getDuration("non-existent", defaultDuration), defaultDuration, VSTRING_FORMAT("%s default duration", labelPrefix.chars()));
         VInstant defaultInstant;
         defaultInstant.setDateAndTime(VDateAndTime(2007, 3, 4, 5, 6, 7, 8), VInstant::UTC_TIME_ZONE_ID());
-        this->test(node.getInstant("non-existent", defaultInstant) == defaultInstant, VSTRING_FORMAT("%s default instant", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(node.getInstant("non-existent", defaultInstant), defaultInstant, VSTRING_FORMAT("%s default instant", labelPrefix.chars()));
 
-        this->test(node.getSize("non-existent", VSize(1.1, 2.2)) == VSize(1.1, 2.2), VSTRING_FORMAT("%s default size", labelPrefix.chars()));
-        this->test(node.getISize("non-existent", VISize(3, 4)) == VISize(3, 4), VSTRING_FORMAT("%s default isize", labelPrefix.chars()));
-        this->test(node.getPoint("non-existent", VPoint(1.1, 2.2)) == VPoint(1.1, 2.2), VSTRING_FORMAT("%s default point", labelPrefix.chars()));
-        this->test(node.getIPoint("non-existent", VIPoint(3, 4)) == VIPoint(3, 4), VSTRING_FORMAT("%s default ipoint", labelPrefix.chars()));
-        this->test(node.getLine("non-existent", VLine(1.1, 2.2, 3.3, 4.4)) == VLine(1.1, 2.2, 3.3, 4.4), VSTRING_FORMAT("%s default line", labelPrefix.chars()));
-        this->test(node.getILine("non-existent", VILine(5, 6, 7, 8)) == VILine(5, 6, 7, 8), VSTRING_FORMAT("%s default iline", labelPrefix.chars()));
-        this->test(node.getRect("non-existent", VRect(1.1, 2.2, 3.3, 4.4)) == VRect(1.1, 2.2, 3.3, 4.4), VSTRING_FORMAT("%s default rect", labelPrefix.chars()));
-        this->test(node.getIRect("non-existent", VIRect(5, 6, 7, 8)) == VIRect(5, 6, 7, 8), VSTRING_FORMAT("%s default irect", labelPrefix.chars()));
+        VUNIT_ASSERT_TRUE_LABELED(node.getSize("non-existent", VSize(1.1, 2.2)) == VSize(1.1, 2.2), VSTRING_FORMAT("%s default size", labelPrefix.chars()));
+        VUNIT_ASSERT_TRUE_LABELED(node.getISize("non-existent", VISize(3, 4)) == VISize(3, 4), VSTRING_FORMAT("%s default isize", labelPrefix.chars()));
+        VUNIT_ASSERT_TRUE_LABELED(node.getPoint("non-existent", VPoint(1.1, 2.2)) == VPoint(1.1, 2.2), VSTRING_FORMAT("%s default point", labelPrefix.chars()));
+        VUNIT_ASSERT_TRUE_LABELED(node.getIPoint("non-existent", VIPoint(3, 4)) == VIPoint(3, 4), VSTRING_FORMAT("%s default ipoint", labelPrefix.chars()));
+        VUNIT_ASSERT_TRUE_LABELED(node.getLine("non-existent", VLine(1.1, 2.2, 3.3, 4.4)) == VLine(1.1, 2.2, 3.3, 4.4), VSTRING_FORMAT("%s default line", labelPrefix.chars()));
+        VUNIT_ASSERT_TRUE_LABELED(node.getILine("non-existent", VILine(5, 6, 7, 8)) == VILine(5, 6, 7, 8), VSTRING_FORMAT("%s default iline", labelPrefix.chars()));
+        VUNIT_ASSERT_TRUE_LABELED(node.getRect("non-existent", VRect(1.1, 2.2, 3.3, 4.4)) == VRect(1.1, 2.2, 3.3, 4.4), VSTRING_FORMAT("%s default rect", labelPrefix.chars()));
+        VUNIT_ASSERT_TRUE_LABELED(node.getIRect("non-existent", VIRect(5, 6, 7, 8)) == VIRect(5, 6, 7, 8), VSTRING_FORMAT("%s default irect", labelPrefix.chars()));
         VPolygon defaultPolygon; defaultPolygon.add(VPoint(1.1, 2.2)); defaultPolygon.add(VPoint(3.3, 4.4));
-        this->test(node.getPolygon("non-existent", defaultPolygon) == defaultPolygon, VSTRING_FORMAT("%s default polygon", labelPrefix.chars()));
+        VUNIT_ASSERT_TRUE_LABELED(node.getPolygon("non-existent", defaultPolygon) == defaultPolygon, VSTRING_FORMAT("%s default polygon", labelPrefix.chars()));
         VIPolygon defaultIPolygon; defaultIPolygon.add(VIPoint(5, 6)); defaultIPolygon.add(VIPoint(7, 8));
-        this->test(node.getIPolygon("non-existent", defaultIPolygon) == defaultIPolygon, VSTRING_FORMAT("%s default ipolygon", labelPrefix.chars()));
-        this->test(node.getColor("non-existent", VColor(9, 10, 11, 12)) == VColor(9, 10, 11, 12), VSTRING_FORMAT("%s default color", labelPrefix.chars()));
+        VUNIT_ASSERT_TRUE_LABELED(node.getIPolygon("non-existent", defaultIPolygon) == defaultIPolygon, VSTRING_FORMAT("%s default ipolygon", labelPrefix.chars()));
+        VUNIT_ASSERT_TRUE_LABELED(node.getColor("non-existent", VColor(9, 10, 11, 12)) == VColor(9, 10, 11, 12), VSTRING_FORMAT("%s default color", labelPrefix.chars()));
 
         VMemoryStream defaultBinary;
         VBinaryIOStream defaultBinaryIO(defaultBinary);
         defaultBinaryIO.writeString("default");
         VReadOnlyMemoryStream defaultBinaryReader(defaultBinary.getBuffer(), defaultBinary.getEOFOffset());
         bool defaultBinaryResult = node.getBinary("non-existent", defaultBinaryReader);
-        this->test(!defaultBinaryResult, VSTRING_FORMAT("%s default binary result", labelPrefix.chars()));
-        this->test(defaultBinaryReader.getBuffer() == defaultBinary.getBuffer(), VSTRING_FORMAT("%s default binary data", labelPrefix.chars()));
+        VUNIT_ASSERT_FALSE_LABELED(defaultBinaryResult, VSTRING_FORMAT("%s default binary result", labelPrefix.chars()));
+        VUNIT_ASSERT_TRUE_LABELED(defaultBinaryReader.getBuffer() == defaultBinary.getBuffer(), VSTRING_FORMAT("%s default binary data", labelPrefix.chars()));
 
         Vs8Array emptyS8Array;
-        this->test(initializedArrays->getS8Array("non-existent", emptyS8Array).size() == 0, VSTRING_FORMAT("%s default s8 array", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(initializedArrays->getS8Array("non-existent", emptyS8Array).size(), (size_t) 0, VSTRING_FORMAT("%s default s8 array", labelPrefix.chars()));
         Vs16Array emptyS16Array;
-        this->test(initializedArrays->getS16Array("non-existent", emptyS16Array).size() == 0, VSTRING_FORMAT("%s default s16 array", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(initializedArrays->getS16Array("non-existent", emptyS16Array).size(), (size_t) 0, VSTRING_FORMAT("%s default s16 array", labelPrefix.chars()));
         Vs32Array emptyS32Array;
-        this->test(initializedArrays->getS32Array("non-existent", emptyS32Array).size() == 0, VSTRING_FORMAT("%s default s32 array", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(initializedArrays->getS32Array("non-existent", emptyS32Array).size(), (size_t) 0, VSTRING_FORMAT("%s default s32 array", labelPrefix.chars()));
         Vs64Array emptyS64Array;
-        this->test(initializedArrays->getS64Array("non-existent", emptyS64Array).size() == 0, VSTRING_FORMAT("%s default s64 array", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(initializedArrays->getS64Array("non-existent", emptyS64Array).size(), (size_t) 0, VSTRING_FORMAT("%s default s64 array", labelPrefix.chars()));
         VStringVector emptyStringArray;
-        this->test(initializedArrays->getStringArray("non-existent", emptyStringArray).size() == 0, VSTRING_FORMAT("%s default string array", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(initializedArrays->getStringArray("non-existent", emptyStringArray).size(), (size_t) 0, VSTRING_FORMAT("%s default string array", labelPrefix.chars()));
         VBoolArray emptyBoolArray;
-        this->test(initializedArrays->getBoolArray("non-existent", emptyBoolArray).size() == 0, VSTRING_FORMAT("%s default bool array", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(initializedArrays->getBoolArray("non-existent", emptyBoolArray).size(), (size_t) 0, VSTRING_FORMAT("%s default bool array", labelPrefix.chars()));
         VDoubleArray emptyDoubleArray;
-        this->test(initializedArrays->getDoubleArray("non-existent", emptyDoubleArray).size() == 0, VSTRING_FORMAT("%s default double array", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(initializedArrays->getDoubleArray("non-existent", emptyDoubleArray).size(), (size_t) 0, VSTRING_FORMAT("%s default double array", labelPrefix.chars()));
         VDurationVector emptyDurationArray;
-        this->test(initializedArrays->getDurationArray("non-existent", emptyDurationArray).size() == 0, VSTRING_FORMAT("%s default duration array", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(initializedArrays->getDurationArray("non-existent", emptyDurationArray).size(), (size_t) 0, VSTRING_FORMAT("%s default duration array", labelPrefix.chars()));
         VInstantVector emptyInstantArray;
-        this->test(initializedArrays->getInstantArray("non-existent", emptyInstantArray).size() == 0, VSTRING_FORMAT("%s default instant array", labelPrefix.chars()));
+        VUNIT_ASSERT_EQUAL_LABELED(initializedArrays->getInstantArray("non-existent", emptyInstantArray).size(), (size_t) 0, VSTRING_FORMAT("%s default instant array", labelPrefix.chars()));
 
         // Test non-throwing missing value handling.
         // Each of these SHOULD throw an exception.
         // If it doesn't throw, is failed.
-        try { (void) node.getS8("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s8", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s8", labelPrefix.chars()));}
+        try { (void) node.getS8("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw s8", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw s8", labelPrefix.chars()));}
 
-        try { (void) node.getU8("non-existent"); this->test(false, VSTRING_FORMAT("%s throw u8", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw u8", labelPrefix.chars()));}
+        try { (void) node.getU8("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw u8", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw u8", labelPrefix.chars()));}
 
-        try { (void) node.getS16("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s16", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s16", labelPrefix.chars()));}
+        try { (void) node.getS16("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw s16", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw s16", labelPrefix.chars()));}
 
-        try { (void) node.getU16("non-existent"); this->test(false, VSTRING_FORMAT("%s throw u16", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw u16", labelPrefix.chars()));}
+        try { (void) node.getU16("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw u16", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw u16", labelPrefix.chars()));}
 
-        try { (void) node.getS32("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s32", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s32", labelPrefix.chars()));}
+        try { (void) node.getS32("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw s32", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw s32", labelPrefix.chars()));}
 
-        try { (void) node.getU32("non-existent"); this->test(false, VSTRING_FORMAT("%s throw u32", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw u32", labelPrefix.chars()));}
+        try { (void) node.getU32("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw u32", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw u32", labelPrefix.chars()));}
 
-        try { (void) node.getS64("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s64", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s64", labelPrefix.chars()));}
+        try { (void) node.getS64("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw s64", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw s64", labelPrefix.chars()));}
 
-        try { (void) node.getU64("non-existent"); this->test(false, VSTRING_FORMAT("%s throw u64", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw u64", labelPrefix.chars()));}
+        try { (void) node.getU64("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw u64", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw u64", labelPrefix.chars()));}
 
-        try { (void) node.getBool("non-existent"); this->test(false, VSTRING_FORMAT("%s throw bool", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw bool", labelPrefix.chars()));}
+        try { (void) node.getBool("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw bool", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw bool", labelPrefix.chars()));}
 
-        try { (void) node.getString("non-existent"); this->test(false, VSTRING_FORMAT("%s throw string", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw string", labelPrefix.chars()));}
+        try { (void) node.getString("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw string", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw string", labelPrefix.chars()));}
 
-        try { (void) node.getInt("non-existent"); this->test(false, VSTRING_FORMAT("%s throw int", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw int", labelPrefix.chars()));}
+        try { (void) node.getInt("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw int", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw int", labelPrefix.chars()));}
 
-        try { (void) node.getFloat("non-existent"); this->test(false, VSTRING_FORMAT("%s throw float", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw float", labelPrefix.chars()));}
+        try { (void) node.getFloat("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw float", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw float", labelPrefix.chars()));}
 
-        try { (void) node.getDouble("non-existent"); this->test(false, VSTRING_FORMAT("%s throw double", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw double", labelPrefix.chars()));}
+        try { (void) node.getDouble("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw double", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw double", labelPrefix.chars()));}
 
-        try { (void) node.getChar("non-existent"); this->test(false, VSTRING_FORMAT("%s throw char", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw char", labelPrefix.chars()));}
+        try { (void) node.getChar("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw char", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw char", labelPrefix.chars()));}
 
-        try { (void) node.getDuration("non-existent"); this->test(false, VSTRING_FORMAT("%s throw duration", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw duration", labelPrefix.chars()));}
+        try { (void) node.getDuration("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw duration", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw duration", labelPrefix.chars()));}
 
-        try { (void) node.getInstant("non-existent"); this->test(false, VSTRING_FORMAT("%s throw instant", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw instant", labelPrefix.chars()));}
+        try { (void) node.getInstant("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw instant", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw instant", labelPrefix.chars()));}
 
-        try { (void) node.getSize("non-existent"); this->test(false, VSTRING_FORMAT("%s throw size", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw size", labelPrefix.chars()));}
+        try { (void) node.getSize("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw size", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw size", labelPrefix.chars()));}
 
-        try { (void) node.getISize("non-existent"); this->test(false, VSTRING_FORMAT("%s throw isize", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw isize", labelPrefix.chars()));}
+        try { (void) node.getISize("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw isize", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw isize", labelPrefix.chars()));}
 
-        try { (void) node.getPoint("non-existent"); this->test(false, VSTRING_FORMAT("%s throw point", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw point", labelPrefix.chars()));}
+        try { (void) node.getPoint("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw point", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw point", labelPrefix.chars()));}
 
-        try { (void) node.getIPoint("non-existent"); this->test(false, VSTRING_FORMAT("%s throw ipoint", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw ipoint", labelPrefix.chars()));}
+        try { (void) node.getIPoint("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw ipoint", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw ipoint", labelPrefix.chars()));}
 
-        try { (void) node.getLine("non-existent"); this->test(false, VSTRING_FORMAT("%s throw line", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw line", labelPrefix.chars()));}
+        try { (void) node.getLine("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw line", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw line", labelPrefix.chars()));}
 
-        try { (void) node.getILine("non-existent"); this->test(false, VSTRING_FORMAT("%s throw iline", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw iline", labelPrefix.chars()));}
+        try { (void) node.getILine("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw iline", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw iline", labelPrefix.chars()));}
 
-        try { (void) node.getRect("non-existent"); this->test(false, VSTRING_FORMAT("%s throw rect", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw rect", labelPrefix.chars()));}
+        try { (void) node.getRect("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw rect", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw rect", labelPrefix.chars()));}
 
-        try { (void) node.getIRect("non-existent"); this->test(false, VSTRING_FORMAT("%s throw irect", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw irect", labelPrefix.chars()));}
+        try { (void) node.getIRect("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw irect", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw irect", labelPrefix.chars()));}
 
-        try { (void) node.getPolygon("non-existent"); this->test(false, VSTRING_FORMAT("%s throw polygon", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw polygon", labelPrefix.chars()));}
+        try { (void) node.getPolygon("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw polygon", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw polygon", labelPrefix.chars()));}
 
-        try { (void) node.getIPolygon("non-existent"); this->test(false, VSTRING_FORMAT("%s throw ipolygon", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw ipolygon", labelPrefix.chars()));}
+        try { (void) node.getIPolygon("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw ipolygon", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw ipolygon", labelPrefix.chars()));}
 
-        try { (void) node.getColor("non-existent"); this->test(false, VSTRING_FORMAT("%s throw color", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw color", labelPrefix.chars()));}
+        try { (void) node.getColor("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw color", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw color", labelPrefix.chars()));}
 
-        try { (void) node.getBinary("non-existent"); this->test(false, VSTRING_FORMAT("%s throw binary", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw binary", labelPrefix.chars()));}
+        try { (void) node.getBinary("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw binary", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw binary", labelPrefix.chars()));}
 
-        try { (void) node.getS8Array("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s8 array", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s8 array", labelPrefix.chars()));}
+        try { (void) node.getS8Array("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw s8 array", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw s8 array", labelPrefix.chars()));}
 
-        try { (void) node.getS16Array("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s16 array", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s16 array", labelPrefix.chars()));}
+        try { (void) node.getS16Array("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw s16 array", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw s16 array", labelPrefix.chars()));}
 
-        try { (void) node.getS32Array("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s32 array", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s32 array", labelPrefix.chars()));}
+        try { (void) node.getS32Array("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw s32 array", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw s32 array", labelPrefix.chars()));}
 
-        try { (void) node.getS64Array("non-existent"); this->test(false, VSTRING_FORMAT("%s throw s64 array", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw s64 array", labelPrefix.chars()));}
+        try { (void) node.getS64Array("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw s64 array", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw s64 array", labelPrefix.chars()));}
 
-        try { (void) node.getBoolArray("non-existent"); this->test(false, VSTRING_FORMAT("%s throw bool array", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw bool array", labelPrefix.chars()));}
+        try { (void) node.getBoolArray("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw bool array", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw bool array", labelPrefix.chars()));}
 
-        try { (void) node.getStringArray("non-existent"); this->test(false, VSTRING_FORMAT("%s throw string array", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw string array", labelPrefix.chars()));}
+        try { (void) node.getStringArray("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw string array", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw string array", labelPrefix.chars()));}
 
-        try { (void) node.getDoubleArray("non-existent"); this->test(false, VSTRING_FORMAT("%s throw double array", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw double array", labelPrefix.chars()));}
+        try { (void) node.getDoubleArray("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw double array", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw double array", labelPrefix.chars()));}
 
-        try { (void) node.getDurationArray("non-existent"); this->test(false, VSTRING_FORMAT("%s throw duration array", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw duration array", labelPrefix.chars()));}
+        try { (void) node.getDurationArray("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw duration array", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw duration array", labelPrefix.chars()));}
 
-        try { (void) node.getInstantArray("non-existent"); this->test(false, VSTRING_FORMAT("%s throw instant array", labelPrefix.chars())); }
-        catch (const VException& /*ex*/) { this->test(true, VSTRING_FORMAT("%s throw instant array", labelPrefix.chars()));}
+        try { (void) node.getInstantArray("non-existent"); VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("%s throw instant array", labelPrefix.chars())); }
+        catch (const VException& /*ex*/) { VUNIT_ASSERT_SUCCESS(VSTRING_FORMAT("%s throw instant array", labelPrefix.chars()));}
 
     } catch (const VException& ex) {
-        this->test(false, VSTRING_FORMAT("VBentoUnit %s threw an exception: %s", labelPrefix.chars(), ex.what()));
+        VUNIT_ASSERT_FAILURE(VSTRING_FORMAT("VBentoUnit %s threw an exception: %s", labelPrefix.chars(), ex.what()));
     }
 }
 

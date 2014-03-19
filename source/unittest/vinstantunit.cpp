@@ -44,8 +44,8 @@ void VInstantUnit::_runInstantOperatorTests() {
     offset1 = i1.getValue();
     i2.setValue(offset1);
     offset2 = i2.getValue();
-    this->test(offset1 == offset2, "symmetry test 1");
-    this->test(i1 == i2, "symmetry test 2");
+    VUNIT_ASSERT_EQUAL_LABELED(offset1, offset2, "symmetry test 1");
+    VUNIT_ASSERT_EQUAL_LABELED(i1, i2, "symmetry test 2");
 
     // Test modification functions.
     // Set things up for this set of tests.
@@ -59,9 +59,9 @@ void VInstantUnit::_runInstantOperatorTests() {
     i1 += kDeltaA;                                      // i1 is base + kDeltaA
     offset2 += kDeltaA.getDurationMilliseconds();        // off2 is base + kDeltaA
     offset1 = i1.getValue();                            // off1 is base + kDeltaA
-    this->test(offset1 == offset2, "modification test 1");
+    VUNIT_ASSERT_EQUAL_LABELED(offset1, offset2, "modification test 1");
     i2 += kDeltaA;                                      // i2 is base + kDeltaA
-    this->test(i1 == i2, "modification test 2");
+    VUNIT_ASSERT_EQUAL_LABELED(i1, i2, "modification test 2");
 
     // operator-=
     const VDuration kDeltaC = VDuration::MILLISECOND() * CONST_S64(13579);
@@ -69,9 +69,9 @@ void VInstantUnit::_runInstantOperatorTests() {
     i1 -= kDeltaC;                                      // i1 is base + kDeltaABC
     offset2 -= kDeltaC.getDurationMilliseconds();        // off2 is base + kDeltaABC
     offset1 = i1.getValue();                            // off1 is base + kDeltaABC
-    this->test(offset1 == offset2, "modification test 5");
+    VUNIT_ASSERT_EQUAL_LABELED(offset1, offset2, "modification test 5");
     i2 -= VDuration(kDeltaC);                            // i2 is base + kDeltaABC
-    this->test(i1 == i2, "modification test 6");
+    VUNIT_ASSERT_EQUAL_LABELED(i1, i2, "modification test 6");
 
     // Test comparison operators.
     // Set things up for this set of tests.
@@ -83,22 +83,22 @@ void VInstantUnit::_runInstantOperatorTests() {
     const VDuration kDeltaD = VDuration::MILLISECOND() * CONST_S64(24680);
     i2 += kDeltaD;
     // Now i2 is kDeltaD milliseconds later than i1.
-    this->test(!(i1 == i2), "comparison test 1a");
-    this->test(i1 != i2, "comparison test 1b");
-    this->test(i1 < i2, "comparison test 1c");
-    this->test(i1 <= i2, "comparison test 1d");
-    this->test(i2 > i1, "comparison test 1e");
-    this->test(i2 >= i1, "comparison test 1f");
-    this->test(i2 - i1 == kDeltaD, "comparison test 1g");
+    VUNIT_ASSERT_FALSE_LABELED(i1 == i2, "comparison test 1a");
+    VUNIT_ASSERT_TRUE_LABELED(i1 != i2, "comparison test 1b");
+    VUNIT_ASSERT_TRUE_LABELED(i1 < i2, "comparison test 1c");
+    VUNIT_ASSERT_TRUE_LABELED(i1 <= i2, "comparison test 1d");
+    VUNIT_ASSERT_TRUE_LABELED(i2 > i1, "comparison test 1e");
+    VUNIT_ASSERT_TRUE_LABELED(i2 >= i1, "comparison test 1f");
+    VUNIT_ASSERT_TRUE_LABELED(i2 - i1 == kDeltaD, "comparison test 1g");
     i2 -= kDeltaD;
     // Now i1 and i2 are equal.
-    this->test(i1 == i2, "comparison test 2a");
-    this->test(!(i1 != i2), "comparison test 2b");
-    this->test(!(i1 < i2), "comparison test 2c");
-    this->test(i1 <= i2, "comparison test 2d");
-    this->test(!(i2 > i1), "comparison test 2e");
-    this->test(i2 >= i1, "comparison test 2f");
-    this->test(i2 - i1 == VDuration::ZERO(), "comparison test 2g");
+    VUNIT_ASSERT_TRUE_LABELED(i1 == i2, "comparison test 2a");
+    VUNIT_ASSERT_FALSE_LABELED(i1 != i2, "comparison test 2b");
+    VUNIT_ASSERT_FALSE_LABELED(i1 < i2, "comparison test 2c");
+    VUNIT_ASSERT_TRUE_LABELED(i1 <= i2, "comparison test 2d");
+    VUNIT_ASSERT_FALSE_LABELED(i2 > i1, "comparison test 2e");
+    VUNIT_ASSERT_TRUE_LABELED(i2 >= i1, "comparison test 2f");
+    VUNIT_ASSERT_TRUE_LABELED(i2 - i1 == VDuration::ZERO(), "comparison test 2g");
 
 }
 
@@ -111,45 +111,45 @@ void VInstantUnit::_runInstantComparatorTests() {
     VInstant    past = now; past -= VDuration::MINUTE(); // about a minute before "now"
     VInstant    future = now; future += VDuration::MINUTE(); // about a minute later than "now"
 
-    this->test(infinitePast < now, "comparison test 3a");
-    this->test(infinitePast <= now, "comparison test 3b");
-    this->test(now > infinitePast, "comparison test 3c");
-    this->test(now >= infinitePast, "comparison test 3d");
-    this->test(!(infinitePast > now), "comparison test 3e");
-    this->test(!(infinitePast >= now), "comparison test 3f");
-    this->test(infinitePast != now, "comparison test 3g");
-    this->test(!(infinitePast == now), "comparison test 3h");
+    VUNIT_ASSERT_TRUE_LABELED(infinitePast < now, "comparison test 3a");
+    VUNIT_ASSERT_TRUE_LABELED(infinitePast <= now, "comparison test 3b");
+    VUNIT_ASSERT_TRUE_LABELED(now > infinitePast, "comparison test 3c");
+    VUNIT_ASSERT_TRUE_LABELED(now >= infinitePast, "comparison test 3d");
+    VUNIT_ASSERT_FALSE_LABELED(infinitePast > now, "comparison test 3e");
+    VUNIT_ASSERT_FALSE_LABELED(infinitePast >= now, "comparison test 3f");
+    VUNIT_ASSERT_TRUE_LABELED(infinitePast != now, "comparison test 3g");
+    VUNIT_ASSERT_FALSE_LABELED(infinitePast == now, "comparison test 3h");
 
-    this->test(infiniteFuture > now, "comparison test 4a");
-    this->test(infiniteFuture >= now, "comparison test 4b");
-    this->test(now < infiniteFuture, "comparison test 4c");
-    this->test(now <= infiniteFuture, "comparison test 4d");
-    this->test(!(infiniteFuture < now), "comparison test 4e");
-    this->test(!(infiniteFuture <= now), "comparison test 4f");
-    this->test(infiniteFuture != now, "comparison test 4g");
-    this->test(!(infiniteFuture == now), "comparison test 4h");
+    VUNIT_ASSERT_TRUE_LABELED(infiniteFuture > now, "comparison test 4a");
+    VUNIT_ASSERT_TRUE_LABELED(infiniteFuture >= now, "comparison test 4b");
+    VUNIT_ASSERT_TRUE_LABELED(now < infiniteFuture, "comparison test 4c");
+    VUNIT_ASSERT_TRUE_LABELED(now <= infiniteFuture, "comparison test 4d");
+    VUNIT_ASSERT_FALSE_LABELED(infiniteFuture < now, "comparison test 4e");
+    VUNIT_ASSERT_FALSE_LABELED(infiniteFuture <= now, "comparison test 4f");
+    VUNIT_ASSERT_TRUE_LABELED(infiniteFuture != now, "comparison test 4g");
+    VUNIT_ASSERT_FALSE_LABELED(infiniteFuture == now, "comparison test 4h");
 
-    this->test(infinitePast < infiniteFuture, "comparison test 5a");
-    this->test(infinitePast <= infiniteFuture, "comparison test 5b");
-    this->test(infiniteFuture > infinitePast, "comparison test 5c");
-    this->test(infiniteFuture >= infinitePast, "comparison test 5d");
-    this->test(!(infinitePast > infiniteFuture), "comparison test 5e");
-    this->test(!(infinitePast >= infiniteFuture), "comparison test 5f");
-    this->test(infinitePast != infiniteFuture, "comparison test 5g");
-    this->test(!(infinitePast == infiniteFuture), "comparison test 5h");
+    VUNIT_ASSERT_TRUE_LABELED(infinitePast < infiniteFuture, "comparison test 5a");
+    VUNIT_ASSERT_TRUE_LABELED(infinitePast <= infiniteFuture, "comparison test 5b");
+    VUNIT_ASSERT_TRUE_LABELED(infiniteFuture > infinitePast, "comparison test 5c");
+    VUNIT_ASSERT_TRUE_LABELED(infiniteFuture >= infinitePast, "comparison test 5d");
+    VUNIT_ASSERT_FALSE_LABELED(infinitePast > infiniteFuture, "comparison test 5e");
+    VUNIT_ASSERT_FALSE_LABELED(infinitePast >= infiniteFuture, "comparison test 5f");
+    VUNIT_ASSERT_TRUE_LABELED(infinitePast != infiniteFuture, "comparison test 5g");
+    VUNIT_ASSERT_FALSE_LABELED(infinitePast == infiniteFuture, "comparison test 5h");
 
-    this->test(infinitePast == VInstant::INFINITE_PAST(), "comparison test 6a");
-    this->test(infiniteFuture == VInstant::INFINITE_FUTURE(), "comparison test 6b");
-    this->test(VInstant::min(infinitePast, now) == infinitePast, "comparison test 6c");
-    this->test(VInstant::max(infinitePast, now) == now, "comparison test 6d");
-    this->test(VInstant::min(infiniteFuture, now) == now, "comparison test 6e");
-    this->test(VInstant::max(infiniteFuture, now) == infiniteFuture, "comparison test 6f");
-    this->test(VInstant::min(past, now) == past, "comparison test 6g");
-    this->test(VInstant::max(past, now) == now, "comparison test 6h");
-    this->test(VInstant::min(future, now) == now, "comparison test 6i");
-    this->test(VInstant::max(future, now) == future, "comparison test 6j");
-    this->test(VInstant::min(past, future) == past, "comparison test 6k");
-    this->test(VInstant::max(past, future) == future, "comparison test 6l");
+    VUNIT_ASSERT_TRUE_LABELED(infinitePast == VInstant::INFINITE_PAST(), "comparison test 6a");
+    VUNIT_ASSERT_TRUE_LABELED(infiniteFuture == VInstant::INFINITE_FUTURE(), "comparison test 6b");
+    VUNIT_ASSERT_TRUE_LABELED(VInstant::min(infinitePast, now) == infinitePast, "comparison test 6c");
+    VUNIT_ASSERT_TRUE_LABELED(VInstant::max(infinitePast, now) == now, "comparison test 6d");
+    VUNIT_ASSERT_TRUE_LABELED(VInstant::min(infiniteFuture, now) == now, "comparison test 6e");
+    VUNIT_ASSERT_TRUE_LABELED(VInstant::max(infiniteFuture, now) == infiniteFuture, "comparison test 6f");
+    VUNIT_ASSERT_TRUE_LABELED(VInstant::min(past, now) == past, "comparison test 6g");
+    VUNIT_ASSERT_TRUE_LABELED(VInstant::max(past, now) == now, "comparison test 6h");
+    VUNIT_ASSERT_TRUE_LABELED(VInstant::min(future, now) == now, "comparison test 6i");
+    VUNIT_ASSERT_TRUE_LABELED(VInstant::max(future, now) == future, "comparison test 6j");
+    VUNIT_ASSERT_TRUE_LABELED(VInstant::min(past, future) == past, "comparison test 6k");
+    VUNIT_ASSERT_TRUE_LABELED(VInstant::max(past, future) == future, "comparison test 6l");
 
 }
 
@@ -164,11 +164,11 @@ void VInstantUnit::_runClockSimulationTests() {
         VInstant basePlus1Minute = base0; basePlus1Minute += VDuration::MINUTE();
         VInstant::incrementSimulatedClockOffset(2 * VDuration::MINUTE()); // should put us forward about 2 additional minutes
         VInstant fakeFutureNow;
-        this->test(fakeFutureNow > basePlus1Minute, "advance simulated clock offset");
+        VUNIT_ASSERT_TRUE_LABELED(fakeFutureNow > basePlus1Minute, "advance simulated clock offset");
         VInstant::setSimulatedClockOffset(VDuration::ZERO()); // restore the time continuum to normal
         VInstant normalNow;
-        this->test(normalNow >= base0, "restore simulated clock offset part 1");
-        this->test(normalNow < basePlus1Minute, "restore simulated clock offset part 2"); // can only fail if it takes > 1 real minute to execute the last 5 lines of code
+        VUNIT_ASSERT_TRUE_LABELED(normalNow >= base0, "restore simulated clock offset part 1");
+        VUNIT_ASSERT_TRUE_LABELED(normalNow < basePlus1Minute, "restore simulated clock offset part 2"); // can only fail if it takes > 1 real minute to execute the last 5 lines of code
     }
 
     /* scope for test subset local variables */ {
@@ -181,13 +181,13 @@ void VInstantUnit::_runClockSimulationTests() {
         VInstant fakePastInstant; fakePastInstant.setLocalDateAndTime(fakePastDT);
         VInstant::setSimulatedClockValue(fakePastInstant);
         VInstant fakePastNow;
-        this->test(fakePastNow - fakePastInstant < VDuration::SECOND(), "set clock to past instant");
+        VUNIT_ASSERT_TRUE_LABELED(fakePastNow - fakePastInstant < VDuration::SECOND(), "set clock to past instant");
         // note that we do NOT zero the offset before the next test; we want to verify it can be set directly
         VDateAndTime fakeFutureDT(2034, 1, 6, 14, 35, 0, 0);
         VInstant fakeFutureInstant; fakeFutureInstant.setLocalDateAndTime(fakeFutureDT);
         VInstant::setSimulatedClockValue(fakeFutureInstant);
         VInstant fakeFutureNow;
-        this->test(fakeFutureNow - fakeFutureInstant < VDuration::SECOND(), "set clock to future instant");
+        VUNIT_ASSERT_TRUE_LABELED(fakeFutureNow - fakeFutureInstant < VDuration::SECOND(), "set clock to future instant");
 
         VInstant::setSimulatedClockOffset(VDuration::ZERO()); // restore the time continuum to normal
     }
@@ -205,7 +205,7 @@ void VInstantUnit::_runClockSimulationTests() {
         // Sleep for 2 seconds and verify that no time seemed to actually pass.
         VThread::sleep(2 * VDuration::SECOND());
         VInstant frozenNow1;
-        this->test(frozenNow1 == fakePastInstant, "freeze time 1");
+        VUNIT_ASSERT_TRUE_LABELED(frozenNow1 == fakePastInstant, "freeze time 1");
 
         Vs64 frozenSnapshot = VInstant::snapshot();
 
@@ -213,17 +213,17 @@ void VInstantUnit::_runClockSimulationTests() {
         VDuration shiftAmount = 10 * VDuration::SECOND();
         VInstant::shiftFrozenTime(shiftAmount);
         VInstant frozenNow2;
-        this->test(frozenNow2 == frozenNow1 + shiftAmount, "shift frozen time");
+        VUNIT_ASSERT_TRUE_LABELED(frozenNow2 == frozenNow1 + shiftAmount, "shift frozen time");
 
         VDuration frozenSnapshotDelta = VInstant::snapshotDelta(frozenSnapshot);
-        this->test(frozenSnapshotDelta == shiftAmount, "shift frozen time snapshot");
+        VUNIT_ASSERT_TRUE_LABELED(frozenSnapshotDelta == shiftAmount, "shift frozen time snapshot");
 
-        this->test(VInstant::isTimeFrozen(), "time is frozen");
+        VUNIT_ASSERT_TRUE_LABELED(VInstant::isTimeFrozen(), "time is frozen");
 
         // Sleep for 2 seconds and verify that no time seemed to actually pass.
         VThread::sleep(2 * VDuration::SECOND());
         VInstant frozenNow3;
-        this->test(frozenNow3 == frozenNow2, "freeze time 2");
+        VUNIT_ASSERT_TRUE_LABELED(frozenNow3 == frozenNow2, "freeze time 2");
 
         // Unfreeze time and make sure it now rolls forward in true real time.
         // First we verify that the current time is equal to or later than the
@@ -234,10 +234,10 @@ void VInstantUnit::_runClockSimulationTests() {
         // time did not roll forward while we slept.
         VInstant::unfreezeTime();
         VInstant realNow1;
-        this->test(realNow1 >= realNow, "normal time resumed");
+        VUNIT_ASSERT_TRUE_LABELED(realNow1 >= realNow, "normal time resumed");
         VThread::sleep(200 * VDuration::MILLISECOND());
         VInstant realNow2;
-        this->test(realNow2 > realNow1, "unfrozen time proceeds");
+        VUNIT_ASSERT_TRUE_LABELED(realNow2 > realNow1, "unfrozen time proceeds");
 
         VInstant::setSimulatedClockOffset(VDuration::ZERO()); // restore the time continuum to normal
     }
@@ -254,7 +254,7 @@ void VInstantUnit::_runTimeZoneConversionTests() {
     VInstant    utc0Instant;
 
     utc0Instant.setValues(utc0Date, utc0Time, VInstant::UTC_TIME_ZONE_ID());
-    this->test(utc0Instant.getValue() == CONST_S64(0), "utc epoch base");
+    VUNIT_ASSERT_TRUE_LABELED(utc0Instant.getValue() == CONST_S64(0), "utc epoch base");
 
     // A little debugging code here:
     // Out of curiosity, do all platforms agree on what values we get exactly
@@ -297,7 +297,7 @@ void VInstantUnit::_runTimeZoneConversionTests() {
     this->_testInstantRangeRoundTripConversion("Testing near daylight switch", daylightSwitchTestInstant, 30 * VDuration::MINUTE(), 96);
     
     // We know exactly what the correct value for July 14 2004 noon UTC is:
-    this->test(july_14_2004_noon_utc.getValue() == CONST_S64(1089806400000), "utc epoch known offset");
+    VUNIT_ASSERT_TRUE_LABELED(july_14_2004_noon_utc.getValue() == CONST_S64(1089806400000), "utc epoch known offset");
     // (The value for July 14 2004 local time depends on our local time zone.)
 
     // Those two times must not have the same underlying "value", because
@@ -306,29 +306,29 @@ void VInstantUnit::_runTimeZoneConversionTests() {
     // will appear to fail if UTC is local, if things are OK. But in that
     // case, the other zone conversion tests are not really being exercised
     // anyway, so testing in UTC is perhaps a bogus test environment anyway.)
-    this->test(july_14_2004_noon_local != july_14_2004_noon_utc, "local != gm time");
+    VUNIT_ASSERT_TRUE_LABELED(july_14_2004_noon_local != july_14_2004_noon_utc, "local != gm time");
 
     // Reverse each VInstant back into VDate and VTimeOfDay, and verify.
 
     VDate        dateLocalFromLocal;
     VTimeOfDay    timeLocalFromLocal;
     july_14_2004_noon_local.getValues(dateLocalFromLocal, timeLocalFromLocal, VInstant::LOCAL_TIME_ZONE_ID());
-    this->test((dateLocalFromLocal == july_14_2004) && (timeLocalFromLocal == noon), "local conversion cycle");
+    VUNIT_ASSERT_TRUE_LABELED((dateLocalFromLocal == july_14_2004) && (timeLocalFromLocal == noon), "local conversion cycle");
 
     VDate        dateUTCFromUTC;
     VTimeOfDay    timeUTCFromUTC;
     july_14_2004_noon_utc.getValues(dateUTCFromUTC, timeUTCFromUTC, VInstant::UTC_TIME_ZONE_ID());
-    this->test((dateUTCFromUTC == july_14_2004) && (timeUTCFromUTC == noon), "utc conversion cycle 1");
+    VUNIT_ASSERT_TRUE_LABELED((dateUTCFromUTC == july_14_2004) && (timeUTCFromUTC == noon), "utc conversion cycle 1");
 
     dateUTCFromUTC = july_14_2004_noon_utc.getDate(VInstant::UTC_TIME_ZONE_ID());
     timeUTCFromUTC = july_14_2004_noon_utc.getTimeOfDay(VInstant::UTC_TIME_ZONE_ID());
-    this->test((dateUTCFromUTC == july_14_2004) && (timeUTCFromUTC == noon), "utc conversion cycle 2");
+    VUNIT_ASSERT_TRUE_LABELED((dateUTCFromUTC == july_14_2004) && (timeUTCFromUTC == noon), "utc conversion cycle 2");
 
-    this->test((dateUTCFromUTC.getYear() == 2004) &&
+    VUNIT_ASSERT_TRUE_LABELED((dateUTCFromUTC.getYear() == 2004) &&
                (dateUTCFromUTC.getMonth() == 7) &&
                (dateUTCFromUTC.getDay() == 14) &&
                (dateUTCFromUTC.getDayOfWeek() == VDate::kWednesday), "date values");
-    this->test((timeUTCFromUTC.getHour() == 12) &&
+    VUNIT_ASSERT_TRUE_LABELED((timeUTCFromUTC.getHour() == 12) &&
                (timeUTCFromUTC.getMinute() == 0) &&
                (timeUTCFromUTC.getSecond() == 0), "time of day values");
 
@@ -337,87 +337,87 @@ void VInstantUnit::_runTimeZoneConversionTests() {
 void VInstantUnit::_runDurationValueTests() {
     // VDuration tests.
 
-    this->test(VDuration::ZERO().getDurationMilliseconds() == CONST_S64(0), "VDuration ZERO");
-    this->test(VDuration::SECOND().getDurationMilliseconds() == CONST_S64(1000), "VDuration SECOND");
-    this->test(VDuration::MINUTE().getDurationMilliseconds() == CONST_S64(60000), "VDuration MINUTE");
-    this->test(VDuration::HOUR().getDurationMilliseconds() == CONST_S64(3600000), "VDuration HOUR");
-    this->test(VDuration::DAY().getDurationMilliseconds() == CONST_S64(86400000), "VDuration DAY");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::ZERO().getDurationMilliseconds() == CONST_S64(0), "VDuration ZERO");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::SECOND().getDurationMilliseconds() == CONST_S64(1000), "VDuration SECOND");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::MINUTE().getDurationMilliseconds() == CONST_S64(60000), "VDuration MINUTE");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::HOUR().getDurationMilliseconds() == CONST_S64(3600000), "VDuration HOUR");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::DAY().getDurationMilliseconds() == CONST_S64(86400000), "VDuration DAY");
 
     VString zeroDurationString = VDuration::ZERO().getDurationString();
-    this->test(VDuration::ZERO().getDurationString(), "0ms", "VDuration zero string");
-    this->test(VDuration::ZERO().getDurationStringFractionalSeconds(), "0.000", "VDuration zero fractional string");
-    this->test(VDuration::UNSPECIFIED().getDurationString(), "UNSPECIFIED", "VDuration UNSPECIFIED string");
-    this->test(VDuration::NEGATIVE_INFINITY().getDurationString(), "-INFINITY", "VDuration NEGATIVE_INFINITY string");
-    this->test(VDuration::POSITIVE_INFINITY().getDurationString(), "INFINITY", "VDuration POSITIVE_INFINITY string");
+    VUNIT_ASSERT_EQUAL_LABELED(VDuration::ZERO().getDurationString(), "0ms", "VDuration zero string");
+    VUNIT_ASSERT_EQUAL_LABELED(VDuration::ZERO().getDurationStringFractionalSeconds(), "0.000", "VDuration zero fractional string");
+    VUNIT_ASSERT_EQUAL_LABELED(VDuration::UNSPECIFIED().getDurationString(), "UNSPECIFIED", "VDuration UNSPECIFIED string");
+    VUNIT_ASSERT_EQUAL_LABELED(VDuration::NEGATIVE_INFINITY().getDurationString(), "-INFINITY", "VDuration NEGATIVE_INFINITY string");
+    VUNIT_ASSERT_EQUAL_LABELED(VDuration::POSITIVE_INFINITY().getDurationString(), "INFINITY", "VDuration POSITIVE_INFINITY string");
 
     VDuration durationStringTest;
     durationStringTest = CONST_S64(987) * VDuration::MILLISECOND();
-    this->test(durationStringTest.getDurationString(), "987ms", "VDuration 0.987 string");
-    this->test(durationStringTest.getDurationStringFractionalSeconds(), "0.987", "VDuration 0.987 fractional string");
+    VUNIT_ASSERT_EQUAL_LABELED(durationStringTest.getDurationString(), "987ms", "VDuration 0.987 string");
+    VUNIT_ASSERT_EQUAL_LABELED(durationStringTest.getDurationStringFractionalSeconds(), "0.987", "VDuration 0.987 fractional string");
     durationStringTest = CONST_S64(1001) * VDuration::MILLISECOND();
-    this->test(durationStringTest.getDurationString(), "1001ms", "VDuration 1.001 string");
-    this->test(durationStringTest.getDurationStringFractionalSeconds(), "1.001", "VDuration 1.001 fractional string");
+    VUNIT_ASSERT_EQUAL_LABELED(durationStringTest.getDurationString(), "1001ms", "VDuration 1.001 string");
+    VUNIT_ASSERT_EQUAL_LABELED(durationStringTest.getDurationStringFractionalSeconds(), "1.001", "VDuration 1.001 fractional string");
     durationStringTest = VDuration::MINUTE();
-    this->test(durationStringTest.getDurationString(), "1m", "VDuration MINUTE string");
-    this->test(durationStringTest.getDurationStringFractionalSeconds(), "60.000", "VDuration MINUTE fractional string");
+    VUNIT_ASSERT_EQUAL_LABELED(durationStringTest.getDurationString(), "1m", "VDuration MINUTE string");
+    VUNIT_ASSERT_EQUAL_LABELED(durationStringTest.getDurationStringFractionalSeconds(), "60.000", "VDuration MINUTE fractional string");
     durationStringTest = VDuration::HOUR();
-    this->test(durationStringTest.getDurationString(), "1h", "VDuration HOUR string");
-    this->test(durationStringTest.getDurationStringFractionalSeconds(), "3600.000", "VDuration HOUR0 fractional string");
+    VUNIT_ASSERT_EQUAL_LABELED(durationStringTest.getDurationString(), "1h", "VDuration HOUR string");
+    VUNIT_ASSERT_EQUAL_LABELED(durationStringTest.getDurationStringFractionalSeconds(), "3600.000", "VDuration HOUR0 fractional string");
     durationStringTest = VDuration::DAY();
-    this->test(durationStringTest.getDurationString(), "1d", "VDuration DAY string");
-    this->test(durationStringTest.getDurationStringFractionalSeconds(), "86400.000", "VDuration DAY fractional string");
+    VUNIT_ASSERT_EQUAL_LABELED(durationStringTest.getDurationString(), "1d", "VDuration DAY string");
+    VUNIT_ASSERT_EQUAL_LABELED(durationStringTest.getDurationStringFractionalSeconds(), "86400.000", "VDuration DAY fractional string");
 
     VDuration duration; // zero
-    this->test(duration == VDuration::ZERO(), "VDuration default equals ZERO");
+    VUNIT_ASSERT_TRUE_LABELED(duration == VDuration::ZERO(), "VDuration default equals ZERO");
     duration += VDuration::SECOND();
-    this->test(duration == VDuration::SECOND(), "VDuration ZERO plus SECOND equals SECOND");
+    VUNIT_ASSERT_TRUE_LABELED(duration == VDuration::SECOND(), "VDuration ZERO plus SECOND equals SECOND");
     duration = 2 * VDuration::MINUTE();
-    this->test(duration.getDurationMilliseconds() == 120000, "VDuration 2 * MINUTE equals 120000ms");
+    VUNIT_ASSERT_TRUE_LABELED(duration.getDurationMilliseconds() == 120000, "VDuration 2 * MINUTE equals 120000ms");
     duration = VDuration::MINUTE() * 2; // cover the transitive version of operator*
-    this->test(duration.getDurationMilliseconds() == 120000, "VDuration MINUTE * 2 equals 120000ms");
-    this->test(duration == (120 * VDuration::SECOND()), "VDuration 2 * MINUTE equals 120 * SECOND");
+    VUNIT_ASSERT_TRUE_LABELED(duration.getDurationMilliseconds() == 120000, "VDuration MINUTE * 2 equals 120000ms");
+    VUNIT_ASSERT_TRUE_LABELED(duration == (120 * VDuration::SECOND()), "VDuration 2 * MINUTE equals 120 * SECOND");
     duration = VDuration::DAY() - (10 * VDuration::HOUR());
-    this->test(duration == (14 * VDuration::HOUR()), "VDuration DAY minus 10 * HOUR equals 14 * HOUR");
+    VUNIT_ASSERT_TRUE_LABELED(duration == (14 * VDuration::HOUR()), "VDuration DAY minus 10 * HOUR equals 14 * HOUR");
     duration = VDuration::DAY() - VDuration::MINUTE();
-    this->test(duration == ((23 * VDuration::HOUR()) + (59 * VDuration::MINUTE())), "VDuration DAY minus MINUTE equals 23h59m");
+    VUNIT_ASSERT_TRUE_LABELED(duration == ((23 * VDuration::HOUR()) + (59 * VDuration::MINUTE())), "VDuration DAY minus MINUTE equals 23h59m");
     duration = VDuration::MINUTE();
     duration -= VDuration::SECOND();
-    this->test(duration == (59 * VDuration::SECOND()), "VDuration operator-=");
+    VUNIT_ASSERT_TRUE_LABELED(duration == (59 * VDuration::SECOND()), "VDuration operator-=");
     duration += VDuration::SECOND();
-    this->test(duration == VDuration::MINUTE(), "VDuration operator+=");
+    VUNIT_ASSERT_TRUE_LABELED(duration == VDuration::MINUTE(), "VDuration operator+=");
     duration *= 60;
-    this->test(duration == VDuration::HOUR(), "VDuration operator*=");
+    VUNIT_ASSERT_TRUE_LABELED(duration == VDuration::HOUR(), "VDuration operator*=");
     duration /= 60;
-    this->test(duration == VDuration::MINUTE(), "VDuration operator/= test 1");
+    VUNIT_ASSERT_TRUE_LABELED(duration == VDuration::MINUTE(), "VDuration operator/= test 1");
     duration /= 2;
-    this->test(duration == (30 * VDuration::SECOND()), "VDuration operator/= test 2");
+    VUNIT_ASSERT_TRUE_LABELED(duration == (30 * VDuration::SECOND()), "VDuration operator/= test 2");
     duration = VDuration::MINUTE() + VDuration::MINUTE();
-    this->test(duration == (2 * VDuration::MINUTE()), "VDuration operator+"); // operator- already tested implicitly
-    this->test(VDuration::MINUTE() > VDuration::SECOND(), "VDuration operator>");
-    this->test(VDuration::MINUTE() >= VDuration::SECOND(), "VDuration operator>=");
-    this->test(VDuration::MINUTE() < VDuration::HOUR(), "VDuration operator<");
-    this->test(VDuration::MINUTE() <= VDuration::HOUR(), "VDuration operator<=");
-    this->test(VDuration::MINUTE() == VDuration::MINUTE(), "VDuration operator==");
-    this->test(VDuration::MINUTE() != VDuration::DAY(), "VDuration operator!=");
-    this->test(VDuration::min(VDuration::MINUTE(), VDuration::HOUR()) == VDuration::MINUTE(), "VDuration min test 1");
-    this->test(VDuration::min(VDuration::HOUR(), VDuration::MINUTE()) == VDuration::MINUTE(), "VDuration min test 2");
-    this->test(VDuration::min(VDuration::MINUTE(), VDuration::MINUTE()) == VDuration::MINUTE(), "VDuration min test 3");
-    this->test(VDuration::max(VDuration::MINUTE(), VDuration::HOUR()) == VDuration::HOUR(), "VDuration max test 1");
-    this->test(VDuration::max(VDuration::HOUR(), VDuration::MINUTE()) == VDuration::HOUR(), "VDuration max test 2");
-    this->test(VDuration::max(VDuration::HOUR(), VDuration::HOUR()) == VDuration::HOUR(), "VDuration max test 3");
-    this->test(-duration == duration * -1, "VDuration negation test 1");
-    this->test(-duration != duration, "VDuration negation test 2");
-    this->test(-duration == duration - duration - duration, "VDuration negation test 3");
-    this->test(duration / 0 == VDuration::POSITIVE_INFINITY(), "VDuration positive divide by zero test");
-    this->test((-duration) / 0 == VDuration::NEGATIVE_INFINITY(), "VDuration positive divide by zero test");
-    this->test(VDuration::abs(VDuration::MINUTE()) == VDuration::MINUTE(), "VDuration positive abs test");
-    this->test(VDuration::abs(VDuration::MINUTE() * -1) == VDuration::MINUTE(), "VDuration negative abs test");
-    this->test(VDuration::abs(VDuration::NEGATIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration negative infinity abs test");
-    this->test(VDuration::abs(VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration positive infinity abs test");
-    this->test((- VDuration::MINUTE()) == VDuration::MINUTE() * -1, "VDuration unary minus test");
-    this->test((- VDuration::MINUTE()) < VDuration::ZERO(), "VDuration unary minus less than zero test");
-    this->test((- VDuration::NEGATIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration unary minus of negative infinity test");
-    this->test((- VDuration::POSITIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY(), "VDuration unary minus of positive infinity test");
+    VUNIT_ASSERT_TRUE_LABELED(duration == (2 * VDuration::MINUTE()), "VDuration operator+"); // operator- already tested implicitly
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::MINUTE() > VDuration::SECOND(), "VDuration operator>");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::MINUTE() >= VDuration::SECOND(), "VDuration operator>=");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::MINUTE() < VDuration::HOUR(), "VDuration operator<");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::MINUTE() <= VDuration::HOUR(), "VDuration operator<=");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::MINUTE() == VDuration::MINUTE(), "VDuration operator==");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::MINUTE() != VDuration::DAY(), "VDuration operator!=");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::min(VDuration::MINUTE(), VDuration::HOUR()) == VDuration::MINUTE(), "VDuration min test 1");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::min(VDuration::HOUR(), VDuration::MINUTE()) == VDuration::MINUTE(), "VDuration min test 2");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::min(VDuration::MINUTE(), VDuration::MINUTE()) == VDuration::MINUTE(), "VDuration min test 3");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::max(VDuration::MINUTE(), VDuration::HOUR()) == VDuration::HOUR(), "VDuration max test 1");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::max(VDuration::HOUR(), VDuration::MINUTE()) == VDuration::HOUR(), "VDuration max test 2");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::max(VDuration::HOUR(), VDuration::HOUR()) == VDuration::HOUR(), "VDuration max test 3");
+    VUNIT_ASSERT_TRUE_LABELED(-duration == duration * -1, "VDuration negation test 1");
+    VUNIT_ASSERT_TRUE_LABELED(-duration != duration, "VDuration negation test 2");
+    VUNIT_ASSERT_TRUE_LABELED(-duration == duration - duration - duration, "VDuration negation test 3");
+    VUNIT_ASSERT_TRUE_LABELED(duration / 0 == VDuration::POSITIVE_INFINITY(), "VDuration positive divide by zero test");
+    VUNIT_ASSERT_TRUE_LABELED((-duration) / 0 == VDuration::NEGATIVE_INFINITY(), "VDuration positive divide by zero test");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::abs(VDuration::MINUTE()) == VDuration::MINUTE(), "VDuration positive abs test");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::abs(VDuration::MINUTE() * -1) == VDuration::MINUTE(), "VDuration negative abs test");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::abs(VDuration::NEGATIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration negative infinity abs test");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::abs(VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration positive infinity abs test");
+    VUNIT_ASSERT_TRUE_LABELED((- VDuration::MINUTE()) == VDuration::MINUTE() * -1, "VDuration unary minus test");
+    VUNIT_ASSERT_TRUE_LABELED((- VDuration::MINUTE()) < VDuration::ZERO(), "VDuration unary minus less than zero test");
+    VUNIT_ASSERT_TRUE_LABELED((- VDuration::NEGATIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration unary minus of negative infinity test");
+    VUNIT_ASSERT_TRUE_LABELED((- VDuration::POSITIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY(), "VDuration unary minus of positive infinity test");
 
 }
 
@@ -430,63 +430,63 @@ void VInstantUnit::_runExoticDurationValueTests() {
     VDuration positiveDay = VDuration::DAY();
     VDuration someDuration = VDuration::HOUR();
 
-    this->test(VDuration::NEGATIVE_INFINITY() != VDuration::POSITIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() != VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::NEGATIVE_INFINITY() < VDuration::POSITIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() < VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::NEGATIVE_INFINITY() <= VDuration::POSITIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() <= VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::NEGATIVE_INFINITY() != VDuration::ZERO(), "VDuration::NEGATIVE_INFINITY() != VDuration::ZERO()");
-    this->test(VDuration::NEGATIVE_INFINITY() < VDuration::ZERO(), "VDuration::NEGATIVE_INFINITY() < VDuration::ZERO()");
-    this->test(VDuration::NEGATIVE_INFINITY() <= VDuration::ZERO(), "VDuration::NEGATIVE_INFINITY() <= VDuration::ZERO()");
-    this->test(VDuration::ZERO() != VDuration::POSITIVE_INFINITY(), "VDuration::ZERO() != VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::ZERO() < VDuration::POSITIVE_INFINITY(), "VDuration::ZERO() < VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::ZERO() <= VDuration::POSITIVE_INFINITY(), "VDuration::ZERO() <= VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::NEGATIVE_INFINITY() < negativeDay, "VDuration::NEGATIVE_INFINITY() < negativeDay");
-    this->test(negativeDay < VDuration::ZERO(), "negativeDay < VDuration::ZERO()");
-    this->test(VDuration::ZERO() < positiveDay, "VDuration::ZERO() < positiveDay");
-    this->test(positiveDay < VDuration::POSITIVE_INFINITY(), "positiveDay < VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::POSITIVE_INFINITY() - someDuration == VDuration::POSITIVE_INFINITY(), "VDuration::POSITIVE_INFINITY() - someDuration == VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::POSITIVE_INFINITY() + someDuration == VDuration::POSITIVE_INFINITY(), "VDuration::POSITIVE_INFINITY() + someDuration == VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::POSITIVE_INFINITY() * 5 == VDuration::POSITIVE_INFINITY(), "VDuration::POSITIVE_INFINITY() * 5 == VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::POSITIVE_INFINITY() * -5 == VDuration::NEGATIVE_INFINITY(), "VDuration::POSITIVE_INFINITY() * -5 == VDuration::NEGATIVE_INFINITY()");
-    this->test(VDuration::POSITIVE_INFINITY() * 0 == VDuration::ZERO(), "VDuration::POSITIVE_INFINITY() * 0 == VDuration::ZERO()");
-    this->test(VDuration::POSITIVE_INFINITY() / 5 == VDuration::POSITIVE_INFINITY(), "VDuration::POSITIVE_INFINITY() / 5 == VDuration::POSITIVE_INFINITY()");
-    this->test(negativeDay / 0 == VDuration::NEGATIVE_INFINITY(), "negativeDay / 0 == VDuration::NEGATIVE_INFINITY()");
-    this->test(positiveDay / 0 == VDuration::POSITIVE_INFINITY(), "positiveDay / 0 == VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::POSITIVE_INFINITY() % (VDuration::MILLISECOND() * 5) == VDuration::POSITIVE_INFINITY(), "VDuration::POSITIVE_INFINITY() % 5ms == VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::NEGATIVE_INFINITY() - someDuration == VDuration::NEGATIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() - someDuration == VDuration::NEGATIVE_INFINITY()");
-    this->test(VDuration::NEGATIVE_INFINITY() + someDuration == VDuration::NEGATIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() + someDuration == VDuration::NEGATIVE_INFINITY()");
-    this->test(VDuration::NEGATIVE_INFINITY() * 5 == VDuration::NEGATIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() * 5 == VDuration::NEGATIVE_INFINITY()");
-    this->test(VDuration::NEGATIVE_INFINITY() * -5 == VDuration::POSITIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() * -5 == VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::NEGATIVE_INFINITY() * 0 == VDuration::ZERO(), "VDuration::NEGATIVE_INFINITY() * 0 == VDuration::ZERO()");
-    this->test(VDuration::NEGATIVE_INFINITY() / 5 == VDuration::NEGATIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() / 5 == VDuration::NEGATIVE_INFINITY()");
-    this->test(VDuration::NEGATIVE_INFINITY() % (VDuration::MILLISECOND() * 5) == VDuration::NEGATIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() % 5ms == VDuration::NEGATIVE_INFINITY()");
-    this->test(VDuration::min(VDuration::NEGATIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY(), "VDuration::min(VDuration::NEGATIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY()");
-    this->test(VDuration::min(VDuration::NEGATIVE_INFINITY(), someDuration) == VDuration::NEGATIVE_INFINITY(), "VDuration::min(VDuration::NEGATIVE_INFINITY(), someDuration) == VDuration::NEGATIVE_INFINITY()");
-    this->test(VDuration::min(VDuration::NEGATIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY(), "VDuration::min(VDuration::NEGATIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY()");
-    this->test(VDuration::max(VDuration::NEGATIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY(), "VDuration::max(VDuration::NEGATIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY()");
-    this->test(VDuration::max(VDuration::NEGATIVE_INFINITY(), someDuration) == someDuration, "VDuration::max(VDuration::NEGATIVE_INFINITY(), someDuration) == someDuration");
-    this->test(VDuration::max(VDuration::NEGATIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration::max(VDuration::NEGATIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::max(VDuration::POSITIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration::max(VDuration::POSITIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::max(VDuration::POSITIVE_INFINITY(), someDuration) == VDuration::POSITIVE_INFINITY(), "VDuration::max(VDuration::POSITIVE_INFINITY(), someDuration) == VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::max(VDuration::POSITIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration::max(VDuration::POSITIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::min(VDuration::POSITIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY(), "VDuration::min(VDuration::POSITIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY()");
-    this->test(VDuration::min(VDuration::POSITIVE_INFINITY(), someDuration) == someDuration, "VDuration::min(VDuration::POSITIVE_INFINITY(), someDuration) == someDuration");
-    this->test(VDuration::min(VDuration::POSITIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration::min(VDuration::POSITIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() != VDuration::POSITIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() != VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() < VDuration::POSITIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() < VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() <= VDuration::POSITIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() <= VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() != VDuration::ZERO(), "VDuration::NEGATIVE_INFINITY() != VDuration::ZERO()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() < VDuration::ZERO(), "VDuration::NEGATIVE_INFINITY() < VDuration::ZERO()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() <= VDuration::ZERO(), "VDuration::NEGATIVE_INFINITY() <= VDuration::ZERO()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::ZERO() != VDuration::POSITIVE_INFINITY(), "VDuration::ZERO() != VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::ZERO() < VDuration::POSITIVE_INFINITY(), "VDuration::ZERO() < VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::ZERO() <= VDuration::POSITIVE_INFINITY(), "VDuration::ZERO() <= VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() < negativeDay, "VDuration::NEGATIVE_INFINITY() < negativeDay");
+    VUNIT_ASSERT_TRUE_LABELED(negativeDay < VDuration::ZERO(), "negativeDay < VDuration::ZERO()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::ZERO() < positiveDay, "VDuration::ZERO() < positiveDay");
+    VUNIT_ASSERT_TRUE_LABELED(positiveDay < VDuration::POSITIVE_INFINITY(), "positiveDay < VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::POSITIVE_INFINITY() - someDuration == VDuration::POSITIVE_INFINITY(), "VDuration::POSITIVE_INFINITY() - someDuration == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::POSITIVE_INFINITY() + someDuration == VDuration::POSITIVE_INFINITY(), "VDuration::POSITIVE_INFINITY() + someDuration == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::POSITIVE_INFINITY() * 5 == VDuration::POSITIVE_INFINITY(), "VDuration::POSITIVE_INFINITY() * 5 == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::POSITIVE_INFINITY() * -5 == VDuration::NEGATIVE_INFINITY(), "VDuration::POSITIVE_INFINITY() * -5 == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::POSITIVE_INFINITY() * 0 == VDuration::ZERO(), "VDuration::POSITIVE_INFINITY() * 0 == VDuration::ZERO()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::POSITIVE_INFINITY() / 5 == VDuration::POSITIVE_INFINITY(), "VDuration::POSITIVE_INFINITY() / 5 == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(negativeDay / 0 == VDuration::NEGATIVE_INFINITY(), "negativeDay / 0 == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(positiveDay / 0 == VDuration::POSITIVE_INFINITY(), "positiveDay / 0 == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::POSITIVE_INFINITY() % (VDuration::MILLISECOND() * 5) == VDuration::POSITIVE_INFINITY(), "VDuration::POSITIVE_INFINITY() % 5ms == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() - someDuration == VDuration::NEGATIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() - someDuration == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() + someDuration == VDuration::NEGATIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() + someDuration == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() * 5 == VDuration::NEGATIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() * 5 == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() * -5 == VDuration::POSITIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() * -5 == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() * 0 == VDuration::ZERO(), "VDuration::NEGATIVE_INFINITY() * 0 == VDuration::ZERO()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() / 5 == VDuration::NEGATIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() / 5 == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() % (VDuration::MILLISECOND() * 5) == VDuration::NEGATIVE_INFINITY(), "VDuration::NEGATIVE_INFINITY() % 5ms == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::min(VDuration::NEGATIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY(), "VDuration::min(VDuration::NEGATIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::min(VDuration::NEGATIVE_INFINITY(), someDuration) == VDuration::NEGATIVE_INFINITY(), "VDuration::min(VDuration::NEGATIVE_INFINITY(), someDuration) == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::min(VDuration::NEGATIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY(), "VDuration::min(VDuration::NEGATIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::max(VDuration::NEGATIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY(), "VDuration::max(VDuration::NEGATIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::max(VDuration::NEGATIVE_INFINITY(), someDuration) == someDuration, "VDuration::max(VDuration::NEGATIVE_INFINITY(), someDuration) == someDuration");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::max(VDuration::NEGATIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration::max(VDuration::NEGATIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::max(VDuration::POSITIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration::max(VDuration::POSITIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::max(VDuration::POSITIVE_INFINITY(), someDuration) == VDuration::POSITIVE_INFINITY(), "VDuration::max(VDuration::POSITIVE_INFINITY(), someDuration) == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::max(VDuration::POSITIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration::max(VDuration::POSITIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::min(VDuration::POSITIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY(), "VDuration::min(VDuration::POSITIVE_INFINITY(), VDuration::NEGATIVE_INFINITY()) == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::min(VDuration::POSITIVE_INFINITY(), someDuration) == someDuration, "VDuration::min(VDuration::POSITIVE_INFINITY(), someDuration) == someDuration");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::min(VDuration::POSITIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY(), "VDuration::min(VDuration::POSITIVE_INFINITY(), VDuration::POSITIVE_INFINITY()) == VDuration::POSITIVE_INFINITY()");
     // Now we modify the exotics locally and test.
     VDuration negativeInfinity = VDuration::NEGATIVE_INFINITY();
     negativeInfinity += someDuration;
-    this->test(negativeInfinity == VDuration::NEGATIVE_INFINITY(), "negativeInfinity += someDuration == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(negativeInfinity == VDuration::NEGATIVE_INFINITY(), "negativeInfinity += someDuration == VDuration::NEGATIVE_INFINITY()");
     VDuration positiveInfinity = VDuration::POSITIVE_INFINITY();
     positiveInfinity -= someDuration;
-    this->test(positiveInfinity == VDuration::POSITIVE_INFINITY(), "positiveInfinity -= someDuration == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(positiveInfinity == VDuration::POSITIVE_INFINITY(), "positiveInfinity -= someDuration == VDuration::POSITIVE_INFINITY()");
     positiveInfinity /= 5;
-    this->test(positiveInfinity == VDuration::POSITIVE_INFINITY(), "positiveInfinity /= 5 == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(positiveInfinity == VDuration::POSITIVE_INFINITY(), "positiveInfinity /= 5 == VDuration::POSITIVE_INFINITY()");
     negativeInfinity /= 5;
-    this->test(negativeInfinity == VDuration::NEGATIVE_INFINITY(), "negativeInfinity /= 5 == VDuration::POSITIVE_INFINITY()");
-    this->test(-VDuration::POSITIVE_INFINITY() == VDuration::NEGATIVE_INFINITY(), "-VDuration::POSITIVE_INFINITY() == VDuration::NEGATIVE_INFINITY()");
-    this->test(-VDuration::NEGATIVE_INFINITY() == VDuration::POSITIVE_INFINITY(), "-VDuration::NEGATIVE_INFINITY() == VDuration::POSITIVE_INFINITY()");
-    this->test(VDuration::NEGATIVE_INFINITY() + VDuration::POSITIVE_INFINITY() == VDuration::ZERO(), "VDuration::NEGATIVE_INFINITY() + VDuration::POSITIVE_INFINITY() == VDuration::ZERO()");
-    this->test(VDuration::POSITIVE_INFINITY() - VDuration::POSITIVE_INFINITY() == VDuration::ZERO(), "VDuration::POSITIVE_INFINITY() - VDuration::POSITIVE_INFINITY() == VDuration::ZERO()");
-    this->test(VDuration::NEGATIVE_INFINITY() - VDuration::NEGATIVE_INFINITY() == VDuration::ZERO(), "VDuration::NEGATIVE_INFINITY() - VDuration::NEGATIVE_INFINITY() == VDuration::ZERO()");
+    VUNIT_ASSERT_TRUE_LABELED(negativeInfinity == VDuration::NEGATIVE_INFINITY(), "negativeInfinity /= 5 == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(-VDuration::POSITIVE_INFINITY() == VDuration::NEGATIVE_INFINITY(), "-VDuration::POSITIVE_INFINITY() == VDuration::NEGATIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(-VDuration::NEGATIVE_INFINITY() == VDuration::POSITIVE_INFINITY(), "-VDuration::NEGATIVE_INFINITY() == VDuration::POSITIVE_INFINITY()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() + VDuration::POSITIVE_INFINITY() == VDuration::ZERO(), "VDuration::NEGATIVE_INFINITY() + VDuration::POSITIVE_INFINITY() == VDuration::ZERO()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::POSITIVE_INFINITY() - VDuration::POSITIVE_INFINITY() == VDuration::ZERO(), "VDuration::POSITIVE_INFINITY() - VDuration::POSITIVE_INFINITY() == VDuration::ZERO()");
+    VUNIT_ASSERT_TRUE_LABELED(VDuration::NEGATIVE_INFINITY() - VDuration::NEGATIVE_INFINITY() == VDuration::ZERO(), "VDuration::NEGATIVE_INFINITY() - VDuration::NEGATIVE_INFINITY() == VDuration::ZERO()");
 
     VInstant currentTime;
     VInstant currentMinus1d = currentTime - VDuration::DAY();
@@ -497,10 +497,10 @@ void VInstantUnit::_runExoticDurationValueTests() {
     VInstant infiniteFuture = VInstant::INFINITE_FUTURE();
     VInstant never = VInstant::NEVER_OCCURRED();
 
-    this->test(infinitePast < currentTime, "infinitePast < currentTime");
-    this->test(infinitePast <= currentTime, "infinitePast <= currentTime");
-    this->test(!(infinitePast >= currentTime), "! (infinitePast >= currentTime)");
-    this->test(!(infinitePast > currentTime), "! (infinitePast > currentTime)");
+    VUNIT_ASSERT_TRUE_LABELED(infinitePast < currentTime, "infinitePast < currentTime");
+    VUNIT_ASSERT_TRUE_LABELED(infinitePast <= currentTime, "infinitePast <= currentTime");
+    VUNIT_ASSERT_FALSE_LABELED(infinitePast >= currentTime, "! (infinitePast >= currentTime)");
+    VUNIT_ASSERT_FALSE_LABELED(infinitePast > currentTime, "! (infinitePast > currentTime)");
 
 }
 

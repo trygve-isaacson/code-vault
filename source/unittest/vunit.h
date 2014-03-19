@@ -221,6 +221,11 @@ class VUnit {
         bool                    mThrowOnError;  ///< True if we throw a VException on failed tests.
         VUnitOutputWriterList*  mWriters;       ///< The output writers to which test results are recorded.
 
+#define VUNIT_ASSERT_SUCCESS(suffix) this->assertSuccess(suffix, __FILE__, __LINE__)
+#define VUNIT_ASSERT_FAILURE(suffix) this->assertFailure(suffix, __FILE__, __LINE__)
+        void assertSuccess(const VString& labelSuffix, const VString& filePath, int lineNumber);
+        void assertFailure(const VString& labelSuffix, const VString& filePath, int lineNumber);
+
         // These are the methods that test equality of two values of the same type.
 #define VUNIT_ASSERT_EQUAL(a, b) this->assertEqual(a, b, VString::EMPTY(), __FILE__, __LINE__)
 #define VUNIT_ASSERT_EQUAL_LABELED(a, b, suffix) this->assertEqual(a, b, suffix, __FILE__, __LINE__)
@@ -244,6 +249,8 @@ class VUnit {
         void assertEqual(Vu8 a, Vu8 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %hhu == %hhu", a, b)); }
         void assertEqual(Vs16 a, Vs16 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %hd == %hd", a, b)); }
         void assertEqual(Vu16 a, Vu16 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %hu == %hu", a, b)); }
+
+        void assertEqual(char a, char b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %d == %d", a, b)); }
 
 #ifndef Vx32_IS_xINT /* don't redefine if types are same */
         void assertEqual(Vs32 a, Vs32 b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a == b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %ld == %ld", a, b)); }
@@ -300,6 +307,13 @@ class VUnit {
 
         void assertNotEqual(const VColor& a, const VColor& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %s != %s", a.getCSSColor().chars(), b.getCSSColor().chars())); }
         void assertNotEqual(const VColorPair& a, const VColorPair& b, const VString& labelSuffix, const VString& filePath, int lineNumber) { this->testAssertion(a != b, filePath, lineNumber, labelSuffix, VSTRING_FORMAT("failed equality: %s != %s", a.getCSSColor().chars(), b.getCSSColor().chars())); }
+
+#define VUNIT_ASSERT_NULL(ptrValue) this->assertTrue(ptrValue == NULL, VString::EMPTY(), __FILE__, __LINE__)
+#define VUNIT_ASSERT_NULL_LABELED(ptrValue, suffix) this->assertTrue(ptrValue == NULL, suffix, __FILE__, __LINE__)
+#define VUNIT_ASSERT_NOT_NULL(ptrValue) this->assertFalse(ptrValue == NULL, VString::EMPTY(), __FILE__, __LINE__)
+#define VUNIT_ASSERT_NOT_NULL_LABELED(ptrValue, suffix) this->assertFalse(ptrValue == NULL, suffix, __FILE__, __LINE__)
+
+#define VUNIT_ASSERT_EQUAL_LABELED(a, b, suffix) this->assertEqual(a, b, suffix, __FILE__, __LINE__)
 
         /**
         Evaluates a boolean parameter that indicates test success,

@@ -29,73 +29,73 @@ void VColorUnit::_testVColor() {
     // VColor basic tests.
 
     VColor c1;
-    this->test(c1 == VColor(0, 0, 0, 255), "color default constructor");
+    VUNIT_ASSERT_TRUE_LABELED(c1 == VColor(0, 0, 0, 255), "color default constructor");
 
     VColor c2(10, 20, 30);
-    this->test(c2 == VColor(10, 20, 30, 255), "color rgb constructor");
+    VUNIT_ASSERT_TRUE_LABELED(c2 == VColor(10, 20, 30, 255), "color rgb constructor");
 
     VColor c3(40, 50, 60, 70);
-    this->test(c3 == VColor(40, 50, 60, 70), "color rgba constructor");
+    VUNIT_ASSERT_TRUE_LABELED(c3 == VColor(40, 50, 60, 70), "color rgba constructor");
 
     VColor c4(80, 90, 100, 110);
-    this->test(c4.getRed() == 80 &&
+    VUNIT_ASSERT_TRUE_LABELED(c4.getRed() == 80 &&
                c4.getGreen() == 90 &&
                c4.getBlue() == 100 &&
                c4.getAlpha() == 110, "color rgba constructor values");
 
     c4.setValues(120, 130, 140);
-    this->test(c4.getRed() == 120 &&
+    VUNIT_ASSERT_TRUE_LABELED(c4.getRed() == 120 &&
                c4.getGreen() == 130 &&
                c4.getBlue() == 140 &&
                c4.getAlpha() == 255, "color rgb setValues");
 
     c4.setValues(150, 160, 170, 180);
-    this->test(c4.getRed() == 150 &&
+    VUNIT_ASSERT_TRUE_LABELED(c4.getRed() == 150 &&
                c4.getGreen() == 160 &&
                c4.getBlue() == 170 &&
                c4.getAlpha() == 180, "color rgba setValues");
 
     // Test the constraining the values to the 0..255 range.
     VColor tooLow(-1, -200, -3000, -40000);
-    this->test(tooLow == VColor(0, 0, 0, 0), "constrain negative values");
+    VUNIT_ASSERT_TRUE_LABELED(tooLow == VColor(0, 0, 0, 0), "constrain negative values");
 
     VColor tooHigh(1000, 22000, 333000, 4444000);
-    this->test(tooHigh == VColor(255, 255, 255, 255), "constrain large values");
+    VUNIT_ASSERT_TRUE_LABELED(tooHigh == VColor(255, 255, 255, 255), "constrain large values");
 
     VColor css123("#123");
-    this->test(css123.getRed() == 0x11 && css123.getGreen() == 0x22 && css123.getBlue() == 0x33, "css 3-digit hex");
+    VUNIT_ASSERT_TRUE_LABELED(css123.getRed() == 0x11 && css123.getGreen() == 0x22 && css123.getBlue() == 0x33, "css 3-digit hex");
 
     VColor css112233("#112233");
-    this->test(css112233.getRed() == 0x11 && css112233.getGreen() == 0x22 && css112233.getBlue() == 0x33, "css 6-digit hex");
+    VUNIT_ASSERT_TRUE_LABELED(css112233.getRed() == 0x11 && css112233.getGreen() == 0x22 && css112233.getBlue() == 0x33, "css 6-digit hex");
 
-    this->test(css123 == css112233, "css hex equality");
-    this->test(css123 == VColor(0x11, 0x22, 0x33), "css hex values");
+    VUNIT_ASSERT_TRUE_LABELED(css123 == css112233, "css hex equality");
+    VUNIT_ASSERT_TRUE_LABELED(css123 == VColor(0x11, 0x22, 0x33), "css hex values");
 
     VColor cssRGB("rgb(10, 20, 30)");
-    this->test(cssRGB.getRed() == 10 && cssRGB.getGreen() == 20 && cssRGB.getBlue() == 30, "css rgb");
+    VUNIT_ASSERT_TRUE_LABELED(cssRGB.getRed() == 10 && cssRGB.getGreen() == 20 && cssRGB.getBlue() == 30, "css rgb");
 
-    this->test(cssRGB == VColor(10, 20, 30), "css rgb values");
+    VUNIT_ASSERT_TRUE_LABELED(cssRGB == VColor(10, 20, 30), "css rgb values");
 
-    VColor aqua("aqua"); this->test(aqua == VColor(0, 255, 255), "css named color aqua");
-    VColor cyan("cyan"); this->test(cyan == VColor(0, 255, 255), "css named color cyan"); // Seen in some docs as alternate name.
-    VColor black("black"); this->test(black == VColor(), "css named color black");
-    VColor blue("blue"); this->test(blue == VColor(0, 0, 255), "css named color blue");
-    VColor fuchsia("fuchsia"); this->test(fuchsia == VColor(255, 0, 255), "css named color fuchsia");
-    VColor magenta("magenta"); this->test(magenta == VColor(255, 0, 255), "css named color magenta"); // Seen in some docs as alternate name.
-    VColor green("green"); this->test(green == VColor(0, 128, 0), "css named color green");
-    VColor gray("gray"); this->test(gray == VColor(128, 128, 128), "css named color gray");
-    VColor grey("grey"); this->test(grey == VColor(128, 128, 128), "css named color grey"); // Be nice: Allow UK spelling!
-    VColor lime("lime"); this->test(lime == VColor(0, 255, 0), "css named color lime");
-    VColor maroon("maroon"); this->test(maroon == VColor(128, 0, 0), "css named color maroon");
-    VColor navy("navy"); this->test(navy == VColor(0, 0, 128), "css named color navy");
-    VColor olive("olive"); this->test(olive == VColor(128, 128, 0), "css named color olive");
-    VColor orange("orange"); this->test(orange == VColor(255, 165, 0), "css named color orange");
-    VColor purple("purple"); this->test(purple == VColor(128, 0, 128), "css named color purple");
-    VColor red("red"); this->test(red == VColor(255, 0, 0), "css named color red");
-    VColor silver("silver"); this->test(silver == VColor(192, 192, 192), "css named color silver");
-    VColor teal("teal"); this->test(teal == VColor(0, 128, 128), "css named color teal");
-    VColor white("white"); this->test(white == VColor(255, 255, 255), "css named color white");
-    VColor yellow("yellow"); this->test(yellow == VColor(255, 255, 0), "css named color yellow");
+    VColor aqua("aqua"); VUNIT_ASSERT_TRUE_LABELED(aqua == VColor(0, 255, 255), "css named color aqua");
+    VColor cyan("cyan"); VUNIT_ASSERT_TRUE_LABELED(cyan == VColor(0, 255, 255), "css named color cyan"); // Seen in some docs as alternate name.
+    VColor black("black"); VUNIT_ASSERT_TRUE_LABELED(black == VColor(), "css named color black");
+    VColor blue("blue"); VUNIT_ASSERT_TRUE_LABELED(blue == VColor(0, 0, 255), "css named color blue");
+    VColor fuchsia("fuchsia"); VUNIT_ASSERT_TRUE_LABELED(fuchsia == VColor(255, 0, 255), "css named color fuchsia");
+    VColor magenta("magenta"); VUNIT_ASSERT_TRUE_LABELED(magenta == VColor(255, 0, 255), "css named color magenta"); // Seen in some docs as alternate name.
+    VColor green("green"); VUNIT_ASSERT_TRUE_LABELED(green == VColor(0, 128, 0), "css named color green");
+    VColor gray("gray"); VUNIT_ASSERT_TRUE_LABELED(gray == VColor(128, 128, 128), "css named color gray");
+    VColor grey("grey"); VUNIT_ASSERT_TRUE_LABELED(grey == VColor(128, 128, 128), "css named color grey"); // Be nice: Allow UK spelling!
+    VColor lime("lime"); VUNIT_ASSERT_TRUE_LABELED(lime == VColor(0, 255, 0), "css named color lime");
+    VColor maroon("maroon"); VUNIT_ASSERT_TRUE_LABELED(maroon == VColor(128, 0, 0), "css named color maroon");
+    VColor navy("navy"); VUNIT_ASSERT_TRUE_LABELED(navy == VColor(0, 0, 128), "css named color navy");
+    VColor olive("olive"); VUNIT_ASSERT_TRUE_LABELED(olive == VColor(128, 128, 0), "css named color olive");
+    VColor orange("orange"); VUNIT_ASSERT_TRUE_LABELED(orange == VColor(255, 165, 0), "css named color orange");
+    VColor purple("purple"); VUNIT_ASSERT_TRUE_LABELED(purple == VColor(128, 0, 128), "css named color purple");
+    VColor red("red"); VUNIT_ASSERT_TRUE_LABELED(red == VColor(255, 0, 0), "css named color red");
+    VColor silver("silver"); VUNIT_ASSERT_TRUE_LABELED(silver == VColor(192, 192, 192), "css named color silver");
+    VColor teal("teal"); VUNIT_ASSERT_TRUE_LABELED(teal == VColor(0, 128, 128), "css named color teal");
+    VColor white("white"); VUNIT_ASSERT_TRUE_LABELED(white == VColor(255, 255, 255), "css named color white");
+    VColor yellow("yellow"); VUNIT_ASSERT_TRUE_LABELED(yellow == VColor(255, 255, 0), "css named color yellow");
 
     // A few basic tests of Lightness calculation.
     VUNIT_ASSERT_EQUAL(0.0, VColor::BLACK().getLightness());
@@ -109,97 +109,97 @@ void VColorUnit::_testVColor() {
     VColor fff(255, 255, 255);
     VColor whitespace;
     whitespace.setCSSColor(" #fff");
-    this->test(whitespace == fff, "leading hex whitespace");
+    VUNIT_ASSERT_TRUE_LABELED(whitespace == fff, "leading hex whitespace");
     whitespace.setCSSColor("#fff ");
-    this->test(whitespace == fff, "trailing hex whitespace");
+    VUNIT_ASSERT_TRUE_LABELED(whitespace == fff, "trailing hex whitespace");
     whitespace.setCSSColor(" #fff ");
-    this->test(whitespace == fff, "leading and trailing hex whitespace");
+    VUNIT_ASSERT_TRUE_LABELED(whitespace == fff, "leading and trailing hex whitespace");
     whitespace.setCSSColor(" rgb(255,255,255)");
-    this->test(whitespace == fff, "leading rgb whitespace");
+    VUNIT_ASSERT_TRUE_LABELED(whitespace == fff, "leading rgb whitespace");
     whitespace.setCSSColor(" rgb(255,255,255) ");
-    this->test(whitespace == fff, "trailing rgb whitespace");
+    VUNIT_ASSERT_TRUE_LABELED(whitespace == fff, "trailing rgb whitespace");
     whitespace.setCSSColor(" rgb(255,255,255) ");
-    this->test(whitespace == fff, "leading and trailing whitespace");
+    VUNIT_ASSERT_TRUE_LABELED(whitespace == fff, "leading and trailing whitespace");
     whitespace.setCSSColor(" rgb(      255,       255,        255           ) ");
-    this->test(whitespace == fff, "leading and trailing and interior whitespace");
+    VUNIT_ASSERT_TRUE_LABELED(whitespace == fff, "leading and trailing and interior whitespace");
 
     // Negative tests on css input values.
 
     // RGB out of range should be constrained.
     VColor cssTooHigh("rgb(500, 600, 700)");
-    this->test(cssTooHigh == VColor(255, 255, 2550), "css rgb above range constrain");
+    VUNIT_ASSERT_TRUE_LABELED(cssTooHigh == VColor(255, 255, 2550), "css rgb above range constrain");
     VColor cssTooLow("rgb(-5, -600, -70000)");
-    this->test(cssTooLow == VColor(0, 0, 0), "css rgb below range constrain");
+    VUNIT_ASSERT_TRUE_LABELED(cssTooLow == VColor(0, 0, 0), "css rgb below range constrain");
 
     // Malformed hex values.
     try {
         VColor bad("#ffz"); // illegal hex character 'z' in otherwise correct short string
-        this->test(false, "failed to detect bad hex character"); // <-- should never get here
+        VUNIT_ASSERT_FAILURE("failed to detect bad hex character"); // <-- should never get here
     } catch (const VRangeException&) {
-        this->test(true, "successfully detected bad hex character"); // <-- should get here
+        VUNIT_ASSERT_SUCCESS("successfully detected bad hex character"); // <-- should get here
     }
 
     try {
         VColor bad("#"); // wrong number of hex characters (too few)
-        this->test(false, "failed to detect lack of hex characters"); // <-- should never get here
+        VUNIT_ASSERT_FAILURE("failed to detect lack of hex characters"); // <-- should never get here
     } catch (const VRangeException&) {
-        this->test(true, "successfully detected lack of hex characters"); // <-- should get here
+        VUNIT_ASSERT_SUCCESS("successfully detected lack of hex characters"); // <-- should get here
     }
 
     try {
         VColor bad("#01F4E"); // wrong number of hex characters (in between)
-        this->test(false, "failed to detect illegal hex length"); // <-- should never get here
+        VUNIT_ASSERT_FAILURE("failed to detect illegal hex length"); // <-- should never get here
     } catch (const VRangeException&) {
-        this->test(true, "successfully detected illegal hex length"); // <-- should get here
+        VUNIT_ASSERT_SUCCESS("successfully detected illegal hex length"); // <-- should get here
     }
 
     try {
         VColor bad("#22AA44C"); // wrong number of hex characters (too many)
-        this->test(false, "failed to detect too many hex characters"); // <-- should never get here
+        VUNIT_ASSERT_FAILURE("failed to detect too many hex characters"); // <-- should never get here
     } catch (const VRangeException&) {
-        this->test(true, "successfully detected too many hex characters"); // <-- should get here
+        VUNIT_ASSERT_SUCCESS("successfully detected too many hex characters"); // <-- should get here
     }
 
     try {
         VColor bad("#23F*7B"); // illegal hex character '*' in otherwise correct full string
-        this->test(false, "failed to detect bad hex character"); // <-- should never get here
+        VUNIT_ASSERT_FAILURE("failed to detect bad hex character"); // <-- should never get here
     } catch (const VRangeException&) {
-        this->test(true, "successfully detected bad hex character"); // <-- should get here
+        VUNIT_ASSERT_SUCCESS("successfully detected bad hex character"); // <-- should get here
     }
 
     try {
         VColor bad("rgb(255, oops, 180)"); // illegal rgb value
-        this->test(false, "failed to detect illegal rgb element value"); // <-- should never get here
+        VUNIT_ASSERT_FAILURE("failed to detect illegal rgb element value"); // <-- should never get here
     } catch (const VRangeException&) {
-        this->test(true, "successfully detected illegal rgb element value"); // <-- should get here
+        VUNIT_ASSERT_SUCCESS("successfully detected illegal rgb element value"); // <-- should get here
     }
 
     try {
         VColor bad("rgb(255)"); // illegal rgb value
-        this->test(false, "failed to detect missing rgb values"); // <-- should never get here
+        VUNIT_ASSERT_FAILURE("failed to detect missing rgb values"); // <-- should never get here
     } catch (const VRangeException&) {
-        this->test(true, "successfully detected missing rgb values"); // <-- should get here
+        VUNIT_ASSERT_SUCCESS("successfully detected missing rgb values"); // <-- should get here
     }
 
     try {
         VColor bad("rgb(255, 180, 128, 100)"); // illegal rgb value
-        this->test(false, "failed to detect extraneous rgb value"); // <-- should never get here
+        VUNIT_ASSERT_FAILURE("failed to detect extraneous rgb value"); // <-- should never get here
     } catch (const VRangeException&) {
-        this->test(true, "successfully detected extraneous rgb value"); // <-- should get here
+        VUNIT_ASSERT_SUCCESS("successfully detected extraneous rgb value"); // <-- should get here
     }
 
     try {
         VColor bad("rgb(255, , 128)"); // illegal rgb value
-        this->test(false, "failed to detect empty rgb value"); // <-- should never get here
+        VUNIT_ASSERT_FAILURE("failed to detect empty rgb value"); // <-- should never get here
     } catch (const VRangeException&) {
-        this->test(true, "successfully detected empty rgb value"); // <-- should get here
+        VUNIT_ASSERT_SUCCESS("successfully detected empty rgb value"); // <-- should get here
     }
 
     try {
         VColor bad("no-such-color-name"); // unknown color name
-        this->test(false, "failed to detect unknown color name"); // <-- should never get here
+        VUNIT_ASSERT_FAILURE("failed to detect unknown color name"); // <-- should never get here
     } catch (const VRangeException&) {
-        this->test(true, "successfully detected unknown color name"); // <-- should get here
+        VUNIT_ASSERT_SUCCESS("successfully detected unknown color name"); // <-- should get here
     }
 
 }
@@ -642,7 +642,7 @@ void VColorUnit::_testVColorPalette() {
     VUNIT_ASSERT_EQUAL(palette.getColors("police-case-sensitive", "Sting"), DEFAULT_COLORS);
 
     const VColorMapper* words = palette.findMapper("words");
-    this->test(words != NULL, "find palette: words");
+    VUNIT_ASSERT_NOT_NULL_LABELED(words, "find palette: words");
     this->test(words == palette.findMapper("dictionary"), "alias palette: dictionary->words");
     this->test(words == palette.findMapper("thesaurus"), "alias palette: thesaurus->words");
 }

@@ -95,12 +95,12 @@ void VLoggerUnit::_testStringLoggers() {
     vsl.log(VLoggerLevel::DEBUG, DEBUG_MESSAGE);
     vsl.log(VLoggerLevel::TRACE, TRACE_MESSAGE);
 
-    this->test(vsl.getLines().contains(FATAL_MESSAGE), "VStringLogger contains fatal message");
-    this->test(vsl.getLines().contains(ERROR_MESSAGE), "VStringLogger contains error message");
-    this->test(vsl.getLines().contains(WARN_MESSAGE), "VStringLogger contains warn message");
-    this->test(vsl.getLines().contains(INFO_MESSAGE), "VStringLogger contains info message");
-    this->test(! vsl.getLines().contains(DEBUG_MESSAGE), "VStringLogger does not contain debug message");
-    this->test(! vsl.getLines().contains(TRACE_MESSAGE), "VStringLogger does not contain trace message");
+    VUNIT_ASSERT_TRUE_LABELED(vsl.getLines().contains(FATAL_MESSAGE), "VStringLogger contains fatal message");
+    VUNIT_ASSERT_TRUE_LABELED(vsl.getLines().contains(ERROR_MESSAGE), "VStringLogger contains error message");
+    VUNIT_ASSERT_TRUE_LABELED(vsl.getLines().contains(WARN_MESSAGE), "VStringLogger contains warn message");
+    VUNIT_ASSERT_TRUE_LABELED(vsl.getLines().contains(INFO_MESSAGE), "VStringLogger contains info message");
+    VUNIT_ASSERT_FALSE_LABELED(vsl.getLines().contains(DEBUG_MESSAGE), "VStringLogger does not contain debug message");
+    VUNIT_ASSERT_FALSE_LABELED(vsl.getLines().contains(TRACE_MESSAGE), "VStringLogger does not contain trace message");
 
     this->logStatus(VSTRING_FORMAT("VStringLogger contents:\n%s", vsl.getLines().chars()));
 
@@ -113,11 +113,11 @@ void VLoggerUnit::_testStringLoggers() {
     vsvl.log(VLoggerLevel::TRACE, TRACE_MESSAGE);
 
     const VStringVector& actualOutputLines = vsvl.getLines();
-    this->test(actualOutputLines.size() == 4, "VStringVectorLogger size = 4");
-    this->test(actualOutputLines.at(0).contains(FATAL_MESSAGE), "VStringVectorLogger lines[0]");
-    this->test(actualOutputLines.at(1).contains(ERROR_MESSAGE), "VStringVectorLogger lines[1]");
-    this->test(actualOutputLines.at(2).contains(WARN_MESSAGE), "VStringVectorLogger lines[2]");
-    this->test(actualOutputLines.at(3).contains(INFO_MESSAGE), "VStringVectorLogger lines[3]");
+    VUNIT_ASSERT_TRUE_LABELED(actualOutputLines.size() == 4, "VStringVectorLogger size = 4");
+    VUNIT_ASSERT_TRUE_LABELED(actualOutputLines.at(0).contains(FATAL_MESSAGE), "VStringVectorLogger lines[0]");
+    VUNIT_ASSERT_TRUE_LABELED(actualOutputLines.at(1).contains(ERROR_MESSAGE), "VStringVectorLogger lines[1]");
+    VUNIT_ASSERT_TRUE_LABELED(actualOutputLines.at(2).contains(WARN_MESSAGE), "VStringVectorLogger lines[2]");
+    VUNIT_ASSERT_TRUE_LABELED(actualOutputLines.at(3).contains(INFO_MESSAGE), "VStringVectorLogger lines[3]");
 
     this->logStatus("VStringVectorLogger contents follow, each as unit test status element:");
     for (VStringVector::const_iterator i = actualOutputLines.begin(); i != actualOutputLines.end(); ++i)
@@ -146,8 +146,8 @@ void VLoggerUnit::_testStringLoggers() {
     trueTimeLogOutputLogger.log(VLoggerLevel::WARN, VSTRING_FORMAT("This warning should have two timestamps to the left: the true time '%s' (or 1ms later = '%s') and the %s-shifted frozen time '%s'.", trueNowString.chars(), trueNowPlus1msString.chars(), frozenFutureShift.getDurationString().chars(), frozenTimeString.chars()));
     this->logStatus(VSTRING_FORMAT("frozen time logging test logger contents: %s", trueTimeLogOutputLogger.getLines().chars()));
 
-    this->test(trueTimeLogOutputLogger.getLines().contains(frozenTimeString), VSTRING_FORMAT("frozen time logging test output contains frozen time %s into the future", frozenFutureShift.getDurationString().chars()));
-    this->test(trueTimeLogOutputLogger.getLines().contains(trueNowString) || trueTimeLogOutputLogger.getLines().contains(trueNowPlus1msString), "frozen time logging test output contains true time");
+    VUNIT_ASSERT_TRUE_LABELED(trueTimeLogOutputLogger.getLines().contains(frozenTimeString), VSTRING_FORMAT("frozen time logging test output contains frozen time %s into the future", frozenFutureShift.getDurationString().chars()));
+    VUNIT_ASSERT_TRUE_LABELED(trueTimeLogOutputLogger.getLines().contains(trueNowString) || trueTimeLogOutputLogger.getLines().contains(trueNowPlus1msString), "frozen time logging test output contains true time");
 
     VInstant::unfreezeTime();
 }
@@ -395,9 +395,9 @@ void VLoggerUnit::_testLoggerPathNames() {
         for (int testVal = 0; testVal < endVal; ++testVal) {
             VString si = _createValueString(testVal);
             if (std::find(loggerNWanted[loggerNIndex].begin(), loggerNWanted[loggerNIndex].end(), testVal) != loggerNWanted[loggerNIndex].end())
-                this->test(lines.contains(si), VSTRING_FORMAT("%s / %s present", vsl->getName().chars(), si.chars()));
+                VUNIT_ASSERT_TRUE_LABELED(lines.contains(si), VSTRING_FORMAT("%s / %s present", vsl->getName().chars(), si.chars()));
             else
-                this->test(! lines.contains(si), VSTRING_FORMAT("%s / %s not present", vsl->getName().chars(), si.chars()));
+                VUNIT_ASSERT_FALSE_LABELED(lines.contains(si), VSTRING_FORMAT("%s / %s not present", vsl->getName().chars(), si.chars()));
         }
 
         ++loggerNIndex;

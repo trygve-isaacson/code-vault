@@ -34,21 +34,19 @@ void VClassRegistryUnit::run() {
         static_cast<ADynamicClass*>(VClassRegistry::registry()->instantiateObject(
                                         "ADynamicClass"));
 
-    this->test(dynamicObject != NULL, "class registry 1");
-    this->test(dynamicObject->mTestValue == 42, "class registry 2");
+    VUNIT_ASSERT_NOT_NULL_LABELED(dynamicObject, "class registry 1");
+    VUNIT_ASSERT_EQUAL_LABELED(dynamicObject->mTestValue, 42, "class registry 2");
     delete dynamicObject;
 
     // Verify that specifying a bogus class name results in an exception.
-    bool caughtException = false;
     try {
         dynamicObject =
             static_cast<ADynamicClass*>(VClassRegistry::registry()->instantiateObject(
                                             "ABogusClassThatDoesNotExist"));
+        VUNIT_ASSERT_FAILURE("class registry 3");
     } catch (const VException& /*ex*/) {
-        caughtException = true;
+        VUNIT_ASSERT_SUCCESS("class registry 3");
     }
-
-    this->test(caughtException, "class registry 3");
 
 }
 

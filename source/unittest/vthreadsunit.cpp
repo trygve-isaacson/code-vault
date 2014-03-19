@@ -89,18 +89,18 @@ void VThreadsUnit::run() {
 
     {
         VMutexLocker locker(&mutex1, "VThreadsUnit locker 1");
-        this->test(locker.isLocked(), "mutex locker initial lock");
+        VUNIT_ASSERT_TRUE_LABELED(locker.isLocked(), "mutex locker initial lock");
     }
 
     {
         VMutexLocker locker(&mutex1, "VThreadsUnit locker 2", false);
-        this->test(! locker.isLocked(), "mutex locker initial unlock");
+        VUNIT_ASSERT_FALSE_LABELED(locker.isLocked(), "mutex locker initial unlock");
 
         locker.lock();
-        this->test(locker.isLocked(), "mutex locker explicit lock");
+        VUNIT_ASSERT_TRUE_LABELED(locker.isLocked(), "mutex locker explicit lock");
 
         locker.unlock();
-        this->test(! locker.isLocked(), "mutex locker explicit unlock");
+        VUNIT_ASSERT_FALSE_LABELED(locker.isLocked(), "mutex locker explicit unlock");
     }
 
     // Test creating a couple of threads, join to them, and verify that they ran.
@@ -118,13 +118,13 @@ void VThreadsUnit::run() {
     bool thread3Flag = false; volatile VThreadID_Type thread3ID = 0; volatile VThreadID_Type thread3Self = 0;
     TestThreadClass* thread3 = new TestThreadClass(this, "3", 3, 2, &thread3Flag, NULL/*do not self-delete*/, &thread3ID, &thread3Self, NULL);
 
-    this->test(thread1->getDeleteAtEnd() == true &&
-               thread2->getDeleteAtEnd() == true &&
-               thread3->getDeleteAtEnd() == false, "thread delete-at-end flags");
+    VUNIT_ASSERT_TRUE_LABELED(thread1->getDeleteAtEnd() == true &&
+                            thread2->getDeleteAtEnd() == true &&
+                            thread3->getDeleteAtEnd() == false, "thread delete-at-end flags");
 
-    this->test(thread1->isRunning() == false &&
-               thread2->isRunning() == false &&
-               thread3->isRunning() == false, "thread initial running state");
+    VUNIT_ASSERT_TRUE_LABELED(thread1->isRunning() == false &&
+                            thread2->isRunning() == false &&
+                            thread3->isRunning() == false, "thread initial running state");
 
     (void) thread1->threadID();    // call API to cover it -- result is not of particular use
 
@@ -135,7 +135,7 @@ void VThreadsUnit::run() {
     thread2->stop();    // short-circuit its iterations
 
     thread3->setName("thread number 3");
-    this->test(thread3->getName() == "thread number 3", "thread naming");
+    VUNIT_ASSERT_EQUAL_LABELED(thread3->getName(), "thread number 3", "thread naming");
 
     if (thread1 != NULL)
         thread1->join();
@@ -144,7 +144,7 @@ void VThreadsUnit::run() {
     thread3->join();    // thread 3 is set to NOT delete itself
     delete thread3;
 
-    this->test(thread1Flag && thread2Flag && thread3Flag, "threads completed");
+    VUNIT_ASSERT_TRUE_LABELED(thread1Flag && thread2Flag && thread3Flag, "threads completed");
 
     this->logStatus(VSTRING_FORMAT("thread ids/selfs: %lld/%lld %lld/%lld %lld/%lld",
                                    (Vs64) thread1ID, (Vs64) thread1Self,

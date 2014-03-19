@@ -89,6 +89,30 @@ void VUnit::logExceptionalEnd(const VString& exceptionMessage) {
         }
 }
 
+void VUnit::assertSuccess(const VString& labelSuffix, const VString& filePath, int lineNumber) {
+    VString fileName;
+    filePath.getSubstring(fileName, filePath.lastIndexOf('/') + 1);
+    VString testName(VSTRING_ARGS("%s:%d %s", fileName.chars(), lineNumber, labelSuffix.chars()));
+
+    mLastTestDescription = testName;
+
+    this->recordSuccess(testName);
+
+    mPreviousTestEndedSnapshot = VInstant::snapshot();
+}
+
+void VUnit::assertFailure(const VString& labelSuffix, const VString& filePath, int lineNumber) {
+    VString fileName;
+    filePath.getSubstring(fileName, filePath.lastIndexOf('/') + 1);
+    VString testName(VSTRING_ARGS("%s:%d %s", fileName.chars(), lineNumber, labelSuffix.chars()));
+
+    mLastTestDescription = testName;
+
+    this->recordFailure(VSTRING_FORMAT("%s: %s", testName.chars()));
+
+    mPreviousTestEndedSnapshot = VInstant::snapshot();
+}
+
 void VUnit::testAssertion(bool successful, const VString& filePath, int lineNumber, const VString& labelSuffix, const VString& expectedDescription) {
     VString fileName;
     filePath.getSubstring(fileName, filePath.lastIndexOf('/') + 1);

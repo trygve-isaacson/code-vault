@@ -27,111 +27,111 @@ void VStringUnit::run() {
     // Start by testing assignment and concatenation.
     VString    s("(A)");
 
-    this->test(s, "(A)", "literal ctor");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "(A)", "literal ctor");
 
     s += s;
-    this->test(s, "(A)(A)", "self concat");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "(A)(A)", "self concat");
 
     s += "(B)";
-    this->test(s, "(A)(A)(B)", "literal concat");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "(A)(A)(B)", "literal concat");
 
     s += s;
-    this->test(s, "(A)(A)(B)(A)(A)(B)", "self concat 2");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "(A)(A)(B)(A)(A)(B)", "self concat 2");
 
     s += "(C)";
-    this->test(s, "(A)(A)(B)(A)(A)(B)(C)", "literal concat 2");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "(A)(A)(B)(A)(A)(B)(C)", "literal concat 2");
 
     s = s;
-    this->test(s, "(A)(A)(B)(A)(A)(B)(C)", "self assign");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "(A)(A)(B)(A)(A)(B)(C)", "self assign");
 
     s.toLowerCase();
-    this->test(s, "(a)(a)(b)(a)(a)(b)(c)", "to lower case");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "(a)(a)(b)(a)(a)(b)(c)", "to lower case");
 
     s.toUpperCase();
-    this->test(s, "(A)(A)(B)(A)(A)(B)(C)", "to upper case");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "(A)(A)(B)(A)(A)(B)(C)", "to upper case");
 
     // Test the length.
-    this->test(s.length() == 21, "length");
+    VUNIT_ASSERT_EQUAL_LABELED(s.length(), 21, "length");
 
     // Test array indexing.
-    this->test(s[19] == 'C', "array element");
-    this->test(s.charAt(19) == 'C', "char at");
+    VUNIT_ASSERT_TRUE_LABELED(s[19] == 'C', "array element");
+    VUNIT_ASSERT_TRUE_LABELED(s.charAt(19) == 'C', "char at");
 
     // Test operator+.
     VString    sum1 = VString('X') + 'Y';
-    this->test(sum1 == "XY", "operator+ char");
+    VUNIT_ASSERT_EQUAL_LABELED(sum1, "XY", "operator+ char");
     VString    sum2 = VString("school") + "bus";
-    this->test(sum2 == "schoolbus", "operator+ char*");
+    VUNIT_ASSERT_EQUAL_LABELED(sum2, "schoolbus", "operator+ char*");
     VString    sum3 = VString("race") + VString("car");
-    this->test(sum3 == "racecar", "operator+ VString&");
+    VUNIT_ASSERT_EQUAL_LABELED(sum3, "racecar", "operator+ VString&");
 
     // Test comparison and equality.
     s = "Banana";
-    this->test("Apple" < s, "operator <");
-    this->test("Banana" <= s, "operator <=");
-    this->test("Banana" == s, "operator ==");
-    this->test("Banana" >= s, "operator >=");
-    this->test("Cherry" > s, "operator >");
-    this->test("BANANA" != s, "operator !=");
-    this->test(s.equalsIgnoreCase("BANANA"), "equalsIgnoreCase");
-    this->test(s.equalsIgnoreCase(VString("BANANA")), "equalsIgnoreCase");
-    this->test(! s.equalsIgnoreCase("Fanana"), "! equalsIgnoreCase");
-    this->test(! s.equalsIgnoreCase(VString("Fanana")), "! equalsIgnoreCase");
+    VUNIT_ASSERT_TRUE_LABELED("Apple" < s, "operator <");
+    VUNIT_ASSERT_TRUE_LABELED("Banana" <= s, "operator <=");
+    VUNIT_ASSERT_TRUE_LABELED("Banana" == s, "operator ==");
+    VUNIT_ASSERT_TRUE_LABELED("Banana" >= s, "operator >=");
+    VUNIT_ASSERT_TRUE_LABELED("Cherry" > s, "operator >");
+    VUNIT_ASSERT_TRUE_LABELED("BANANA" != s, "operator !=");
+    VUNIT_ASSERT_TRUE_LABELED(s.equalsIgnoreCase("BANANA"), "equalsIgnoreCase");
+    VUNIT_ASSERT_TRUE_LABELED(s.equalsIgnoreCase(VString("BANANA")), "equalsIgnoreCase");
+    VUNIT_ASSERT_FALSE_LABELED(s.equalsIgnoreCase("Fanana"), "! equalsIgnoreCase");
+    VUNIT_ASSERT_FALSE_LABELED(s.equalsIgnoreCase(VString("Fanana")), "! equalsIgnoreCase");
 
-    this->test(s.compare(VString("Apple")) > 0, "compare >");
-    this->test(s.compare("Apple") > 0, "compare >");
-    this->test(s.compare(VString("Banana")) == 0, "compare ==");
-    this->test(s.compare("Banana") == 0, "compare ==");
-    this->test(s.compare(VString("Cherry")) < 0, "compare <");
-    this->test(s.compare("Cherry") < 0, "compare <");
+    VUNIT_ASSERT_TRUE_LABELED(s.compare(VString("Apple")) > 0, "compare >");
+    VUNIT_ASSERT_TRUE_LABELED(s.compare("Apple") > 0, "compare >");
+    VUNIT_ASSERT_TRUE_LABELED(s.compare(VString("Banana")) == 0, "compare ==");
+    VUNIT_ASSERT_TRUE_LABELED(s.compare("Banana") == 0, "compare ==");
+    VUNIT_ASSERT_TRUE_LABELED(s.compare(VString("Cherry")) < 0, "compare <");
+    VUNIT_ASSERT_TRUE_LABELED(s.compare("Cherry") < 0, "compare <");
 
-    this->test(s.compareIgnoreCase(VString("Apple")) > 0, "compareIgnoreCase >");
-    this->test(s.compareIgnoreCase("Apple") > 0, "compareIgnoreCase >");
-    this->test(s.compareIgnoreCase(VString("Banana")) == 0, "compareIgnoreCase ==");
-    this->test(s.compareIgnoreCase("Banana") == 0, "compareIgnoreCase ==");
-    this->test(s.compareIgnoreCase(VString("Cherry")) < 0, "compareIgnoreCase <");
-    this->test(s.compareIgnoreCase("Cherry") < 0, "compareIgnoreCase <");
+    VUNIT_ASSERT_TRUE_LABELED(s.compareIgnoreCase(VString("Apple")) > 0, "compareIgnoreCase >");
+    VUNIT_ASSERT_TRUE_LABELED(s.compareIgnoreCase("Apple") > 0, "compareIgnoreCase >");
+    VUNIT_ASSERT_TRUE_LABELED(s.compareIgnoreCase(VString("Banana")) == 0, "compareIgnoreCase ==");
+    VUNIT_ASSERT_TRUE_LABELED(s.compareIgnoreCase("Banana") == 0, "compareIgnoreCase ==");
+    VUNIT_ASSERT_TRUE_LABELED(s.compareIgnoreCase(VString("Cherry")) < 0, "compareIgnoreCase <");
+    VUNIT_ASSERT_TRUE_LABELED(s.compareIgnoreCase("Cherry") < 0, "compareIgnoreCase <");
 
-    this->test(s.startsWith("Ban"), "startsWith literal");
-    this->test(s.startsWithIgnoreCase("bAN"), "startsWithIgnoreCase literal");
-    this->test(s.startsWith('B'), "startsWith char");
-    this->test(! s.startsWith("Bananas"), "! startsWith literal 1");
-    this->test(! s.startsWith("Baz"), "! startsWith literal 2");
-    this->test(! s.startsWithIgnoreCase("bANx"), "! startsWithIgnoreCase literal 1");
-    this->test(! s.startsWithIgnoreCase("xbAN"), "! startsWithIgnoreCase literal 2");
-    this->test(! s.startsWith('b'), "! startsWith char");
-    this->test(s.endsWith("nana"), "endsWith literal");
-    this->test(s.endsWithIgnoreCase("nANa"), "endsWithIgnoreCase literal");
-    this->test(s.endsWith('a'), "endsWith char");
-    this->test(! s.endsWith("Yellow Banana"), "! endsWith literal 1");
-    this->test(! s.endsWith("abcdefghijklmnopqrstuvwxyz"), "! endsWith literal 2");
-    this->test(! s.endsWithIgnoreCase("XnANa"), "! endsWithIgnoreCase literal 1");
-    this->test(! s.endsWithIgnoreCase("nANaX"), "! endsWithIgnoreCase literal 2");
-    this->test(! s.endsWith('x'), "! endsWith char");
+    VUNIT_ASSERT_TRUE_LABELED(s.startsWith("Ban"), "startsWith literal");
+    VUNIT_ASSERT_TRUE_LABELED(s.startsWithIgnoreCase("bAN"), "startsWithIgnoreCase literal");
+    VUNIT_ASSERT_TRUE_LABELED(s.startsWith('B'), "startsWith char");
+    VUNIT_ASSERT_FALSE_LABELED(s.startsWith("Bananas"), "! startsWith literal 1");
+    VUNIT_ASSERT_FALSE_LABELED(s.startsWith("Baz"), "! startsWith literal 2");
+    VUNIT_ASSERT_FALSE_LABELED(s.startsWithIgnoreCase("bANx"), "! startsWithIgnoreCase literal 1");
+    VUNIT_ASSERT_FALSE_LABELED(s.startsWithIgnoreCase("xbAN"), "! startsWithIgnoreCase literal 2");
+    VUNIT_ASSERT_FALSE_LABELED(s.startsWith('b'), "! startsWith char");
+    VUNIT_ASSERT_TRUE_LABELED(s.endsWith("nana"), "endsWith literal");
+    VUNIT_ASSERT_TRUE_LABELED(s.endsWithIgnoreCase("nANa"), "endsWithIgnoreCase literal");
+    VUNIT_ASSERT_TRUE_LABELED(s.endsWith('a'), "endsWith char");
+    VUNIT_ASSERT_FALSE_LABELED(s.endsWith("Yellow Banana"), "! endsWith literal 1");
+    VUNIT_ASSERT_FALSE_LABELED(s.endsWith("abcdefghijklmnopqrstuvwxyz"), "! endsWith literal 2");
+    VUNIT_ASSERT_FALSE_LABELED(s.endsWithIgnoreCase("XnANa"), "! endsWithIgnoreCase literal 1");
+    VUNIT_ASSERT_FALSE_LABELED(s.endsWithIgnoreCase("nANaX"), "! endsWithIgnoreCase literal 2");
+    VUNIT_ASSERT_FALSE_LABELED(s.endsWith('x'), "! endsWith char");
 
     // Test empty string constant behavior.
-    this->test(VString::EMPTY().isEmpty(), "kEmptyString is empty");
-    this->test(VString::EMPTY().length() == 0, "kEmptyString length is zero");
-    this->test(VString::EMPTY() == "", "kEmptyString equals empty string literal");
+    VUNIT_ASSERT_TRUE_LABELED(VString::EMPTY().isEmpty(), "kEmptyString is empty");
+    VUNIT_ASSERT_TRUE_LABELED(VString::EMPTY().length() == 0, "kEmptyString length is zero");
+    VUNIT_ASSERT_TRUE_LABELED(VString::EMPTY() == "", "kEmptyString equals empty string literal");
     s.format("A%sB", VString::EMPTY().chars());
-    this->test(s == "AB", "kEmptyString is empty formatting element");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "AB", "kEmptyString is empty formatting element");
     s = "";
-    this->test(s == VString::EMPTY(), "kEmptyString equals an empty VString");
+    VUNIT_ASSERT_EQUAL_LABELED(s, VString::EMPTY(), "kEmptyString equals an empty VString");
     VString newlyConstructedString;
-    this->test(newlyConstructedString == VString::EMPTY(), "kEmptyString equals a new constructed VString");
+    VUNIT_ASSERT_EQUAL_LABELED(newlyConstructedString, VString::EMPTY(), "kEmptyString equals a new constructed VString");
 
     // Test assigning empty strings into non-empty strings.
     s = "foo";
     s = newlyConstructedString;
-    this->test(s.isEmpty(), "Assign empty VString&");
+    VUNIT_ASSERT_TRUE_LABELED(s.isEmpty(), "Assign empty VString&");
     s = &newlyConstructedString;
-    this->test(s.isEmpty(), "Assign empty VString*");
+    VUNIT_ASSERT_TRUE_LABELED(s.isEmpty(), "Assign empty VString*");
     s = (VString*) NULL;
-    this->test(s.isEmpty(), "Assign NULL VString*");
+    VUNIT_ASSERT_TRUE_LABELED(s.isEmpty(), "Assign NULL VString*");
     s = "";
-    this->test(s.isEmpty(), "Assign empty char*");
+    VUNIT_ASSERT_TRUE_LABELED(s.isEmpty(), "Assign empty char*");
     s = (char*) NULL;
-    this->test(s.isEmpty(), "Assign NULL char*");
+    VUNIT_ASSERT_TRUE_LABELED(s.isEmpty(), "Assign NULL char*");
 
     // Test re-assignment and non-shared memory.
     VString    a("a");
@@ -140,23 +140,23 @@ void VStringUnit::run() {
     a = b;
     b = "something else";
 
-    this->test(a, "b", "reassignment 1");
-    this->test(b, "something else", "reassignment 2");
+    VUNIT_ASSERT_EQUAL_LABELED(a, "b", "reassignment 1");
+    VUNIT_ASSERT_EQUAL_LABELED(b, "something else", "reassignment 2");
 
 #ifdef VAULT_VARARG_STRING_FORMATTING_SUPPORT
     // Test formatting.
     const char* nullPointer = NULL;
     VString nullFormatted(nullPointer);
-    this->test(nullFormatted, VString::EMPTY(), "null ctor formatting");
+    VUNIT_ASSERT_EQUAL_LABELED(nullFormatted, VString::EMPTY(), "null ctor formatting");
 
     VString    formatted(VSTRING_ARGS("%s is %d years old", "Spot", 5));
-    this->test(formatted, "Spot is 5 years old", "ctor formatting");
+    VUNIT_ASSERT_EQUAL_LABELED(formatted, "Spot is 5 years old", "ctor formatting");
 
     formatted.format("%s is %d years old", "Rover", 3);
-    this->test(formatted, "Rover is 3 years old", "sprintf");
+    VUNIT_ASSERT_EQUAL_LABELED(formatted, "Rover is 3 years old", "sprintf");
 
     formatted.format(nullPointer);
-    this->test(formatted, VString::EMPTY(), "null formatting");
+    VUNIT_ASSERT_EQUAL_LABELED(formatted, VString::EMPTY(), "null formatting");
 #endif
 
     VString preflightFail("d'oh!");
@@ -168,11 +168,11 @@ void VStringUnit::run() {
 #else
         preflightFail.preflight(static_cast<int>(V_MAX_S32 - CONST_S64(1)));
 #endif
-        this->test(false, "Intentional preflight allocation failure"); // If we get here, the test failed.
+        VUNIT_ASSERT_FAILURE("Intentional preflight allocation failure"); // If we get here, the test failed.
     } catch (const VException& ex) {
         this->logStatus(ex.what());
-        this->test(true, "Intentional preflight allocation failure"); // If we get here, the test succeeded.
-        this->test(preflightFail, "d'oh!", "No change during preflight allocation failure"); // verify that the string was not changed during the failure
+        VUNIT_ASSERT_SUCCESS("Intentional preflight allocation failure"); // If we get here, the test succeeded.
+        VUNIT_ASSERT_EQUAL_LABELED(preflightFail, "d'oh!", "No change during preflight allocation failure"); // verify that the string was not changed during the failure
     }
 
     // Test copying out.
@@ -180,261 +180,261 @@ void VStringUnit::run() {
     VString    testSource("This text should be copied out.");
     testSource.copyToBuffer(testBuffer, sizeof(testBuffer));
     VString    testTarget(testBuffer);
-    this->test(testTarget, "This text should be copied out.", "copy to chars");
+    VUNIT_ASSERT_EQUAL_LABELED(testTarget, "This text should be copied out.", "copy to chars");
     // Test copying out to undersized buffer.
     char    smallBuffer[5]; // holds a string of length 4, plus a null terminator
     VString smallFit3("abc");
     smallFit3.copyToBuffer(smallBuffer, 5);
     VString smallVerify3(smallBuffer);
-    this->test(smallFit3, smallVerify3, "copyToBuffer len = n-2");
+    VUNIT_ASSERT_EQUAL_LABELED(smallFit3, smallVerify3, "copyToBuffer len = n-2");
     VString smallFit4("defg");
     smallFit4.copyToBuffer(smallBuffer, 5);
     VString smallVerify4(smallBuffer);
-    this->test(smallFit4, smallVerify4, "copyToBuffer len = n-1");
+    VUNIT_ASSERT_EQUAL_LABELED(smallFit4, smallVerify4, "copyToBuffer len = n-1");
     VString smallWontFit5("ghijk");
     smallWontFit5.copyToBuffer(smallBuffer, 5);
     VString smallVerify5(smallBuffer);
-    this->test("ghij", smallVerify5, "copyToBuffer len = n");
+    VUNIT_ASSERT_EQUAL_LABELED("ghij", smallVerify5, "copyToBuffer len = n");
     // Test copying in.
     testTarget = "           "; // clear out some of what we expect to alter
     testTarget.copyFromBuffer(testBuffer, 0, 4);
-    this->test(testTarget, "This", "copy from chars");
+    VUNIT_ASSERT_EQUAL_LABELED(testTarget, "This", "copy from chars");
     // Test copying to and from Pascal.
     testTarget.copyToPascalString(testBuffer);
-    this->test((testBuffer[0] == 4) && (testBuffer[1] == 'T') && (testBuffer[2] == 'h') && (testBuffer[3] == 'i') && (testBuffer[4] == 's'), "copy to Pascal");
+    VUNIT_ASSERT_TRUE_LABELED((testBuffer[0] == 4) && (testBuffer[1] == 'T') && (testBuffer[2] == 'h') && (testBuffer[3] == 'i') && (testBuffer[4] == 's'), "copy to Pascal");
     testTarget = "           "; // clear out some of what we expect to alter
     testTarget.copyFromPascalString(testBuffer);
-    this->test(testTarget, "This", "copy from Pascal");
+    VUNIT_ASSERT_EQUAL_LABELED(testTarget, "This", "copy from Pascal");
     testTarget = "It's only important that this string is longer than 255 chars, because 255 is the limit of what you can legally fit in a Pascal string. We are trying to validate that when given a really long VString, the function for copying into a Pascal string buffer is correctly limiting the number of characters copied out to exactly 255, and setting the length byte accordingly.";
-    this->test(testTarget.length() > 255, "copy to Pascal limit setup");
+    VUNIT_ASSERT_TRUE_LABELED(testTarget.length() > 255, "copy to Pascal limit setup");
     testTarget.copyToPascalString(testBuffer);
-    this->test(((Vu8)testBuffer[0] == 255) && (testBuffer[255] == testTarget[254]), "copy to Pascal limit");
+    VUNIT_ASSERT_TRUE_LABELED(((Vu8)testBuffer[0] == 255) && (testBuffer[255] == testTarget[254]), "copy to Pascal limit");
 
     // Test substring operations.
     s = "The Big Heat";
     VString    sub;
     s.getSubstring(sub, 0, 3);            // start of string
-    this->test(sub, "The", "substring test 1");
+    VUNIT_ASSERT_EQUAL_LABELED(sub, "The", "substring test 1");
     s.getSubstring(sub, 1, 3);            // one past start of string
-    this->test(sub, "he", "substring test 2");
+    VUNIT_ASSERT_EQUAL_LABELED(sub, "he", "substring test 2");
     s.getSubstring(sub, -4, 3);            // start of string but out of range
-    this->test(sub, "The", "substring test 3");
+    VUNIT_ASSERT_EQUAL_LABELED(sub, "The", "substring test 3");
     s.getSubstring(sub, 8);                // end of string with default
-    this->test(sub, "Heat", "substring test 4");
+    VUNIT_ASSERT_EQUAL_LABELED(sub, "Heat", "substring test 4");
     s.getSubstring(sub, 8, 12);            // end of string exactly
-    this->test(sub, "Heat", "substring test 5");
+    VUNIT_ASSERT_EQUAL_LABELED(sub, "Heat", "substring test 5");
     s.getSubstring(sub, 8, 11);            // one short of end of string
-    this->test(sub, "Hea", "substring test 6");
+    VUNIT_ASSERT_EQUAL_LABELED(sub, "Hea", "substring test 6");
     s.getSubstring(sub, 8, 15);            // end of string but out of range
-    this->test(sub, "Heat", "substring test 7");
+    VUNIT_ASSERT_EQUAL_LABELED(sub, "Heat", "substring test 7");
     s.getSubstring(sub, 4, 7);            // interior of string
-    this->test(sub, "Big", "substring test 8");
+    VUNIT_ASSERT_EQUAL_LABELED(sub, "Big", "substring test 8");
     s.getSubstring(sub, 0);                // entire string
-    this->test(sub, "The Big Heat", "substring test 9");
+    VUNIT_ASSERT_EQUAL_LABELED(sub, "The Big Heat", "substring test 9");
     s.getSubstring(sub, -5);            // entire string but start out of range, end default
-    this->test(sub, "The Big Heat", "substring test 10");
+    VUNIT_ASSERT_EQUAL_LABELED(sub, "The Big Heat", "substring test 10");
     s.getSubstring(sub, 0, 50);            // entire string but end out of range
-    this->test(sub, "The Big Heat", "substring test 11");
+    VUNIT_ASSERT_EQUAL_LABELED(sub, "The Big Heat", "substring test 11");
     s.getSubstring(sub, -7, 70);        // entire string but start and end out of range
-    this->test(sub, "The Big Heat", "substring test 12");
+    VUNIT_ASSERT_EQUAL_LABELED(sub, "The Big Heat", "substring test 12");
 
     // Test substring-in-place operations.
     s = "The Big Heat"; s.substringInPlace(0, 3);            // start of string
-    this->test(s, "The", "substring-in-place test 1");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "The", "substring-in-place test 1");
     s = "The Big Heat"; s.substringInPlace(1, 3);            // one past start of string
-    this->test(s, "he", "substring-in-place test 2");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "he", "substring-in-place test 2");
     s = "The Big Heat"; s.substringInPlace(-4, 3);            // start of string but out of range
-    this->test(s, "The", "substring-in-place test 3");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "The", "substring-in-place test 3");
     s = "The Big Heat"; s.substringInPlace(8);                // end of string with default
-    this->test(s, "Heat", "substring-in-place test 4");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "Heat", "substring-in-place test 4");
     s = "The Big Heat"; s.substringInPlace(8, 12);            // end of string exactly
-    this->test(s, "Heat", "substring-in-place test 5");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "Heat", "substring-in-place test 5");
     s = "The Big Heat"; s.substringInPlace(8, 11);            // one short of end of string
-    this->test(s, "Hea", "substring-in-place test 6");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "Hea", "substring-in-place test 6");
     s = "The Big Heat"; s.substringInPlace(8, 15);            // end of string but out of range
-    this->test(s, "Heat", "substring-in-place test 7");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "Heat", "substring-in-place test 7");
     s = "The Big Heat"; s.substringInPlace(4, 7);            // interior of string
-    this->test(s, "Big", "substring-in-place test 8");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "Big", "substring-in-place test 8");
     s = "The Big Heat"; s.substringInPlace(0);                // entire string
-    this->test(s, "The Big Heat", "substring-in-place test 9");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "The Big Heat", "substring-in-place test 9");
     s = "The Big Heat"; s.substringInPlace(-5);            // entire string but start out of range, end default
-    this->test(s, "The Big Heat", "substring-in-place test 10");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "The Big Heat", "substring-in-place test 10");
     s = "The Big Heat"; s.substringInPlace(0, 50);            // entire string but end out of range
-    this->test(s, "The Big Heat", "substring-in-place test 11");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "The Big Heat", "substring-in-place test 11");
     s = "The Big Heat"; s.substringInPlace(-7, 70);        // entire string but start and end out of range
-    this->test(s, "The Big Heat", "substring-in-place test 12");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "The Big Heat", "substring-in-place test 12");
 
     // Test insert operations.
     s = "ABCDEFGH";
     s.insert('x');    // insert char at start (0)
-    this->test(s, "xABCDEFGH", "insert test 1");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "xABCDEFGH", "insert test 1");
     s.insert("QRS");    // insert string at start (0)
-    this->test(s, "QRSxABCDEFGH", "insert test 2");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "QRSxABCDEFGH", "insert test 2");
     s.insert('y', 4);    // insert char at some offset
-    this->test(s, "QRSxyABCDEFGH", "insert test 3");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "QRSxyABCDEFGH", "insert test 3");
     s.insert("TUV", 3);    // insert string at some offset
-    this->test(s, "QRSTUVxyABCDEFGH", "insert test 4");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "QRSTUVxyABCDEFGH", "insert test 4");
     s.insert('j', s.length());    // insert char at end
-    this->test(s, "QRSTUVxyABCDEFGHj", "insert test 5");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "QRSTUVxyABCDEFGHj", "insert test 5");
     s.insert("KLM", s.length());    // insert string at end
-    this->test(s, "QRSTUVxyABCDEFGHjKLM", "insert test 6");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "QRSTUVxyABCDEFGHjKLM", "insert test 6");
     s.insert('n', s.length() - 1);    // insert char at (end - 1)
-    this->test(s, "QRSTUVxyABCDEFGHjKLnM", "insert test 7");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "QRSTUVxyABCDEFGHjKLnM", "insert test 7");
     s.insert("HELLO", s.length() - 1);    // insert string at (end - 1)
-    this->test(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
     s.insert("");    // insert empty string at start (0)
-    this->test(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
     s.insert("", 8);    // insert empty string at some offset
-    this->test(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
     s.insert("", s.length());    // insert empty string at end
-    this->test(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
     s.insert("", s.length() - 1);    // insert empty string at (end - 1)
-    this->test(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "QRSTUVxyABCDEFGHjKLnHELLOM", "insert test 8");
 
     // Test inserts on an empty string.
     s = VString::EMPTY();
     s.insert('x');
-    this->test(s, "x", "insert test 9");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "x", "insert test 9");
     s = VString::EMPTY();
     s.insert("ABC");
-    this->test(s, "ABC", "insert test 10");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "ABC", "insert test 10");
     s = VString::EMPTY();
     s.insert('x', 5);    // this will also test out-of-bounds handling (currently it forces in-bounds; I think an exception would be better)
-    this->test(s, "x", "insert test 9");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "x", "insert test 9");
     s = VString::EMPTY();
     s.insert("ABC", 5);    // this will also test out-of-bounds handling (currently it forces in-bounds; I think an exception would be better)
-    this->test(s, "ABC", "insert test 10");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "ABC", "insert test 10");
 
     // What the heck, let's do those same tests with an unallocated string buffer. Should be the same since preflight will always allocate the required buffer.
     {
         VString s2;
         s2.insert('x');
-        this->test(s2, "x", "insert test 11");
+        VUNIT_ASSERT_EQUAL_LABELED(s2, "x", "insert test 11");
     }
     {
         VString s2;
         s2.insert("ABC");
-        this->test(s2, "ABC", "insert test 12");
+        VUNIT_ASSERT_EQUAL_LABELED(s2, "ABC", "insert test 12");
     }
     {
         VString s2;
         s2.insert('x', 5);    // this will also test out-of-bounds handling (currently it forces in-bounds; I think an exception would be better)
-        this->test(s2, "x", "insert test 13");
+        VUNIT_ASSERT_EQUAL_LABELED(s2, "x", "insert test 13");
     }
     {
         VString s2;
         s2.insert("ABC", 5);    // this will also test out-of-bounds handling (currently it forces in-bounds; I think an exception would be better)
-        this->test(s2, "ABC", "insert test 14");
+        VUNIT_ASSERT_EQUAL_LABELED(s2, "ABC", "insert test 14");
     }
 
     // We also need to verify that insert handles inserting from itself.
     s = "California";
     s.insert(s);
-    this->test(s, "CaliforniaCalifornia", "insert test 15");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "CaliforniaCalifornia", "insert test 15");
     s = "Oregon";
     s.insert(s, 3);
-    this->test(s, "OreOregongon", "insert test 16");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "OreOregongon", "insert test 16");
     s = "Nevada";
     s.insert(s, 5);
-    this->test(s, "NevadNevadaa", "insert test 17");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "NevadNevadaa", "insert test 17");
     s = "Arizona";
     s.insert(s, s.length());
-    this->test(s, "ArizonaArizona", "insert test 18");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "ArizonaArizona", "insert test 18");
 
     // Test trim operation.
     s = "This string should not be trimmed.";
     s.trim();
-    this->test(s, "This string should not be trimmed.", "trim test 1");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "This string should not be trimmed.", "trim test 1");
     s = "   This string had leading whitespace.";
     s.trim();
-    this->test(s, "This string had leading whitespace.", "trim test 2");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "This string had leading whitespace.", "trim test 2");
     s = "This string had trailing whitespace.    ";
     s.trim();
-    this->test(s, "This string had trailing whitespace.", "trim test 3");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "This string had trailing whitespace.", "trim test 3");
     s = "    This string had leading and trailing whitespace.    ";
     s.trim();
-    this->test(s, "This string had leading and trailing whitespace.", "trim test 4");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "This string had leading and trailing whitespace.", "trim test 4");
     s = "    ";
     s.trim();
-    this->test(s, VString::EMPTY(), "trim test 5");
+    VUNIT_ASSERT_EQUAL_LABELED(s, VString::EMPTY(), "trim test 5");
     s = "";
     s.trim();
-    this->test(s, VString::EMPTY(), "trim test 6");
+    VUNIT_ASSERT_EQUAL_LABELED(s, VString::EMPTY(), "trim test 6");
 
     int    numCreatures;
     // Test replacing the whole string with another value, with empty, and again with repetition.
     // Have the replacement be smaller, to test that we can replace multiple where the "cursor" is not always moving to the right.
     s = "fish";
     numCreatures = s.replace("fish", "dog");
-    this->test(s, "dog", "replace test comparison a->b");
-    this->test(numCreatures == 1, "replace test count a->b");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "dog", "replace test comparison a->b");
+    VUNIT_ASSERT_EQUAL_LABELED(numCreatures, 1, "replace test count a->b");
     s = "fish";
     numCreatures = s.replace("fish", "");
-    this->test(s, "", "replace test comparison a->empty");
-    this->test(numCreatures == 1, "replace test count a->empty");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "", "replace test comparison a->empty");
+    VUNIT_ASSERT_EQUAL_LABELED(numCreatures, 1, "replace test count a->empty");
     s = "fishfishfish";
     numCreatures = s.replace("fish", "dog");
-    this->test(s, "dogdogdog", "replace test comparison aaa->bbb");
-    this->test(numCreatures == 3, "replace test count aaa->bbb");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "dogdogdog", "replace test comparison aaa->bbb");
+    VUNIT_ASSERT_EQUAL_LABELED(numCreatures, 3, "replace test count aaa->bbb");
     s = "fishfishfish";
     numCreatures = s.replace("fish", "");
-    this->test(s, "", "replace test comparison aaa->emptyemptyempty");
-    this->test(numCreatures == 3, "replace test count aaa->emptyemptyempty");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "", "replace test comparison aaa->emptyemptyempty");
+    VUNIT_ASSERT_EQUAL_LABELED(numCreatures, 3, "replace test count aaa->emptyemptyempty");
 
     // Another sequence of replacement tests.
     s = "one fish, two fish, red fish, blue fish, fishfishfish";
     // Test replacing with longer string.
     numCreatures = s.replace("fish", "dog");
-    this->test(s, "one dog, two dog, red dog, blue dog, dogdogdog", "replace test 1a");
-    this->test(numCreatures == 7, "replace test 1b");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "one dog, two dog, red dog, blue dog, dogdogdog", "replace test 1a");
+    VUNIT_ASSERT_EQUAL_LABELED(numCreatures, 7, "replace test 1b");
     // Test replacing with shorter string.
     numCreatures = s.replace("dog", "fish");
-    this->test(s, "one fish, two fish, red fish, blue fish, fishfishfish", "replace test 2a");
-    this->test(numCreatures == 7, "replace test 2b");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "one fish, two fish, red fish, blue fish, fishfishfish", "replace test 2a");
+    VUNIT_ASSERT_EQUAL_LABELED(numCreatures, 7, "replace test 2b");
     // Test replacing with same length string.
     numCreatures = s.replace("fish", "bird");
-    this->test(s, "one bird, two bird, red bird, blue bird, birdbirdbird", "replace test 3a");
-    this->test(numCreatures == 7, "replace test 3b");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "one bird, two bird, red bird, blue bird, birdbirdbird", "replace test 3a");
+    VUNIT_ASSERT_EQUAL_LABELED(numCreatures, 7, "replace test 3b");
     // Test replacing with empty string.
     numCreatures = s.replace("bird", VString::EMPTY());
-    this->test(s, "one , two , red , blue , ", "replace test 4a");
-    this->test(numCreatures == 7, "replace test 4b");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "one , two , red , blue , ", "replace test 4a");
+    VUNIT_ASSERT_EQUAL_LABELED(numCreatures, 7, "replace test 4b");
     // Test string-not-found.
     numCreatures = s.replace("dogs", "cats");
-    this->test(s, "one , two , red , blue , ", "replace test 5a");
-    this->test(numCreatures == 0, "replace test 5b");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "one , two , red , blue , ", "replace test 5a");
+    VUNIT_ASSERT_EQUAL_LABELED(numCreatures, 0, "replace test 5b");
     // Test finding an empty string. Should never "find" an empty string.
     numCreatures = s.replace(VString::EMPTY(), "uh-oh");
-    this->test(s, "one , two , red , blue , ", "replace test 6a");
-    this->test(numCreatures == 0, "replace test 6b");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "one , two , red , blue , ", "replace test 6a");
+    VUNIT_ASSERT_EQUAL_LABELED(numCreatures, 0, "replace test 6b");
     // Test replace method with char parameters, search char in string.
     numCreatures = s.replace(VChar('e'), VChar('E'));
-    this->test(s, "onE , two , rEd , bluE , ", "replace test 7a");
-    this->test(numCreatures == 3, "replace test 7b");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "onE , two , rEd , bluE , ", "replace test 7a");
+    VUNIT_ASSERT_EQUAL_LABELED(numCreatures, 3, "replace test 7b");
     // Test replace method with char parameters, search char not in string.
     numCreatures = s.replace(VChar('k'), VChar('K'));
-    this->test(s, "onE , two , rEd , bluE , ", "replace test 8a");
-    this->test(numCreatures == 0, "replace test 8b");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "onE , two , rEd , bluE , ", "replace test 8a");
+    VUNIT_ASSERT_EQUAL_LABELED(numCreatures, 0, "replace test 8b");
 
     // Test array operator assignment.
     s[0] = 'O';
     s[6] = 'T';
     s[12] = 'R';
     s[18] = 'B';
-    this->test(s, "OnE , Two , REd , BluE , ", "array operator assignment");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "OnE , Two , REd , BluE , ", "array operator assignment");
     s.set(20, 'e');
     s.set(21, 'u');
-    this->test(s, "OnE , Two , REd , Bleu , ", "set() assignment");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "OnE , Two , REd , Bleu , ", "set() assignment");
 
     // Case-insensitive replace() validation:
     int numOccurrences;
     s = "Send lawyers, guns, more LAWYERS, and money.";
     numOccurrences = s.replace("Lawyers", "doctors", false /* not case-sensitive search */);
-    this->test(s, "Send doctors, guns, more doctors, and money.", "replace test case-insensitive 1a");
-    this->test(numOccurrences == 2, "replace test case-insensitive 1b");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "Send doctors, guns, more doctors, and money.", "replace test case-insensitive 1a");
+    VUNIT_ASSERT_EQUAL_LABELED(numOccurrences, 2, "replace test case-insensitive 1b");
     numOccurrences = s.replace(VChar('S'), VChar('X'), false /* not case-sensitive search */);
-    this->test(s, "Xend doctorX, gunX, more doctorX, and money.", "replace test case-insensitive 2a");
-    this->test(numOccurrences == 4, "replace test case-insensitive 2b");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "Xend doctorX, gunX, more doctorX, and money.", "replace test case-insensitive 2a");
+    VUNIT_ASSERT_EQUAL_LABELED(numOccurrences, 4, "replace test case-insensitive 2b");
 
     // Test operator= conversions.
     // For each integer size/kind, we make sure to test unsigned, "big" unsigned (too big for signed), negative, and postive.
@@ -457,150 +457,150 @@ void VStringUnit::run() {
     Vs64    n64 = CONST_S64(-5);
     Vs64    p64 = CONST_S64(5);
 
-    s = ni; this->test(s == "-1", "=ni");
-    s = posi; this->test(s == "1", "=posi");
-    s = u8; this->test(s == "2", "=u8");
-    s = b8; this->test(s == "254", "=b8");
-    s = n8; this->test(s == "-2", "=n8");
-    s = p8; this->test(s == "2", "=p8");
-    s = u16; this->test(s == "3", "=u16");
-    s = b16; this->test(s == "65533", "=b16");
-    s = n16; this->test(s == "-3", "=n16");
-    s = p16; this->test(s == "3", "=p16");
-    s = u32; this->test(s == "4", "=u32");
-    s = b32; this->test(s == "4294967292", "=b32");
-    s = n32; this->test(s == "-4", "=n32");
-    s = p32; this->test(s == "4", "=p32");
-    s = u64; this->test(s == "5", "=u64");
-//    s = b64; this->test(s == "?", "=b64");    // what is 64-bit "-5" as postive decimal? need 64-bit hex calculator
-    s = n64; this->test(s == "-5", "=n64");
-    s = p64; this->test(s == "5", "=p64");
+    s = ni; VUNIT_ASSERT_EQUAL_LABELED(s, "-1", "=ni");
+    s = posi; VUNIT_ASSERT_EQUAL_LABELED(s, "1", "=posi");
+    s = u8; VUNIT_ASSERT_EQUAL_LABELED(s, "2", "=u8");
+    s = b8; VUNIT_ASSERT_EQUAL_LABELED(s, "254", "=b8");
+    s = n8; VUNIT_ASSERT_EQUAL_LABELED(s, "-2", "=n8");
+    s = p8; VUNIT_ASSERT_EQUAL_LABELED(s, "2", "=p8");
+    s = u16; VUNIT_ASSERT_EQUAL_LABELED(s, "3", "=u16");
+    s = b16; VUNIT_ASSERT_EQUAL_LABELED(s, "65533", "=b16");
+    s = n16; VUNIT_ASSERT_EQUAL_LABELED(s, "-3", "=n16");
+    s = p16; VUNIT_ASSERT_EQUAL_LABELED(s, "3", "=p16");
+    s = u32; VUNIT_ASSERT_EQUAL_LABELED(s, "4", "=u32");
+    s = b32; VUNIT_ASSERT_EQUAL_LABELED(s, "4294967292", "=b32");
+    s = n32; VUNIT_ASSERT_EQUAL_LABELED(s, "-4", "=n32");
+    s = p32; VUNIT_ASSERT_EQUAL_LABELED(s, "4", "=p32");
+    s = u64; VUNIT_ASSERT_EQUAL_LABELED(s, "5", "=u64");
+//    s = b64; VUNIT_ASSERT_EQUAL_LABELED(s, "?", "=b64");    // what is 64-bit "-5" as postive decimal? need 64-bit hex calculator
+    s = n64; VUNIT_ASSERT_EQUAL_LABELED(s, "-5", "=n64");
+    s = p64; VUNIT_ASSERT_EQUAL_LABELED(s, "5", "=p64");
 
     // Test operator+= conversions.
 
-    s = "x"; s += ni; this->test(s == "x-1", "+=ni");
-    s = "x"; s += posi; this->test(s == "x1", "+=posi");
-    s = "x"; s += u8; this->test(s == "x2", "+=u8");
-    s = "x"; s += b8; this->test(s == "x254", "+=b8");
-    s = "x"; s += n8; this->test(s == "x-2", "+=n8");
-    s = "x"; s += p8; this->test(s == "x2", "+=p8");
-    s = "x"; s += u16; this->test(s == "x3", "+=u16");
-    s = "x"; s += b16; this->test(s == "x65533", "+=b16");
-    s = "x"; s += n16; this->test(s == "x-3", "+=n16");
-    s = "x"; s += p16; this->test(s == "x3", "+=p16");
-    s = "x"; s += u32; this->test(s == "x4", "+=u32");
-    s = "x"; s += b32; this->test(s == "x4294967292", "+=b32");
-    s = "x"; s += n32; this->test(s == "x-4", "+=n32");
-    s = "x"; s += p32; this->test(s == "x4", "+=p32");
-    s = "x"; s += u64; this->test(s == "x5", "+=u64");
-//    s = "x"; s += b64; this->test(s == "x?", "+=b64");    // what is 64-bit "-5" as postive decimal? need 64-bit hex calculator
-    s = "x"; s += n64; this->test(s == "x-5", "+=n64");
-    s = "x"; s += p64; this->test(s == "x5", "+=p64");
+    s = "x"; s += ni; VUNIT_ASSERT_EQUAL_LABELED(s, "x-1", "+=ni");
+    s = "x"; s += posi; VUNIT_ASSERT_EQUAL_LABELED(s, "x1", "+=posi");
+    s = "x"; s += u8; VUNIT_ASSERT_EQUAL_LABELED(s, "x2", "+=u8");
+    s = "x"; s += b8; VUNIT_ASSERT_EQUAL_LABELED(s, "x254", "+=b8");
+    s = "x"; s += n8; VUNIT_ASSERT_EQUAL_LABELED(s, "x-2", "+=n8");
+    s = "x"; s += p8; VUNIT_ASSERT_EQUAL_LABELED(s, "x2", "+=p8");
+    s = "x"; s += u16; VUNIT_ASSERT_EQUAL_LABELED(s, "x3", "+=u16");
+    s = "x"; s += b16; VUNIT_ASSERT_EQUAL_LABELED(s, "x65533", "+=b16");
+    s = "x"; s += n16; VUNIT_ASSERT_EQUAL_LABELED(s, "x-3", "+=n16");
+    s = "x"; s += p16; VUNIT_ASSERT_EQUAL_LABELED(s, "x3", "+=p16");
+    s = "x"; s += u32; VUNIT_ASSERT_EQUAL_LABELED(s, "x4", "+=u32");
+    s = "x"; s += b32; VUNIT_ASSERT_EQUAL_LABELED(s, "x4294967292", "+=b32");
+    s = "x"; s += n32; VUNIT_ASSERT_EQUAL_LABELED(s, "x-4", "+=n32");
+    s = "x"; s += p32; VUNIT_ASSERT_EQUAL_LABELED(s, "x4", "+=p32");
+    s = "x"; s += u64; VUNIT_ASSERT_EQUAL_LABELED(s, "x5", "+=u64");
+//    s = "x"; s += b64; VUNIT_ASSERT_EQUAL_LABELED(s, "x?", "+=b64");    // what is 64-bit "-5" as postive decimal? need 64-bit hex calculator
+    s = "x"; s += n64; VUNIT_ASSERT_EQUAL_LABELED(s, "x-5", "+=n64");
+    s = "x"; s += p64; VUNIT_ASSERT_EQUAL_LABELED(s, "x5", "+=p64");
 
     // Miscellaneous API coverage.
     s = "12345";
     s.truncateLength(3);
-    this->test(s == "123", "truncate length");
+    VUNIT_ASSERT_EQUAL_LABELED(s, "123", "truncate length");
 
     s = "foo";
-    this->test(! s.isEmpty(), "not is empty");
+    VUNIT_ASSERT_FALSE_LABELED(s.isEmpty(), "not is empty");
     s = VString::EMPTY();
-    this->test(s.isEmpty(), "is empty");
+    VUNIT_ASSERT_TRUE_LABELED(s.isEmpty(), "is empty");
 
     s = "hello";
 
     VChar e = s.at(1);
-    this->test(e == 'e', "at");
+    VUNIT_ASSERT_EQUAL_LABELED(e, 'e', "at");
     e = s[1];
-    this->test(e == 'e', "VChar[]");
+    VUNIT_ASSERT_EQUAL_LABELED(e, 'e', "VChar[]");
     char& cref = s[1];
-    this->test(cref == 'e', "char&[]");
-    this->test(s.charAt(1) == 'e', "charAt");
+    VUNIT_ASSERT_TRUE_LABELED(cref == 'e', "char&[]");
+    VUNIT_ASSERT_TRUE_LABELED(s.charAt(1) == 'e', "charAt");
 
     s = "Stringinastring";    // Note that "in" appears in 3 places.
-    this->test(s.indexOf('i') == 3, "indexOf(char)");
-    this->test(s.indexOf('i', 4) == 6, "indexOf(char, n)");
-    this->test(s.indexOf('i', 7) == 12, "indexOf(char, n)");
-    this->test(s.indexOf('i', 13) == -1, "indexOf(char, n)");
-    this->test(s.indexOf('z') == -1, "indexOf(char, n)");
-    this->test(s.indexOf('i', -1) == -1, "indexOf(char, -1)");
-    this->test(s.indexOf('i', -2) == -1, "indexOf(char, -2)");
-    this->test(s.indexOf('i', s.length()) == -1, "indexOf(char, end)");
-    this->test(s.contains('i'), "contains(char)");
-    this->test(!s.contains('x'), "!contains(char)");
-    this->test(s.contains('i', 12), "contains(char, 12)");
-    this->test(!s.contains('i', 13), "!contains(char, 13)");
-    this->test(!s.contains('i', -1), "!contains(char, -1)");
-    this->test(!s.contains('i', -2), "!contains(char, -2)");
-    this->test(s.indexOf("in") == 3, "indexOf(const VString&)");
-    this->test(s.indexOf("in", 4) == 6, "indexOf(const VString&, n)");
-    this->test(s.indexOf("in", 7) == 12, "indexOf(const VString&, n)");
-    this->test(s.indexOf("in", 13) == -1, "indexOf(const VString&, n)");
-    this->test(s.indexOf("in", -1) == -1, "indexOf(const VString&, -1)");
-    this->test(s.indexOf("in", -2) == -1, "indexOf(const VString&, -2)");
-    this->test(s.indexOf("in", s.length()) == -1, "indexOf(const VString&, end)");
-    this->test(s.indexOf("inordinate") == -1, "indexOf(const VString&)");
-    this->test(s.contains("in"), "contains(const VString&)");
-    this->test(!s.contains("xxx"), "!contains(const VString&)");
-    this->test(s.contains("in", 12), "contains(const VString&, 12)");
-    this->test(!s.contains("in", 13), "!contains(const VString&, 13)");
-    this->test(!s.contains("in", -1), "!contains(const VString&, -1)");
-    this->test(!s.contains("in", -2), "!contains(const VString&, -2)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf('i') == 3, "indexOf(char)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf('i', 4) == 6, "indexOf(char, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf('i', 7) == 12, "indexOf(char, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf('i', 13) == -1, "indexOf(char, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf('z') == -1, "indexOf(char, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf('i', -1) == -1, "indexOf(char, -1)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf('i', -2) == -1, "indexOf(char, -2)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf('i', s.length()) == -1, "indexOf(char, end)");
+    VUNIT_ASSERT_TRUE_LABELED(s.contains('i'), "contains(char)");
+    VUNIT_ASSERT_FALSE_LABELED(s.contains('x'), "!contains(char)");
+    VUNIT_ASSERT_TRUE_LABELED(s.contains('i', 12), "contains(char, 12)");
+    VUNIT_ASSERT_FALSE_LABELED(s.contains('i', 13), "!contains(char, 13)");
+    VUNIT_ASSERT_FALSE_LABELED(s.contains('i', -1), "!contains(char, -1)");
+    VUNIT_ASSERT_FALSE_LABELED(s.contains('i', -2), "!contains(char, -2)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf("in") == 3, "indexOf(const VString&)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf("in", 4) == 6, "indexOf(const VString&, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf("in", 7) == 12, "indexOf(const VString&, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf("in", 13) == -1, "indexOf(const VString&, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf("in", -1) == -1, "indexOf(const VString&, -1)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf("in", -2) == -1, "indexOf(const VString&, -2)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf("in", s.length()) == -1, "indexOf(const VString&, end)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOf("inordinate") == -1, "indexOf(const VString&)");
+    VUNIT_ASSERT_TRUE_LABELED(s.contains("in"), "contains(const VString&)");
+    VUNIT_ASSERT_FALSE_LABELED(s.contains("xxx"), "!contains(const VString&)");
+    VUNIT_ASSERT_TRUE_LABELED(s.contains("in", 12), "contains(const VString&, 12)");
+    VUNIT_ASSERT_FALSE_LABELED(s.contains("in", 13), "!contains(const VString&, 13)");
+    VUNIT_ASSERT_FALSE_LABELED(s.contains("in", -1), "!contains(const VString&, -1)");
+    VUNIT_ASSERT_FALSE_LABELED(s.contains("in", -2), "!contains(const VString&, -2)");
 
-    this->test(s.indexOfIgnoreCase('I') == 3, "indexOfIgnoreCase(char)");
-    this->test(s.indexOfIgnoreCase('I', 4) == 6, "indexOfIgnoreCase(char, n)");
-    this->test(s.indexOfIgnoreCase('I', 7) == 12, "indexOfIgnoreCase(char, n)");
-    this->test(s.indexOfIgnoreCase('I', 13) == -1, "indexOfIgnoreCase(char, n)");
-    this->test(s.indexOfIgnoreCase('I', -1) == -1, "indexOfIgnoreCase(char, -1)");
-    this->test(s.indexOfIgnoreCase('I', -2) == -1, "indexOfIgnoreCase(char, -2)");
-    this->test(s.indexOfIgnoreCase('I', s.length()) == -1, "indexOfIgnoreCase(char, end)");
-    this->test(s.containsIgnoreCase('I'), "contains(char)");
-    this->test(!s.containsIgnoreCase('x'), "!containsIgnoreCase(char)");
-    this->test(s.containsIgnoreCase('I', 12), "containsIgnoreCase(char, 12)");
-    this->test(!s.containsIgnoreCase('I', 13), "!containsIgnoreCase(char, 13)");
-    this->test(!s.containsIgnoreCase('I', -1), "!containsIgnoreCase(char, -1)");
-    this->test(!s.containsIgnoreCase('I', -2), "!containsIgnoreCase(char, -2)");
-    this->test(s.indexOfIgnoreCase('Z') == -1, "indexOfIgnoreCase(char, n)");
-    this->test(s.indexOfIgnoreCase("In") == 3, "indexOfIgnoreCase(const VString&)");
-    this->test(s.indexOfIgnoreCase("In", 4) == 6, "indexOfIgnoreCase(const VString&, n)");
-    this->test(s.indexOfIgnoreCase("In", 7) == 12, "indexOfIgnoreCase(const VString&, n)");
-    this->test(s.indexOfIgnoreCase("In", 13) == -1, "indexOfIgnoreCase(const VString&, n)");
-    this->test(s.indexOfIgnoreCase("In", -1) == -1, "indexOfIgnoreCase(const VString&, -1)");
-    this->test(s.indexOfIgnoreCase("In", -2) == -1, "indexOfIgnoreCase(const VString&, -2)");
-    this->test(s.indexOfIgnoreCase("In", s.length()) == -1, "indexOfIgnoreCase(const VString&, end)");
-    this->test(s.indexOfIgnoreCase("Inordinate") == -1, "indexOfIgnoreCase(const VString&)");
-    this->test(s.containsIgnoreCase("In"), "containsIgnoreCase(const VString&)");
-    this->test(!s.containsIgnoreCase("xxx"), "!containsIgnoreCase(const VString&)");
-    this->test(s.containsIgnoreCase("In", 12), "containsIgnoreCase(const VString&, 12)");
-    this->test(!s.containsIgnoreCase("In", 13), "!containsIgnoreCase(const VString&, 13)");
-    this->test(!s.containsIgnoreCase("In", -1), "!containsIgnoreCase(const VString&, -1)");
-    this->test(!s.containsIgnoreCase("In", -2), "!containsIgnoreCase(const VString&, -2)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase('I') == 3, "indexOfIgnoreCase(char)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase('I', 4) == 6, "indexOfIgnoreCase(char, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase('I', 7) == 12, "indexOfIgnoreCase(char, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase('I', 13) == -1, "indexOfIgnoreCase(char, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase('I', -1) == -1, "indexOfIgnoreCase(char, -1)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase('I', -2) == -1, "indexOfIgnoreCase(char, -2)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase('I', s.length()) == -1, "indexOfIgnoreCase(char, end)");
+    VUNIT_ASSERT_TRUE_LABELED(s.containsIgnoreCase('I'), "contains(char)");
+    VUNIT_ASSERT_FALSE_LABELED(s.containsIgnoreCase('x'), "!containsIgnoreCase(char)");
+    VUNIT_ASSERT_TRUE_LABELED(s.containsIgnoreCase('I', 12), "containsIgnoreCase(char, 12)");
+    VUNIT_ASSERT_FALSE_LABELED(s.containsIgnoreCase('I', 13), "!containsIgnoreCase(char, 13)");
+    VUNIT_ASSERT_FALSE_LABELED(s.containsIgnoreCase('I', -1), "!containsIgnoreCase(char, -1)");
+    VUNIT_ASSERT_FALSE_LABELED(s.containsIgnoreCase('I', -2), "!containsIgnoreCase(char, -2)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase('Z') == -1, "indexOfIgnoreCase(char, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase("In") == 3, "indexOfIgnoreCase(const VString&)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase("In", 4) == 6, "indexOfIgnoreCase(const VString&, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase("In", 7) == 12, "indexOfIgnoreCase(const VString&, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase("In", 13) == -1, "indexOfIgnoreCase(const VString&, n)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase("In", -1) == -1, "indexOfIgnoreCase(const VString&, -1)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase("In", -2) == -1, "indexOfIgnoreCase(const VString&, -2)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase("In", s.length()) == -1, "indexOfIgnoreCase(const VString&, end)");
+    VUNIT_ASSERT_TRUE_LABELED(s.indexOfIgnoreCase("Inordinate") == -1, "indexOfIgnoreCase(const VString&)");
+    VUNIT_ASSERT_TRUE_LABELED(s.containsIgnoreCase("In"), "containsIgnoreCase(const VString&)");
+    VUNIT_ASSERT_FALSE_LABELED(s.containsIgnoreCase("xxx"), "!containsIgnoreCase(const VString&)");
+    VUNIT_ASSERT_TRUE_LABELED(s.containsIgnoreCase("In", 12), "containsIgnoreCase(const VString&, 12)");
+    VUNIT_ASSERT_FALSE_LABELED(s.containsIgnoreCase("In", 13), "!containsIgnoreCase(const VString&, 13)");
+    VUNIT_ASSERT_FALSE_LABELED(s.containsIgnoreCase("In", -1), "!containsIgnoreCase(const VString&, -1)");
+    VUNIT_ASSERT_FALSE_LABELED(s.containsIgnoreCase("In", -2), "!containsIgnoreCase(const VString&, -2)");
 
-    this->test(s.lastIndexOf('i') == 12, "lastIndexOf(char)");
-    this->test(s.lastIndexOf('i', 11) == 6, "lastIndexOf(char, n)");
-    this->test(s.lastIndexOf('i', 5) == 3, "lastIndexOf(char, n)");
-    this->test(s.lastIndexOf('i', 2) == -1, "lastIndexOf(char, n)");
-    this->test(s.lastIndexOf('i', -2) == -1, "lastIndexOf(char, -2)");
-    this->test(s.lastIndexOf('z') == -1, "lastIndexOf(char, n)");
-    this->test(s.lastIndexOf("in") == 12, "lastIndexOf(const VString&)");
-    this->test(s.lastIndexOf("in", 11) == 6, "lastIndexOf(const VString&, n)");
-    this->test(s.lastIndexOf("in", 5) == 3, "lastIndexOf(const VString&, n)");
-    this->test(s.lastIndexOf("in", 2) == -1, "lastIndexOf(const VString&, n)");
-    this->test(s.lastIndexOf("in", -2) == -1, "lastIndexOf(const VString&, -2)");
-    this->test(s.lastIndexOf("inordinate") == -1, "lastIndexOf(const VString&)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOf('i'), 12, "lastIndexOf(char)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOf('i', 11), 6, "lastIndexOf(char, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOf('i', 5), 3, "lastIndexOf(char, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOf('i', 2), -1, "lastIndexOf(char, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOf('i', -2), -1, "lastIndexOf(char, -2)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOf('z'), -1, "lastIndexOf(char, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOf("in"), 12, "lastIndexOf(const VString&)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOf("in", 11), 6, "lastIndexOf(const VString&, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOf("in", 5), 3, "lastIndexOf(const VString&, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOf("in", 2), -1, "lastIndexOf(const VString&, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOf("in", -2), -1, "lastIndexOf(const VString&, -2)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOf("inordinate"), -1, "lastIndexOf(const VString&)");
 
-    this->test(s.lastIndexOfIgnoreCase('I') == 12, "lastIndexOfIgnoreCase(char)");
-    this->test(s.lastIndexOfIgnoreCase('I', 11) == 6, "lastIndexOfIgnoreCase(char, n)");
-    this->test(s.lastIndexOfIgnoreCase('I', 5) == 3, "lastIndexOfIgnoreCase(char, n)");
-    this->test(s.lastIndexOfIgnoreCase('I', 2) == -1, "lastIndexOfIgnoreCase(char, n)");
-    this->test(s.lastIndexOfIgnoreCase('I', -2) == -1, "lastIndexOfIgnoreCase(char, -2)");
-    this->test(s.lastIndexOfIgnoreCase('Z') == -1, "lastIndexOfIgnoreCase(char, n)");
-    this->test(s.lastIndexOfIgnoreCase("In") == 12, "lastIndexOfIgnoreCase(const VString&)");
-    this->test(s.lastIndexOfIgnoreCase("In", 11) == 6, "lastIndexOfIgnoreCase(const VString&, n)");
-    this->test(s.lastIndexOfIgnoreCase("In", 5) == 3, "lastIndexOfIgnoreCase(const VString&, n)");
-    this->test(s.lastIndexOfIgnoreCase("In", 2) == -1, "lastIndexOfIgnoreCase(const VString&, n)");
-    this->test(s.lastIndexOfIgnoreCase("In", -2) == -1, "lastIndexOfIgnoreCase(const VString&, -2)");
-    this->test(s.lastIndexOfIgnoreCase("Inordinate") == -1, "lastIndexOfIgnoreCase(const VString&)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOfIgnoreCase('I'), 12, "lastIndexOfIgnoreCase(char)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOfIgnoreCase('I', 11), 6, "lastIndexOfIgnoreCase(char, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOfIgnoreCase('I', 5), 3, "lastIndexOfIgnoreCase(char, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOfIgnoreCase('I', 2), -1, "lastIndexOfIgnoreCase(char, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOfIgnoreCase('I', -2), -1, "lastIndexOfIgnoreCase(char, -2)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOfIgnoreCase('Z'), -1, "lastIndexOfIgnoreCase(char, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOfIgnoreCase("In"), 12, "lastIndexOfIgnoreCase(const VString&)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOfIgnoreCase("In", 11), 6, "lastIndexOfIgnoreCase(const VString&, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOfIgnoreCase("In", 5), 3, "lastIndexOfIgnoreCase(const VString&, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOfIgnoreCase("In", 2), -1, "lastIndexOfIgnoreCase(const VString&, n)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOfIgnoreCase("In", -2), -1, "lastIndexOfIgnoreCase(const VString&, -2)");
+    VUNIT_ASSERT_EQUAL_LABELED(s.lastIndexOfIgnoreCase("Inordinate"), -1, "lastIndexOfIgnoreCase(const VString&)");
 
     VString    region1("Thunderhill");
     VString    region1mixed("tHunderHill");
@@ -608,45 +608,45 @@ void VStringUnit::run() {
     VString    region2mixed("uNDEr");
     VString    region3("hil");
     VString    region3mixed("hIL");
-    this->test(region1.regionMatches(2, region2, 0, 5), "regionMatches 1");
-    this->test(region1.regionMatches(7, region3, 0, 3), "regionMatches 2");
-    this->test(! region1.regionMatches(7, region3, 0, 4), "! regionMatches 1");
-    this->test(! region2.regionMatches(0, region3, 0, 3), "! regionMatches 2");
-    this->test(region1mixed.regionMatches(2, region2mixed, 0, 5, false /* not case-sensitive */), "regionMatches 1 case insensitive");
-    this->test(region1mixed.regionMatches(7, region3mixed, 0, 3, false /* not case-sensitive */), "regionMatches 2 case insensitive");
-    this->test(! region1mixed.regionMatches(7, region3mixed, 0, 4, false /* not case-sensitive */), "! regionMatches 1 case insensitive");
-    this->test(! region2mixed.regionMatches(0, region3mixed, 0, 3, false /* not case-sensitive */), "! regionMatches 2 case insensitive");
+    VUNIT_ASSERT_TRUE_LABELED(region1.regionMatches(2, region2, 0, 5), "regionMatches 1");
+    VUNIT_ASSERT_TRUE_LABELED(region1.regionMatches(7, region3, 0, 3), "regionMatches 2");
+    VUNIT_ASSERT_FALSE_LABELED(region1.regionMatches(7, region3, 0, 4), "! regionMatches 1");
+    VUNIT_ASSERT_FALSE_LABELED(region2.regionMatches(0, region3, 0, 3), "! regionMatches 2");
+    VUNIT_ASSERT_TRUE_LABELED(region1mixed.regionMatches(2, region2mixed, 0, 5, false /* not case-sensitive */), "regionMatches 1 case insensitive");
+    VUNIT_ASSERT_TRUE_LABELED(region1mixed.regionMatches(7, region3mixed, 0, 3, false /* not case-sensitive */), "regionMatches 2 case insensitive");
+    VUNIT_ASSERT_FALSE_LABELED(region1mixed.regionMatches(7, region3mixed, 0, 4, false /* not case-sensitive */), "! regionMatches 1 case insensitive");
+    VUNIT_ASSERT_FALSE_LABELED(region2mixed.regionMatches(0, region3mixed, 0, 3, false /* not case-sensitive */), "! regionMatches 2 case insensitive");
 
 #ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
     boost::format formatter("Descending order arguments: %3% %2% %1%.");
     formatter % "one" % 2.47 % 3;
 
     VString fmt1(formatter);
-    this->test(fmt1 == "Descending order arguments: 3 2.47 one.", "format constructor");
+    VUNIT_ASSERT_EQUAL_LABELED(fmt1, "Descending order arguments: 3 2.47 one.", "format constructor");
 
     VString fmt2("This should get overwritten.");
     fmt2 = formatter;
-    this->test(fmt2 == "Descending order arguments: 3 2.47 one.", "format operator=");
+    VUNIT_ASSERT_EQUAL_LABELED(fmt2, "Descending order arguments: 3 2.47 one.", "format operator=");
 
     VString prefix("Append here: ");
     VString fmt3 = prefix + formatter;
-    this->test(fmt3 == "Append here: Descending order arguments: 3 2.47 one.", "format operator+");
+    VUNIT_ASSERT_EQUAL_LABELED(fmt3, "Append here: Descending order arguments: 3 2.47 one.", "format operator+");
 
     VString fmt4("Append here: ");
     fmt4 += formatter;
-    this->test(fmt4 == "Append here: Descending order arguments: 3 2.47 one.", "format operator+=");
+    VUNIT_ASSERT_EQUAL_LABELED(fmt4, "Append here: Descending order arguments: 3 2.47 one.", "format operator+=");
 #endif
 
     // This set of tests covers valid and invalid input to postflight and thus _setLength.
     VString rangeTester;
     rangeTester.postflight(0); // should succeed since no buffer is necessary
-    this->test(true, "postflight 0 for null buffer");
+    VUNIT_ASSERT_SUCCESS("postflight 0 for null buffer");
 
     try {
         rangeTester.postflight(-1); // should throw a VRangeException
-        this->test(false, "postflight -1 exception for null buffer");
+        VUNIT_ASSERT_FAILURE("postflight -1 exception for null buffer");
     } catch (const VRangeException& /*ex*/) {
-        this->test(true, "postflight -1 exception for null buffer");
+        VUNIT_ASSERT_SUCCESS("postflight -1 exception for null buffer");
     }
 
     /* With SSO support in VString, the following test is no longer valid,
@@ -656,16 +656,16 @@ void VStringUnit::run() {
     
     try {
         rangeTester.postflight(1); // should throw a VRangeException
-        this->test(false, "postflight >0 exception for null buffer");
+        VUNIT_ASSERT_FAILURE("postflight >0 exception for null buffer");
     } catch (const VRangeException&) {
-        this->test(true, "postflight >0 exception for null buffer");
+        VUNIT_ASSERT_SUCCESS("postflight >0 exception for null buffer");
     }
     */
     try {
         rangeTester.postflight(INT_MAX); // should throw a VRangeException
-        this->test(false, "postflight INT_MAX exception for internal buffer");
+        VUNIT_ASSERT_FAILURE("postflight INT_MAX exception for internal buffer");
     } catch (const VRangeException& /*ex*/) {
-        this->test(true, "postflight INT_MAX exception for internal buffer");
+        VUNIT_ASSERT_SUCCESS("postflight INT_MAX exception for internal buffer");
     }
 
     // Note: Now that VString uses chunk-sized allocations, a test
@@ -679,20 +679,20 @@ void VStringUnit::run() {
     buffer[0] = 'a'; buffer[1] = 'b'; buffer[2] = 'c'; buffer[3] = 0;
     try {
         rangeTester.postflight(200); // should throw a VRangeException if value is too large compared to preflight chunk size
-        this->test(false, "postflight >=mBufferLength exception");
+        VUNIT_ASSERT_FAILURE("postflight >=mBufferLength exception");
     } catch (const VRangeException& /*ex*/) {
-        this->test(true, "postflight >=mBufferLength exception");
+        VUNIT_ASSERT_SUCCESS("postflight >=mBufferLength exception");
     }
 
     rangeTester.postflight(3); // should succeed
-    this->test(true, "postflight mBufferLength-1");
+    VUNIT_ASSERT_SUCCESS("postflight mBufferLength-1");
 
     // These tests cover invalid input to preflight.
     try {
         rangeTester.preflight(-1); // should throw a VRangeException
-        this->test(false, "preflight <0 exception");
+        VUNIT_ASSERT_FAILURE("preflight <0 exception");
     } catch (const VRangeException& /*ex*/) {
-        this->test(true, "preflight <0 exception");
+        VUNIT_ASSERT_SUCCESS("preflight <0 exception");
     }
 
     // Test handling of null terminating character access.
@@ -700,92 +700,92 @@ void VStringUnit::run() {
     VChar nullVChar;
 
     nullVChar = nullCharString.at(0);
-    this->test(nullVChar == VChar::NULL_CHAR(), "null VChar at(0)");
+    VUNIT_ASSERT_EQUAL_LABELED(nullVChar, VChar::NULL_CHAR(), "null VChar at(0)");
 
     nullVChar = nullCharString[0];
-    this->test(nullVChar == VChar::NULL_CHAR(), "null VChar [0]");
+    VUNIT_ASSERT_EQUAL_LABELED(nullVChar, VChar::NULL_CHAR(), "null VChar [0]");
 
     char nullChar = nullCharString[0];
-    this->test(nullChar == (char) 0, "null char [0]");
+    VUNIT_ASSERT_EQUAL_LABELED(nullChar, (char) 0, "null char [0]");
 
     VString nonConstNullCharString;
     // This one should go out of bounds and throw
     try {
         nonConstNullCharString[0] = '!';
-        this->test(false, "null char& [0] did not throw the correct exception");
+        VUNIT_ASSERT_FAILURE("null char& [0] did not throw the correct exception");
     } catch (const VException& /*ex*/) {
-        this->test(true, "null char& [0] threw the correct exception");
+        VUNIT_ASSERT_SUCCESS("null char& [0] threw the correct exception");
     }
 
     VString parseTest;
 
     // Positive tests.
     parseTest = "12345";
-    this->test(parseTest.parseInt() == 12345, "parseInt a");
+    VUNIT_ASSERT_EQUAL_LABELED(parseTest.parseInt(), 12345, "parseInt a");
     parseTest = "-4567";
-    this->test(parseTest.parseInt() == -4567, "parseInt b");
+    VUNIT_ASSERT_EQUAL_LABELED(parseTest.parseInt(), -4567, "parseInt b");
     parseTest = "+2468";
-    this->test(parseTest.parseInt() == 2468, "parseInt c");
+    VUNIT_ASSERT_EQUAL_LABELED(parseTest.parseInt(), 2468, "parseInt c");
     parseTest = "42000000000";
-    this->test(parseTest.parseS64() == CONST_S64(42000000000), "parseS64 a");
+    VUNIT_ASSERT_EQUAL_LABELED(parseTest.parseS64(), CONST_S64(42000000000), "parseS64 a");
     parseTest = "-43000000000";
-    this->test(parseTest.parseS64() == CONST_S64(-43000000000), "parseS64 b");
+    VUNIT_ASSERT_EQUAL_LABELED(parseTest.parseS64(), CONST_S64(-43000000000), "parseS64 b");
     parseTest.format(VSTRING_FORMATTER_U64, CONST_U64(0x8000000000001111));
-    this->test(parseTest.parseU64() == CONST_U64(0x8000000000001111), "parseU64 a");
+    VUNIT_ASSERT_EQUAL_LABELED(parseTest.parseU64(), CONST_U64(0x8000000000001111), "parseU64 a");
     parseTest = "1.23456";
-    this->test(parseTest.parseDouble() == 1.23456, "parseDouble a");
+    VUNIT_ASSERT_EQUAL_LABELED(parseTest.parseDouble(), 1.23456, "parseDouble a");
     parseTest = "1.23456e+3";
-    this->test(parseTest.parseDouble() == 1234.56, "parseDouble b");
+    VUNIT_ASSERT_EQUAL_LABELED(parseTest.parseDouble(), 1234.56, "parseDouble b");
     parseTest = "123456";
-    this->test(parseTest.parseDouble() == 123456.0, "parseDouble c");
+    VUNIT_ASSERT_EQUAL_LABELED(parseTest.parseDouble(), 123456.0, "parseDouble c");
     parseTest = "";
-    this->test(parseTest.parseDouble() == 0.0, "parseDouble d");
+    VUNIT_ASSERT_EQUAL_LABELED(parseTest.parseDouble(), 0.0, "parseDouble d");
     // Seems like these should throw, but sscanf accepts them. parseDouble could
     // use some more strict additional checking.
     parseTest = "1..3";
-    this->test(parseTest.parseDouble() == 1.0, "parseDouble e");
+    VUNIT_ASSERT_EQUAL_LABELED(parseTest.parseDouble(), 1.0, "parseDouble e");
     parseTest = "1.2e!4";
-    this->test(parseTest.parseDouble() == 1.2, "parseDouble f");
+    VUNIT_ASSERT_EQUAL_LABELED(parseTest.parseDouble(), 1.2, "parseDouble f");
 
     // Negative tests.
     try {
         parseTest = "12.345";
         (void) parseTest.parseInt();
-        this->test(false, "parseInt with illegal decimal");
+        VUNIT_ASSERT_FAILURE("parseInt with illegal decimal");
     } catch (const VException& /*ex*/) {
-        this->test(true, "parseInt with illegal decimal");
+        VUNIT_ASSERT_SUCCESS("parseInt with illegal decimal");
     }
 
     try {
         parseTest = "12-345";
         (void) parseTest.parseInt();
-        this->test(false, "parseInt with out of order minus");
+        VUNIT_ASSERT_FAILURE("parseInt with out of order minus");
     } catch (const VException& /*ex*/) {
-        this->test(true, "parseInt with out of order minus");
+        VUNIT_ASSERT_SUCCESS("parseInt with out of order minus");
     }
 
     try {
         parseTest = "12+345";
         (void) parseTest.parseInt();
-        this->test(false, "parseInt with out of order plus");
+        VUNIT_ASSERT_FAILURE("parseInt with out of order plus");
     } catch (const VException& /*ex*/) {
-        this->test(true, "parseInt with out of order plus");
+        VUNIT_ASSERT_SUCCESS("parseInt with out of order plus");
     }
 
     try {
         parseTest = "12q345";
         (void) parseTest.parseInt();
-        this->test(false, "parseInt with illegal character");
+        VUNIT_ASSERT_FAILURE("parseInt with illegal character");
     } catch (const VException& /*ex*/) {
-        this->test(true, "parseInt with illegal character");
+        VUNIT_ASSERT_SUCCESS("parseInt with illegal character");
     }
 
     try {
         parseTest = "foo";
         (void) parseTest.parseDouble();
-        this->test(false, "parseDouble with bad format a");
+        VUNIT_ASSERT_FAILURE("parseDouble with bad format a");
     } catch (const VException& /*ex*/) {
-        this->test(true, "parseDouble with bad format a");
+        VUNIT_ASSERT_SUCCESS("parseDouble with bad format a");
     }
 
     // Bug fix validation: Take a substring of an empty string that has no buffer.
@@ -821,7 +821,7 @@ void VStringUnit::run() {
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[3], "",      "split test 1 [3]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[4], "fivee", "split test 1 [4]");
     VStringVector returnResult1 = splitInput.split(',');
-    this->test(returnResult1 == splitResult, "split return 1");
+    VUNIT_ASSERT_TRUE_LABELED(returnResult1 == splitResult, "split return 1");
 
     // limited split
     splitInput.split(splitResult, ',', 3); // "one" "two", "three,,fivee"
@@ -830,7 +830,7 @@ void VStringUnit::run() {
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[1], "two",         "split test 2 [1]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[2], "three,,fivee", "split test 2 [2]");
     VStringVector returnResult2 = splitInput.split(',', 3);
-    this->test(returnResult2 == splitResult, "split return 2");
+    VUNIT_ASSERT_TRUE_LABELED(returnResult2 == splitResult, "split return 2");
 
     // strip trailing empty strings
     splitInput.split(splitResult, 'e'); // "on" ",two,thr", "", ",four,fiv" "" <-- last one should get discarded
@@ -840,7 +840,7 @@ void VStringUnit::run() {
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[2], "",          "split test 3 [2]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[3], ",,fiv",     "split test 3 [3]");
     VStringVector returnResult3 = splitInput.split('e');
-    this->test(returnResult3 == splitResult, "split return 3");
+    VUNIT_ASSERT_TRUE_LABELED(returnResult3 == splitResult, "split return 3");
 
     // don't strip trailing empty strings
     splitInput.split(splitResult, 'e', 0, false); // "on" ",two,thr", "", ",four,fiv" "" <-- last one should NOT get discarded
@@ -851,11 +851,11 @@ void VStringUnit::run() {
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[3], ",,fiv",     "split test 4 [3]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[4], "",          "split test 4 [4]");
     VStringVector returnResult4 = splitInput.split('e', 0, false);
-    this->test(returnResult4 == splitResult, "split return 4");
+    VUNIT_ASSERT_TRUE_LABELED(returnResult4 == splitResult, "split return 4");
 
     // Change to vararg constructor to allow "%" to avoid unwanted formatting.
     VString percentSign("%");
-    this->test(percentSign == '%', "percent sign literal constructor");
+    VUNIT_ASSERT_EQUAL_LABELED(percentSign, '%', "percent sign literal constructor");
 
     VString sss;
 #ifdef VCOMPILER_64BIT

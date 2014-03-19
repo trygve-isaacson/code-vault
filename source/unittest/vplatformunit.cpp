@@ -188,23 +188,23 @@ void VPlatformUnit::_runEfficientSprintfCheck() {
 
     if (theLength == 5) {
 #ifdef V_EFFICIENT_SPRINTF
-        this->test(true, "V_EFFICIENT_SPRINTF should be defined.");
+        VUNIT_ASSERT_SUCCESS("V_EFFICIENT_SPRINTF should be defined.");
 #else
-        this->test(false, "V_EFFICIENT_SPRINTF should be defined.");
+        VUNIT_ASSERT_FAILURE("V_EFFICIENT_SPRINTF should be defined.");
 #endif
     } else {
 #ifdef V_EFFICIENT_SPRINTF
-        this->test(false, "V_EFFICIENT_SPRINTF should not be defined.");
+        VUNIT_ASSERT_FAILURE("V_EFFICIENT_SPRINTF should not be defined.");
 #else
-        this->test(true, "V_EFFICIENT_SPRINTF should not be defined.");
+        VUNIT_ASSERT_SUCCESS("V_EFFICIENT_SPRINTF should not be defined.");
 #endif
     }
 #else /* PERFORM_VSNPRINTF_NULL_FEATURE_CHECK not in effect follows */
 
 #ifdef V_EFFICIENT_SPRINTF
-    this->test(false, "V_EFFICIENT_SPRINTF should not be defined.");
+    VUNIT_ASSERT_FAILURE("V_EFFICIENT_SPRINTF should not be defined.");
 #else
-    this->test(true, "V_EFFICIENT_SPRINTF should not be defined.");
+    VUNIT_ASSERT_SUCCESS("V_EFFICIENT_SPRINTF should not be defined.");
 #endif
 
 #endif /* PERFORM_VSNPRINTF_NULL_FEATURE_CHECK */
@@ -243,9 +243,9 @@ void VPlatformUnit::_runByteswapCheck() {
        ) {
         // We're big endian.
 #ifdef VBYTESWAP_NEEDED
-        this->test(false, "VBYTESWAP_NEEDED should not be defined on a big-endian system.");
+        VUNIT_ASSERT_FAILURE("VBYTESWAP_NEEDED should not be defined on a big-endian system.");
 #else
-        this->test(true, "VBYTESWAP_NEEDED should not be defined on a big-endian system.");
+        VUNIT_ASSERT_SUCCESS("VBYTESWAP_NEEDED should not be defined on a big-endian system.");
 #endif
     } else if (*s16p1 == 0x23 && *s16p2 == 0x01 &&
                *s32p1 == 0x67 && *s32p2 == 0x45 && *s32p3 == 0x23 && *s32p4 == 0x01 &&
@@ -253,16 +253,16 @@ void VPlatformUnit::_runByteswapCheck() {
               ) {
         // We're little endian.
 #ifdef VBYTESWAP_NEEDED
-        this->test(true, "VBYTESWAP_NEEDED should be defined on a little-endian system.");
+        VUNIT_ASSERT_SUCCESS("VBYTESWAP_NEEDED should be defined on a little-endian system.");
 #else
-        this->test(false, "VBYTESWAP_NEEDED should be defined on a little-endian system.");
+        VUNIT_ASSERT_FAILURE("VBYTESWAP_NEEDED should be defined on a little-endian system.");
 #endif
     } else {
         // We're something weirder.
 #ifdef VBYTESWAP_NEEDED
-        this->test(false, "VBYTESWAP_NEEDED is correctly defined on an other-endian system, but the particular swapping code is not implemented.");
+        VUNIT_ASSERT_FAILURE("VBYTESWAP_NEEDED is correctly defined on an other-endian system, but the particular swapping code is not implemented.");
 #else
-        this->test(false, "VBYTESWAP_NEEDED should be defined on an other-endian system.");
+        VUNIT_ASSERT_FAILURE("VBYTESWAP_NEEDED should be defined on an other-endian system.");
 #endif
     }
 
@@ -295,15 +295,15 @@ void VPlatformUnit::_runMinMaxAbsCheck() {
     Vs32Typedef Vs32T_low = -5;
     Vs32Typedef Vs32T_high = 5;
 
-    this->test(V_ABS(s8_low) == s8_high, "V_ABS for Vs8");
-    this->test(V_ABS(s16_low) == s16_high, "V_ABS for Vs16");
-    this->test(V_ABS(s32_low) == s32_high, "V_ABS for Vs32");
-    this->test(V_ABS(s64_low) == s64_high, "V_ABS for Vs64");
-    this->test(V_ABS(int_low) == int_high, "V_ABS for int");
-    this->test(V_FABS(float_low) == float_high, "V_FABS for float");
-    this->test(V_FABS(double_low) == double_high, "V_FABS for double");
-    this->test(V_ABS(intT_low) == intT_high, "V_ABS for int typedef");
-    this->test(V_ABS(Vs32T_low) == Vs32T_high, "V_ABS for Vs32 typedef");
+    VUNIT_ASSERT_EQUAL_LABELED((Vs8) V_ABS(s8_low), s8_high, "V_ABS for Vs8");
+    VUNIT_ASSERT_EQUAL_LABELED((Vs16) V_ABS(s16_low), s16_high, "V_ABS for Vs16");
+    VUNIT_ASSERT_EQUAL_LABELED(V_ABS(s32_low), s32_high, "V_ABS for Vs32");
+    VUNIT_ASSERT_EQUAL_LABELED(V_ABS(s64_low), s64_high, "V_ABS for Vs64");
+    VUNIT_ASSERT_EQUAL_LABELED(V_ABS(int_low), int_high, "V_ABS for int");
+    VUNIT_ASSERT_EQUAL_LABELED(V_FABS(float_low), float_high, "V_FABS for float");
+    VUNIT_ASSERT_EQUAL_LABELED(V_FABS(double_low), double_high, "V_FABS for double");
+    VUNIT_ASSERT_EQUAL_LABELED(V_ABS(intT_low), intT_high, "V_ABS for int typedef");
+    VUNIT_ASSERT_EQUAL_LABELED(V_ABS(Vs32T_low), Vs32T_high, "V_ABS for Vs32 typedef");
 
     Vs8         s8_min = V_MIN(s8_low, s8_high);
     Vs8         s8_max = V_MAX(s8_low, s8_high);
@@ -324,24 +324,24 @@ void VPlatformUnit::_runMinMaxAbsCheck() {
     Vs32Typedef Vs32T_min = V_MIN(Vs32T_low, Vs32T_high);
     Vs32Typedef Vs32T_max = V_MAX(Vs32T_low, Vs32T_high);
 
-    this->test(s8_min == s8_low, "V_MIN for Vs8");
-    this->test(s8_max == s8_high, "V_MAX for Vs8");
-    this->test(s16_min == s16_low, "V_MIN for Vs16");
-    this->test(s16_max == s16_high, "V_MAX for Vs16");
-    this->test(s32_min == s32_low, "V_MIN for Vs32");
-    this->test(s32_max == s32_high, "V_MAX for Vs32");
-    this->test(s64_min == s64_low, "V_MIN for Vs64");
-    this->test(s64_max == s64_high, "V_MAX for Vs64");
-    this->test(int_min == int_low, "V_MIN for int");
-    this->test(int_max == int_high, "V_MAX for int");
-    this->test(float_min == float_low, "V_MIN for float");
-    this->test(float_max == float_high, "V_MAX for float");
-    this->test(double_min == double_low, "V_MIN for double");
-    this->test(double_max == double_high, "V_MAX for double");
-    this->test(intT_min == intT_low, "V_MIN for int typedef");
-    this->test(intT_max == intT_high, "V_MAX for int typedef");
-    this->test(Vs32T_min == Vs32T_low, "V_MIN for Vs32 typedef");
-    this->test(Vs32T_max == Vs32T_high, "V_MAX for Vs32 typedef");
+    VUNIT_ASSERT_EQUAL_LABELED(s8_min, s8_low, "V_MIN for Vs8");
+    VUNIT_ASSERT_EQUAL_LABELED(s8_max, s8_high, "V_MAX for Vs8");
+    VUNIT_ASSERT_EQUAL_LABELED(s16_min, s16_low, "V_MIN for Vs16");
+    VUNIT_ASSERT_EQUAL_LABELED(s16_max, s16_high, "V_MAX for Vs16");
+    VUNIT_ASSERT_EQUAL_LABELED(s32_min, s32_low, "V_MIN for Vs32");
+    VUNIT_ASSERT_EQUAL_LABELED(s32_max, s32_high, "V_MAX for Vs32");
+    VUNIT_ASSERT_EQUAL_LABELED(s64_min, s64_low, "V_MIN for Vs64");
+    VUNIT_ASSERT_EQUAL_LABELED(s64_max, s64_high, "V_MAX for Vs64");
+    VUNIT_ASSERT_EQUAL_LABELED(int_min, int_low, "V_MIN for int");
+    VUNIT_ASSERT_EQUAL_LABELED(int_max, int_high, "V_MAX for int");
+    VUNIT_ASSERT_EQUAL_LABELED(float_min, float_low, "V_MIN for float");
+    VUNIT_ASSERT_EQUAL_LABELED(float_max, float_high, "V_MAX for float");
+    VUNIT_ASSERT_EQUAL_LABELED(double_min, double_low, "V_MIN for double");
+    VUNIT_ASSERT_EQUAL_LABELED(double_max, double_high, "V_MAX for double");
+    VUNIT_ASSERT_EQUAL_LABELED(intT_min, intT_low, "V_MIN for int typedef");
+    VUNIT_ASSERT_EQUAL_LABELED(intT_max, intT_high, "V_MAX for int typedef");
+    VUNIT_ASSERT_EQUAL_LABELED(Vs32T_min, Vs32T_low, "V_MIN for Vs32 typedef");
+    VUNIT_ASSERT_EQUAL_LABELED(Vs32T_max, Vs32T_high, "V_MAX for Vs32 typedef");
 }
 
 void VPlatformUnit::_runTimeCheck() {
@@ -363,15 +363,15 @@ void VPlatformUnit::_runTimeCheck() {
 
     if (delta <= 1000) {
 #ifdef V_INSTANT_SNAPSHOT_IS_UTC
-        this->test(true, "V_INSTANT_SNAPSHOT_IS_UTC should be defined for high-resolution times.");
+        VUNIT_ASSERT_SUCCESS("V_INSTANT_SNAPSHOT_IS_UTC should be defined for high-resolution times.");
 #else
-        this->test(false, "V_INSTANT_SNAPSHOT_IS_UTC should be defined for high-resolution times.");
+        VUNIT_ASSERT_FAILURE("V_INSTANT_SNAPSHOT_IS_UTC should be defined for high-resolution times.");
 #endif /* V_INSTANT_SNAPSHOT_IS_UTC */
     } else {
 #ifdef V_INSTANT_SNAPSHOT_IS_UTC
-        this->test(false, "V_INSTANT_SNAPSHOT_IS_UTC should be not be defined. This platform does not have high-resolution times.");
+        VUNIT_ASSERT_FAILURE("V_INSTANT_SNAPSHOT_IS_UTC should be not be defined. This platform does not have high-resolution times.");
 #else
-        this->test(true, "V_INSTANT_SNAPSHOT_IS_UTC should be not be defined. This platform does not have high-resolution times.");
+        VUNIT_ASSERT_SUCCESS("V_INSTANT_SNAPSHOT_IS_UTC should be not be defined. This platform does not have high-resolution times.");
 #endif /* V_INSTANT_SNAPSHOT_IS_UTC */
     }
 
@@ -495,9 +495,9 @@ void VPlatformUnit::_runSocketTests() {
 
         try {
             sock.connectToHostName(hostName, 80, debugStrategy);
-            VUNIT_ASSERT_TRUE_LABELED(false, "Connecting to known bad addresses incorrectly succeeded");
+            VUNIT_ASSERT_FAILURE("Connecting to known bad addresses incorrectly succeeded");
         } catch (const VException& ex) {
-            VUNIT_ASSERT_TRUE_LABELED(true, "Connecting to known bad addresses correctly failed");
+            VUNIT_ASSERT_SUCCESS("Connecting to known bad addresses correctly failed");
             this->logStatus(VSTRING_FORMAT("Expected connection failure. The exception reported was: (%d) '%s'", ex.getError(), ex.what()));
         }
     }
