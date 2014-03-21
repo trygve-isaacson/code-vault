@@ -13,7 +13,6 @@ http://www.bombaydigital.com/
 
 #include "vcodepoint.h"
 
-class VChar;
 class VString;
 
 // External linkage so that this header isn't dependent upon vexception.h.
@@ -128,10 +127,10 @@ class VStringIterator {
             return *this;
         }
         
-        void _seekToEnd() {
-            mCurrentCodePointOffset = mSourceLength;
+        int getCurrentOffset() const {
+            return mCurrentCodePointOffset;
         }
-
+        
         friend inline bool operator==(const VStringIterator<vstring_ref>& i1, const VStringIterator<vstring_ref>& i2) {
             return (i1.mSource == i2.mSource) && (i1.mCurrentCodePointOffset == i2.mCurrentCodePointOffset);
         }
@@ -142,6 +141,10 @@ class VStringIterator {
     
     private:
     
+        void _seekToEnd() {
+            mCurrentCodePointOffset = mSourceLength;
+        }
+
         void _increment(int n) {
             if (mIsForwardIterator) {
                 this->_moveOffsetForwardInBuffer(n);

@@ -29,6 +29,12 @@ void VStream::readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead) {
     }
 }
 
+Vu8 VStream::readGuaranteedByte() {
+    Vu8 theByte;
+    this->readGuaranteed(&theByte, 1);
+    return theByte;
+}
+
 // static
 Vs64 VStream::streamCopy(VStream& fromStream, VStream& toStream, Vs64 numBytesToCopy, Vs64 tempBufferSize) {
     Vs64 numBytesCopied = 0;

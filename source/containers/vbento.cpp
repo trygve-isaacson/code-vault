@@ -44,7 +44,7 @@ class VBentoTextNodeParser {
 
         } TokenState;
 
-        void _parseCharacter(const VChar& c);
+        void _parseCharacter(const VCodePoint& c);
 
         TokenState mTokenState;
         VString mPendingToken;
@@ -79,7 +79,7 @@ void VBentoTextNodeParser::parse(VTextIOStream& stream, VBentoNode& node) {
 
     try {
         for (;;) {
-            VChar c = stream.readCharacter();
+            VCodePoint c = stream.readUTF8CodePoint();
             this->_parseCharacter(c);
         }
     } catch (const VEOFException& /*ex*/) { // normal EOF on input stream simply ends parsing
@@ -92,10 +92,8 @@ void VBentoTextNodeParser::parse(const VString& s, VBentoNode& node) {
     mRootNode = &node;
 
     try {
-        int length = s.length();
-        for (int i = 0; i < length; ++i) {
-            VChar c = s[i];
-            this->_parseCharacter(c);
+        for (VString::const_iterator i = s.begin(); i != s.end(); ++i) {
+            this->_parseCharacter(*i);
         }
     } catch (const VEOFException& /*ex*/) { // normal EOF on input stream simply ends parsing
     } catch (const VException& ex) {
@@ -103,11 +101,11 @@ void VBentoTextNodeParser::parse(const VString& s, VBentoNode& node) {
     }
 }
 
-static bool _isSkippable(const VChar& c) {
-    return (c.charValue() <= 0x20) || (c.charValue() == 0x7F);
+static bool _isSkippable(const VCodePoint& c) {
+    return (c.intValue() <= 0x20) || (c.intValue() == 0x7F);
 }
 
-void VBentoTextNodeParser::_parseCharacter(const VChar& c) {
+void VBentoTextNodeParser::_parseCharacter(const VCodePoint& c) {
     switch (mTokenState) {
         case START:
             if (_isSkippable(c)) {
@@ -117,7 +115,7 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c) {
                 mPendingNode = mRootNode;
                 mParseNodeStack.push_back(mPendingNode);
             } else {
-                throw VException(VSTRING_FORMAT("Parser expected whitespace or { but got '%c'.", c.charValue()));
+                throw VException(VSTRING_FORMAT("Parser expected whitespace or { but got '%s'.", c.toString().chars()));
             }
             break;
         case IN_NODE:
@@ -145,7 +143,7 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c) {
                 else
                     mPendingNode = mParseNodeStack.back(); // the new last node is now pending
             } else {
-                throw VException(VSTRING_FORMAT("Parser expected whitespace, node name, [, {, or } but got '%c'.", c.charValue()));
+                throw VException(VSTRING_FORMAT("Parser expected whitespace, node name, [, {, or } but got '%s'.", c.toString().chars()));
             }
             break;
         case IN_NODE_NAME:
@@ -189,7 +187,7 @@ void VBentoTextNodeParser::_parseCharacter(const VChar& c) {
                 mPendingAttributeQualifier = VString::EMPTY();
                 mPendingAttributeValue = VString::EMPTY();
             } else {
-                throw VException(VSTRING_FORMAT("Parser expected whitespace, attr name/type/value, or ] but got '%c'.", c.charValue()));
+                throw VException(VSTRING_FORMAT("Parser expected whitespace, attr name/type/value, or ] but got '%s'.", c.toString().chars()));
             }
             break;
         case IN_ATTRIBUTE_NAME:
@@ -505,6 +503,8 @@ VBentoAttribute* VBentoAttribute::newObjectFromStream(VBinaryIOStream& stream) {
         return new VBentoBool(stream);
     else if (theDataType == VBentoChar::DATA_TYPE_ID())
         return new VBentoChar(stream);
+    else if (theDataType == VBentoChar::LEGACY_DATA_TYPE_ID())
+        return VBentoChar::newFromLegacyCharStream(stream);
     else if (theDataType == VBentoS64::DATA_TYPE_ID())
         return new VBentoS64(stream);
     else if (theDataType == VBentoDouble::DATA_TYPE_ID())
@@ -591,7 +591,7 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
     //   numeric value strings imply int (leading minus sign is allowed)
     //   "quoted" value strings imply string
     //     - optional encoding name in parens before quoted string, for example: (US-ASCII)"foo"
-    //   'quoted' value strings imply char
+    //   'quoted' value strings imply UTF-8 code point; legacy values may contain any byte value (we check and upgrade bad char to Unicode if needed)
     //   true or false value strings imply bool
     //   NOW, PAST, FUTURE, NEVER value strings imply instant
     VBentoAttribute* result = NULL;
@@ -627,7 +627,9 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
         else if (attributeType == VBentoString::DATA_TYPE_ID())
             result = new VBentoString(attributeName, actualValue, attributeQualifier/*the encoding*/);
         else if (attributeType == VBentoChar::DATA_TYPE_ID())
-            result = new VBentoChar(attributeName, actualValue.length() == 0 ? VChar(0) : VChar(actualValue[0]));
+            result = new VBentoChar(attributeName, actualValue.length() == 0 ? VCodePoint(0) : VCodePoint(*actualValue.begin()));
+        else if (attributeType == VBentoChar::LEGACY_DATA_TYPE_ID())
+            result = new VBentoChar(attributeName, actualValue.length() == 0 ? VCodePoint(0) : VCodePoint((int) actualValue[0]));
         else if (attributeType == VBentoFloat::DATA_TYPE_ID()) {
             VDouble d;
             (void) ::sscanf(actualValue, VSTRING_FORMATTER_DOUBLE, &d);
@@ -759,10 +761,7 @@ VBentoAttribute* VBentoAttribute::newObjectFromBentoTextValues(const VString& at
         } else if (attributeValue.startsWith('\'')) {
             attributeValue.getSubstring(actualValue, 1, attributeValue.length() - 1);
             _unescapeString(actualValue);
-            VChar c;
-            if (actualValue.length() > 0)
-                c = actualValue[0];
-            result = new VBentoChar(attributeName, c);
+            result = new VBentoChar(attributeName, actualValue.isEmpty() ? VCodePoint(0) : *(actualValue.begin()));
         } else {
             result = new VBentoS32(attributeName, static_cast<Vs32>(actualValue.parseS64()));
         }
@@ -853,6 +852,19 @@ static void _writeLineItemToStream(VTextIOStream& stream, bool lineWrap, int dep
     _indentIfRequested(stream, lineWrap, depth);
     stream.writeString(lineText);
     _lineEndIfRequested(stream, lineWrap);
+}
+
+// VBentoChar ----------------------------------------------------------------
+
+// static
+VBentoChar* VBentoChar::newFromLegacyCharStream(VBinaryIOStream& stream) {
+    VString name = stream.readString();
+
+    // Read the byte that was the legacy C char value. Then form the code point
+    // using the char-oriented constructor, which will deal with both ASCII and
+    // non-ASCII char byte values.
+    VChar c((char) stream.readU8());
+    return new VBentoChar(name, VCodePoint(c));
 }
 
 // VBentoSize ----------------------------------------------------------------
@@ -1215,23 +1227,23 @@ VBentoStringArray* VBentoStringArray::newFromBentoTextString(const VString& name
 
     VString pendingString;
     StringArrayParseState state = kStringArrayParseState_InArray;
-    int length = s.length();
-    for (int i = 0; i < length; ++i) {
-        VChar c = s[i];
+    int index = 0;
+    for (VString::const_iterator i = s.begin(); i != s.end(); ++i, ++index) {
+        VCodePoint c = *i;
 
         switch (state) {
             case kStringArrayParseState_Init:
                 if (c == '"')
                     state = kStringArrayParseState_InArray;
                 else
-                    throw VException(VSTRING_FORMAT("VBentoStringArray::newFromBentoTextString: At character %d in Init state, required \" but got %c.", i, c.charValue()));
+                    throw VException(VSTRING_FORMAT("VBentoStringArray::newFromBentoTextString: At character %d in Init state, required \" but got %s.", index, c.toString().chars()));
                 break;
 
             case kStringArrayParseState_InArray:
                 if (c == '"')
                     state = kStringArrayParseState_InElement;
                 else
-                    throw VException(VSTRING_FORMAT("VBentoStringArray::newFromBentoTextString: At character %d in InArray state, required \" but got %c.", i, c.charValue()));
+                    throw VException(VSTRING_FORMAT("VBentoStringArray::newFromBentoTextString: At character %d in InArray state, required \" but got %s.", index, c.toString().chars()));
                 break;
 
             case kStringArrayParseState_InElement:
@@ -1254,7 +1266,7 @@ VBentoStringArray* VBentoStringArray::newFromBentoTextString(const VString& name
                 else if (c.isWhitespace())
                     ; // skip any whitespace between elements
                 else
-                    throw VException(VSTRING_FORMAT("VBentoStringArray::newFromBentoTextString: At character %d in ElementEnded state, required comma, \" or whitespace but got %c.", i, c.charValue()));
+                    throw VException(VSTRING_FORMAT("VBentoStringArray::newFromBentoTextString: At character %d in ElementEnded state, required comma, \" or whitespace but got %s.", index, c.toString().chars()));
                 break;
 
             case kStringArrayParseState_EscapePending:
@@ -1264,7 +1276,7 @@ VBentoStringArray* VBentoStringArray::newFromBentoTextString(const VString& name
 
             case kStringArrayParseState_Done:
                 if (! c.isWhitespace())
-                    throw VException(VSTRING_FORMAT("VBentoStringArray::newFromBentoTextString: At character %d in Done state, required whitespace but got %c.", i, c.charValue()));
+                    throw VException(VSTRING_FORMAT("VBentoStringArray::newFromBentoTextString: At character %d in Done state, required whitespace but got %s.", index, c.toString().chars()));
                 break;
 
         }
@@ -1563,7 +1575,7 @@ void VBentoNode::addInt(const VString& name, int value) { this->addS32(name, sta
 void VBentoNode::addBool(const VString& name, bool value) { this->_addAttribute(new VBentoBool(name, value)); }
 void VBentoNode::addString(const VString& name, const VString& value, const VString& encoding) { this->_addAttribute(new VBentoString(name, value, encoding)); }
 void VBentoNode::addStringIfNotEmpty(const VString& name, const VString& value, const VString& encoding) { if (!value.isEmpty()) this->_addAttribute(new VBentoString(name, value, encoding)); }
-void VBentoNode::addChar(const VString& name, const VChar& value) { this->_addAttribute(new VBentoChar(name, value)); }
+void VBentoNode::addChar(const VString& name, const VCodePoint& value) { this->_addAttribute(new VBentoChar(name, value)); }
 void VBentoNode::addDouble(const VString& name, VDouble value) { this->_addAttribute(new VBentoDouble(name, value)); }
 void VBentoNode::addDuration(const VString& name, const VDuration& value) { this->_addAttribute(new VBentoDuration(name, value)); }
 void VBentoNode::addInstant(const VString& name, const VInstant& value) { this->_addAttribute(new VBentoInstant(name, value)); }
@@ -1762,12 +1774,12 @@ const VString& VBentoNode::getString(const VString& name) const {
     return attribute->getValue();
 }
 
-const VChar& VBentoNode::getChar(const VString& name, const VChar& defaultValue) const {
+const VCodePoint& VBentoNode::getChar(const VString& name, const VCodePoint& defaultValue) const {
     const VBentoChar* attribute = dynamic_cast<const VBentoChar*>(this->_findAttribute(name, VBentoChar::DATA_TYPE_ID()));
     return (attribute == NULL) ? defaultValue : attribute->getValue();
 }
 
-const VChar& VBentoNode::getChar(const VString& name) const {
+const VCodePoint& VBentoNode::getChar(const VString& name) const {
     const VBentoChar* attribute = dynamic_cast<const VBentoChar*>(this->_findAttribute(name, VBentoChar::DATA_TYPE_ID()));
 
     if (attribute == NULL)
@@ -2301,7 +2313,7 @@ void VBentoNode::setString(const VString& name, const VString& value, const VStr
     }
 }
 
-void VBentoNode::setChar(const VString& name, const VChar& value) {
+void VBentoNode::setChar(const VString& name, const VCodePoint& value) {
     VBentoChar* attribute = dynamic_cast<VBentoChar*>(this->_findMutableAttribute(name, VBentoChar::DATA_TYPE_ID()));
     if (attribute == NULL)
         this->addChar(name, value);

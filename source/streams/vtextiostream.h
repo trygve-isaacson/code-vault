@@ -86,7 +86,8 @@ class VTextIOStream : public VIOStream {
 
         @return    the next character
         */
-        VChar readCharacter();
+        //VChar readCharacter(); DEPRECATED -- use: readUTF8CodePoint()
+        VCodePoint readUTF8CodePoint();
 
         /**
         Primarily useful for reading from an underlying file stream, reads until
@@ -166,13 +167,13 @@ class VTextIOStream : public VIOStream {
         /** Updates the mLineEndingsReadKind based on the kind of line ending just detected. */
         void _updateLineEndingsReadKind(int lineEndingKind);
 
-        int     mLineEndingsReadKind;   ///< During read, the kind of line endings we think the file is using.
-        int     mLineEndingsWriteKind;  ///< During write, the kind of line endings the caller wants us to use.
-        char    mPendingCharacter;      ///< During read we may have a pending character while reading DOS line endings.
-        int     mReadState;             ///< During read we have to maintain parsing state.
-        VString mLineBuffer;            ///< Temporarily holds each line of the file as we read it.
-        Vu8     mLineEndingChars[2];    ///< One or both bytes may be used, as indicated by mLineEndingCharsLength.
-        int     mLineEndingCharsLength; ///< Describes how much of mLineEndingChars array should be written as line ending.
+        int         mLineEndingsReadKind;   ///< During read, the kind of line endings we think the file is using.
+        int         mLineEndingsWriteKind;  ///< During write, the kind of line endings the caller wants us to use.
+        VCodePoint  mPendingCharacter;      ///< During read we may have a pending character while reading DOS line endings.
+        int         mReadState;             ///< During read we have to maintain parsing state.
+        VString     mLineBuffer;            ///< Temporarily holds each line of the file as we read it.
+        Vu8         mLineEndingChars[2];    ///< One or both bytes may be used, as indicated by mLineEndingCharsLength.
+        int         mLineEndingCharsLength; ///< Describes how much of mLineEndingChars array should be written as line ending.
 
         enum {
             kReadStateReady,    ///< We are ready to read any character.

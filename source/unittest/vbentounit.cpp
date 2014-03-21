@@ -98,7 +98,7 @@ static VInstant gInstantNoon2005June1UTC;
 #define ATTRIBUTE_VALUE_FLOAT kTestFloatValue
 #define ATTRIBUTE_VALUE_DOUBLE kTestDoubleValue
 #define ATTRIBUTE_VALUE_CHAR '!'
-#define ATTRIBUTE_VALUE_NULL_CHAR VChar::NULL_CHAR()
+#define ATTRIBUTE_VALUE_NULL_CHAR VCodePoint(0)
 #define ATTRIBUTE_VALUE_DURATION kTestDurationValue
 #define ATTRIBUTE_VALUE_INSTANT gTestInstantValue
 #define ATTRIBUTE_VALUE_SIZE VSize(123.456, 567.890)
@@ -194,17 +194,17 @@ void VBentoUnit::run() {
         // Test string conversion behavior. String should be replaced.
         VString fooText("junk that should be replaced");
         foo.writeToBentoTextString(fooText);
-        VUNIT_ASSERT_FALSE(fooText.startsWith("junk"));
+        VUNIT_ASSERT_EQUAL(fooText, "{ \"foo\" }");
 
         // Test stream conversion behavior. Stream should be appended to.
         VMemoryStream fooBuffer;
         VTextIOStream fooTextStream(fooBuffer);
-        fooTextStream.writeString("junk that should be appended to ");
+        fooTextStream.writeString("other junk that should be appended to ");
         foo.writeToBentoTextStream(fooTextStream);
         (void) fooTextStream.seek0();
         VString result;
         fooTextStream.readLine(result);
-        VUNIT_ASSERT_TRUE(result.startsWith("junk"));
+        VUNIT_ASSERT_EQUAL(result, "other junk that should be appended to { \"foo\" }");
     }
 
     /* subtest scope */ {
@@ -278,7 +278,7 @@ void VBentoUnit::_buildTestData(VBentoNode& root) {
     root.addInt(ATTRIBUTE_NAME_INT, ATTRIBUTE_VALUE_INT);
     root.addFloat(ATTRIBUTE_NAME_FLOAT, ATTRIBUTE_VALUE_FLOAT);
     root.addDouble(ATTRIBUTE_NAME_DOUBLE, ATTRIBUTE_VALUE_DOUBLE);
-    root.addChar(ATTRIBUTE_NAME_CHAR, VChar(ATTRIBUTE_VALUE_CHAR));
+    root.addChar(ATTRIBUTE_NAME_CHAR, VCodePoint(ATTRIBUTE_VALUE_CHAR));
     root.addChar(ATTRIBUTE_NAME_NULL_CHAR, ATTRIBUTE_VALUE_NULL_CHAR);
     root.addDuration(ATTRIBUTE_NAME_DURATION, ATTRIBUTE_VALUE_DURATION);
     root.addInstant(ATTRIBUTE_NAME_INSTANT, ATTRIBUTE_VALUE_INSTANT);
@@ -501,9 +501,9 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         VUNIT_ASSERT_EQUAL_LABELED(node.getInt(ATTRIBUTE_NAME_INT), ATTRIBUTE_VALUE_INT, labelPrefix);
         VUNIT_ASSERT_EQUAL_LABELED(node.getFloat(ATTRIBUTE_NAME_FLOAT), ATTRIBUTE_VALUE_FLOAT, labelPrefix);
         VUNIT_ASSERT_EQUAL_LABELED(node.getDouble(ATTRIBUTE_NAME_DOUBLE), ATTRIBUTE_VALUE_DOUBLE, labelPrefix);
-        VUNIT_ASSERT_EQUAL_LABELED(node.getChar(ATTRIBUTE_NAME_CHAR), ATTRIBUTE_VALUE_CHAR, labelPrefix);
-        VUNIT_ASSERT_EQUAL_LABELED(node.getChar(ATTRIBUTE_NAME_CHAR), VChar(ATTRIBUTE_VALUE_CHAR), labelPrefix);
-        VUNIT_ASSERT_EQUAL_LABELED(node.getChar(ATTRIBUTE_NAME_NULL_CHAR), ATTRIBUTE_VALUE_NULL_CHAR, labelPrefix);
+        VUNIT_ASSERT_TRUE_LABELED(node.getChar(ATTRIBUTE_NAME_CHAR) == ATTRIBUTE_VALUE_CHAR, labelPrefix);
+        VUNIT_ASSERT_TRUE_LABELED(node.getChar(ATTRIBUTE_NAME_CHAR) == VCodePoint(ATTRIBUTE_VALUE_CHAR), labelPrefix);
+        VUNIT_ASSERT_TRUE_LABELED(node.getChar(ATTRIBUTE_NAME_NULL_CHAR) == ATTRIBUTE_VALUE_NULL_CHAR, labelPrefix);
         VUNIT_ASSERT_EQUAL_LABELED(node.getDuration(ATTRIBUTE_NAME_DURATION), ATTRIBUTE_VALUE_DURATION, labelPrefix);
         VUNIT_ASSERT_EQUAL_LABELED(node.getInstant(ATTRIBUTE_NAME_INSTANT), ATTRIBUTE_VALUE_INSTANT, labelPrefix);
         this->test(node.getSize(ATTRIBUTE_NAME_SIZE) == ATTRIBUTE_VALUE_SIZE, VSTRING_FORMAT("%s size", labelPrefix.chars()));
@@ -754,7 +754,7 @@ void VBentoUnit::_verifyContents(const VBentoNode& node, const VString& labelPre
         VUNIT_ASSERT_EQUAL_LABELED(node.getInt("non-existent", 999), 999, VSTRING_FORMAT("%s default int", labelPrefix.chars()));
         VUNIT_ASSERT_EQUAL_LABELED(node.getFloat("non-existent", kTestFloatValue), kTestFloatValue, VSTRING_FORMAT("%s default float", labelPrefix.chars()));
         VUNIT_ASSERT_EQUAL_LABELED(node.getDouble("non-existent", kTestDoubleValue), kTestDoubleValue, VSTRING_FORMAT("%s default double", labelPrefix.chars()));
-        VUNIT_ASSERT_EQUAL_LABELED(node.getChar("non-existent", 'x'), 'x', VSTRING_FORMAT("%s default char", labelPrefix.chars()));
+        VUNIT_ASSERT_TRUE_LABELED(node.getChar("non-existent", VCodePoint('x')) == VCodePoint('x'), VSTRING_FORMAT("%s default char", labelPrefix.chars()));
         VDuration defaultDuration = VDuration::MILLISECOND() * 986;
         VUNIT_ASSERT_EQUAL_LABELED(node.getDuration("non-existent", defaultDuration), defaultDuration, VSTRING_FORMAT("%s default duration", labelPrefix.chars()));
         VInstant defaultInstant;

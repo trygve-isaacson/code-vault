@@ -378,7 +378,7 @@ class VSettingsXMLParser {
 
         void parseLine();
         void resetElement();
-        void accumulate(const VChar& c);
+        void accumulate(const VCodePoint& c);
         void changeState(ParserState newState);
         void stateError(const VString& errorMessage);
 
@@ -400,9 +400,9 @@ class VSettingsXMLParser {
         VSettingsTag*           mCurrentTag;
         VString                 mPendingAttributeName;
 
-        static bool isValidTagNameChar(const VChar& c);
-        static bool isValidAttributeNameChar(const VChar& c);
-        static bool isValidAttributeValueChar(const VChar& c);
+        static bool isValidTagNameChar(const VCodePoint& c);
+        static bool isValidAttributeNameChar(const VCodePoint& c);
+        static bool isValidAttributeValueChar(const VCodePoint& c);
 
     private:
 

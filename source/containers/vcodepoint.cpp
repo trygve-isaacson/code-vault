@@ -54,29 +54,46 @@ VCodePoint::VCodePoint(const VString& hexNotation)
         throw VRangeException(VSTRING_FORMAT("VCodePoint: attempt to construct with invalid notation '%s'.", hexNotation.chars()));
     }
     
+    // Walk backwards until we process all characters or see the '+'.
+    
     int valueByteIndex = 0;
-    for (int index = length-1; index >= start; ) {
-        VChar lowNibbleChar = hexNotation[index];
-        --index;
+    for (VString::const_reverse_iterator ri = hexNotation.rbegin(); ri != hexNotation.rend(); /*incremented below*/) {
+    //for (int index = length-1; index >= start; ) {
+        VCodePoint nextChar = *ri;
+        ++ri;
 
-        VChar highNibbleChar = '0';
-        if (index >= start) {
-            highNibbleChar = hexNotation[index];
-            --index;
+        if (nextChar == '+') {
+            break;
         }
-        
+
+        VCodePoint lowNibbleChar = nextChar;
+        VCodePoint highNibbleChar('0');
+
+        if (ri != hexNotation.rend()) {
+            nextChar = *ri;
+            ++ri;
+
+            if (nextChar != '+') {
+                highNibbleChar = nextChar;
+            }
+        }
+
         if (!highNibbleChar.isHexadecimal() || !lowNibbleChar.isHexadecimal()) {
             throw VRangeException(VSTRING_FORMAT("VCodePoint: attempt to construct with invalid notation '%s'.", hexNotation.chars()));
         }
         
         // At this point we have the two hex chars. Convert to a byte, and or it into the result at the appropriate location.
-        Vs32 byteValue = (Vs32) VHex::hexCharsToByte(highNibbleChar, lowNibbleChar);
+        Vs32 byteValue = (Vs32) VHex::hexCharsToByte((char) highNibbleChar.intValue(), (char) lowNibbleChar.intValue()); // char TODO: VHex API update to VCodePoint
         byteValue <<= (valueByteIndex * 8);
         Vs32 mask = 0x000000FF << (valueByteIndex * 8);
         
         mIntValue |= (int) (byteValue & mask);
         
         ++valueByteIndex;
+
+        if (nextChar == '+') {
+            break;
+        }
     }
 
     mUTF8Length = VCodePoint::getUTF8LengthFromCodePointValue(mIntValue);
@@ -109,6 +126,16 @@ VCodePoint::VCodePoint(VBinaryIOStream& stream) {
         (numBytesToRead > 3) ? stream.readU8() : 0);
 }
 
+VCodePoint::VCodePoint(VTextIOStream& utf8Stream) {
+    Vu8 source0 = utf8Stream.readGuaranteedByte();
+    int numBytesToRead = VCodePoint::getUTF8LengthFromUTF8StartByte(source0);
+    
+    this->_initFromUTF8Bytes(numBytesToRead, source0,
+        (numBytesToRead > 1) ? utf8Stream.readGuaranteedByte() : 0,
+        (numBytesToRead > 2) ? utf8Stream.readGuaranteedByte() : 0,
+        (numBytesToRead > 3) ? utf8Stream.readGuaranteedByte() : 0);
+}
+
 VCodePoint::VCodePoint(const std::wstring& utf16WideString, int atIndex) {
     wchar_t firstUnit = utf16WideString[atIndex];
     if (!VCodePoint::isUTF16SurrogateCodeUnit(firstUnit)) {
@@ -122,6 +149,18 @@ VCodePoint::VCodePoint(const std::wstring& utf16WideString, int atIndex) {
     }
 }
 
+#define UTF8_BYTE_1_OF_2(mIntValue) (0xC0 + mIntValue / 0x40)          // first byte binary:   110xxxxx (with highest 5 bits)
+#define UTF8_BYTE_2_OF_2(mIntValue) (0x80 + mIntValue % 0x40)          // second byte binary:  10xxxxxx (with next 6 bits)
+
+#define UTF8_BYTE_1_OF_3(mIntValue) (0xE0 + mIntValue / 0x1000)        // first byte binary:   1110xxxx (with highest 4 bits)
+#define UTF8_BYTE_2_OF_3(mIntValue) (0x80 + mIntValue / 0x40 % 0x40)   // second byte binary:  10xxxxxx (with next 6 bits)
+#define UTF8_BYTE_3_OF_3(mIntValue) (0x80 + mIntValue % 0x40)          // third byte binary:   10xxxxxx (with next 6 bits)
+
+#define UTF8_BYTE_1_OF_4(mIntValue) (0xF0 + mIntValue / 0x40000)       // first byte binary:   11110xxx (with highest 3 bits)
+#define UTF8_BYTE_2_OF_4(mIntValue) (0x80 + mIntValue / 0x1000 % 0x40) // second byte binary:  10xxxxxx (with next 6 bits)
+#define UTF8_BYTE_3_OF_4(mIntValue) (0x80 + mIntValue / 0x40 % 0x40)   // third byte binary:   10xxxxxx (with next 6 bits)
+#define UTF8_BYTE_4_OF_4(mIntValue) (0x80 + mIntValue % 0x40)          // fourth byte binary:  10xxxxxx (with next 6 bits)
+
 VString VCodePoint::toString() const {
     VString s;
     
@@ -134,25 +173,25 @@ VString VCodePoint::toString() const {
     switch (VCodePoint::getUTF8LengthFromCodePointValue(mIntValue)) {
 
         case 1:
-            s += (char) (mIntValue);                        // first byte binary:   0xxxxxxx (with 7 used bits)
+            s += (char) mIntValue;  // first byte binary:   0xxxxxxx (with 7 used bits)
             break;
 
         case 2:
-            s += (char) (0xC0 + mIntValue / 0x40);          // first byte binary:   110xxxxx (with highest 5 bits)
-            s += (char) (0x80 + mIntValue % 0x40);          // second byte binary:  10xxxxxx (with next 6 bits)
+            s += (char) UTF8_BYTE_1_OF_2(mIntValue);
+            s += (char) UTF8_BYTE_2_OF_2(mIntValue);
             break;
 
         case 3:
-            s += (char) (0xE0 + mIntValue / 0x1000);        // first byte binary:   1110xxxx (with highest 4 bits)
-            s += (char) (0x80 + mIntValue / 0x40 % 0x40);   // second byte binary:  10xxxxxx (with next 6 bits)
-            s += (char) (0x80 + mIntValue % 0x40);          // third byte binary:   10xxxxxx (with next 6 bits)
+            s += (char) UTF8_BYTE_1_OF_3(mIntValue);
+            s += (char) UTF8_BYTE_2_OF_3(mIntValue);
+            s += (char) UTF8_BYTE_3_OF_3(mIntValue);
             break;
 
         case 4:
-            s += (char) (0xF0 + mIntValue / 0x40000);       // first byte binary:   11110xxx (with highest 3 bits)
-            s += (char) (0x80 + mIntValue / 0x1000 % 0x40); // second byte binary:  10xxxxxx (with next 6 bits)
-            s += (char) (0x80 + mIntValue / 0x40 % 0x40);   // third byte binary:   10xxxxxx (with next 6 bits)
-            s += (char) (0x80 + mIntValue % 0x40);          // fourth byte binary:  10xxxxxx (with next 6 bits)
+            s += (char) UTF8_BYTE_1_OF_4(mIntValue);
+            s += (char) UTF8_BYTE_2_OF_4(mIntValue);
+            s += (char) UTF8_BYTE_3_OF_4(mIntValue);
+            s += (char) UTF8_BYTE_4_OF_4(mIntValue);
             break;
             
         default:
@@ -161,6 +200,34 @@ VString VCodePoint::toString() const {
     }
 
     return s;
+}
+
+bool VCodePoint::isWhitespace() const {
+    // Need to be careful about signage for values > 0x7F.
+    int value = this->intValue();
+    return (value <= 0x20) || (value == 0x7F);
+}
+
+bool VCodePoint::isAlpha() const {
+    int value = this->intValue();
+    return ((value >= 'a') && (value <= 'z')) ||
+           ((value >= 'A') && (value <= 'Z'));
+}
+
+bool VCodePoint::isNumeric() const {
+    int value = this->intValue();
+    return (value >= '0') && (value <= '9');
+}
+
+bool VCodePoint::isAlphaNumeric() const {
+    return this->isAlpha() || this->isNumeric();
+}
+
+bool VCodePoint::isHexadecimal() const {
+    int value = this->intValue();
+    return ((value >= '0') && (value <= '9')) ||
+           ((value >= 'a') && (value <= 'f')) ||
+           ((value >= 'A') && (value <= 'F'));
 }
 
 std::wstring VCodePoint::toUTF16WideString() const {
@@ -186,6 +253,37 @@ std::wstring VCodePoint::toUTF16WideString() const {
     }
     
     return s;
+}
+
+void VCodePoint::writeToBinaryStream(VBinaryIOStream& stream) const {
+    switch (VCodePoint::getUTF8LengthFromCodePointValue(mIntValue)) {
+
+        case 1:
+            stream.writeU8((Vu8) mIntValue);    // first byte binary:   0xxxxxxx (with 7 used bits)
+            break;
+
+        case 2:
+            stream.writeU8((Vu8) UTF8_BYTE_1_OF_2(mIntValue));
+            stream.writeU8((Vu8) UTF8_BYTE_2_OF_2(mIntValue));
+            break;
+
+        case 3:
+            stream.writeU8((Vu8) UTF8_BYTE_1_OF_3(mIntValue));
+            stream.writeU8((Vu8) UTF8_BYTE_2_OF_3(mIntValue));
+            stream.writeU8((Vu8) UTF8_BYTE_3_OF_3(mIntValue));
+            break;
+
+        case 4:
+            stream.writeU8((Vu8) UTF8_BYTE_1_OF_4(mIntValue));
+            stream.writeU8((Vu8) UTF8_BYTE_2_OF_4(mIntValue));
+            stream.writeU8((Vu8) UTF8_BYTE_3_OF_4(mIntValue));
+            stream.writeU8((Vu8) UTF8_BYTE_4_OF_4(mIntValue));
+            break;
+            
+        default:
+            throw VRangeException(VSTRING_FORMAT("VCodePoint::writeToBinaryStream() for an invalid UTF-8 code point 0x%X", mIntValue));
+            break;
+    }
 }
 
 // static

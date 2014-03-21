@@ -12,6 +12,7 @@ http://www.bombaydigital.com/
 #include "vmutexlocker.h"
 #include "vsettings.h"
 #include "vbento.h"
+#include "vchar.h"
 
 #include <boost/scoped_ptr.hpp>
 
@@ -779,7 +780,7 @@ void VLogger::emitToGlobalAppenders(int level, const char* file, int line, bool 
 // static
 VString VLogger::getCleansedLoggerName(const VString& s) {
     VString cleansed(s);
-    cleansed.replace('.', '-');
+    cleansed.replace(VChar('.'), VChar('-')); // TODO: get rid of VChar
     return cleansed;
 }
 

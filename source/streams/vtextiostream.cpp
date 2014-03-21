@@ -33,19 +33,24 @@ void VTextIOStream::readLine(VString& s, bool includeLineEnding) {
 
     mLineBuffer = VString::EMPTY();
 
-    bool    readFirstByteOfLine = false;
-    Vs64    numBytesToRead = 1;
-    Vs64    numBytesRead;
-    char    c = 0;
-    bool    done = false;
+    bool        readFirstByteOfLine = false;
+    Vs64        numBytesToRead = 1;
+    Vs64        numBytesRead;
+    VCodePoint  c(0);
+    bool        done = false;
 
     do {
-        if (mPendingCharacter != 0) {
+        if (mPendingCharacter.isNotNull()) {
             c = mPendingCharacter;
-            mPendingCharacter = 0;
+            mPendingCharacter = VCodePoint(0);
             numBytesRead = 1;
         } else {
-            numBytesRead = this->read(reinterpret_cast<Vu8*>(&c), 1);
+            if (this->available() == 0) {
+                numBytesRead = 0;
+            } else {
+                c = VCodePoint(*this);
+                numBytesRead = c.getUTF8Length();
+            }
 
             // Throw EOF if we fail reading very first byte of line.
             // Otherwise, we'll return whatever we read, and throw next time.
@@ -83,8 +88,8 @@ void VTextIOStream::readLine(VString& s, bool includeLineEnding) {
 
                 if (c == 0x0A) {  // found a DOS line end
                     if (includeLineEnding) {
-                        mLineBuffer += static_cast<char>(0x0D);
-                        mLineBuffer += static_cast<char>(0x0A);
+                        mLineBuffer += VCodePoint(0x0D);
+                        mLineBuffer += VCodePoint(0x0A);
                     }
 
                     mReadState = kReadStateReady;
@@ -93,7 +98,7 @@ void VTextIOStream::readLine(VString& s, bool includeLineEnding) {
                     this->_updateLineEndingsReadKind(kLineEndingsDOS);
                 } else { // found a normal character, so we have a Mac line end pending
                     if (includeLineEnding) {
-                        mLineBuffer += static_cast<char>(0x0D);
+                        mLineBuffer += VCodePoint(0x0D);
                     }
 
                     mPendingCharacter = c;
@@ -112,12 +117,18 @@ void VTextIOStream::readLine(VString& s, bool includeLineEnding) {
     s = mLineBuffer;
 }
 
+/*
 VChar VTextIOStream::readCharacter() {
     char c;
 
     this->readGuaranteed(reinterpret_cast<Vu8*>(&c), 1);
 
     return c;
+}
+*/
+VCodePoint VTextIOStream::readUTF8CodePoint() {
+    VCodePoint cp(*this);
+    return cp;
 }
 
 void VTextIOStream::readAll(VString& s, bool includeLineEndings) {

@@ -13,7 +13,7 @@ http://www.bombaydigital.com/
 
 #include "vstring.h"
 
-class VChar;
+class VCodePoint;
 class VInstant;
 class VDate;
 class VTimeOfDay;
@@ -955,7 +955,7 @@ a VInstant.
 class VDate {
     public:
     
-        static VDate createFromDateString(const VString& dateString, const VChar& delimiter);
+        static VDate createFromDateString(const VString& dateString, const VCodePoint& delimiter);
 
         /**
         Constructs a date with values set to 0000-01-01 (useless but legal state
@@ -1034,7 +1034,7 @@ class VDate {
         (Currently just returns a slash.)
         @return the date separator character constant
         */
-        static const VChar& getLocalDateSeparator() { return kLocalDateSeparator; }
+        static const VCodePoint& getLocalDateSeparator() { return kLocalDateSeparator; }
 
         enum {
             kYMD,   ///< Year/Month/Day
@@ -1078,7 +1078,7 @@ class VDate {
         int mMonth; ///< The month (1 to 12).
         int mDay;   ///< The day of the month (1 to 31*).
 
-        static const VChar kLocalDateSeparator; ///< The character to separate M/D/Y
+        static const VCodePoint kLocalDateSeparator; ///< The character to separate M/D/Y
 };
 
 inline bool operator==(const VDate& lhs, const VDate& rhs) { return (lhs.mYear == rhs.mYear) && (lhs.mMonth == rhs.mMonth) && (lhs.mDay == rhs.mDay); }
@@ -1187,7 +1187,7 @@ class VTimeOfDay {
         (Currently just returns a colon.)
         @return the time separator character constant
         */
-        static const VChar& getLocalTimeSeparator() { return kLocalTimeSeparator; }
+        static const VCodePoint& getLocalTimeSeparator() { return kLocalTimeSeparator; }
 
         friend inline bool operator==(const VTimeOfDay& t1, const VTimeOfDay& t2);
 
@@ -1201,7 +1201,7 @@ class VTimeOfDay {
         int mSecond;        ///< The second of the minute (0 to 59).
         int mMillisecond;   ///< The millisecond of the second (0 to 999).
 
-        static const VChar kLocalTimeSeparator;    ///< The character to separate HH:MM:SS
+        static const VCodePoint kLocalTimeSeparator;    ///< The character to separate HH:MM:SS
 };
 
 inline bool operator==(const VTimeOfDay& t1, const VTimeOfDay& t2) { return (t1.mHour == t2.mHour) && (t1.mMinute == t2.mMinute) && (t1.mSecond == t2.mSecond) && (t1.mMillisecond == t2.mMillisecond); }

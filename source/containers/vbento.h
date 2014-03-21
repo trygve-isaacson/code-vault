@@ -12,7 +12,6 @@ http://www.bombaydigital.com/
 #include "vmemorystream.h"
 #include "vhex.h"
 #include "vinstant.h"
-#include "vchar.h"
 #include "vexception.h"
 #include "vgeometry.h"
 #include "vcolor.h"
@@ -250,7 +249,7 @@ class VBentoNode {
         void addBool(const VString& name, bool value);                ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addString(const VString& name, const VString& value, const VString& encoding = VString::EMPTY());  ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value @param encoding the text encoding of the value string (UTF-8 assumed if not specified)
         void addStringIfNotEmpty(const VString& name, const VString& value, const VString& encoding = VString::EMPTY());  ///< Adds the specified string to the node if its length is non-zero. @param name the attribute name @param value the attribute value @param encoding the text encoding of the value string (UTF-8 assumed if not specified)
-        void addChar(const VString& name, const VChar& value);        ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
+        void addChar(const VString& name, const VCodePoint& value);   ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addDouble(const VString& name, VDouble value);           ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addDuration(const VString& name, const VDuration& value);///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
         void addInstant(const VString& name, const VInstant& value);  ///< Adds the specified attribute to the node. @param name the attribute name @param value the attribute value
@@ -403,20 +402,20 @@ class VBentoNode {
         */
         const VBentoNode* findNode(const VString& nodeName, const VString& attributeName, const VString& dataType) const;
 
-        int getInt(const VString& name, int defaultValue) const; ///< Returns the value of the specified bool attribute, or the supplied default value if no such bool attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
-        int getInt(const VString& name) const; ///< Returns the value of the specified bool attribute, or throws an exception if no such bool attribute exists. @param name the attribute name @return the found attribute's value
-        bool getBool(const VString& name, bool defaultValue) const; ///< Returns the value of the specified bool attribute, or the supplied default value if no such bool attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
-        bool getBool(const VString& name) const; ///< Returns the value of the specified bool attribute, or throws an exception if no such bool attribute exists. @param name the attribute name @return the found attribute's value
+        int getInt(const VString& name, int defaultValue) const; ///< Returns the value of the specified attribute, or the supplied default value if no such attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
+        int getInt(const VString& name) const; ///< Returns the value of the specified attribute, or throws an exception if no such attribute exists. @param name the attribute name @return the found attribute's value
+        bool getBool(const VString& name, bool defaultValue) const; ///< Returns the value of the specified attribute, or the supplied default value if no such attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
+        bool getBool(const VString& name) const; ///< Returns the value of the specified attribute, or throws an exception if no such attribute exists. @param name the attribute name @return the found attribute's value
         const VString& getString(const VString& name, const VString& defaultValue) const; ///< Returns the value of the specified string attribute, or the supplied default value if no such string attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
         const VString& getString(const VString& name) const; ///< Returns the value of the specified string attribute, or throws an exception if no such string attribute exists. @param name the attribute name @return the found attribute's value
-        const VChar& getChar(const VString& name, const VChar& defaultValue) const; ///< Returns the value of the specified bool attribute, or the supplied default value if no such bool attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
-        const VChar& getChar(const VString& name) const; ///< Returns the value of the specified string attribute, or throws an exception if no such string attribute exists. @param name the attribute name @return the found attribute's value
-        VDouble getDouble(const VString& name, VDouble defaultValue) const; ///< Returns the value of the specified bool attribute, or the supplied default value if no such bool attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
-        VDouble getDouble(const VString& name) const; ///< Returns the value of the specified bool attribute, or throws an exception if no such bool attribute exists. @param name the attribute name @return the found attribute's value
-        const VDuration& getDuration(const VString& name, const VDuration& defaultValue) const; ///< Returns the value of the specified bool attribute, or the supplied default value if no such bool attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
-        const VDuration& getDuration(const VString& name) const; ///< Returns the value of the specified bool attribute, or throws an exception if no such bool attribute exists. @param name the attribute name @return the found attribute's value
-        const VInstant& getInstant(const VString& name, const VInstant& defaultValue) const; ///< Returns the value of the specified bool attribute, or the supplied default value if no such bool attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
-        const VInstant& getInstant(const VString& name) const; ///< Returns the value of the specified bool attribute, or throws an exception if no such bool attribute exists. @param name the attribute name @return the found attribute's value
+        const VCodePoint& getChar(const VString& name, const VCodePoint& defaultValue) const; ///< Returns the value of the specified char attribute, or the supplied default value if no such attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
+        const VCodePoint& getChar(const VString& name) const; ///< Returns the value of the specified char attribute, or throws an exception if no such string attribute exists. @param name the attribute name @return the found attribute's value
+        VDouble getDouble(const VString& name, VDouble defaultValue) const; ///< Returns the value of the specified attribute, or the supplied default value if no such attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
+        VDouble getDouble(const VString& name) const; ///< Returns the value of the specified attribute, or throws an exception if no such attribute exists. @param name the attribute name @return the found attribute's value
+        const VDuration& getDuration(const VString& name, const VDuration& defaultValue) const; ///< Returns the value of the specified attribute, or the supplied default value if no such attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
+        const VDuration& getDuration(const VString& name) const; ///< Returns the value of the specified attribute, or throws an exception if no such attribute exists. @param name the attribute name @return the found attribute's value
+        const VInstant& getInstant(const VString& name, const VInstant& defaultValue) const; ///< Returns the value of the specified attribute, or the supplied default value if no such attribute exists. @param name the attribute name @param defaultValue the default value to return @return the found attribute's value, or the supplied default
+        const VInstant& getInstant(const VString& name) const; ///< Returns the value of the specified attribute, or throws an exception if no such attribute exists. @param name the attribute name @return the found attribute's value
         const VSize& getSize(const VString& name, const VSize& defaultValue) const;
         const VSize& getSize(const VString& name) const;
         const VISize& getISize(const VString& name, const VISize& defaultValue) const;
@@ -488,7 +487,7 @@ class VBentoNode {
         void setInt(const VString& name, int value);                  ///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value
         void setBool(const VString& name, bool value);                ///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value
         void setString(const VString& name, const VString& value, const VString& encoding = VString::EMPTY());  ///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value @param encoding the text encoding of the value string (UTF-8 assumed if not specified)
-        void setChar(const VString& name, const VChar& value);        ///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value
+        void setChar(const VString& name, const VCodePoint& value);   ///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value
         void setDouble(const VString& name, VDouble value);           ///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value
         void setDuration(const VString& name, const VDuration& value);///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value
         void setInstant(const VString& name, const VInstant& value);  ///< Updates or adds the specified attribute of the node. @param name the attribute name @param value the attribute value
@@ -1195,36 +1194,55 @@ class VBentoString : public VBentoAttribute {
 };
 
 /**
-VBentoChar is a VBentoAttribute that holds a VChar value.
+VBentoChar is a VBentoAttribute that holds a VCodePoint value.
+In Vault versions up to 4.0:
+- The type ID is 'char'.
+- The internal storage is a VChar object, which is a thin wrapper for a C char.
+- In binary form, the stream data was always 1 byte corresponding to the C char.
+- In text form, the text data was the char surrounded by single quotes, formatted using %c.
+In Vault version 4.1:
+- The type ID is 'u8ch'.
+- The internal storage is a VCodePoint object, which stores a Unicode code point.
+- In binary form, the data is 1 to 4 bytes of UTF-8 data. This is more efficient than always using a full 32-bit value, and avoids endianness concerns.
+- In text form, the data is the same 1 to 4 bytes of UTF-8 data.
+- When reading, if we encounter the legacy type ID ('char'), we read the single byte as before, and form the VCodePoint from the byte value.
+  (This is actually a way to ensure old data containing high-bit non-ASCII values are properly migrated to proper Unicode.)
+- When writing, we always write out the new type.
+  (Is it worth considering a compile-time switch to write out the old data type?)
+  (A runtime switch is trickier because it might need to be per-object; a global runtime switch could have threading issues.)
+  (A possible approach would be to write out the legacy type for ASCII values, or write both types.)
 */
 class VBentoChar : public VBentoAttribute {
     public:
 
-        static const VString& DATA_TYPE_ID() { static const VString kID("char"); return kID; } ///< The data type name / class ID string.
+        static const VString& LEGACY_DATA_TYPE_ID() { static const VString kID("char"); return kID; } ///< The data type name / class ID string.
+        static const VString& DATA_TYPE_ID() { static const VString kID("u8ch"); return kID; } ///< The data type name / class ID string.
+        
+        static VBentoChar* newFromLegacyCharStream(VBinaryIOStream& stream); ///< Constructs by reading 1 byte and using it as a Unicode code point value.
 
         VBentoChar() : mValue(' ') {} ///< Constructs with uninitialized name and a space char.
-        VBentoChar(VBinaryIOStream& stream) : VBentoAttribute(stream, DATA_TYPE_ID()), mValue(static_cast<char>(stream.readU8())) {} ///< Constructs by reading from stream. @param stream the stream to read
-        VBentoChar(const VString& name, const VChar& c) : VBentoAttribute(name, DATA_TYPE_ID()), mValue(c) {} ///< Constructs from supplied name and value.
+        VBentoChar(VBinaryIOStream& stream) : VBentoAttribute(stream, DATA_TYPE_ID()), mValue(stream) {} ///< Constructs by reading from stream. @param stream the stream to read
+        VBentoChar(const VString& name, const VCodePoint& c) : VBentoAttribute(name, DATA_TYPE_ID()), mValue(c) {} ///< Constructs from supplied name and value.
         virtual ~VBentoChar() {} ///< Destructor.
 
         virtual VBentoAttribute* clone() const { return new VBentoChar(this->getName(), mValue); }
         VBentoChar& operator=(const VBentoChar& rhs) { VBentoAttribute::operator=(rhs); mValue = rhs.mValue; return *this; }
 
         virtual void getValueAsXMLText(VString& s) const { s = mValue; VBentoAttribute::_escapeXMLValue(s); }
-        virtual void getValueAsString(VString& s) const { s.format("\"%c\"", mValue.charValue()); }
+        virtual void getValueAsString(VString& s) const { s = mValue.toString(); }
         virtual void getValueAsBentoTextString(VString& s) const { s = mValue; }
 
-        inline const VChar& getValue() const { return mValue; } ///< Returns the attribute's value. @return a reference to the value object
-        inline void setValue(const VChar& c) { mValue = c; } ///< Sets the attribute's value. @param c the attribute value
+        inline const VCodePoint& getValue() const { return mValue; } ///< Returns the attribute's value. @return a reference to the value object
+        inline void setValue(const VCodePoint& c) { mValue = c; } ///< Sets the attribute's value. @param c the attribute value
 
     protected:
 
-        virtual Vs64 getDataLength() const { return 1; } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
-        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { stream.writeU8(static_cast<Vu8>(mValue.charValue())); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
+        virtual Vs64 getDataLength() const { return mValue.getUTF8Length(); } ///< Returns the length of this object's raw data only. @return the length of the object's raw data
+        virtual void writeDataToBinaryStream(VBinaryIOStream& stream) const { mValue.writeToBinaryStream(stream); } ///< Writes the object's raw data only to a binary stream. @param stream the stream to write to
 
     private:
 
-        VChar mValue; ///< The attribute value.
+        VCodePoint mValue; ///< The attribute value.
 };
 
 /**

@@ -1473,6 +1473,12 @@ void VString::getSubstring(VString& toString, int startIndex, int endIndex) cons
     toString.copyFromBuffer(_get(), startIndex, endIndex);
 }
 
+void VString::getSubstring(VString& toString, VString::const_iterator rangeStart, VString::const_iterator rangeEnd) const {
+    ASSERT_INVARIANT();
+
+    this->getSubstring(toString, rangeStart.getCurrentOffset(), rangeEnd.getCurrentOffset());
+}
+
 void VString::substringInPlace(int startIndex, int endIndex) {
     ASSERT_INVARIANT();
 
@@ -1498,29 +1504,28 @@ void VString::substringInPlace(int startIndex, int endIndex) {
     ASSERT_INVARIANT();
 }
 
-void VString::split(VStringVector& result, const VChar& delimiter, int limit, bool stripTrailingEmpties) const {
+void VString::split(VStringVector& result, const VCodePoint& delimiter, int limit, bool stripTrailingEmpties) const {
     result.clear();
     VString nextItem;
-    const int len = this->length();
-    const char* buf = _get();
-    for (int index = 0; index < len; ++index) {
-        VChar c = buf[index];
-        if (c == delimiter) {
+    
+    for (VString::const_iterator i = this->begin(); i != this->end(); ++i) {
+        VCodePoint cp = (*i);
+        if (cp == delimiter) {
             result.push_back(nextItem);
             nextItem = VString::EMPTY();
 
             if ((limit != 0) && (((int) result.size()) == limit - 1)) {
                 // We are 1 less than the limit, so the rest of the string is the remaining item.
-                this->getSubstring(nextItem, index + 1);
+                this->getSubstring(nextItem, i + 1, this->end());
                 result.push_back(nextItem);
                 nextItem = VString::EMPTY();
                 break;
             }
         } else {
-            nextItem += c;
+            nextItem += cp;
         }
     }
-
+    
     if (nextItem.isNotEmpty()) {
         result.push_back(nextItem);
     }
@@ -1533,7 +1538,7 @@ void VString::split(VStringVector& result, const VChar& delimiter, int limit, bo
     }
 }
 
-VStringVector VString::split(const VChar& delimiter, int limit, bool stripTrailingEmpties) const {
+VStringVector VString::split(const VCodePoint& delimiter, int limit, bool stripTrailingEmpties) const {
     VStringVector result;
     this->split(result, delimiter, limit, stripTrailingEmpties);
     return result;

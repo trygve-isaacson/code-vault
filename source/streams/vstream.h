@@ -219,6 +219,11 @@ class VStream {
         */
         void readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead);
         /**
+        Reads one byte from the stream, and throws a VException if it cannot be read.
+        @return the byte that was read
+        */
+        Vu8 readGuaranteedByte();
+        /**
         Attempts to read a specified number of bytes from the stream.
         @param    targetBuffer    the buffer to read into
         @param    numBytesToRead    the number of bytes to read

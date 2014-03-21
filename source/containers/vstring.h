@@ -621,8 +621,8 @@ class VString {
         void setAtCodePointIndex(int codePointIndex, const VCodePoint& cp);
         void getSubstringAtCodePointIndex(VString& toString, int startCodePointIndex/* = 0*/, int endCodePointIndex = -1) const;
         void substringInPlaceAtCodePointIndex(int startIndex/* = 0*/, int endIndex = -1);
-        void split(VStringVector& result, const VCodePoint& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
-        VStringVector split(const VCodePoint& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
+DONE        void split(VStringVector& result, const VCodePoint& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
+DONE        VStringVector split(const VCodePoint& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
         // copyToBuffer - must not copy partial code point if truncating during copy
 #endif
 
@@ -1017,6 +1017,7 @@ class VString {
         @param  endIndex    index of the last char to copy, exclusive (end-start is the length)
         */
         void getSubstring(VString& toString, int startIndex/* = 0*/, int endIndex = -1) const;
+        void getSubstring(VString& toString, VString::const_iterator rangeStart, VString::const_iterator rangeEnd) const;
         /**
         Makes a substring of this string in place (contrast with getSubstring(),
         which puts the substring into a different object). The start index
@@ -1045,7 +1046,7 @@ class VString {
         @param  stripTrailingEmpties    if true, any empty strings at the end of the resulting
                                             list are discarded (this is the Java String.split() behavior)
         */
-        void split(VStringVector& result, const VChar& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
+        void split(VStringVector& result, const VCodePoint& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
         /**
         Convenience version of split() that returns the vector. Will likely incur copy overhead
         compared to the non-returning version, so use the other version in time-critical code.
@@ -1057,7 +1058,7 @@ class VString {
                                             list are discarded (this is the Java String.split() behavior)
         @return a vector of split result strings
         */
-        VStringVector split(const VChar& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
+        VStringVector split(const VCodePoint& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
         /**
         Strips leading and trailing whitespace from the string.
         Whitespace as implemented here is defined as ASCII byte

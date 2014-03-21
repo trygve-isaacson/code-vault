@@ -19,6 +19,10 @@ void VIOStream::readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead) {
     mRawStream.readGuaranteed(targetBuffer, numBytesToRead);
 }
 
+Vu8 VIOStream::readGuaranteedByte() {
+    return mRawStream.readGuaranteedByte();
+}
+
 Vs64 VIOStream::read(Vu8* targetBuffer, Vs64 numBytesToRead) {
     return mRawStream.read(targetBuffer, numBytesToRead);
 }

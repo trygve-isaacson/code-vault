@@ -1240,7 +1240,7 @@ VDuration VSettingsAttribute::getDurationValue() const {
 }
 
 VDate VSettingsAttribute::getDateValue() const {
-    return VDate::createFromDateString(mValue, '-');
+    return VDate::createFromDateString(mValue, VCodePoint('-'));
 }
 
 VInstant VSettingsAttribute::getInstantValue() const {
@@ -1330,7 +1330,7 @@ VDuration VSettingsCDATA::getDurationValue() const {
 }
 
 VDate VSettingsCDATA::getDateValue() const {
-    return VDate::createFromDateString(mCDATA, '-');
+    return VDate::createFromDateString(mCDATA, VCodePoint('-'));
 }
 
 VInstant VSettingsCDATA::getInstantValue() const {
@@ -1381,7 +1381,6 @@ void VSettingsXMLParser::parse() {
 }
 
 void VSettingsXMLParser::parseLine() {
-    VChar c;
 
     mCurrentColumnNumber = 0;
 
@@ -1389,14 +1388,14 @@ void VSettingsXMLParser::parseLine() {
         return; // skip the typical "<?xml version .... ?>" first line
     }
 
-    for (int i = 0; i < mCurrentLine.length(); ++i) {
-        ++mCurrentColumnNumber;
+    for (VString::iterator i = mCurrentLine.begin(); i != mCurrentLine.end(); ++i) {
+        VCodePoint c = (*i);
 
-        c = mCurrentLine[i];
+        ++mCurrentColumnNumber;
 
         switch (mParserState) {
             case kReady:
-                if (c.charValue() == '<') {
+                if (c == '<') {
                     this->emitCDATA();
                     this->changeState(kTag1_open);
                 } else {
@@ -1405,25 +1404,25 @@ void VSettingsXMLParser::parseLine() {
                 break;
 
             case kComment1_bang:
-                if (c.charValue() == '-') {
+                if (c == '-') {
                     this->changeState(kComment2_bang_dash);
                 } else {
-                    VString s(VSTRING_ARGS("Invalid character '%c' after presumed start of comment.", c.charValue()));
+                    VString s(VSTRING_ARGS("Invalid character '%s' after presumed start of comment.", c.toString().chars()));
                     this->stateError(s);
                 }
                 break;
 
             case kComment2_bang_dash:
-                if (c.charValue() == '-') {
+                if (c == '-') {
                     this->changeState(kComment3_in_comment);
                 } else {
-                    VString s(VSTRING_ARGS("Invalid character '%c' after presumed start of comment.", c.charValue()));
+                    VString s(VSTRING_ARGS("Invalid character '%c' after presumed start of comment.", c.toString().chars()));
                     this->stateError(s);
                 }
                 break;
 
             case kComment3_in_comment:
-                if (c.charValue() == '-') {
+                if (c == '-') {
                     this->changeState(kComment4_traildash);
                 } else {
                     /*nothing*/
@@ -1431,7 +1430,7 @@ void VSettingsXMLParser::parseLine() {
                 break;
 
             case kComment4_traildash:
-                if (c.charValue() == '-') {
+                if (c == '-') {
                     this->changeState(kComment5_traildash_dash);
                 } else {
                     this->changeState(kComment3_in_comment);
@@ -1439,9 +1438,9 @@ void VSettingsXMLParser::parseLine() {
                 break;
 
             case kComment5_traildash_dash:
-                if (c.charValue() == '-') {
+                if (c == '-') {
                     // *nothing
-                } else if (c.charValue() == '>') {
+                } else if (c == '>') {
                     this->changeState(kReady);
                 } else {
                     this->changeState(kComment3_in_comment);
@@ -1449,9 +1448,9 @@ void VSettingsXMLParser::parseLine() {
                 break;
 
             case kTag1_open:
-                if (c.charValue() == '!') {
+                if (c == '!') {
                     this->changeState(kComment1_bang);
-                } else if (c.charValue() == '/') {
+                } else if (c == '/') {
                     this->changeState(kCloseTag1_open_slash);
                 } else if (c.isAlpha()) {
                     this->changeState(kTag2_in_name);
@@ -1469,14 +1468,14 @@ void VSettingsXMLParser::parseLine() {
                 } else if (c.isWhitespace()) {
                     this->emitOpenTagName();
                     this->changeState(kTag3_post_name);
-                } else if (c.charValue() == '/') {
+                } else if (c == '/') {
                     this->emitOpenTagName();
                     this->changeState(kTag8_solo_close_slash);
-                } else if (c.charValue() == '>') {
+                } else if (c == '>') {
                     this->emitOpenTagName();
                     this->changeState(kReady);
                 } else {
-                    VString s(VSTRING_ARGS("Invalid character '%c' in tag name.", c.charValue()));
+                    VString s(VSTRING_ARGS("Invalid character '%s' in tag name.", c.toString().chars()));
                     this->stateError(s);
                 }
                 break;
@@ -1484,15 +1483,15 @@ void VSettingsXMLParser::parseLine() {
             case kTag3_post_name:
                 if (c.isWhitespace()) {
                     // nothing
-                } else if (c.charValue() == '>') {
+                } else if (c == '>') {
                     this->changeState(kReady);
-                } else if (c.charValue() == '/') {
+                } else if (c == '/') {
                     this->changeState(kTag8_solo_close_slash);
                 } else if (c.isAlpha()) {
                     this->changeState(kTag4_in_attribute_name);
                     this->accumulate(c);
                 } else {
-                    VString s(VSTRING_ARGS("Invalid character '%c' in tag after name.", c.charValue()));
+                    VString s(VSTRING_ARGS("Invalid character '%s' in tag after name.", c.toString().chars()));
                     this->stateError(s);
                 }
                 break;
@@ -1500,25 +1499,25 @@ void VSettingsXMLParser::parseLine() {
             case kTag4_in_attribute_name:
                 if (VSettingsXMLParser::isValidAttributeNameChar(c)) {
                     this->accumulate(c);
-                } else if (c.charValue() == '=') {
+                } else if (c == '=') {
                     this->emitAttributeName();
                     this->changeState(kTag5_attribute_equals);
                 } else if (c.isWhitespace()) {
                     this->emitAttributeNameOnly();
                     this->changeState(kTag3_post_name);
-                } else if (c.charValue() == '/') {
+                } else if (c == '/') {
                     this->emitAttributeNameOnly();
                     this->changeState(kTag8_solo_close_slash);
                 } else {
-                    VString s(VSTRING_ARGS("Invalid character '%c' in attribute name.", c.charValue()));
+                    VString s(VSTRING_ARGS("Invalid character '%s' in attribute name.", c.toString().chars()));
                     this->stateError(s);
                 }
                 break;
 
             case kTag5_attribute_equals:
-                if (c.charValue() == '\"') {
+                if (c == '\"') {
                     this->changeState(kTag6_attribute_quoted);
-                } else if (c.charValue() == '/') {
+                } else if (c == '/') {
                     this->emitAttributeValue();
                     this->changeState(kTag8_solo_close_slash);
                 } else if (c.isAlphaNumeric()) {
@@ -1532,7 +1531,7 @@ void VSettingsXMLParser::parseLine() {
                     this->accumulate(c);
                 } else if (c.isWhitespace()) {
                     this->accumulate(c);
-                } else if (c.charValue() == '\"') {
+                } else if (c == '\"') {
                     this->emitAttributeValue();
                     this->changeState(kTag3_post_name);
                 } else {
@@ -1546,24 +1545,24 @@ void VSettingsXMLParser::parseLine() {
                 } else if (c.isWhitespace()) {
                     this->emitAttributeValue();
                     this->changeState(kTag3_post_name);
-                } else if (c.charValue() == '>') {
+                } else if (c == '>') {
                     this->emitAttributeValue();
                     this->changeState(kReady);
-                } else if (c.charValue() == '/') {
+                } else if (c == '/') {
                     this->emitAttributeValue();
                     this->changeState(kTag8_solo_close_slash);
                 } else {
-                    VString s(VSTRING_ARGS("Invalid character '%c' in unquoted attribute value.", c.charValue()));
+                    VString s(VSTRING_ARGS("Invalid character '%s' in unquoted attribute value.", c.toString().chars()));
                     this->stateError(s);
                 }
                 break;
 
             case kTag8_solo_close_slash:
-                if (c.charValue() == '>') {
+                if (c == '>') {
                     this->emitEndSoloTag();
                     this->changeState(kReady);
                 } else {
-                    VString s(VSTRING_ARGS("Invalid character '%c' after solo close tag slash.", c.charValue()));
+                    VString s(VSTRING_ARGS("Invalid character '%s' after solo close tag slash.", c.toString().chars()));
                     this->stateError(s);
                 }
                 break;
@@ -1575,13 +1574,13 @@ void VSettingsXMLParser::parseLine() {
                     this->changeState(kCloseTag2_in_name);
                     this->accumulate(c);
                 } else {
-                    VString s(VSTRING_ARGS("Invalid character '%c' in closing tag.", c.charValue()));
+                    VString s(VSTRING_ARGS("Invalid character '%s' in closing tag.", c.toString().chars()));
                     this->stateError(s);
                 }
                 break;
 
             case kCloseTag2_in_name:
-                if (c.charValue() == '>') {
+                if (c == '>') {
                     this->emitCloseTagName();
                     this->changeState(kReady);
                 } else if (c.isWhitespace()) {
@@ -1590,7 +1589,7 @@ void VSettingsXMLParser::parseLine() {
                 } else if (VSettingsXMLParser::isValidTagNameChar(c)) {
                     this->accumulate(c);
                 } else {
-                    VString s(VSTRING_ARGS("Invalid character '%c' in closing tag.", c.charValue()));
+                    VString s(VSTRING_ARGS("Invalid character '%s' in closing tag.", c.toString().chars()));
                     this->stateError(s);
                 }
                 break;
@@ -1598,16 +1597,16 @@ void VSettingsXMLParser::parseLine() {
             case kCloseTag3_trailing_whitespace:
                 if (c.isWhitespace()) {
                     // nothing
-                } else if (c.charValue() == '>') {
+                } else if (c == '>') {
                     this->changeState(kReady);
                 } else {
-                    VString s(VSTRING_ARGS("Invalid character '%c' in closing tag.", c.charValue()));
+                    VString s(VSTRING_ARGS("Invalid character '%s' in closing tag.", c.toString().chars()));
                     this->stateError(s);
                 }
                 break;
         }
 
-        if (c.charValue() == '\t') {
+        if (c == '\t') {
             mCurrentColumnNumber += 3;    // already did ++, and we want tabs to be 4 "columns" in terms of syntax errors
         }
     }
@@ -1617,7 +1616,7 @@ void VSettingsXMLParser::resetElement() {
     mElement = VString::EMPTY();
 }
 
-void VSettingsXMLParser::accumulate(const VChar& c) {
+void VSettingsXMLParser::accumulate(const VCodePoint& c) {
     mElement += c;
 }
 
@@ -1679,20 +1678,20 @@ void VSettingsXMLParser::emitEndSoloTag() {
 }
 
 // static
-bool VSettingsXMLParser::isValidTagNameChar(const VChar& c) {
-    char value = c.charValue();
+bool VSettingsXMLParser::isValidTagNameChar(const VCodePoint& c) {
+    int value = c.intValue();
     return ((value > 0x20) && (value < 0x7F) && (value != '<') && (value != '>') && (value != '/') && (value != '='));
 }
 
 // static
-bool VSettingsXMLParser::isValidAttributeNameChar(const VChar& c) {
-    char value = c.charValue();
+bool VSettingsXMLParser::isValidAttributeNameChar(const VCodePoint& c) {
+    int value = c.intValue();
     return ((value > 0x20) && (value < 0x7F) && (value != '<') && (value != '>') && (value != '/') && (value != '='));
 }
 
 // static
-bool VSettingsXMLParser::isValidAttributeValueChar(const VChar& c) {
-    char value = c.charValue();
+bool VSettingsXMLParser::isValidAttributeValueChar(const VCodePoint& c) {
+    int value = c.intValue();
     return ((value > 0x20) && (value < 0x7F) && (value != '<') && (value != '>') && (value != '/') && (value != '='));
 }
 

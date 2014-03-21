@@ -813,44 +813,44 @@ void VStringUnit::run() {
     VString splitInput("one,two,three,,fivee"); // extra ee used for trailing split test
 
     // simple split
-    splitInput.split(splitResult, ','); // "one" "two" "three" "" "fivee"
+    splitInput.split(splitResult, VCodePoint(',')); // "one" "two" "three" "" "fivee"
     VUNIT_ASSERT_EQUAL_LABELED((int) splitResult.size(), 5, "split test 1 size");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[0], "one",   "split test 1 [0]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[1], "two",   "split test 1 [1]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[2], "three", "split test 1 [2]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[3], "",      "split test 1 [3]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[4], "fivee", "split test 1 [4]");
-    VStringVector returnResult1 = splitInput.split(',');
+    VStringVector returnResult1 = splitInput.split(VCodePoint(','));
     VUNIT_ASSERT_TRUE_LABELED(returnResult1 == splitResult, "split return 1");
 
     // limited split
-    splitInput.split(splitResult, ',', 3); // "one" "two", "three,,fivee"
+    splitInput.split(splitResult, VCodePoint(','), 3); // "one" "two", "three,,fivee"
     VUNIT_ASSERT_EQUAL_LABELED((int) splitResult.size(), 3, "split test 2 size");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[0], "one",         "split test 2 [0]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[1], "two",         "split test 2 [1]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[2], "three,,fivee", "split test 2 [2]");
-    VStringVector returnResult2 = splitInput.split(',', 3);
+    VStringVector returnResult2 = splitInput.split(VCodePoint(','), 3);
     VUNIT_ASSERT_TRUE_LABELED(returnResult2 == splitResult, "split return 2");
 
     // strip trailing empty strings
-    splitInput.split(splitResult, 'e'); // "on" ",two,thr", "", ",four,fiv" "" <-- last one should get discarded
+    splitInput.split(splitResult, VCodePoint('e')); // "on" ",two,thr", "", ",four,fiv" "" <-- last one should get discarded
     VUNIT_ASSERT_EQUAL_LABELED((int) splitResult.size(), 4, "split test 3 size");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[0], "on",        "split test 3 [0]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[1], ",two,thr",  "split test 3 [1]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[2], "",          "split test 3 [2]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[3], ",,fiv",     "split test 3 [3]");
-    VStringVector returnResult3 = splitInput.split('e');
+    VStringVector returnResult3 = splitInput.split(VCodePoint('e'));
     VUNIT_ASSERT_TRUE_LABELED(returnResult3 == splitResult, "split return 3");
 
     // don't strip trailing empty strings
-    splitInput.split(splitResult, 'e', 0, false); // "on" ",two,thr", "", ",four,fiv" "" <-- last one should NOT get discarded
+    splitInput.split(splitResult, VCodePoint('e'), 0, false); // "on" ",two,thr", "", ",four,fiv" "" <-- last one should NOT get discarded
     VUNIT_ASSERT_EQUAL_LABELED((int) splitResult.size(), 5, "split test 4 size");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[0], "on",        "split test 4 [0]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[1], ",two,thr",  "split test 4 [1]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[2], "",          "split test 4 [2]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[3], ",,fiv",     "split test 4 [3]");
     VUNIT_ASSERT_EQUAL_LABELED(splitResult[4], "",          "split test 4 [4]");
-    VStringVector returnResult4 = splitInput.split('e', 0, false);
+    VStringVector returnResult4 = splitInput.split(VCodePoint('e'), 0, false);
     VUNIT_ASSERT_TRUE_LABELED(returnResult4 == splitResult, "split return 4");
 
     // Change to vararg constructor to allow "%" to avoid unwanted formatting.

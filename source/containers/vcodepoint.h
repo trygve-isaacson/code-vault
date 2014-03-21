@@ -14,6 +14,7 @@ http://www.bombaydigital.com/
 class VChar;
 class VString;
 class VBinaryIOStream;
+class VTextIOStream;
 
 /**
 This class stores a Unicode code point, which is similar to a 'char' except that the range of values
@@ -69,9 +70,18 @@ class VCodePoint {
         Creates the code point by reading one or more bytes from the supplied stream, where the stream contains a
         valid UTF-8 formatted code point. For example, if the code point is ASCII it will be
         a single byte; otherwise, the first byte will be the start of a 1- to 4-byte UTF-8 sequence.
+        Note that VCodePoint treats binary and text streams the same since UTF-8 can be viewed as a space-efficient binary encoding.
         @param  stream  the stream to read from
         */
         explicit VCodePoint(VBinaryIOStream& stream);
+        /**
+        Creates the code point by reading one or more bytes from the supplied stream, where the stream contains a
+        valid UTF-8 formatted code point. For example, if the code point is ASCII it will be
+        a single byte; otherwise, the first byte will be the start of a 1- to 4-byte UTF-8 sequence.
+        Note that VCodePoint treats binary and text streams the same since UTF-8 can be viewed as a space-efficient binary encoding.
+        @param  stream  the stream to read from
+        */
+        explicit VCodePoint(VTextIOStream& utf8Stream);
         /**
         Creates the code point by reading one or two code units from the supplied wide string, where the string
         contains a valid UTF-16 formatted code point. A UTF-16 code point may be composed of a single code unit
@@ -113,6 +123,31 @@ class VCodePoint {
         @return the code point in UTF-16 std::wstring form
         */
         std::wstring toUTF16WideString() const;
+        /**
+        Writes the code point to a binary stream in UTF-8 form (1 to 4 bytes).
+        @param  stream  the stream to write to
+        */
+        void writeToBinaryStream(VBinaryIOStream& stream) const;
+        /**
+        Returns true if the code point is value zero. This corresponds to an ASCII NUL character, and might
+        be useful in rare cases where you are reading a null terminator from a buffer, or when initializing
+        a code pointer with value zero and checking it later.
+        @return true if the value is zero
+        */
+        bool isNull() const { return mIntValue == 0; }
+        /**
+        The inverse of isNull().
+        @return true if the value is not zero
+        */
+        bool isNotNull() const { return mIntValue != 0; }
+        /**
+        Avoid using these. This is a temporary bridge from VChar / char, in code migrating to VCodePoint.
+        */
+        bool isWhitespace() const;
+        bool isAlpha() const;
+        bool isNumeric() const;
+        bool isAlphaNumeric() const;
+        bool isHexadecimal() const;
 
         /**
         Returns true if the two code points are the same.
@@ -212,8 +247,13 @@ class VCodePoint {
         int mIntValue;      ///< The Unicode integer value of the code point.
         int mUTF8Length;    ///< The number of bytes the code point will occupy in UTF-8 form. (1 to 4)
         int mUTF16Length;   ///< The number of code units the code point will occupy in UTF-16 form. (1 or 2)
+
+        friend inline bool operator==(const VCodePoint& cp, char c);
+        friend inline bool operator==(char c, const VCodePoint& cp);
 };
 
 inline bool operator==(const VCodePoint& p1, const VCodePoint& p2) { return p1.mIntValue == p2.mIntValue; }
+inline bool operator==(const VCodePoint& cp, char c) { return cp.mIntValue == (int) c; }
+inline bool operator==(char c, const VCodePoint& cp) { return cp.mIntValue == (int) c; }
 
 #endif /* vcodepoint_h */

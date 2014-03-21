@@ -9,7 +9,7 @@ http://www.bombaydigital.com/
 #include "vinstant.h"
 #include "vtypes_internal.h"
 
-#include "vchar.h"
+#include "vcodepoint.h"
 #include "vstring.h"
 #include "vexception.h"
 
@@ -1046,10 +1046,10 @@ bool VInstant::isTimeFrozen() {
     #endif
 #endif
 
-const VChar VDate::kLocalDateSeparator('/');
+const VCodePoint VDate::kLocalDateSeparator('/');
 
 // static
-VDate VDate::createFromDateString(const VString& dateString, const VChar& delimiter) {
+VDate VDate::createFromDateString(const VString& dateString, const VCodePoint& delimiter) {
     VStringVector parts = dateString.split(delimiter);
     if (parts.size() < 3) {
         throw VRangeException(VSTRING_FORMAT("Unable to parse date from '%s'.", dateString.chars()));
@@ -1177,7 +1177,7 @@ void VDate::_assertInvariant() const {
 
 // VTimeOfDay ----------------------------------------------------------------
 
-const VChar VTimeOfDay::kLocalTimeSeparator(':');
+const VCodePoint VTimeOfDay::kLocalTimeSeparator(':');
 
 VTimeOfDay::VTimeOfDay()
     : mHour(0)
@@ -1433,15 +1433,14 @@ VString VInstantFormatter::_format(const VInstantStruct& when, int utcOffsetMill
     bool isEscaped = false; // true if we have encountered a single quote (') but not its match to close
     bool isUnescapePending = false; // true if we have encountered a second single quote (')
     bool gotEscapedChars = false;
-    const int formatLength = mFormatSpecifier.length();
     
-    for (int i = 0; i < formatLength; ++i) {
-        VChar c = mFormatSpecifier[i];
+    for (VString::const_iterator i = mFormatSpecifier.begin(); i != mFormatSpecifier.end(); ++i) {
+        VCodePoint cp = *i;
         
         // If we're in escaped mode, handle all cases separately right here.
         if (isEscaped) {
         
-            if (c == '\'') {
+            if (cp == '\'') {
                 // This is likely the end of the escape block, but could be the first of a two adjacent quotes which would mean to emit a single quote
                 if (isUnescapePending) {
                     // Get back to normal escape mode and emit the single quote.
@@ -1467,65 +1466,72 @@ VString VInstantFormatter::_format(const VInstantStruct& when, int utcOffsetMill
             } else {
                 // This is some character inside the escape sequence. Just emit it.
                 gotEscapedChars = true;
-                result += c;
+                result += cp;
                 continue;
             }
         
         }
         
-        switch (c) {
+        if (cp.getUTF8Length() == 1) {
+            VChar c(cp.intValue()); // only using VChar so we can switch on it as char
+            
+            switch (c) {
+
+                case '\'':
         
-            case '\'':
-                // Enter escaped mode.
-                this->_flushPendingFieldSpecifier(when, utcOffsetMilliseconds, pendingFieldSpecifier, result);
-                isEscaped = true;
-                isUnescapePending = false;
-                break;
-        
-            // The following characters match those in Java 1.7 SimpleDateFormat:
-            // <http://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html>
-            case 'G':
-            case 'y':
-            case 'Y':
-            case 'M':
-            //case 'w': // week in year: NOT YET IMPLEMENTED
-            //case 'W': // week in month: NOT YET IMPLEMENTED
-            //case 'D':
-            case 'd':
-            //case 'F': // day of week in month: NOT YET IMPLEMENTED
-            case 'E':
-            case 'u':
-            case 'a':
-            case 'H':
-            case 'k':
-            case 'K':
-            case 'h':
-            case 'm':
-            case 's':
-            case 'S':
-            case 'z':
-            case 'Z':
-            case 'X':
-                if (pendingFieldSpecifier.isNotEmpty() && (c != pendingFieldSpecifier[0])) {
+                    // Enter escaped mode.
                     this->_flushPendingFieldSpecifier(when, utcOffsetMilliseconds, pendingFieldSpecifier, result);
-                }
+                    isEscaped = true;
+                    isUnescapePending = false;
+                    break;
 
-                pendingFieldSpecifier += c;
-                break;
+                // The following characters match those in Java 1.7 SimpleDateFormat:
+                // <http://docs.oracle.com/javase/7/docs/api/java/text/SimpleDateFormat.html>
+                case 'G':
+                case 'y':
+                case 'Y':
+                case 'M':
+                //case 'w': // week in year: NOT YET IMPLEMENTED
+                //case 'W': // week in month: NOT YET IMPLEMENTED
+                //case 'D':
+                case 'd':
+                //case 'F': // day of week in month: NOT YET IMPLEMENTED
+                case 'E':
+                case 'u':
+                case 'a':
+                case 'H':
+                case 'k':
+                case 'K':
+                case 'h':
+                case 'm':
+                case 's':
+                case 'S':
+                case 'z':
+                case 'Z':
+                case 'X':
+                    if (pendingFieldSpecifier.isNotEmpty() && (cp != *(pendingFieldSpecifier.begin()))) {
+                        this->_flushPendingFieldSpecifier(when, utcOffsetMilliseconds, pendingFieldSpecifier, result);
+                    }
 
-            // These are the ones we don't yet implement. Emit nothing, rather than unprocessed char like default does.
-            case 'w': // week in year: NOT YET IMPLEMENTED
-            case 'W': // week in month: NOT YET IMPLEMENTED
-            case 'D':
-            case 'F': // day of week in month: NOT YET IMPLEMENTED
-                this->_flushPendingFieldSpecifier(when, utcOffsetMilliseconds, pendingFieldSpecifier, result);
-                break;
+                    pendingFieldSpecifier += cp;
+                    break;
 
-            default:
-                this->_flushPendingFieldSpecifier(when, utcOffsetMilliseconds, pendingFieldSpecifier, result);
-                result += c;
-                break;
+                // These are the ones we don't yet implement. Emit nothing, rather than unprocessed char like default does.
+                case 'w': // week in year: NOT YET IMPLEMENTED
+                case 'W': // week in month: NOT YET IMPLEMENTED
+                case 'D':
+                case 'F': // day of week in month: NOT YET IMPLEMENTED
+                    this->_flushPendingFieldSpecifier(when, utcOffsetMilliseconds, pendingFieldSpecifier, result);
+                    break;
+
+                default:
+                    this->_flushPendingFieldSpecifier(when, utcOffsetMilliseconds, pendingFieldSpecifier, result);
+                    result += cp;
+                    break;
+            }
+
         }
+        
     }
 
     this->_flushPendingFieldSpecifier(when, utcOffsetMilliseconds, pendingFieldSpecifier, result);
