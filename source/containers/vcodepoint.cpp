@@ -404,7 +404,7 @@ void VCodePoint::_initFromUTF8Bytes(int numBytesToUse, Vu8 byte0, Vu8 byte1, Vu8
 }
 
 void VCodePoint::_initFromUTF16Surrogates(wchar_t leadSurrogate, wchar_t trailSurrogate) {
-    int x = (leadSurrogate & ((1 << 6) -1)) << 10 | trailSurrogate & ((1 << 10) -1);
+    int x = (leadSurrogate & ((1 << 6) -1)) << 10 | (trailSurrogate & ((1 << 10) -1));
     int w = (leadSurrogate >> 6) & ((1 << 5) - 1);
     int u = w + 1;
     mIntValue = u << 16 | x;
