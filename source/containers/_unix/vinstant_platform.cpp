@@ -6,6 +6,7 @@ http://www.bombaydigital.com/
 
 #include "vinstant.h"
 #include "vtypes_internal.h"
+#include "vexception.h"
 
 #include <sys/time.h>
 
@@ -38,6 +39,8 @@ static Vs64 _getMSLLocalTimeZoneOffsetMilliseconds() {
 }
 #endif
 
+#define INSTANT_STRUCT_FORMAT "%d-%02d-%02d %02d:%02d:%02d.%03d"
+
 // static
 Vs64 VInstantStruct::_platform_offsetFromLocalStruct(const VInstantStruct& when) {
     struct tm fields;
@@ -45,16 +48,23 @@ Vs64 VInstantStruct::_platform_offsetFromLocalStruct(const VInstantStruct& when)
     when.getTmStruct(fields);
 
     //lint -e421 "Caution -- function 'mktime(struct tm *)' is considered dangerous [MISRA Rule 127]"
-    Vs64 result = CONST_S64(1000) * static_cast<Vs64>(::mktime(&fields));
+    Vs64 mktimeSeconds = static_cast<Vs64>(::mktime(&fields));
+
+    if (mktimeSeconds == CONST_S64(-1)) {
+        throw VStackTraceException(VSTRING_FORMAT("VInstantStruct::_platform_offsetFromLocalStruct: time value '" INSTANT_STRUCT_FORMAT "' is out of range.",
+            when.mYear, when.mMonth, when.mDay, when.mHour, when.mMinute, when.mSecond, when.mMillisecond));
+    }
+    
+    Vs64 resultOffsetMilliseconds = CONST_S64(1000) * mktimeSeconds;
 
 #ifdef VLIBRARY_METROWERKS
-    result += _getMSLLocalTimeZoneOffsetMilliseconds();
+    resultOffsetMilliseconds += _getMSLLocalTimeZoneOffsetMilliseconds();
 #endif
 
     // tm struct has no milliseconds, so restore input value milliseconds
-    result += (Vs64) when.mMillisecond;
+    resultOffsetMilliseconds += (Vs64) when.mMillisecond;
 
-    return result;
+    return resultOffsetMilliseconds;
 }
 
 // static

@@ -422,6 +422,8 @@ VInstantStruct::VInstantStruct(const VDate& date, const VTimeOfDay& timeOfDay) :
     mDayOfWeek(0) {
 }
 
+#define INSTANT_STRUCT_FORMAT "%d-%02d-%02d %02d:%02d:%02d.%03d"
+
 Vs64 VInstantStruct::getOffsetFromUTCStruct() const {
 
 #ifdef V_USE_TIMEGM_REPLACEMENT
@@ -431,11 +433,18 @@ Vs64 VInstantStruct::getOffsetFromUTCStruct() const {
 
     this->getTmStruct(fields);
 
-    Vs64 result = CONST_S64(1000) * static_cast<Vs64>(::timegm(&fields));
+    Vs64 timegmSeconds = static_cast<Vs64>(::timegm(&fields));
 
-    result += (Vs64) mMillisecond;
+    if (timegmSeconds == CONST_S64(-1)) {
+        throw VStackTraceException(VSTRING_FORMAT("VInstantStruct::getOffsetFromUTCStruct: time value '" INSTANT_STRUCT_FORMAT "' is out of range.",
+            mYear, mMonth, mDay, mHour, mMinute, mSecond, mMillisecond));
+    }
+    
+    Vs64 resultOffsetMilliseconds = CONST_S64(1000) * timegmSeconds;
 
-    return result;
+    resultOffsetMilliseconds += (Vs64) mMillisecond;
+
+    return resultOffsetMilliseconds;
 #endif /* V_USE_TIMEGM_REPLACEMENT */
 }
 
@@ -695,7 +704,7 @@ void VInstant::getLocalString(VString& s, bool fileNameSafe, bool wantMillisecon
 #define SSCANF_FORMAT_UTC_WITH_MILLISECONDS "%d-%02d-%02d %02d:%02d:%02d.%03d UTC"
 
 void VInstant::setUTCString(const VString& s) {
-    if (s == VINSTANT_STRING_NOW) {
+    if (s.isEmpty() || (s == VINSTANT_STRING_NOW)) {
         this->setNow();
     } else if (s == VINSTANT_STRING_PAST) {
         mValue = kInfinitePastInternalValue;
@@ -716,7 +725,7 @@ void VInstant::setUTCString(const VString& s) {
 #define SSCANF_FORMAT_LOCAL_WITH_MILLISECONDS "%d-%02d-%02d %02d:%02d:%02d.%03d"
 
 void VInstant::setLocalString(const VString& s) {
-    if (s == VINSTANT_STRING_NOW) {
+    if (s.isEmpty() || (s == VINSTANT_STRING_NOW)) {
         this->setNow();
     } else if (s == VINSTANT_STRING_PAST) {
         mValue = kInfinitePastInternalValue;
@@ -1473,7 +1482,7 @@ VString VInstantFormatter::_format(const VInstantStruct& when, int utcOffsetMill
         }
         
         if (cp.getUTF8Length() == 1) {
-            VChar c(cp.intValue()); // only using VChar so we can switch on it as char
+            VChar c(cp.intValue()); // VChar-OK: only using so we can switch on it as char
             
             switch (c) {
 

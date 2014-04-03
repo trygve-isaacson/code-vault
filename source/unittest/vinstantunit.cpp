@@ -296,6 +296,81 @@ void VInstantUnit::_runTimeZoneConversionTests() {
     daylightSwitchTestInstant -= VDuration::DAY();
     this->_testInstantRangeRoundTripConversion("Testing near daylight switch", daylightSwitchTestInstant, 30 * VDuration::MINUTE(), 96);
     
+    // Test some instants in time ranges that may have platform issues.
+    VInstant platformTest;
+
+/*
+Notes:
+- No platform seems to support times before 1904, regardless of 64-bit, etc.
+- I'm surprised that Unix times don't start at 1900, what with the "subtract 1900" time base junk in struct tm.
+- Windows does not support negative offsets, so times before 1970 are not supported.
+- 32-bit offsets end in 2038, so 64-bit values/APIs are needed to reach beyond.
+- 64-bit offsets can reach past the year 5000, but Windows 64-bit APIs only support through the year 3000.
+- The UTC time offset for 1 second before 1970 is the value -1 (or -1000 milliseconds). But -1 is the value
+  returned for failure in the timegm() and mktime(), so we can't tell success from failure.
+  On Windows this is probably OK because it doesn't support pre-1970 times anyway.
+  But on Unix we may be able to special case UTC time 1969-12-31 23:59:59.000 and return -1000ms.
+  (Our timegm() will do this, so just call it always?)
+  Not sure if this workaround is possible for mktime() because it is time zone dependent.
+*/
+#ifdef VCOMPILER_64BIT
+    #define VCOMPILER_IS_64BIT true
+#else
+    #define VCOMPILER_IS_64BIT false
+#endif
+
+#ifdef VPLATFORM_MAC
+    #define TIME_APIS_SUPPORT_1776 false
+    #define TIME_APIS_SUPPORT_1900 false
+    #define TIME_APIS_SUPPORT_1906 true
+    #define TIME_APIS_SUPPORT_1969 true
+    #define TIME_APIS_SUPPORT_2039 VCOMPILER_IS_64BIT
+    #define TIME_APIS_SUPPORT_3001 VCOMPILER_IS_64BIT
+    #define TIME_APIS_SUPPORT_5001 VCOMPILER_IS_64BIT
+#endif
+
+#ifdef VPLATFORM_UNIX
+    #define TIME_APIS_SUPPORT_1776 false
+    #define TIME_APIS_SUPPORT_1900 false
+    #define TIME_APIS_SUPPORT_1906 true
+    #define TIME_APIS_SUPPORT_1969 true
+    #define TIME_APIS_SUPPORT_2039 VCOMPILER_IS_64BIT
+    #define TIME_APIS_SUPPORT_3001 VCOMPILER_IS_64BIT
+    #define TIME_APIS_SUPPORT_5001 VCOMPILER_IS_64BIT
+#endif
+
+#ifdef VPLATFORM_WIN
+
+    #ifdef VCOMPILER_MSVC
+        #define HAS_MKTIME64 true
+    #else
+        #define HAS_MKTIME64 false
+    #endif
+
+    #define TIME_APIS_SUPPORT_1776 false
+    #define TIME_APIS_SUPPORT_1900 false
+    #define TIME_APIS_SUPPORT_1906 false
+    #define TIME_APIS_SUPPORT_1969 false
+    #define TIME_APIS_SUPPORT_2039 HAS_MKTIME64  // With MSVC, we use ::_mktime64() which reaches through year 3000
+    #define TIME_APIS_SUPPORT_3001 false
+    #define TIME_APIS_SUPPORT_5001 false
+#endif
+    
+    // Using UTC times here so our values are identical no matter where test is run from.
+    // TODO: vary the booleans by platform; initial values are expected result for Mac OS X
+    this->_test1InstantRangeRoundTripConversion("Testing earliest",         VDateAndTime(1776,  7,  4, 12,  0,  0, 0), TIME_APIS_SUPPORT_1776); // way before various epoch boundaries
+    this->_test1InstantRangeRoundTripConversion("Testing pre-Mac",          VDateAndTime(1900,  7,  4, 12,  0,  0, 0), TIME_APIS_SUPPORT_1900); // before Mac 1904 boundary
+    this->_test1InstantRangeRoundTripConversion("Testing post-Mac",         VDateAndTime(1906,  7,  4, 12,  0,  0, 0), TIME_APIS_SUPPORT_1906); // after Mac 1904 boundary
+    this->_test1InstantRangeRoundTripConversion("Testing pre-Unix",         VDateAndTime(1966,  7,  4, 12,  0,  0, 0), TIME_APIS_SUPPORT_1969); // well before 1970 Unix epoch, so still before Windows API support
+    this->_test1InstantRangeRoundTripConversion("Testing 2s pre-Unix",      VDateAndTime(1969, 12, 31, 23, 59, 58, 0), TIME_APIS_SUPPORT_1969); // 2 second before 1970 Unix epoch, so still before Windows API support
+    this->_test1InstantRangeRoundTripConversion("Testing 1s pre-Unix",      VDateAndTime(1969, 12, 31, 23, 59, 59, 0), false); // 1 second before 1970 Unix epoch is indistinguishible from -1 return code from OS time APIs
+    this->_test1InstantRangeRoundTripConversion("Testing @ Unix",           VDateAndTime(1970,  1,  1,  0,  0,  0, 0), true); // start of 1970 Unix epoch, first Windows API support (give or take local time zone)
+    this->_test1InstantRangeRoundTripConversion("Testing 1ms into Unix",    VDateAndTime(1970,  1,  1,  0,  0,  0, 1), true); // 1ms after tart of 1970 Unix epoch
+    this->_test1InstantRangeRoundTripConversion("Testing well-supported",   VDateAndTime(2001,  1,  1,  0,  0,  0, 0), true); // well into fully supported date range
+    this->_test1InstantRangeRoundTripConversion("Testing after Unix",       VDateAndTime(2039,  1,  1,  0,  0,  0, 0), TIME_APIS_SUPPORT_2039); // 32-bit Unix offsets end in 2038
+    this->_test1InstantRangeRoundTripConversion("Testing after Win64",      VDateAndTime(3001,  1,  1,  0,  0,  0, 0), TIME_APIS_SUPPORT_3001); // 64-bit Windows support ends in 3000
+    this->_test1InstantRangeRoundTripConversion("Testing far future",       VDateAndTime(5001,  1,  1,  0,  0,  0, 0), TIME_APIS_SUPPORT_5001); // 64-bit milliseconds go way beyond this
+    
     // We know exactly what the correct value for July 14 2004 noon UTC is:
     VUNIT_ASSERT_TRUE_LABELED(july_14_2004_noon_utc.getValue() == CONST_S64(1089806400000), "utc epoch known offset");
     // (The value for July 14 2004 local time depends on our local time zone.)
@@ -799,5 +874,24 @@ void VInstantUnit::_testInstantRangeRoundTripConversion(const VString& label, co
         }
 
         VUNIT_ASSERT_EQUAL_LABELED(whenOffset, whenLocalCheckOffset, VSTRING_FORMAT("%s: %d local '%s' %s", label.chars(), i, when.getLocalString().chars(), deltaDisplay.chars()));
+    }
+}
+
+#define INSTANT_STRUCT_FORMAT "%d-%02d-%02d %02d:%02d:%02d.%03d"
+
+void VInstantUnit::_test1InstantRangeRoundTripConversion(const VString& label, const VDateAndTime& when, bool expectSuccess) {
+
+    try {
+        VInstant i;
+        i.setDateAndTime(when, VInstant::UTC_TIME_ZONE_ID());
+        this->_testInstantRangeRoundTripConversion(label, i, VDuration(), 1);
+        VUNIT_ASSERT_TRUE_LABELED(expectSuccess, label);
+    } catch (...) {
+        if (!expectSuccess) {
+            this->logStatus(VSTRING_FORMAT("As expected, time value '" INSTANT_STRUCT_FORMAT "' is outside of supported range on this platform.",
+                when.getYear(), when.getMonth(), when.getDay(), when.getHour(), when.getMinute(), when.getSecond(), when.getMillisecond()));
+        } else {
+            VUNIT_ASSERT_TRUE_LABELED(!expectSuccess, label);
+        }
     }
 }
