@@ -83,7 +83,7 @@ class VColor {
                         leading and trailing whitespace is OK
         */
         explicit VColor(const VString& cssColor) : mRed(0), mGreen(0), mBlue(0), mAlpha(255) { this->setCSSColor(cssColor); }
-        explicit VColor(const char* cssColor) : mRed(0), mGreen(0), mBlue(0), mAlpha(255) { this->setCSSColor(cssColor); }
+        //explicit VColor(const char* cssColor) : mRed(0), mGreen(0), mBlue(0), mAlpha(255) { this->setCSSColor(cssColor); }
         /**
         Constructor for reading the rgba value from a binary stream.
         */

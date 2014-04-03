@@ -1344,20 +1344,10 @@ int VString::replace(const VString& searchString, const VString& replacementStri
     return numReplacements;
 }
 
-int VString::replace(const VChar& searchChar, const VChar& replacementChar, bool caseSensitiveSearch) {
+int VString::replace(const VCodePoint& searchChar, const VCodePoint& replacementChar, bool caseSensitiveSearch) {
     ASSERT_INVARIANT();
-
-    int     numReplacements = 0;
-    char    match = searchChar.charValue();
-    char    replacement = replacementChar.charValue();
-
-    char* buf = _set();
-    for (int i = 0; i < mU.mI.mStringLength; ++i) {
-        if (buf[i] == match || (!caseSensitiveSearch && VChar::equalsIgnoreCase(buf[i], searchChar))) {
-            buf[i] = replacement;
-            ++numReplacements;
-        }
-    }
+    
+    int numReplacements = this->replace(searchChar.toString(), replacementChar.toString(), caseSensitiveSearch);
 
     ASSERT_INVARIANT();
 

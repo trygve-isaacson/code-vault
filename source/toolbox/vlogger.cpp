@@ -780,7 +780,7 @@ void VLogger::emitToGlobalAppenders(int level, const char* file, int line, bool 
 // static
 VString VLogger::getCleansedLoggerName(const VString& s) {
     VString cleansed(s);
-    cleansed.replace(VChar('.'), VChar('-')); // TODO: get rid of VChar
+    cleansed.replace(VCodePoint('.'), VCodePoint('-'));
     return cleansed;
 }
 

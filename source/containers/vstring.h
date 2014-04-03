@@ -953,7 +953,7 @@ DONE        VStringVector split(const VCodePoint& delimiter, int limit = 0, bool
         @param  caseSensitiveSearch true if the search match should be case-sensitive
         @return the number of replaced occurrences
         */
-        int replace(const VChar& searchChar, const VChar& replacementChar, bool caseSensitiveSearch = true);
+        int replace(const VCodePoint& searchChar, const VCodePoint& replacementChar, bool caseSensitiveSearch = true);
 
         /**
         Folds the string to lower case using tolower().
