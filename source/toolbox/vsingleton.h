@@ -2,6 +2,7 @@
 Copyright c1997-2014 Trygve Isaacson. All rights reserved.
 This file is part of the Code Vault version 3.3
 http://www.bombaydigital.com/
+License: MIT. See LICENSE.md in the Vault top level directory.
 */
 
 #ifndef vsingleton_h
