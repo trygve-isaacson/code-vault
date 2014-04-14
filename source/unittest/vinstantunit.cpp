@@ -367,10 +367,10 @@ Notes:
     this->_test1InstantRangeRoundTripConversion("Testing 1s pre-Unix",      VDateAndTime(1969, 12, 31, 23, 59, 59, 0), false); // 1 second before 1970 Unix epoch is indistinguishible from -1 return code from OS time APIs
     this->_test1InstantRangeRoundTripConversion("Testing @ Unix",           VDateAndTime(1970,  1,  1,  0,  0,  0, 0), true); // start of 1970 Unix epoch, first Windows API support (give or take local time zone)
     this->_test1InstantRangeRoundTripConversion("Testing 1ms into Unix",    VDateAndTime(1970,  1,  1,  0,  0,  0, 1), true); // 1ms after tart of 1970 Unix epoch
-    this->_test1InstantRangeRoundTripConversion("Testing well-supported",   VDateAndTime(2001,  1,  1,  0,  0,  0, 0), true); // well into fully supported date range
-    this->_test1InstantRangeRoundTripConversion("Testing after Unix",       VDateAndTime(2039,  1,  1,  0,  0,  0, 0), TIME_APIS_SUPPORT_2039); // 32-bit Unix offsets end in 2038
-    this->_test1InstantRangeRoundTripConversion("Testing after Win64",      VDateAndTime(3001,  1,  1,  0,  0,  0, 0), TIME_APIS_SUPPORT_3001); // 64-bit Windows support ends in 3000
-    this->_test1InstantRangeRoundTripConversion("Testing far future",       VDateAndTime(5001,  1,  1,  0,  0,  0, 0), TIME_APIS_SUPPORT_5001); // 64-bit milliseconds go way beyond this
+    this->_test1InstantRangeRoundTripConversion("Testing well-supported",   VDateAndTime(2001,  1,  2,  0,  0,  0, 0), true); // well into fully supported date range
+    this->_test1InstantRangeRoundTripConversion("Testing after Unix",       VDateAndTime(2039,  1,  2,  0,  0,  0, 0), TIME_APIS_SUPPORT_2039); // 32-bit Unix offsets end in 2038
+    this->_test1InstantRangeRoundTripConversion("Testing after Win64",      VDateAndTime(3001,  1,  2,  0,  0,  0, 0), TIME_APIS_SUPPORT_3001); // 64-bit Windows support ends in 3000
+    this->_test1InstantRangeRoundTripConversion("Testing far future",       VDateAndTime(5001,  1,  2,  0,  0,  0, 0), TIME_APIS_SUPPORT_5001); // 64-bit milliseconds go way beyond this
     
     // We know exactly what the correct value for July 14 2004 noon UTC is:
     VUNIT_ASSERT_TRUE_LABELED(july_14_2004_noon_utc.getValue() == CONST_S64(1089806400000), "utc epoch known offset");
