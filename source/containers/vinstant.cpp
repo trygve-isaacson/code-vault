@@ -1481,10 +1481,8 @@ VString VInstantFormatter::_format(const VInstantStruct& when, int utcOffsetMill
         
         }
         
-        if (cp.getUTF8Length() == 1) {
-            VChar c(cp.intValue()); // VChar-OK: only using so we can switch on it as char
-            
-            switch (c) {
+        if (cp.isASCII()) {
+            switch (cp.toASCIIChar()) {
 
                 case '\'':
         

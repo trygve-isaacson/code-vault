@@ -202,6 +202,14 @@ VString VCodePoint::toString() const {
     return s;
 }
 
+VChar VCodePoint::toASCIIChar() const {
+    if (! this->isASCII()) {
+        throw VRangeException(VSTRING_FORMAT("VCodePoint::toASCIIChar() for an invalid UTF-8 code point 0x%X", mIntValue));
+    }
+    
+    return VChar(mIntValue);
+}
+
 bool VCodePoint::isWhitespace() const {
     // Need to be careful about signage for values > 0x7F.
     int value = this->intValue();

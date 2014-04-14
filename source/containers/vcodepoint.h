@@ -116,6 +116,14 @@ class VCodePoint {
         */
         VString toString() const;
         /**
+        Returns a VChar containing the character value if it is ASCII (code points 0 through 127), or throws
+        a VRangeException if not. Unless you prefer to catch the exception, you should normally call isASCII()
+        before invoking this conversion. The primary use case is when you are parsing a string and looking for
+        specific ASCII syntax in it; conversion to VChar lets you 'switch' on single-quoted char constants.
+        @return a VChar representation of this ASCII code point
+        */
+        VChar toASCIIChar() const;
+        /**
         Returns a std::wstring in UTF-16 format, that is to say a small array of one or two UTF-16 code units.
         This is how you take a code point and turn it into a wstring that can be inserted or appended into
         another, longer, wstring. If you need to interface with Windows "wide" APIs, wstring is used; normally
@@ -140,6 +148,13 @@ class VCodePoint {
         @return true if the value is not zero
         */
         bool isNotNull() const { return mIntValue != 0; }
+        /**
+        Returns true if this code point represents an ASCII value (code points 0 through 127).
+        This test should always be made prior to calling toASCIIChar() since that method will
+        throw a range exception if the code point is not an ASCII character.
+        @return true if the value is in the range 0 to 127.
+        */
+        bool isASCII() const { return mUTF8Length == 1; }
         /**
         Avoid using these. This is a temporary bridge from VChar / char, in code migrating to VCodePoint.
         */

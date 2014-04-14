@@ -76,18 +76,28 @@ class VTextIOStream : public VIOStream {
         void readLine(VString& s, bool includeLineEnding = false);
 
         /**
-        Reads the next character from the stream, even if that character is part
+        Reads the next code point (1 to 4 bytes) from the stream, even if it is part
         of a line ending. Throws a VException if EOF is encountered. You probably
         don't want to mix use of readLine and readCharacter in the same input
         stream, unless you are prepared to deal with line ending characters
-        being read by readCharacter, and the result that calls to readLine will
+        being read by readUTF8CodePoint, and the result that calls to readLine will
         not see those characters and be able to set the mLineEndingsReadKind
         property except for the line endings that it does see.
 
-        @return    the next character
+        @return    the next code point
         */
-        //VChar readCharacter(); DEPRECATED -- use: readUTF8CodePoint()
         VCodePoint readUTF8CodePoint();
+        /**
+        Reads the next byte from the stream and returns a VChar to wrap it. Note that
+        this is not UTF-8 compatible and should only be used on single-byte streams
+        where you interpret chars out of the 0-127 ASCII range correctly according to
+        some code page that is implicit in the stream context. Generally you should
+        avoid this approach to text streams and use UTF-8 instead, but you may have
+        specific streams (e.g. a file in some particular format) where this is necessary.
+        
+        @return the next single byte char
+        */
+        VChar readCharacterByte();
 
         /**
         Primarily useful for reading from an underlying file stream, reads until

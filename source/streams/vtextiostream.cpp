@@ -117,18 +117,17 @@ void VTextIOStream::readLine(VString& s, bool includeLineEnding) {
     s = mLineBuffer;
 }
 
-/*
-VChar VTextIOStream::readCharacter() {
+VCodePoint VTextIOStream::readUTF8CodePoint() {
+    VCodePoint cp(*this);
+    return cp;
+}
+
+VChar VTextIOStream::readCharacterByte() {
     char c;
 
     this->readGuaranteed(reinterpret_cast<Vu8*>(&c), 1);
 
     return c;
-}
-*/
-VCodePoint VTextIOStream::readUTF8CodePoint() {
-    VCodePoint cp(*this);
-    return cp;
 }
 
 void VTextIOStream::readAll(VString& s, bool includeLineEndings) {

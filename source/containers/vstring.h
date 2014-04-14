@@ -43,8 +43,13 @@ class VMutex;
     using raw C strings, and it provides many useful ways of working
     with strings in a safe way.
 
-    A related class, VChar, can be used to represent a single character
-    and the operations that are useful for characters.
+    A related class, VCodePoint, can be used to represent a single Unicode
+    character and the operations that are useful for characters.
+    
+    There is another class, VChar, that is a wrapper around the old-fashioned
+    single-bye C char type, which should usually be avoided because it is not
+    generally compatible with Unicode data. Using VString and VCodePoint
+    exclusively will lead to good Unicode behavior.
 
 */
 
