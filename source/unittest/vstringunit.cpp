@@ -1015,6 +1015,94 @@ void VStringUnit::run() {
     --ri;
     VUNIT_ASSERT_EQUAL_LABELED((*ri), han, "reverse_iterator decrement H");
     
+    // Test new code point and iterator position oriented APIs.
+    VString positionTest(hexformKoala);
+    positionTest += "middle";
+    positionTest += hexformOmega;
+    VUNIT_ASSERT_TRUE_LABELED(positionTest.startsWith(hexformKoala), "startsWith code point");
+    VUNIT_ASSERT_FALSE_LABELED(positionTest.startsWith(hexformOmega), "!startsWith code point");
+    VUNIT_ASSERT_TRUE_LABELED(positionTest.endsWith(hexformOmega), "endsWith code point");
+    VUNIT_ASSERT_FALSE_LABELED(positionTest.endsWith(hexformKoala), "!endsWith code point");
+    positionTest.insert(euro, positionTest.begin());
+    VUNIT_ASSERT_TRUE_LABELED(positionTest.startsWith(euro), "insert code point begin");
+    VUNIT_ASSERT_FALSE_LABELED(positionTest.startsWith(han), "!insert code point begin");
+    positionTest.insert("one", positionTest.begin());
+    VUNIT_ASSERT_TRUE_LABELED(positionTest.startsWith("one"), "insert string begin");
+    VUNIT_ASSERT_FALSE_LABELED(positionTest.startsWith("hey"), "!insert string begin");
+    positionTest.insert('1', positionTest.begin());
+    VUNIT_ASSERT_TRUE_LABELED(positionTest.startsWith('1'), "insert char begin");
+    VUNIT_ASSERT_FALSE_LABELED(positionTest.startsWith('!'), "!insert char begin");
+    positionTest.insert(cent, positionTest.end());
+    VUNIT_ASSERT_TRUE_LABELED(positionTest.endsWith(cent), "insert code point end");
+    VUNIT_ASSERT_FALSE_LABELED(positionTest.endsWith(euro), "!insert code point end");
+    positionTest.insert("two", positionTest.end());
+    VUNIT_ASSERT_TRUE_LABELED(positionTest.endsWith("two"), "insert string end");
+    VUNIT_ASSERT_FALSE_LABELED(positionTest.endsWith("hey"), "insert string end");
+    positionTest.insert('2', positionTest.end());
+    VUNIT_ASSERT_TRUE_LABELED(positionTest.endsWith('2'), "insert char end");
+    VUNIT_ASSERT_FALSE_LABELED(positionTest.endsWith('!'), "!insert char end");
+    
+    /* scope */ {
+        VCodePoint euroPlus1("U+20AD");
+
+        VString findTestData(euroPlus1);
+        findTestData += euroPlus1;
+        findTestData += euro;
+        findTestData += euroPlus1;
+        findTestData += euroPlus1;
+        // So if euro is 'e' and euroPlus1 is 'X', we have "XXeXX" for a 5 code point sequence.
+        
+        // Test finding euro in bounds, failing to find out of bounds, with explicit and default start/end positions.
+        /* scope */ {
+            VString findTest = findTestData;
+            VString::iterator p1 = findTest.find(euro);
+            VUNIT_ASSERT_TRUE_LABELED(p1 != findTest.end(), "find default");
+            VUNIT_ASSERT_EQUAL_LABELED(*p1, euro, "find default value");
+            VString::iterator p2 = findTest.find(euro, findTest.begin() + 1, findTest.begin() + 4);
+            VUNIT_ASSERT_TRUE_LABELED(p2 != findTest.end(), "find range default");
+            VUNIT_ASSERT_EQUAL_LABELED(*p2, euro, "find range default value");
+            VString::iterator p3 = findTest.find(euro, findTest.begin() + 2, findTest.begin() + 3);
+            VUNIT_ASSERT_TRUE_LABELED(p3 != findTest.end(), "find exact range default");
+            VUNIT_ASSERT_EQUAL_LABELED(*p3, euro, "find exact range default value");
+            VString::iterator p4 = findTest.find(cent);
+            VUNIT_ASSERT_TRUE_LABELED(p4 == findTest.end(), "find fail default");
+            VString::iterator p5 = findTest.find(euro, findTest.begin(), findTest.begin() + 2);
+            VUNIT_ASSERT_TRUE_LABELED(p5 == findTest.end(), "find low range fail default");
+            VString::iterator p6 = findTest.find(euro, findTest.begin() + 3, findTest.end());
+            VUNIT_ASSERT_TRUE_LABELED(p6 == findTest.end(), "find high range fail default");
+        }
+        
+        // Repeat with const operations.
+        /* scope */ {
+            const VString findTest = findTestData;
+            VString::const_iterator p1 = findTest.find(euro);
+            VUNIT_ASSERT_TRUE_LABELED(p1 != findTest.end(), "const find default");
+            VUNIT_ASSERT_EQUAL_LABELED(*p1, euro, "const find default value");
+            VString::const_iterator p2 = findTest.find(euro, findTest.begin() + 1, findTest.begin() + 4);
+            VUNIT_ASSERT_TRUE_LABELED(p2 != findTest.end(), "const find range default");
+            VUNIT_ASSERT_EQUAL_LABELED(*p2, euro, "const find range default value");
+            VString::const_iterator p3 = findTest.find(euro, findTest.begin() + 2, findTest.begin() + 3);
+            VUNIT_ASSERT_TRUE_LABELED(p3 != findTest.end(), "const find exact range default");
+            VUNIT_ASSERT_EQUAL_LABELED(*p3, euro, "const find exact range default value");
+            VString::const_iterator p4 = findTest.find(cent);
+            VUNIT_ASSERT_TRUE_LABELED(p4 == findTest.end(), "const find fail default");
+            VString::const_iterator p5 = findTest.find(euro, findTest.begin(), findTest.begin() + 2);
+            VUNIT_ASSERT_TRUE_LABELED(p5 == findTest.end(), "const find low range fail default");
+            VString::const_iterator p6 = findTest.find(euro, findTest.begin() + 3, findTest.end());
+            VUNIT_ASSERT_TRUE_LABELED(p6 == findTest.end(), "const find high range fail default");
+        }
+        
+        VUNIT_ASSERT_EQUAL_LABELED(findTestData.getNumCodePoints(), 5, "before code point truncate");
+        findTestData.truncateCodePoints(10);
+        VUNIT_ASSERT_EQUAL_LABELED(findTestData.getNumCodePoints(), 5, "after code point truncate over");
+        findTestData.truncateCodePoints(5);
+        VUNIT_ASSERT_EQUAL_LABELED(findTestData.getNumCodePoints(), 5, "after code point truncate exact");
+        findTestData.truncateCodePoints(4);
+        VUNIT_ASSERT_EQUAL_LABELED(findTestData.getNumCodePoints(), 4, "after code point truncate minus 1");
+        findTestData.truncateCodePoints(0);
+        VUNIT_ASSERT_EQUAL_LABELED(findTestData.getNumCodePoints(), 0, "after code point truncate zero");
+    }
+    
     VString stringWithMultibyteCharacters;
     stringWithMultibyteCharacters += "Dollar = '";
     stringWithMultibyteCharacters += dollar;
@@ -1043,8 +1131,9 @@ void VStringUnit::run() {
     int initialLength = stringWithMultibyteCharacters.length();
     VUNIT_ASSERT_EQUAL_LABELED(stringWithMultibyteCharacters.getNumCodePoints(), 49, "initial num code points");
     stringWithMultibyteCharacters.replace("Dollar", "Pound");   // 1 less character in replacement
-    stringWithMultibyteCharacters.replace("$", VCodePoint("U+00A3"));   // 1-for-1 substitution of single byte code point with multi-byte code point
     VUNIT_ASSERT_EQUAL_LABELED(stringWithMultibyteCharacters.getNumCodePoints(), 48, "recalculated num code points");
+    stringWithMultibyteCharacters.replace("$", VCodePoint("U+00A3"));   // 1-for-1 substitution of single byte code point with multi-byte code point
+    VUNIT_ASSERT_EQUAL_LABELED(stringWithMultibyteCharacters.getNumCodePoints(), 48, "1-for-1 replace num code points");
     // Check the length as well. It's not that the length doesn't change, but we replaced "Dollar" with "Pound" (1 less) and '$' with U+00A3 which is a two-byte sequence (1 more)
     VUNIT_ASSERT_EQUAL_LABELED(stringWithMultibyteCharacters.length(), initialLength, "expected length after replace");
     this->logStatus(stringWithMultibyteCharacters);

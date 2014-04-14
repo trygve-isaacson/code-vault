@@ -139,7 +139,7 @@ class VCodePoint {
         /**
         Returns true if the code point is value zero. This corresponds to an ASCII NUL character, and might
         be useful in rare cases where you are reading a null terminator from a buffer, or when initializing
-        a code pointer with value zero and checking it later.
+        a code point with value zero and checking it later.
         @return true if the value is zero
         */
         bool isNull() const { return mIntValue == 0; }
@@ -151,7 +151,8 @@ class VCodePoint {
         /**
         Returns true if this code point represents an ASCII value (code points 0 through 127).
         This test should always be made prior to calling toASCIIChar() since that method will
-        throw a range exception if the code point is not an ASCII character.
+        throw a range exception if the code point is not an ASCII character, unless you intend
+        to catch such exceptions.
         @return true if the value is in the range 0 to 127.
         */
         bool isASCII() const { return mUTF8Length == 1; }
@@ -211,13 +212,6 @@ class VCodePoint {
         */
         static int getPreviousUTF8CodePointOffset(const Vu8* buffer, int offset);
 
-        /**
-        Returns the UTF-16 length of a code point given the first UTF-16 code unit of the code point.
-        The length can be simply deduced by the value in the code unit.
-        @param  startUnit   the first code unit of a 1- or 2-byte UTF-16 code point sequence
-        @return the number of code units in the UTF-16 sequence
-        */
-        //static int getUTF16LengthFromUTF16StartUnit(Vu16 startUnit);
         /**
         Returns the UTF-16 length of a code point given the code point's integer value.
         @param  intValue    a code point value

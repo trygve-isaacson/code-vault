@@ -586,61 +586,55 @@ class VString {
         void format(const char* formatText, ...);
 #endif
 
-        // New preferred APIs that are VCodePoint-oriented rather than byte index-oriented.
-        // The old APIs are fine for many operations even with UTF-8 data, but are not UTF-8 savvy.
-        // Need to think about how to do this. Could have a new-vs-old #define to turn new mode
-        // on, which would make most APIs use code point offsets (or iterator position?) instead
-        // of buffer index. Maybe iterator position is the way to go and just overload, with symbol
-        // to optionally disable APIs that might encourage UTF-problematic usage.
-        int getNumCodePoints() const;
-#if 0
-        void insert(const VCodePoint& cp, const VString::iterator& pos);
-        void insertAtCodePoint(const VString& s, const VString::iterator& pos);
-        void truncateCodePointLength(int maxNumCodePoints);
-        VCodePoint at(const VString::const_iterator& pos) const;
-        //VCodePoint operator[](int i) const; // nope, will conflict with existing operator[](int i)
-        bool startsWith(const VCodePoint& cp) const;
-        bool startsWithIgnoreCase(const VCodePoint& cp) const;
-        bool endsWith(const VCodePoint& cp) const;
-        bool endsWithIgnoreCase(const VCodePoint& cp) const;
-        int codePointIndexOf(const VCodePoint& cp, int fromCodePointIndex = 0) const;
-        int codePointIndexOfIgnoreCase(const VCodePoint& cp, int fromCodePointIndex = 0) const;
-        int codePointIndexOf(char c, int fromCodePointIndex = 0) const;
-        int codePointIndexOfIgnoreCase(char c, int fromCodePointIndex = 0) const;
-        int codePointIndexOf(const VString& s, int fromCodePointIndex = 0) const;
-        int codePointIndexOfIgnoreCase(const VString& s, int fromCodePointIndex = 0) const;
-        int lastCodePointIndexOf(const VCodePoint& cp, int fromCodePointIndex = -1) const;
-        int lastCodePointIndexOfIgnoreCase(const VCodePoint& cp, int fromCodePointIndex = -1) const;
-        int lastCodePointIndexOf(char c, int fromCodePointIndex = -1) const;
-        int lastCodePointIndexOfIgnoreCase(char c, int fromCodePointIndex = -1) const;
-        int lastCodePointIndexOf(const VString& s, int fromCodePointIndex = -1) const;
-        int lastCodePointIndexOfIgnoreCase(const VString& s, int fromCodePointIndex = -1) const;
-        bool codePointRegionMatches(const VString::const_iterator& thisPos, const VString& otherString, const VString::const_iterator& otherPos, int regionNumCodePoints, bool caseSensitive = true) const;
-        bool containsCP(const VCodePoint& cp, int fromCodePointIndex = 0) const;
-        bool containsCP(char c, int fromCodePointIndex = 0) const;
-        bool containsCP(const VString& s, int fromCodePointIndex = 0) const;
-        bool containsIgnoreCaseCP(const VCodePoint& cp, int fromCodePointIndex = 0) const;
-        bool containsIgnoreCaseCP(char c, int fromCodePointIndex = 0) const;
-        bool containsIgnoreCaseCP(const VString& s, int fromCodePointIndex = 0) const;
-        int replace(const VCodePoint& cp, const VCodePoint& cp, bool caseSensitiveSearch = true);
-        void setAtCodePointIndex(int codePointIndex, const VCodePoint& cp);
-        void getSubstringAtCodePointIndex(VString& toString, int startCodePointIndex/* = 0*/, int endCodePointIndex = -1) const;
-        void substringInPlaceAtCodePointIndex(int startIndex/* = 0*/, int endIndex = -1);
-DONE        void split(VStringVector& result, const VCodePoint& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
-DONE        VStringVector split(const VCodePoint& delimiter, int limit = 0, bool stripTrailingEmpties = true) const;
-        // copyToBuffer - must not copy partial code point if truncating during copy
-#endif
-
+        /**
+        Inserts the specified code point into the string at the
+        specified iterator position, moving the remaining part of
+        the string later in the buffer.
+        Thus the length of the string increases by the length of
+        the code point.
+        To append, you are better off using operator+=.
+        Note that the iterator position does not change during
+        this insert.
+        @param  cp          the code point to insert
+        @param  position    the position to insert at
+        */
+        void insert(const VCodePoint& cp, const VString::iterator& position);
+        /**
+        Inserts the specified string into the string at the
+        specified iterator position, moving the remaining part of
+        the string later in the buffer.
+        Thus the length of the string increases by the length of
+        the string being inserted
+        To append, you are better off using operator+=.
+        Note that the iterator position does not change during
+        this insert.
+        @param  s           the string to insert
+        @param  position    the position to insert at
+        */
+        void insert(const VString& s, const VString::iterator& position);
         /**
         Inserts the specified character into the string at the
+        specified iterator position, moving the remaining part of
+        the string later in the buffer.
+        Thus the length of the string increases by 1.
+        To append, you are better off using operator+=.
+        Note that the iterator position does not change during
+        this insert.
+        @param  c           the character to insert
+        @param  position    the position to insert at
+        */
+        void insert(char c, const VString::iterator& position);
+
+        /**
+        Inserts the specified code point into the string at the
         specified offset (default is at the front of the string),
         moving the remaining part of the string later in the buffer.
         Thus the length of the string increases by 1 character.
         To append, you are better off using operator+=.
-        @param  c       the char to insert
-        @param  offset  the location to insert in front of
+        @param  cp      the code point to insert
+        @param  offset  the buffer location to insert in front of
         */
-        void insert(char c, int offset = 0);
+        void insert(const VCodePoint& cp, int offset = 0);
         /**
         Inserts the specified string into the string at the
         specified offset (default is at the front of the string),
@@ -652,16 +646,39 @@ DONE        VStringVector split(const VCodePoint& delimiter, int limit = 0, bool
         @param  offset  the location to insert in front of
         */
         void insert(const VString& s, int offset = 0);
+        /**
+        Inserts the specified character into the string at the
+        specified offset (default is at the front of the string),
+        moving the remaining part of the string later in the buffer.
+        Thus the length of the string increases by 1 character.
+        To append, you are better off using operator+=.
+        @param  c       the char to insert
+        @param  offset  the location to insert in front of
+        */
+        void insert(char c, int offset = 0);
 
         /**
-        Returns the string length in bytes.
+        Returns the number of code points in the string. Note that this is
+        not the same as the number of bytes.
+        @return the number of code points in the string
+        */
+        int getNumCodePoints() const;
+        /**
+        Returns the string length in bytes. Note that this is not the same
+        as the number of code points.
         @return the string length in bytes
         */
         int length() const;
         /**
+        Truncates the string to specified number of code points; if the string
+        is already that length or less, nothing happens.
+        @param  maxNumCodePoints  the number of code points to truncate to
+        */
+        void truncateCodePoints(int maxNumCodePoints);
+        /**
         Truncates the string to specified length; if the string is already
         that length or less, nothing happens.
-        @param  length  the length to truncate to
+        @param  maxLength  the length to truncate to
         */
         void truncateLength(int maxLength);
         /**
@@ -797,40 +814,73 @@ DONE        VStringVector split(const VCodePoint& delimiter, int limit = 0, bool
         int compareIgnoreCase(const char* s) const;
         /**
         Returns true if this string starts with the specified string.
-        @param  s   the string to search for
+        @param  s   the string to compare with
         @return true if this string starts with the specified string
         */
         bool startsWith(const VString& s) const;
         /**
         Returns true if this string starts with the specified string (ignoring case).
-        @param  s   the string to search for
+        @param  s   the string to compare with
         @return true if this string starts with the specified string (ignoring case)
         */
         bool startsWithIgnoreCase(const VString& s) const;
         /**
+        Returns true if this string starts with the specified code point.
+        @param  cp   the code point to compare with
+        @return true if this string starts with the specified code point
+        */
+        bool startsWith(const VCodePoint& cp) const;
+        /**
         Returns true if this string starts with the specified char.
-        @param  c   the char to search for
+        @param  c   the char to compare with
         @return true if this string starts with the specified char
         */
         bool startsWith(char c) const;
         /**
         Returns true if this string ends with the specified string.
-        @param  s   the string to search for
+        @param  s   the string to compare with
         @return true if this string ends with the specified string
         */
         bool endsWith(const VString& s) const;
         /**
         Returns true if this string ends with the specified string (ignoring case).
-        @param  s   the string to search for
+        @param  s   the string to compare with
         @return true if this string ends with the specified string (ignoring case)
         */
         bool endsWithIgnoreCase(const VString& s) const;
         /**
+        Returns true if this string ends with the specified code point.
+        @param  c   the char to compare with
+        @return true if this string ends with the specified code point
+        */
+        bool endsWith(const VCodePoint& cp) const;
+        /**
         Returns true if this string ends with the specified char.
-        @param  c   the char to search for
+        @param  c   the char to compare with
         @return true if this string ends with the specified char
         */
         bool endsWith(char c) const;
+        /**
+        Returns an iterator pointing to the first occurrence of the specified
+        code point within the string.
+        @param  cp  the code point to search for
+        @return an iterator pointing to the found code point, or end() if not found
+        */
+        VString::const_iterator find(const VCodePoint& cp) const;
+        VString::iterator find(const VCodePoint& cp);
+        /**
+        Returns an iterator pointing to the first occurrence of the specified
+        code point within the string, bounded by the specified start and end
+        iterator positions.
+        @param  cp              the code point to search for
+        @param  startPosition   the start iterator position to search;
+                                    begin() means search from the start of the string
+        @param  endPosition     the end iterator position to search;
+                                    end() means search to the end of the string
+        @return an iterator pointing to the found code point, or end() if not found
+        */
+        VString::const_iterator find(const VCodePoint& cp, const VString::const_iterator& startPosition, const VString::const_iterator& endPosition) const;
+        VString::iterator find(const VCodePoint& cp, const VString::iterator& startPosition, const VString::iterator& endPosition);
         /**
         Returns the index of the first occurrence of the specified character.
         @param  c           the character to search for

@@ -335,7 +335,12 @@ VString& VString::operator=(const CFStringRef& s) {
 #endif /* VAULT_CORE_FOUNDATION_SUPPORT */
 
 VString& VString::operator=(const VCodePoint& cp) {
+    ASSERT_INVARIANT();
+
     (*this) = cp.toString();
+
+    ASSERT_INVARIANT();
+
     return *this;
 }
 
@@ -612,8 +617,12 @@ VString& VString::operator+=(const boost::format& fmt) {
 #endif /* VAULT_BOOST_STRING_FORMATTING_SUPPORT */
 
 VString& VString::operator+=(const VCodePoint& cp) {
+    ASSERT_INVARIANT();
+
     VString appendage = cp.toString();
     (*this) += appendage;
+
+    ASSERT_INVARIANT();
 
     return *this;
 }
@@ -831,37 +840,20 @@ void VString::format(const char* formatText, ...) {
 }
 #endif /* VAULT_VARARG_STRING_FORMATTING_SUPPORT */
 
-int VString::getNumCodePoints() const {
-    if (mU.mI.mNumCodePoints == -1) {
-        this->_determineNumCodePoints();
-    }
-    
-    return mU.mI.mNumCodePoints;
+void VString::insert(const VCodePoint& cp, const VString::iterator& position) {
+    this->insert(cp, position.getCurrentOffset());
 }
 
-void VString::insert(char c, int offset) {
-    ASSERT_INVARIANT();
+void VString::insert(const VString& s, const VString::iterator& position) {
+    this->insert(s, position.getCurrentOffset());
+}
 
-    // We could make a VString of c, and then insert it, but it seems
-    // much more efficient to move a single char by itself.
+void VString::insert(char c, const VString::iterator& position) {
+    this->insert(c, position.getCurrentOffset());
+}
 
-    int addedLength = 1;
-    int oldLength = this->length();
-    int newLength = oldLength + addedLength;
-
-    // constrain to guard against bad offset; perhaps an out-of-bounds exception would be better?
-    int actualOffset = V_MIN(oldLength, V_MAX(0, offset));
-    int numBytesToMove = oldLength - actualOffset;
-
-    this->preflight(newLength);
-
-    // Need to use memmove here because memcpy behavior is undefined if ranges overlap.
-    ::memmove(&(_set()[actualOffset+addedLength]), &(_get()[actualOffset]), numBytesToMove);    // shift forward by 1 byte, everything past the offset
-    _set()[actualOffset] = c;
-
-    this->postflight(newLength);
-
-    ASSERT_INVARIANT();
+void VString::insert(const VCodePoint& cp, int offset) {
+    this->insert(VString(cp), offset);
 }
 
 void VString::insert(const VString& s, int offset) {
@@ -900,10 +892,56 @@ void VString::insert(const VString& s, int offset) {
     ASSERT_INVARIANT();
 }
 
+void VString::insert(char c, int offset) {
+    ASSERT_INVARIANT();
+
+    // We could make a VString of c, and then insert it, but it seems
+    // much more efficient to move a single char by itself.
+
+    int addedLength = 1;
+    int oldLength = this->length();
+    int newLength = oldLength + addedLength;
+
+    // constrain to guard against bad offset; perhaps an out-of-bounds exception would be better?
+    int actualOffset = V_MIN(oldLength, V_MAX(0, offset));
+    int numBytesToMove = oldLength - actualOffset;
+
+    this->preflight(newLength);
+
+    // Need to use memmove here because memcpy behavior is undefined if ranges overlap.
+    ::memmove(&(_set()[actualOffset+addedLength]), &(_get()[actualOffset]), numBytesToMove);    // shift forward by 1 byte, everything past the offset
+    _set()[actualOffset] = c;
+
+    this->postflight(newLength);
+
+    ASSERT_INVARIANT();
+}
+
+int VString::getNumCodePoints() const {
+    ASSERT_INVARIANT();
+
+    if (mU.mI.mNumCodePoints == -1) {
+        this->_determineNumCodePoints();
+    }
+    
+    return mU.mI.mNumCodePoints;
+}
+
 int VString::length() const {
     ASSERT_INVARIANT();
 
     return mU.mI.mStringLength;
+}
+
+void VString::truncateCodePoints(int maxNumCodePoints) {
+    ASSERT_INVARIANT();
+
+    if ((maxNumCodePoints >= 0) && (this->getNumCodePoints() > maxNumCodePoints)) {
+        VString::iterator pos(this->begin() + maxNumCodePoints);
+        this->_setLength(pos.getCurrentOffset());
+    }
+
+    ASSERT_INVARIANT();
 }
 
 void VString::truncateLength(int maxLength) {
@@ -1063,6 +1101,16 @@ bool VString::startsWithIgnoreCase(const VString& s) const {
     return this->regionMatches(0, s, 0, s.length(), /* caseSensitive = */ false);
 }
 
+bool VString::startsWith(const VCodePoint& cp) const {
+    ASSERT_INVARIANT();
+
+    if (mU.mI.mStringLength < cp.getUTF8Length()) {
+        return false;
+    } else {
+        return (VCodePoint(this->getDataBufferConst(), 0) == cp);
+    }
+}
+
 bool VString::startsWith(char aChar) const {
     ASSERT_INVARIANT();
 
@@ -1085,6 +1133,17 @@ bool VString::endsWithIgnoreCase(const VString& s) const {
     return this->regionMatches(mU.mI.mStringLength - s.length(), s, 0, s.length(), /* caseSensitive = */ false);
 }
 
+bool VString::endsWith(const VCodePoint& cp) const {
+    ASSERT_INVARIANT();
+
+    if (mU.mI.mStringLength < cp.getUTF8Length()) {
+        return false;
+    } else {
+        VString::const_reverse_iterator ri = this->rbegin();
+        return (*ri == cp);
+    }
+}
+
 bool VString::endsWith(char aChar) const {
     ASSERT_INVARIANT();
 
@@ -1093,6 +1152,46 @@ bool VString::endsWith(char aChar) const {
     } else {
         return (_get()[mU.mI.mStringLength - 1] == aChar);
     }
+}
+
+VString::const_iterator VString::find(const VCodePoint& cp) const {
+    ASSERT_INVARIANT();
+
+    return this->find(cp, this->begin(), this->end());
+}
+
+VString::iterator VString::find(const VCodePoint& cp) {
+    ASSERT_INVARIANT();
+
+    VString::iterator pos = this->find(cp, this->begin(), this->end());
+
+    ASSERT_INVARIANT();
+    
+    return pos;
+}
+
+VString::const_iterator VString::find(const VCodePoint& cp, const VString::const_iterator& startPosition, const VString::const_iterator& endPosition) const {
+    ASSERT_INVARIANT();
+
+    for (VString::const_iterator pos = startPosition; pos != endPosition; ++pos) {
+        if (*pos == cp) {
+            return pos;
+        }
+    }
+    
+    return this->end();
+}
+
+VString::iterator VString::find(const VCodePoint& cp, const VString::iterator& startPosition, const VString::iterator& endPosition) {
+    ASSERT_INVARIANT();
+
+    for (VString::iterator pos = startPosition; pos != endPosition; ++pos) {
+        if (*pos == cp) {
+            return pos;
+        }
+    }
+    
+    return this->end();
 }
 
 int VString::indexOf(char c, int fromIndex) const {
@@ -1495,6 +1594,8 @@ void VString::substringInPlace(int startIndex, int endIndex) {
 }
 
 void VString::split(VStringVector& result, const VCodePoint& delimiter, int limit, bool stripTrailingEmpties) const {
+    ASSERT_INVARIANT();
+
     result.clear();
     VString nextItem;
     
@@ -1529,6 +1630,8 @@ void VString::split(VStringVector& result, const VCodePoint& delimiter, int limi
 }
 
 VStringVector VString::split(const VCodePoint& delimiter, int limit, bool stripTrailingEmpties) const {
+    ASSERT_INVARIANT();
+
     VStringVector result;
     this->split(result, delimiter, limit, stripTrailingEmpties);
     return result;
