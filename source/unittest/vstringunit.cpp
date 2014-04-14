@@ -856,7 +856,7 @@ void VStringUnit::run() {
 
     // Change to vararg constructor to allow "%" to avoid unwanted formatting.
     VString percentSign("%");
-    VUNIT_ASSERT_EQUAL_LABELED(percentSign, '%', "percent sign literal constructor");
+    VUNIT_ASSERT_EQUAL_LABELED(percentSign, VString('%'), "percent sign literal constructor");
 
     VString sss;
 #ifdef VCOMPILER_64BIT
