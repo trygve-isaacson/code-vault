@@ -47,9 +47,11 @@ class VServer {
         Posts a broadcast message to all specified client sessions' async output queues; the
         caller must not refer to the message after calling this function, because
         the message will be deleted or recycled after it has been sent.
-        @param    message         the message to be posted
-        @param    omitSession    if not NULL, specifies a session the message will NOT
-                            be posted to
+        @param  clientType  the client type, in case the server has different client types and
+                                this broadcast is only for a certain type
+        @param  message     the message to be posted
+        @param  omitSession if not NULL, specifies a session the message will NOT
+                                be posted to
         */
         virtual void postBroadcastMessage(const VString& clientType, VMessagePtr message, VClientSessionConstPtr omitSession) = 0;
 

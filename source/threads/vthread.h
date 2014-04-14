@@ -273,7 +273,7 @@ class VThread {
         use the object's address (e.g., VSTRING_FORMAT("0x%08X", aThread)); if the thread
         is related to a socket, a more useful name would be a prefix plus the
         client IP and port (e.g., "INPUT:127.0.0.1:3922" for an input thread).
-        @param    name    a name for this thread
+        @param    threadName    a name for this thread
         */
         void setName(const VString& threadName) { mName = threadName; }
         /**
@@ -346,8 +346,8 @@ class VThread {
         /**
         Blocks the calling thread until the specified thread ends.
         Wrapper on Unix for pthread_join.
-        @param    threadID    ID of the thread to wait on
-        @param    exitValue    pointer to storage for thread exit value
+        @param    threadID  ID of the thread to wait on
+        @param    value     pointer to storage for thread exit value
         @return true on success; false on failure
         */
         static bool threadJoin(VThreadID_Type threadID, void** value);
@@ -385,7 +385,7 @@ class VThread {
         /**
         Sets the current thread's priority, specifying the Unix nice level.
         Wrapper for Unix setpriority using PRIO_PROCESS.
-        @param    level    the nice level
+        @param  nice    the nice level
         @return true on success; false on failure
         */
         static bool setPriority(int nice);

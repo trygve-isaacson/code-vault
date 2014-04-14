@@ -236,36 +236,42 @@ class VException : public std::exception {
         Constructs a copy of another VException. Note that if the mErrorMessage
         is non-null, both objects will share a (const char*) value, which neither
         deletes on destruction since it is owned by the caller.
-        @param  other   the exception to copy
+        @param  other               the exception to copy
+        @param  recordStackTrace    if true, will attempt to collect stack trace into mCallStack
         */
         VException(const VException& other, bool recordStackTrace = false);
         /**
         Constructs a VException with error code and static message.
-        @param    error            the error code
-        @param    errorMessage    a static error message
+        @param  error               the error code
+        @param  errorMessage        a static error message
+        @param  recordStackTrace    if true, will attempt to collect stack trace into mCallStack
         */
         VException(int error, const char* errorMessage, bool recordStackTrace = false);
         /**
         Constructs a VException with error code and VString message.
-        @param    error        the error code
-        @param    errorString    the error message
+        @param  error               the error code
+        @param  errorString         the error message
+        @param  recordStackTrace    if true, will attempt to collect stack trace into mCallStack
         */
         VException(int error, const VString& errorString, bool recordStackTrace = false);
         /**
         Constructs a VException with default error code and static message.
-        @param    errorMessage    a static error message
+        @param  errorMessage        a static error message
+        @param  recordStackTrace    if true, will attempt to collect stack trace into mCallStack
         */
         VException(const char* errorMessage, bool recordStackTrace = false);
         /**
         Constructs a VException with default error code and VString message.
-        @param    errorString    the error message
+        @param  errorString         the error message
+        @param  recordStackTrace    if true, will attempt to collect stack trace into mCallStack
         */
         VException(const VString& errorString, bool recordStackTrace = false);
         /**
         Constructs a VException with system error and VString message. The internal error
         message will be formatted from the two.
-        @param    error         the error construct
-        @param    errorString   the error message
+        @param  error               the error construct
+        @param  errorString         the error message
+        @param  recordStackTrace    if true, will attempt to collect stack trace into mCallStack
         */
         VException(const VSystemError& error, const VString& errorString, bool recordStackTrace = false);
         /**
@@ -384,13 +390,14 @@ class VSocketClosedException : public VException {
 
         /**
         Constructs the exception with default error code and VString message.
-        @param    errorString    the error message
+        @param  error       the error code
+        @param  errorString the error message
         */
         VSocketClosedException(int error, const VString& errorString) : VException(error, errorString) {}
         /**
         Constructs the exception with default error code and VString message.
-        @param    error         the error construct
-        @param    errorString   the error message
+        @param  error       the error construct
+        @param  errorString the error message
         */
         VSocketClosedException(const VSystemError& error, const VString& errorString) : VException(error, errorString) {}
         /**
@@ -410,12 +417,14 @@ class VRangeException : public VException {
 
         /**
         Constructs the exception with an error message.
-        @param    errorMessage    the message
+        @param  errorMessage        the message
+        @param  recordStackTrace    if true, will attempt to collect stack trace into mCallStack
         */
         VRangeException(const char* errorMessage, bool recordStackTrace = true) : VException(errorMessage, recordStackTrace) {}
         /**
         Constructs the exception with default error code and VString message.
-        @param    errorString    the error message
+        @param  errorString         the error message
+        @param  recordStackTrace    if true, will attempt to collect stack trace into mCallStack
         */
         VRangeException(const VString& errorString, bool recordStackTrace = true) : VException(errorString, recordStackTrace) {}
         /**
@@ -433,12 +442,14 @@ class VUnimplementedException : public VException {
 
         /**
         Constructs the exception with an error message.
-        @param    errorMessage    the message
+        @param  errorMessage        the message
+        @param  recordStackTrace    if true, will attempt to collect stack trace into mCallStack
         */
         VUnimplementedException(const char* errorMessage, bool recordStackTrace = true) : VException(errorMessage, recordStackTrace) {}
         /**
         Constructs the exception with default error code and VString message.
-        @param    errorString    the error message
+        @param  errorString         the error message
+        @param  recordStackTrace    if true, will attempt to collect stack trace into mCallStack
         */
         VUnimplementedException(const VString& errorString, bool recordStackTrace = true) : VException(errorString, recordStackTrace) {}
         /**
@@ -458,13 +469,18 @@ class VOSStatusException : public VException {
         /**
         Throws a VOSStatusException if err is non-zero; the error value is used for the
         VException error code.
+        @param  err                 the error code
+        @param  errorMessage        the message
+        @param  recordStackTrace    if true, will attempt to collect stack trace into mCallStack
         */
         static void throwIfError(OSStatus err, const VString& message, bool recordStackTrace = true) { if (0 != err) throw VOSStatusException(err, message, recordStackTrace); }
 
         /**
         Constructs the exception with the OSStatus value. The value is
         stored in the VException error code.
-        @param err the error code
+        @param  err                 the error code
+        @param  errorString         the error message
+        @param  recordStackTrace    if true, will attempt to collect stack trace into mCallStack
         */
         VOSStatusException(OSStatus err, const VString& message, bool recordStackTrace = true) : VException(static_cast<int>(err), message, recordStackTrace) {}
         /**

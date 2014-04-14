@@ -189,7 +189,7 @@ class VIOStream {
         /**
         Compare 2 streams by ascii values. The streams will be restored to their current positions upon
         return.
-        @Returns -1 if streamA < streamB, 0 if streamA == streamB, otherwise returns 1
+        @return -1 if streamA < streamB, 0 if streamA == streamB, otherwise returns 1
         */
         static Vs16 streamCompare(VIOStream& streamA, VIOStream& streamB, Vs64 numBytesToCompare);
 

@@ -82,7 +82,7 @@ class VMessageHandler {
                         correlate the message to a client session)
         @param    messageFactory  a factory that instantiates messages suitable for this handler
                             when it needs to send a message (assuming all such messages are uniform;
-                            if not, messages can be instantiated explicitly) (The caller owns the factory.)
+                            if not, messages can be instantiated explicitly); the caller owns the factory.
         @param  mutex   if not null, a mutex that will be initially locked by the constructor
                         and unlocked by the destructor
         */
@@ -183,7 +183,7 @@ class VMessageHandler {
         VNamedLoggerPtr _getMessageContentFieldsLogger() const; ///< Returns the logger for message fields, or NULL if that level is not enabled.
         /**
         Logs (at the appropriate log level) full hex dump content info for a message
-        that has been received or will be sent..
+        that has been received or will be sent.
         @param    info    informational text to label the output
         @param    buffer    the buffer to dump in hex form
         @param    length    the length of the buffer (or how much of it to dump)

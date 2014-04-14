@@ -408,7 +408,7 @@ class VStringRangeColorElement {
         VColorPair mColors;
 
         // Required to allow STL to sort objects of this class:
-        friend inline bool operator<(const VString& s1, const VString& s2);
+        friend inline bool operator<(const VStringRangeColorElement& e1, const VStringRangeColorElement& e2);
 };
 
 inline bool operator<(const VStringRangeColorElement& e1, const VStringRangeColorElement& e2) { return e1.mRangeMin < e2.mRangeMin; }
@@ -477,7 +477,7 @@ class VIntegerRangeColorElement {
         VColorPair mColors;
 
         // Required to allow STL to sort objects of this class:
-        friend inline bool operator<(const VString& s1, const VString& s2);
+        friend inline bool operator<(const VIntegerRangeColorElement& e1, const VIntegerRangeColorElement& e2);
 };
 
 inline bool operator<(const VIntegerRangeColorElement& e1, const VIntegerRangeColorElement& e2) { return e1.mRangeMin < e2.mRangeMin; }
@@ -531,7 +531,7 @@ class VDoubleRangeColorElement {
         VColorPair mColors;
 
         // Required to allow STL to sort objects of this class:
-        friend inline bool operator<(const VString& s1, const VString& s2);
+        friend inline bool operator<(const VDoubleRangeColorElement& e1, const VDoubleRangeColorElement& e2);
 };
 
 inline bool operator<(const VDoubleRangeColorElement& e1, const VDoubleRangeColorElement& e2) { return e1.mRangeMin < e2.mRangeMin; }

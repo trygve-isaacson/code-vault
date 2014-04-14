@@ -479,7 +479,7 @@ class VString {
         */
         VString& operator+=(const char* s);
         /**
-        Appends a "wide" string to the string, converting it from UTF-16/32 to our internal UTF-8..
+        Appends a "wide" string to the string, converting it from UTF-16/32 to our internal UTF-8.
         @param    ws   pointer to the wide string to copy
         */
         VString& operator+=(const std::wstring& ws);
@@ -850,7 +850,7 @@ class VString {
         bool endsWithIgnoreCase(const VString& s) const;
         /**
         Returns true if this string ends with the specified code point.
-        @param  c   the char to compare with
+        @param  cp   the code point to compare with
         @return true if this string ends with the specified code point
         */
         bool endsWith(const VCodePoint& cp) const;
@@ -1246,31 +1246,31 @@ class VString {
         */
         void postflight(int stringLength);
 
-        friend inline bool operator==(const VString& s1, const VString& s2);
-        friend inline bool operator==(const VString& s1, const char* s2);
-        friend inline bool operator==(const char* s1, const VString& s2);
-        friend inline bool operator==(const VString& s, char c);
+        friend inline bool operator==(const VString& lhs, const VString& rhs);
+        friend inline bool operator==(const VString& lhs, const char* rhs);
+        friend inline bool operator==(const char* lhs, const VString& rhs);
+        friend inline bool operator==(const VString& lhs, char rhs);
 
-        friend inline bool operator!=(const VString& s1, const VString& s2);
-        friend inline bool operator!=(const VString& s1, const char* s2);
-        friend inline bool operator!=(const char* s1, const VString& s2);
-        friend inline bool operator!=(const VString& s, char c);
+        friend inline bool operator!=(const VString& lhs, const VString& rhs);
+        friend inline bool operator!=(const VString& lhs, const char* rhs);
+        friend inline bool operator!=(const char* lhs, const VString& rhs);
+        friend inline bool operator!=(const VString& lhs, char rhs);
 
-        friend inline bool operator<(const VString& s1, const VString& s2);
-        friend inline bool operator<(const VString& s1, const char* s2);
-        friend inline bool operator<(const char* s1, const VString& s2);
+        friend inline bool operator<(const VString& lhs, const VString& rhs);
+        friend inline bool operator<(const VString& lhs, const char* rhs);
+        friend inline bool operator<(const char* lhs, const VString& rhs);
 
-        friend inline bool operator<=(const VString& s1, const VString& s2);
-        friend inline bool operator<=(const VString& s1, const char* s2);
-        friend inline bool operator<=(const char* s1, const VString& s2);
+        friend inline bool operator<=(const VString& lhs, const VString& rhs);
+        friend inline bool operator<=(const VString& lhs, const char* rhs);
+        friend inline bool operator<=(const char* lhs, const VString& rhs);
 
-        friend inline bool operator>=(const VString& s1, const VString& s2);
-        friend inline bool operator>=(const VString& s1, const char* s2);
-        friend inline bool operator>=(const char* s1, const VString& s2);
+        friend inline bool operator>=(const VString& lhs, const VString& rhs);
+        friend inline bool operator>=(const VString& lhs, const char* rhs);
+        friend inline bool operator>=(const char* lhs, const VString& rhs);
 
-        friend inline bool operator>(const VString& s1, const VString& s2);
-        friend inline bool operator>(const VString& s1, const char* s2);
-        friend inline bool operator>(const char* s1, const VString& s2);
+        friend inline bool operator>(const VString& lhs, const VString& rhs);
+        friend inline bool operator>(const VString& lhs, const char* rhs);
+        friend inline bool operator>(const char* lhs, const VString& rhs);
 
     private:
 
@@ -1404,7 +1404,7 @@ class VString {
 inline bool operator==(const VString& lhs, const VString& rhs) { return ::strcmp(lhs, rhs) == 0; }      ///< Compares lhs and rhs for equality. @param    lhs    a string @param    rhs    a string @return true if lhs and rhs are equal according to strcmp()
 inline bool operator==(const VString& lhs, const char* rhs) { return ::strcmp(lhs, rhs) == 0; }         ///< Compares lhs and rhs for equality. @param    lhs    a string @param    rhs    a C string @return true if lhs and rhs are equal according to strcmp()
 inline bool operator==(const char* lhs, const VString& rhs) { return ::strcmp(lhs, rhs) == 0; }         ///< Compares lhs and rhs for equality. @param    lhs    a C string @param    rhs    a string @return true if lhs and rhs are equal according to strcmp()
-inline bool operator==(const VString& s, char c) { return (s.length() == 1) && (s.charAt(0) == c); }    ///< Compares s and c for equality. @param    s    a string @param    c    a char @return true if s is one character in length, the character being c
+inline bool operator==(const VString& lhs, char rhs) { return (lhs.length() == 1) && (lhs.charAt(0) == rhs); }    ///< Compares s and c for equality. @param    lhs    a string @param    rhs    a char @return true if lhs is one character in length, the character being rhs
 
 inline bool operator!=(const VString& lhs, const VString& rhs) { return !operator==(lhs, rhs); }    ///< Compares lhs and rhs for inequality. @param    lhs    a string @param    rhs    a string @return true if lhs and rhs are not equal according to strcmp()
 inline bool operator!=(const VString& lhs, const char* rhs) { return !operator==(lhs, rhs); }       ///< Compares lhs and rhs for inequality. @param    lhs    a string @param    rhs    a C string @return true if lhs and rhs are not equal according to strcmp()

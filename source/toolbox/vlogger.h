@@ -262,7 +262,8 @@ class VLogAppender {
         /**
         Constructs the appender from settings. A VNamedLogger that refers to this appender
         by name will route its output (after level filtering) to this appender.
-        @param  settings        settings containing appender "name" and optional "format-output" flag
+        @param  settings    settings containing appender "name" and optional "format-output" flag
+        @param  defaults    optional default settings for the appender to use if not specified in settings
         */
         VLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults);
 
@@ -555,10 +556,11 @@ class VNamedLogger : public VEnableSharedFromThis<VNamedLogger> {
         void log(int level, const VString& message);
         /**
         Logs a hex dump of the specified data (subject to filtering).
-        @param  level   the level of the message
-        @param  message the message to be logged as the line of output preceding the hex data
-        @param  buffer  a pointer to some data
-        @param  length  the number of bytes of the data that should be examined and written in hex form
+        @param  level               the level of the message
+        @param  message             the message to be logged as the line of output preceding the hex data
+        @param  specifiedLoggerName if not empty, the logger name supplied by caller
+        @param  buffer              a pointer to some data
+        @param  length              the number of bytes of the data that should be examined and written in hex form
         */
         void logHexDump(int level, const VString& message, const VString& specifiedLoggerName, const Vu8* buffer, Vs64 length);
         /**
@@ -743,8 +745,8 @@ class VLogger {
           - Typically they also have an "appender" string property that defines the appender to use.
           - For multiple appenders, the logger node can have child nodes named "appender" that have
             a "name" string property.
-        @param
-        @param  loggingSettings the settings to process
+        @param  baseLogDirectory    the directory structure where file-based appenders should write (see description above)
+        @param  loggingSettings     the settings to process
         */
         static void configure(const VFSNode& baseLogDirectory, const VSettingsNode& loggingSettings);
         /**
@@ -806,10 +808,8 @@ class VLogger {
         /**
         Registers the supplied logger. If there is no default logger at the time of this call, the
         logger becomes the default logger.
-        @param  name            the name for the logger; if an existing logger with that name already exists,
-                                    it will be replaced in the map of registered loggers
-        @param  level           the log leve for the logger
-        @param  appenderName    an appender name to which this logger will emit its filtered output
+        @param  namedLogger     the logger to register
+        @param  asDefaultLogger if true (or if there is no default logger yet), it will be the default logger
         */
         static void registerLogger(VNamedLoggerPtr namedLogger, bool asDefaultLogger = false);
         /**
@@ -864,7 +864,7 @@ class VLogger {
         // Loggers:
         /**
         Returns the default logger; creates, installs, and returns a new one if there is no default logger.
-        @return the default logger (@NotNull)
+        @return the default logger (@ NotNull)
         */
         static VNamedLoggerPtr getDefaultLogger();
         /**
@@ -876,45 +876,45 @@ class VLogger {
         Returns a logger by looking for the one specified, or returns the default logger if none with that name
         exists.
         @param  name    the name of the logger to find
-        @return the found logger, or the default logger if not found (@NotNull)
+        @return the found logger, or the default logger if not found (@ NotNull)
         */
         static VNamedLoggerPtr getLogger(const VString& name);
         /**
         Returns the default logger, if it already exists; null otherwise.
-        @return the default logger (@Nullable)
+        @return the default logger (@ Nullable)
         */
         static VNamedLoggerPtr findDefaultLogger();
         /**
         Returns the default logger, if it already exists, and is active for the specified level; null otherwise.
         @param  level   the level to check as active for the default logger
-        @return the default logger (@Nullable)
+        @return the default logger (@ Nullable)
         */
         static VNamedLoggerPtr findDefaultLoggerForLevel(int level);
         /**
         Returns the specified logger, if it exists; null otherwise.
         @param  name    the name of the logger to find
-        @return a logger (@Nullable)
+        @return a logger (@ Nullable)
         */
         static VNamedLoggerPtr findNamedLogger(const VString& name);
         /**
         Returns the specified logger, if it exists AND it is active for the specified level; null otherwise.
         @param  name    the name of the logger to find
         @param  level   the level to check as active for the found logger
-        @return a logger (@Nullable)
+        @return a logger (@ Nullable)
         */
         static VNamedLoggerPtr findNamedLoggerForLevel(const VString& name, int level);
 
         // Appenders:
         /**
         Returns the default appender; creates, installs, and returns a new VCoutAppender if there is no default appender.
-        @return the default appender (@NotNull)
+        @return the default appender (@ NotNull)
         */
         static VLogAppenderPtr getDefaultAppender();
         /**
         Returns an appender by looking for the one specified, or returns the default appender if none with that name
         exists.
         @param  appenderName    the name of the appender to find
-        @return the found appender, or the appender logger if not found (@NotNull)
+        @return the found appender, or the appender logger if not found (@ NotNull)
         */
         static VLogAppenderPtr getAppender(const VString& appenderName);
         /**
@@ -925,13 +925,13 @@ class VLogger {
         static VLogAppenderPtrList getAllAppenders();
         /**
         Returns the default appender, if it already exists; null otherwise.
-        @return the default appender (@Nullable)
+        @return the default appender (@ Nullable)
         */
         static VLogAppenderPtr findDefaultAppender();
         /**
         Returns the specified appender, if it exists; null otherwise.
         @param  name    the name of the appender to find
-        @return an appender (@Nullable)
+        @return an appender (@ Nullable)
         */
         static VLogAppenderPtr findAppender(const VString& name);
         /**
@@ -979,8 +979,8 @@ class VLogger {
         static void _recalculateMaxActiveLogLevel(); // Called when one of the _check... methods decides the max active log level may indeed have changed, and must be recalculated.
 
         // These two methods are how we really search for a specified named logger.
-        static VNamedLoggerPtr _findNamedLoggerFromExactName(const VString& name);      ///< Return the logger with the specified name, or null if it doesn't exist. (@Nullable)
-        static VNamedLoggerPtr _findNamedLoggerFromPathName(const VString& pathName);   ///< Return a logger using a dot-separated path name, falling back to an exact name find. (@Nullable)
+        static VNamedLoggerPtr _findNamedLoggerFromExactName(const VString& name);      ///< Return the logger with the specified name, or null if it doesn't exist. (@ Nullable)
+        static VNamedLoggerPtr _findNamedLoggerFromPathName(const VString& pathName);   ///< Return a logger using a dot-separated path name, falling back to an exact name find. (@ Nullable)
 
         // _mutexInstance() must be used internally whenever referencing these variables:
         volatile static int     gMaxActiveLevel;    ///< The max level of any registered logger. Used to optimize the VLOGGER macros so they can return early if a log statement won't pass level filters.

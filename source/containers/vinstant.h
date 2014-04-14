@@ -800,7 +800,7 @@ class VInstant {
         code constructs may behave badly if time flows backwards. However, you may
         be able to apply an initial backwards offset if you wish to start your
         program running in a simulated time in the past.
-        @param offsetValue the simulated clock offset
+        @param offset the simulated clock offset
         */
         static void setSimulatedClockOffset(const VDuration& offset);
         /**

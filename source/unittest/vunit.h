@@ -160,8 +160,9 @@ class VUnit {
 
         /**
         Constructs a unit test object.
-        @param    logOnSuccess    true if you want successful tests to be logged
-        @param    throwOnError    true if you want an exception thrown for failed tests
+        @param  name            the name of the unit test suite
+        @param  logOnSuccess    true if you want successful tests to be logged
+        @param  throwOnError    true if you want an exception thrown for failed tests
         */
         VUnit(const VString& name, bool logOnSuccess, bool throwOnError);
         /**
@@ -318,8 +319,11 @@ class VUnit {
         /**
         Evaluates a boolean parameter that indicates test success,
         and logs and/or throws based on success/failure.
-        @param    success        true if the test succeeded; false if not
-        @param    description    the text to log that describes the test
+        @param  success             true if the test succeeded; false if not
+        @param  filePath            the source file path (usually via __FILE__) to log for a failed test
+        @param  lineNumber          the source line number (usually via __LINE__) to log for a failed test
+        @param  labelSuffix         the label (unit test description) to append as suffix of the output
+        @param  expectedDescription the text describing the failure of expected data, for example "failed equality: 'tea' == 'coffee'"
         */
         virtual void testAssertion(bool success, const VString& filePath, int lineNumber, const VString& labelSuffix, const VString& expectedDescription);
         /**

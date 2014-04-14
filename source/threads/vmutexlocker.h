@@ -75,6 +75,7 @@ class VMutexLocker {
         pointer to be passed to a routine that needs to lock it if supplied.
 
         @param    mutex            the VMutex to lock, or NULL if no action is wanted
+        @param    name             the mutex locker name; calling object/function name is a useful string
         @param    lockInitially    true if the lock should be acquired on construction
         */
         VMutexLocker(VMutex* mutex, const VString& name, bool lockInitially = true);

@@ -79,7 +79,7 @@ class VCodePoint {
         valid UTF-8 formatted code point. For example, if the code point is ASCII it will be
         a single byte; otherwise, the first byte will be the start of a 1- to 4-byte UTF-8 sequence.
         Note that VCodePoint treats binary and text streams the same since UTF-8 can be viewed as a space-efficient binary encoding.
-        @param  stream  the stream to read from
+        @param  utf8Stream  the stream to read from
         */
         explicit VCodePoint(VTextIOStream& utf8Stream);
         /**

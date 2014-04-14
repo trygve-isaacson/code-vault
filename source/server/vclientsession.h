@@ -59,6 +59,10 @@ class VClientSession : public VEnableSharedFromThis<VClientSession> {
                                     NULL is common and indicates the session uses the socket in a
                                     synchronous fashion, reading input on the input thread and then
                                     writing output immediately on that same thread
+        @param  standbyTimeLimit    a time limit for this session to be in startup standby mode after which
+                                    it will be closed as an error condition; zero means no timeout
+        @param  maxQueueDataSize    the max num bytes of queued data allowed on this session, after which it will be
+                                    closed as an error condition; zero means no limit
         */
         VClientSession(const VString& sessionBaseName, VServer* server, const VString& clientType, VSocket* socket, VMessageInputThread* inputThread, VMessageOutputThread* outputThread, const VDuration& standbyTimeLimit, Vs64 maxQueueDataSize);
 
@@ -106,7 +110,9 @@ class VClientSession : public VEnableSharedFromThis<VClientSession> {
         using an output thread, the message is written to the output stream
         immediately. If the broadcast flag is specified and session is not "online"
         then the message is queued and will be sent after the session goes online.
-        @param  message the message to be sent
+        @param  message         the message to be sent
+        @param  isForBroadcast  true if the message is being broadcast; affects
+                                queuing behavior if session is in startup standby mode
         */
         void postOutputMessage(VMessagePtr message, bool isForBroadcast = false);
         /**

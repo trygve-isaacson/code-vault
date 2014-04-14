@@ -40,7 +40,7 @@ class VManagementInterface {
         to be invoked. The concrete class might typically add the thread
         pointer to a vector. The thread pointer is guaranteed to be valid
         until the interface is notified of threadEnded().
-        @param    thread    the thread to add to the interface's list
+        @param  thread  the thread to add to the interface's list
         */
         virtual void threadStarting(VThread* thread) = 0;
         /**
@@ -50,7 +50,7 @@ class VManagementInterface {
         the interface must not reference the thread object if the thread's
         mDeleteAtEnd property is set to true, because in that case the
         threadMain function will immediately delete the thread object.
-        @param    listenerThread    the thread to remove from the list
+        @param  thread  the thread to remove from the list
         */
         virtual void threadEnded(VThread* thread) = 0;
 
@@ -63,7 +63,7 @@ class VManagementInterface {
         also receive a threadStarting() notification for this listener
         thread, because it is also just a thread; that notification will
         occur before the listenerStarting() notification.
-        @param    thread    the listener thread that is running
+        @param  listener    the listener thread that is running
         */
         virtual void listenerStarting(VListenerThread* listener) = 0;
         /**
@@ -74,7 +74,7 @@ class VManagementInterface {
         to the loopback server socket. The thread
         pointer is guaranteed to be valid until the interface is notified
         of listenerEnded().
-        @param    thread    the listener thread that is listening
+        @param  listener    the listener thread that is listening
         */
         virtual void listenerListening(VListenerThread* listener) = 0;
         /**
@@ -86,7 +86,8 @@ class VManagementInterface {
         up properly). This notification will occur between calls to
         listenerStarting() and listenerEnded(). Note that listenerEnded() will
         be definitely called after listenerFailed().
-        @param    thread    the listener thread that failed
+        @param  listener    the listener thread that failed
+        @param  message     error message describing the failure
         */
         virtual void listenerFailed(VListenerThread* listener, const VString& message) = 0;
         /**
@@ -100,7 +101,7 @@ class VManagementInterface {
         also receive a threadEnded() notification for this listener
         thread, because it is also just a thread; that notification will
         occur after the listenerEnded() notification.
-        @param    listenerThread    the listener thread that has ended
+        @param  listener    the listener thread that has ended
         */
         virtual void listenerEnded(VListenerThread* listener) = 0;
 
