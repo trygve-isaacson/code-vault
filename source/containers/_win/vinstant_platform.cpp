@@ -7,6 +7,7 @@ License: MIT. See LICENSE.md in the Vault top level directory.
 
 #include "vinstant.h"
 #include "vtypes_internal.h"
+#include "vexception.h"
 
 /*
 These are the platform-specific implementations of these required
