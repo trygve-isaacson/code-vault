@@ -167,7 +167,7 @@ very easy).
             <td>yes</td>
         </tr>
         <tr>
-            <td>VAbstractFileStream-derived</td>
+            <td>VAbstractFileStream -derived</td>
             <td>yes</td>
             <td>yes</td>
             <td>yes</td>

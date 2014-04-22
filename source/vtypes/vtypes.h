@@ -10,6 +10,36 @@ License: MIT. See LICENSE.md in the Vault top level directory.
 
 /** @file */
 
+// This block comment is read by Doxygen to generate the index page:
+/*! \mainpage The Code Vault
+ *
+ * \section intro_sec Introduction
+ *
+ * The Code Vault is a cross-platform C++ foundation library. Its first aim is to help you
+ * avoid the hassles of developing C++ code that works on different platforms, compiled
+ * by different compilers, and referencing different standard library implementations. Its
+ * second, larger aim is to provide a solid, pleasant, understandable object-oriented library of
+ * classes that implement a variety of fundamental services not provided by the language
+ * or standard library, and services which vary on each native platform (such as threading,
+ * file access, socket i/o, time functions, strings, logging, messaging, session management, etc.).
+ *
+ * \section dependencies_sec Dependencies
+ *
+ * The Code Vault has only one external dependency, and that is "smart pointers". This means
+ * that you either need to be using a C++11 compiler (which supplies std::shared_ptr and
+ * related classes) or you need to have the Boost library (which supplies boost::shared_ptr).
+ * If using a C++11 compiler, you don't have to do anything; if using Boost, then you must
+ * uncomment the symbol definition "VAULT_BOOST_SHARED_PTR_INCLUDE" in vconfigure.h to tell
+ * Vault to include the requisite Boost headers; and you need to have the Boost include
+ * directory in your project include paths.
+ *  
+ * \section reference_sec Reference
+ *
+ * Please refer to the latest documentation for complete information and instructions:
+ * http://www.bombaydigital.com/vault/
+ *  
+ */
+
 /**
 
     @defgroup vtypes Vault Data Types
