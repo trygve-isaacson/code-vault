@@ -18,7 +18,11 @@ class VBinaryIOStream;
 class VTextIOStream;
 
 /**
-This class stores a Unicode code point, which is similar to a 'char' except that the range of values
+    @ingroup vstring
+*/
+
+/**
+VCodePoint stores a Unicode code point, which is similar to a 'char' except that the range of values
 is vastly larger than what fits in one byte.
 Because we often trade in UTF-8 (especially for VString), we have helper methods here for getting
 the length of the code point if it were represented in UTF-8, as well as the ability to create a

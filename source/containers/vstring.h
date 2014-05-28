@@ -38,6 +38,7 @@ class VMutex;
 /**
 
     @defgroup vstring Vault Strings
+    @{
 
     The Vault provides a VString class that it uses for all strings.
     It is a good way to avoid the unavoidable bugs associated with
@@ -51,11 +52,9 @@ class VMutex;
     single-bye C char type, which should usually be avoided because it is not
     generally compatible with Unicode data. Using VString and VCodePoint
     exclusively will lead to good Unicode behavior.
+    
+    @}
 
-*/
-
-/**
-    @ingroup vstring
 */
 
 /*
@@ -168,6 +167,10 @@ Best practices for VString creation:
 #define VSTRING_DOUBLE(n)   VSTRING_FORMAT(VSTRING_FORMATTER_DOUBLE, n) ///< Creates a string by formatting a double value.
 #define VSTRING_PTR(p)      VSTRING_FORMAT(VSTRING_FORMATTER_PTR, p)    ///< Creates a string by formatting a pointer as hexadecimal preceded by 0x.
 #define VSTRING_BOOL(b)     VString(b ? "true" : "false")               ///< Creates a string from a boolean as the text "true" or "false".
+
+/**
+    @ingroup vstring
+*/
 
 /**
 VString is a string container class that should help to eliminate almost all

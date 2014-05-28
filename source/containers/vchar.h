@@ -12,12 +12,12 @@ License: MIT. See LICENSE.md in the Vault top level directory.
 
 #include "vtypes.h"
 
+/** Simple C char value for a null terminator of a string. Prefer VChar::NULL_CHAR() unless referencing plain char value. */
+#define VCHAR_NULL_TERMINATOR '\0'
+
 /**
     @ingroup vstring
 */
-
-/** Simple C char value for a null terminator of a string. Prefer VChar::NULL_CHAR() unless referencing plain char value. */
-#define VCHAR_NULL_TERMINATOR '\0'
 
 /**
 VChar is a simple wrapper for C char values.
