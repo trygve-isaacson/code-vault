@@ -1,0 +1,808 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0B3C2F1B193717280029A41B /* vinstant_platform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E66193717280029A41B /* vinstant_platform.cpp */; };
+		0B3C2F1D193717280029A41B /* vbento.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E69193717280029A41B /* vbento.cpp */; };
+		0B3C2F1E193717280029A41B /* vchar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E6B193717280029A41B /* vchar.cpp */; };
+		0B3C2F1F193717280029A41B /* vcodepoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E6D193717280029A41B /* vcodepoint.cpp */; };
+		0B3C2F20193717280029A41B /* vcolor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E6F193717280029A41B /* vcolor.cpp */; };
+		0B3C2F21193717280029A41B /* vexception.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E72193717280029A41B /* vexception.cpp */; };
+		0B3C2F22193717280029A41B /* vgeometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E74193717280029A41B /* vgeometry.cpp */; };
+		0B3C2F23193717280029A41B /* vinstant.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E76193717280029A41B /* vinstant.cpp */; };
+		0B3C2F24193717280029A41B /* vstring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E78193717280029A41B /* vstring.cpp */; };
+		0B3C2F25193717280029A41B /* vstringiterator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E7A193717280029A41B /* vstringiterator.cpp */; };
+		0B3C2F26193717280029A41B /* vfsnode_platform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E7E193717280029A41B /* vfsnode_platform.cpp */; };
+		0B3C2F28193717280029A41B /* vabstractfilestream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E81193717280029A41B /* vabstractfilestream.cpp */; };
+		0B3C2F29193717280029A41B /* vbufferedfilestream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E83193717280029A41B /* vbufferedfilestream.cpp */; };
+		0B3C2F2A193717280029A41B /* vdirectiofilestream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E85193717280029A41B /* vdirectiofilestream.cpp */; };
+		0B3C2F2B193717280029A41B /* vfilewriter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E87193717280029A41B /* vfilewriter.cpp */; };
+		0B3C2F2C193717280029A41B /* vfsnode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E89193717280029A41B /* vfsnode.cpp */; };
+		0B3C2F2D193717280029A41B /* vclientsession.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E8C193717280029A41B /* vclientsession.cpp */; };
+		0B3C2F2E193717280029A41B /* vlistenersocket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E8E193717280029A41B /* vlistenersocket.cpp */; };
+		0B3C2F2F193717280029A41B /* vlistenerthread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E90193717280029A41B /* vlistenerthread.cpp */; };
+		0B3C2F30193717280029A41B /* vmessage.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E93193717280029A41B /* vmessage.cpp */; };
+		0B3C2F31193717280029A41B /* vmessagehandler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E95193717280029A41B /* vmessagehandler.cpp */; };
+		0B3C2F32193717280029A41B /* vmessageinputthread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E97193717280029A41B /* vmessageinputthread.cpp */; };
+		0B3C2F33193717280029A41B /* vmessageoutputthread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E99193717280029A41B /* vmessageoutputthread.cpp */; };
+		0B3C2F34193717280029A41B /* vmessagequeue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E9B193717280029A41B /* vmessagequeue.cpp */; };
+		0B3C2F35193717280029A41B /* vserver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2E9D193717280029A41B /* vserver.cpp */; };
+		0B3C2F36193717280029A41B /* vsocket_platform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EA1193717280029A41B /* vsocket_platform.cpp */; };
+		0B3C2F38193717280029A41B /* vsocket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EA6193717280029A41B /* vsocket.cpp */; };
+		0B3C2F39193717280029A41B /* vsocketfactory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EA8193717280029A41B /* vsocketfactory.cpp */; };
+		0B3C2F3A193717280029A41B /* vsocketstream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EAA193717280029A41B /* vsocketstream.cpp */; };
+		0B3C2F3B193717280029A41B /* vsocketthread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EAC193717280029A41B /* vsocketthread.cpp */; };
+		0B3C2F3C193717280029A41B /* vbinaryiostream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EB0193717280029A41B /* vbinaryiostream.cpp */; };
+		0B3C2F3D193717280029A41B /* viostream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EB2193717280029A41B /* viostream.cpp */; };
+		0B3C2F3E193717280029A41B /* vmemorystream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EB4193717280029A41B /* vmemorystream.cpp */; };
+		0B3C2F3F193717280029A41B /* vstream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EB6193717280029A41B /* vstream.cpp */; };
+		0B3C2F40193717280029A41B /* vstreamcopier.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EB8193717280029A41B /* vstreamcopier.cpp */; };
+		0B3C2F41193717280029A41B /* vtextiostream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EBA193717280029A41B /* vtextiostream.cpp */; };
+		0B3C2F42193717280029A41B /* vwritebufferedstream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EBC193717280029A41B /* vwritebufferedstream.cpp */; };
+		0B3C2F43193717280029A41B /* vthread_platform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EC0193717280029A41B /* vthread_platform.cpp */; };
+		0B3C2F45193717280029A41B /* vmutex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EC5193717280029A41B /* vmutex.cpp */; };
+		0B3C2F46193717280029A41B /* vmutexlocker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EC7193717280029A41B /* vmutexlocker.cpp */; };
+		0B3C2F47193717280029A41B /* vsemaphore.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EC9193717280029A41B /* vsemaphore.cpp */; };
+		0B3C2F48193717280029A41B /* vthread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2ECB193717280029A41B /* vthread.cpp */; };
+		0B3C2F49193717280029A41B /* vassert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2ECE193717280029A41B /* vassert.cpp */; };
+		0B3C2F4A193717280029A41B /* vclassregistry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2ED0193717280029A41B /* vclassregistry.cpp */; };
+		0B3C2F4B193717280029A41B /* vhex.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2ED2193717280029A41B /* vhex.cpp */; };
+		0B3C2F4C193717280029A41B /* vlogger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2ED4193717280029A41B /* vlogger.cpp */; };
+		0B3C2F4D193717280029A41B /* vmemorytracker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2ED6193717280029A41B /* vmemorytracker.cpp */; };
+		0B3C2F4E193717280029A41B /* vsettings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2ED7193717280029A41B /* vsettings.cpp */; };
+		0B3C2F4F193717280029A41B /* vshutdownregistry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2ED9193717280029A41B /* vshutdownregistry.cpp */; };
+		0B3C2F50193717280029A41B /* vassertunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EDD193717280029A41B /* vassertunit.cpp */; };
+		0B3C2F51193717280029A41B /* vbentounit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EDF193717280029A41B /* vbentounit.cpp */; };
+		0B3C2F52193717280029A41B /* vbinaryiounit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EE1193717280029A41B /* vbinaryiounit.cpp */; };
+		0B3C2F53193717280029A41B /* vcharunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EE3193717280029A41B /* vcharunit.cpp */; };
+		0B3C2F54193717280029A41B /* vclassregistryunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EE5193717280029A41B /* vclassregistryunit.cpp */; };
+		0B3C2F55193717280029A41B /* vcolorunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EE7193717280029A41B /* vcolorunit.cpp */; };
+		0B3C2F56193717280029A41B /* vexceptionunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EE9193717280029A41B /* vexceptionunit.cpp */; };
+		0B3C2F57193717280029A41B /* vfsnodeunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EEB193717280029A41B /* vfsnodeunit.cpp */; };
+		0B3C2F58193717280029A41B /* vgeometryunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EED193717280029A41B /* vgeometryunit.cpp */; };
+		0B3C2F59193717280029A41B /* vhexunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EEF193717280029A41B /* vhexunit.cpp */; };
+		0B3C2F5A193717280029A41B /* vinstantunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EF1193717280029A41B /* vinstantunit.cpp */; };
+		0B3C2F5B193717280029A41B /* vloggerunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EF3193717280029A41B /* vloggerunit.cpp */; };
+		0B3C2F5C193717280029A41B /* vmessageunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EF5193717280029A41B /* vmessageunit.cpp */; };
+		0B3C2F5D193717280029A41B /* vplatformcheck_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EF7193717280029A41B /* vplatformcheck_main.cpp */; };
+		0B3C2F5E193717280029A41B /* vplatformunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EF8193717280029A41B /* vplatformunit.cpp */; };
+		0B3C2F5F193717280029A41B /* vstreamsunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EFA193717280029A41B /* vstreamsunit.cpp */; };
+		0B3C2F60193717280029A41B /* vstringunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EFC193717280029A41B /* vstringunit.cpp */; };
+		0B3C2F61193717280029A41B /* vthreadsunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2EFE193717280029A41B /* vthreadsunit.cpp */; };
+		0B3C2F62193717280029A41B /* vunit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2F00193717280029A41B /* vunit.cpp */; };
+		0B3C2F63193717280029A41B /* vunitrunall.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2F02193717280029A41B /* vunitrunall.cpp */; };
+		0B3C2F64193717280029A41B /* vtypes_platform.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2F0B193717280029A41B /* vtypes_platform.cpp */; };
+		0B3C2F65193717280029A41B /* vtypes_platform_objc.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2F0D193717280029A41B /* vtypes_platform_objc.mm */; };
+		0B3C2F68193717280029A41B /* vtypes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2F17193717280029A41B /* vtypes.cpp */; };
+		0B3C2F69193717280029A41B /* vtypes_internal.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0B3C2F19193717280029A41B /* vtypes_internal.cpp */; };
+		0B87B853193710D80026F4A1 /* VaultPlatformCheck.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0B87B852193710D80026F4A1 /* VaultPlatformCheck.1 */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0B87B84B193710D80026F4A1 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				0B87B853193710D80026F4A1 /* VaultPlatformCheck.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0B3C2E62193714210029A41B /* vconfigure.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = vconfigure.h; path = ../vconfigure.h; sourceTree = "<group>"; };
+		0B3C2E66193717280029A41B /* vinstant_platform.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vinstant_platform.cpp; sourceTree = "<group>"; };
+		0B3C2E69193717280029A41B /* vbento.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vbento.cpp; sourceTree = "<group>"; };
+		0B3C2E6A193717280029A41B /* vbento.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vbento.h; sourceTree = "<group>"; };
+		0B3C2E6B193717280029A41B /* vchar.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vchar.cpp; sourceTree = "<group>"; };
+		0B3C2E6C193717280029A41B /* vchar.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vchar.h; sourceTree = "<group>"; };
+		0B3C2E6D193717280029A41B /* vcodepoint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vcodepoint.cpp; sourceTree = "<group>"; };
+		0B3C2E6E193717280029A41B /* vcodepoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vcodepoint.h; sourceTree = "<group>"; };
+		0B3C2E6F193717280029A41B /* vcolor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vcolor.cpp; sourceTree = "<group>"; };
+		0B3C2E70193717280029A41B /* vcolor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vcolor.h; sourceTree = "<group>"; };
+		0B3C2E71193717280029A41B /* vcompactingdeque.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vcompactingdeque.h; sourceTree = "<group>"; };
+		0B3C2E72193717280029A41B /* vexception.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vexception.cpp; sourceTree = "<group>"; };
+		0B3C2E73193717280029A41B /* vexception.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vexception.h; sourceTree = "<group>"; };
+		0B3C2E74193717280029A41B /* vgeometry.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vgeometry.cpp; sourceTree = "<group>"; };
+		0B3C2E75193717280029A41B /* vgeometry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vgeometry.h; sourceTree = "<group>"; };
+		0B3C2E76193717280029A41B /* vinstant.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vinstant.cpp; sourceTree = "<group>"; };
+		0B3C2E77193717280029A41B /* vinstant.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vinstant.h; sourceTree = "<group>"; };
+		0B3C2E78193717280029A41B /* vstring.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vstring.cpp; sourceTree = "<group>"; };
+		0B3C2E79193717280029A41B /* vstring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vstring.h; sourceTree = "<group>"; };
+		0B3C2E7A193717280029A41B /* vstringiterator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vstringiterator.cpp; sourceTree = "<group>"; };
+		0B3C2E7B193717280029A41B /* vstringiterator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vstringiterator.h; sourceTree = "<group>"; };
+		0B3C2E7E193717280029A41B /* vfsnode_platform.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vfsnode_platform.cpp; sourceTree = "<group>"; };
+		0B3C2E81193717280029A41B /* vabstractfilestream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vabstractfilestream.cpp; sourceTree = "<group>"; };
+		0B3C2E82193717280029A41B /* vabstractfilestream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vabstractfilestream.h; sourceTree = "<group>"; };
+		0B3C2E83193717280029A41B /* vbufferedfilestream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vbufferedfilestream.cpp; sourceTree = "<group>"; };
+		0B3C2E84193717280029A41B /* vbufferedfilestream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vbufferedfilestream.h; sourceTree = "<group>"; };
+		0B3C2E85193717280029A41B /* vdirectiofilestream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vdirectiofilestream.cpp; sourceTree = "<group>"; };
+		0B3C2E86193717280029A41B /* vdirectiofilestream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vdirectiofilestream.h; sourceTree = "<group>"; };
+		0B3C2E87193717280029A41B /* vfilewriter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vfilewriter.cpp; sourceTree = "<group>"; };
+		0B3C2E88193717280029A41B /* vfilewriter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vfilewriter.h; sourceTree = "<group>"; };
+		0B3C2E89193717280029A41B /* vfsnode.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vfsnode.cpp; sourceTree = "<group>"; };
+		0B3C2E8A193717280029A41B /* vfsnode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vfsnode.h; sourceTree = "<group>"; };
+		0B3C2E8C193717280029A41B /* vclientsession.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vclientsession.cpp; sourceTree = "<group>"; };
+		0B3C2E8D193717280029A41B /* vclientsession.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vclientsession.h; sourceTree = "<group>"; };
+		0B3C2E8E193717280029A41B /* vlistenersocket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vlistenersocket.cpp; sourceTree = "<group>"; };
+		0B3C2E8F193717280029A41B /* vlistenersocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vlistenersocket.h; sourceTree = "<group>"; };
+		0B3C2E90193717280029A41B /* vlistenerthread.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vlistenerthread.cpp; sourceTree = "<group>"; };
+		0B3C2E91193717280029A41B /* vlistenerthread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vlistenerthread.h; sourceTree = "<group>"; };
+		0B3C2E92193717280029A41B /* vmanagementinterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vmanagementinterface.h; sourceTree = "<group>"; };
+		0B3C2E93193717280029A41B /* vmessage.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vmessage.cpp; sourceTree = "<group>"; };
+		0B3C2E94193717280029A41B /* vmessage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vmessage.h; sourceTree = "<group>"; };
+		0B3C2E95193717280029A41B /* vmessagehandler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vmessagehandler.cpp; sourceTree = "<group>"; };
+		0B3C2E96193717280029A41B /* vmessagehandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vmessagehandler.h; sourceTree = "<group>"; };
+		0B3C2E97193717280029A41B /* vmessageinputthread.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vmessageinputthread.cpp; sourceTree = "<group>"; };
+		0B3C2E98193717280029A41B /* vmessageinputthread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vmessageinputthread.h; sourceTree = "<group>"; };
+		0B3C2E99193717280029A41B /* vmessageoutputthread.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vmessageoutputthread.cpp; sourceTree = "<group>"; };
+		0B3C2E9A193717280029A41B /* vmessageoutputthread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vmessageoutputthread.h; sourceTree = "<group>"; };
+		0B3C2E9B193717280029A41B /* vmessagequeue.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vmessagequeue.cpp; sourceTree = "<group>"; };
+		0B3C2E9C193717280029A41B /* vmessagequeue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vmessagequeue.h; sourceTree = "<group>"; };
+		0B3C2E9D193717280029A41B /* vserver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vserver.cpp; sourceTree = "<group>"; };
+		0B3C2E9E193717280029A41B /* vserver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vserver.h; sourceTree = "<group>"; };
+		0B3C2EA1193717280029A41B /* vsocket_platform.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vsocket_platform.cpp; sourceTree = "<group>"; };
+		0B3C2EA2193717280029A41B /* vsocket_platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vsocket_platform.h; sourceTree = "<group>"; };
+		0B3C2EA6193717280029A41B /* vsocket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vsocket.cpp; sourceTree = "<group>"; };
+		0B3C2EA7193717280029A41B /* vsocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vsocket.h; sourceTree = "<group>"; };
+		0B3C2EA8193717280029A41B /* vsocketfactory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vsocketfactory.cpp; sourceTree = "<group>"; };
+		0B3C2EA9193717280029A41B /* vsocketfactory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vsocketfactory.h; sourceTree = "<group>"; };
+		0B3C2EAA193717280029A41B /* vsocketstream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vsocketstream.cpp; sourceTree = "<group>"; };
+		0B3C2EAB193717280029A41B /* vsocketstream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vsocketstream.h; sourceTree = "<group>"; };
+		0B3C2EAC193717280029A41B /* vsocketthread.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vsocketthread.cpp; sourceTree = "<group>"; };
+		0B3C2EAD193717280029A41B /* vsocketthread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vsocketthread.h; sourceTree = "<group>"; };
+		0B3C2EAE193717280029A41B /* vsocketthreadfactory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vsocketthreadfactory.h; sourceTree = "<group>"; };
+		0B3C2EB0193717280029A41B /* vbinaryiostream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vbinaryiostream.cpp; sourceTree = "<group>"; };
+		0B3C2EB1193717280029A41B /* vbinaryiostream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vbinaryiostream.h; sourceTree = "<group>"; };
+		0B3C2EB2193717280029A41B /* viostream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = viostream.cpp; sourceTree = "<group>"; };
+		0B3C2EB3193717280029A41B /* viostream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = viostream.h; sourceTree = "<group>"; };
+		0B3C2EB4193717280029A41B /* vmemorystream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vmemorystream.cpp; sourceTree = "<group>"; };
+		0B3C2EB5193717280029A41B /* vmemorystream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vmemorystream.h; sourceTree = "<group>"; };
+		0B3C2EB6193717280029A41B /* vstream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vstream.cpp; sourceTree = "<group>"; };
+		0B3C2EB7193717280029A41B /* vstream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vstream.h; sourceTree = "<group>"; };
+		0B3C2EB8193717280029A41B /* vstreamcopier.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vstreamcopier.cpp; sourceTree = "<group>"; };
+		0B3C2EB9193717280029A41B /* vstreamcopier.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vstreamcopier.h; sourceTree = "<group>"; };
+		0B3C2EBA193717280029A41B /* vtextiostream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vtextiostream.cpp; sourceTree = "<group>"; };
+		0B3C2EBB193717280029A41B /* vtextiostream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vtextiostream.h; sourceTree = "<group>"; };
+		0B3C2EBC193717280029A41B /* vwritebufferedstream.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vwritebufferedstream.cpp; sourceTree = "<group>"; };
+		0B3C2EBD193717280029A41B /* vwritebufferedstream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vwritebufferedstream.h; sourceTree = "<group>"; };
+		0B3C2EC0193717280029A41B /* vthread_platform.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vthread_platform.cpp; sourceTree = "<group>"; };
+		0B3C2EC1193717280029A41B /* vthread_platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vthread_platform.h; sourceTree = "<group>"; };
+		0B3C2EC5193717280029A41B /* vmutex.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vmutex.cpp; sourceTree = "<group>"; };
+		0B3C2EC6193717280029A41B /* vmutex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vmutex.h; sourceTree = "<group>"; };
+		0B3C2EC7193717280029A41B /* vmutexlocker.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vmutexlocker.cpp; sourceTree = "<group>"; };
+		0B3C2EC8193717280029A41B /* vmutexlocker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vmutexlocker.h; sourceTree = "<group>"; };
+		0B3C2EC9193717280029A41B /* vsemaphore.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vsemaphore.cpp; sourceTree = "<group>"; };
+		0B3C2ECA193717280029A41B /* vsemaphore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vsemaphore.h; sourceTree = "<group>"; };
+		0B3C2ECB193717280029A41B /* vthread.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vthread.cpp; sourceTree = "<group>"; };
+		0B3C2ECC193717280029A41B /* vthread.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vthread.h; sourceTree = "<group>"; };
+		0B3C2ECE193717280029A41B /* vassert.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vassert.cpp; sourceTree = "<group>"; };
+		0B3C2ECF193717280029A41B /* vassert.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vassert.h; sourceTree = "<group>"; };
+		0B3C2ED0193717280029A41B /* vclassregistry.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vclassregistry.cpp; sourceTree = "<group>"; };
+		0B3C2ED1193717280029A41B /* vclassregistry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vclassregistry.h; sourceTree = "<group>"; };
+		0B3C2ED2193717280029A41B /* vhex.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vhex.cpp; sourceTree = "<group>"; };
+		0B3C2ED3193717280029A41B /* vhex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vhex.h; sourceTree = "<group>"; };
+		0B3C2ED4193717280029A41B /* vlogger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vlogger.cpp; sourceTree = "<group>"; };
+		0B3C2ED5193717280029A41B /* vlogger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vlogger.h; sourceTree = "<group>"; };
+		0B3C2ED6193717280029A41B /* vmemorytracker.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vmemorytracker.cpp; sourceTree = "<group>"; };
+		0B3C2ED7193717280029A41B /* vsettings.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vsettings.cpp; sourceTree = "<group>"; };
+		0B3C2ED8193717280029A41B /* vsettings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vsettings.h; sourceTree = "<group>"; };
+		0B3C2ED9193717280029A41B /* vshutdownregistry.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vshutdownregistry.cpp; sourceTree = "<group>"; };
+		0B3C2EDA193717280029A41B /* vshutdownregistry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vshutdownregistry.h; sourceTree = "<group>"; };
+		0B3C2EDB193717280029A41B /* vsingleton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vsingleton.h; sourceTree = "<group>"; };
+		0B3C2EDD193717280029A41B /* vassertunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vassertunit.cpp; sourceTree = "<group>"; };
+		0B3C2EDE193717280029A41B /* vassertunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vassertunit.h; sourceTree = "<group>"; };
+		0B3C2EDF193717280029A41B /* vbentounit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vbentounit.cpp; sourceTree = "<group>"; };
+		0B3C2EE0193717280029A41B /* vbentounit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vbentounit.h; sourceTree = "<group>"; };
+		0B3C2EE1193717280029A41B /* vbinaryiounit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vbinaryiounit.cpp; sourceTree = "<group>"; };
+		0B3C2EE2193717280029A41B /* vbinaryiounit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vbinaryiounit.h; sourceTree = "<group>"; };
+		0B3C2EE3193717280029A41B /* vcharunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vcharunit.cpp; sourceTree = "<group>"; };
+		0B3C2EE4193717280029A41B /* vcharunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vcharunit.h; sourceTree = "<group>"; };
+		0B3C2EE5193717280029A41B /* vclassregistryunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vclassregistryunit.cpp; sourceTree = "<group>"; };
+		0B3C2EE6193717280029A41B /* vclassregistryunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vclassregistryunit.h; sourceTree = "<group>"; };
+		0B3C2EE7193717280029A41B /* vcolorunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vcolorunit.cpp; sourceTree = "<group>"; };
+		0B3C2EE8193717280029A41B /* vcolorunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vcolorunit.h; sourceTree = "<group>"; };
+		0B3C2EE9193717280029A41B /* vexceptionunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vexceptionunit.cpp; sourceTree = "<group>"; };
+		0B3C2EEA193717280029A41B /* vexceptionunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vexceptionunit.h; sourceTree = "<group>"; };
+		0B3C2EEB193717280029A41B /* vfsnodeunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vfsnodeunit.cpp; sourceTree = "<group>"; };
+		0B3C2EEC193717280029A41B /* vfsnodeunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vfsnodeunit.h; sourceTree = "<group>"; };
+		0B3C2EED193717280029A41B /* vgeometryunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vgeometryunit.cpp; sourceTree = "<group>"; };
+		0B3C2EEE193717280029A41B /* vgeometryunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vgeometryunit.h; sourceTree = "<group>"; };
+		0B3C2EEF193717280029A41B /* vhexunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vhexunit.cpp; sourceTree = "<group>"; };
+		0B3C2EF0193717280029A41B /* vhexunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vhexunit.h; sourceTree = "<group>"; };
+		0B3C2EF1193717280029A41B /* vinstantunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vinstantunit.cpp; sourceTree = "<group>"; };
+		0B3C2EF2193717280029A41B /* vinstantunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vinstantunit.h; sourceTree = "<group>"; };
+		0B3C2EF3193717280029A41B /* vloggerunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vloggerunit.cpp; sourceTree = "<group>"; };
+		0B3C2EF4193717280029A41B /* vloggerunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vloggerunit.h; sourceTree = "<group>"; };
+		0B3C2EF5193717280029A41B /* vmessageunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vmessageunit.cpp; sourceTree = "<group>"; };
+		0B3C2EF6193717280029A41B /* vmessageunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vmessageunit.h; sourceTree = "<group>"; };
+		0B3C2EF7193717280029A41B /* vplatformcheck_main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vplatformcheck_main.cpp; sourceTree = "<group>"; };
+		0B3C2EF8193717280029A41B /* vplatformunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vplatformunit.cpp; sourceTree = "<group>"; };
+		0B3C2EF9193717280029A41B /* vplatformunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vplatformunit.h; sourceTree = "<group>"; };
+		0B3C2EFA193717280029A41B /* vstreamsunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vstreamsunit.cpp; sourceTree = "<group>"; };
+		0B3C2EFB193717280029A41B /* vstreamsunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vstreamsunit.h; sourceTree = "<group>"; };
+		0B3C2EFC193717280029A41B /* vstringunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vstringunit.cpp; sourceTree = "<group>"; };
+		0B3C2EFD193717280029A41B /* vstringunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vstringunit.h; sourceTree = "<group>"; };
+		0B3C2EFE193717280029A41B /* vthreadsunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vthreadsunit.cpp; sourceTree = "<group>"; };
+		0B3C2EFF193717280029A41B /* vthreadsunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vthreadsunit.h; sourceTree = "<group>"; };
+		0B3C2F00193717280029A41B /* vunit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vunit.cpp; sourceTree = "<group>"; };
+		0B3C2F01193717280029A41B /* vunit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vunit.h; sourceTree = "<group>"; };
+		0B3C2F02193717280029A41B /* vunitrunall.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vunitrunall.cpp; sourceTree = "<group>"; };
+		0B3C2F03193717280029A41B /* vunitrunall.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vunitrunall.h; sourceTree = "<group>"; };
+		0B3C2F04193717280029A41B /* vault.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vault.h; sourceTree = "<group>"; };
+		0B3C2F0A193717280029A41B /* vtypes_internal_platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vtypes_internal_platform.h; sourceTree = "<group>"; };
+		0B3C2F0B193717280029A41B /* vtypes_platform.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vtypes_platform.cpp; sourceTree = "<group>"; };
+		0B3C2F0C193717280029A41B /* vtypes_platform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vtypes_platform.h; sourceTree = "<group>"; };
+		0B3C2F0D193717280029A41B /* vtypes_platform_objc.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = vtypes_platform_objc.mm; sourceTree = "<group>"; };
+		0B3C2F17193717280029A41B /* vtypes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vtypes.cpp; sourceTree = "<group>"; };
+		0B3C2F18193717280029A41B /* vtypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vtypes.h; sourceTree = "<group>"; };
+		0B3C2F19193717280029A41B /* vtypes_internal.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vtypes_internal.cpp; sourceTree = "<group>"; };
+		0B3C2F1A193717280029A41B /* vtypes_internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vtypes_internal.h; sourceTree = "<group>"; };
+		0B87B84D193710D80026F4A1 /* VaultPlatformCheck */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = VaultPlatformCheck; sourceTree = BUILT_PRODUCTS_DIR; };
+		0B87B852193710D80026F4A1 /* VaultPlatformCheck.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = VaultPlatformCheck.1; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0B87B84A193710D80026F4A1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0B3C2E63193717280029A41B /* source */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2E64193717280029A41B /* containers */,
+				0B3C2E7C193717280029A41B /* files */,
+				0B3C2E8B193717280029A41B /* server */,
+				0B3C2E9F193717280029A41B /* sockets */,
+				0B3C2EAF193717280029A41B /* streams */,
+				0B3C2EBE193717280029A41B /* threads */,
+				0B3C2ECD193717280029A41B /* toolbox */,
+				0B3C2EDC193717280029A41B /* unittest */,
+				0B3C2F04193717280029A41B /* vault.h */,
+				0B3C2F08193717280029A41B /* vtypes */,
+			);
+			name = source;
+			path = ../../../source;
+			sourceTree = "<group>";
+		};
+		0B3C2E64193717280029A41B /* containers */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2E65193717280029A41B /* _unix */,
+				0B3C2E69193717280029A41B /* vbento.cpp */,
+				0B3C2E6A193717280029A41B /* vbento.h */,
+				0B3C2E6B193717280029A41B /* vchar.cpp */,
+				0B3C2E6C193717280029A41B /* vchar.h */,
+				0B3C2E6D193717280029A41B /* vcodepoint.cpp */,
+				0B3C2E6E193717280029A41B /* vcodepoint.h */,
+				0B3C2E6F193717280029A41B /* vcolor.cpp */,
+				0B3C2E70193717280029A41B /* vcolor.h */,
+				0B3C2E71193717280029A41B /* vcompactingdeque.h */,
+				0B3C2E72193717280029A41B /* vexception.cpp */,
+				0B3C2E73193717280029A41B /* vexception.h */,
+				0B3C2E74193717280029A41B /* vgeometry.cpp */,
+				0B3C2E75193717280029A41B /* vgeometry.h */,
+				0B3C2E76193717280029A41B /* vinstant.cpp */,
+				0B3C2E77193717280029A41B /* vinstant.h */,
+				0B3C2E78193717280029A41B /* vstring.cpp */,
+				0B3C2E79193717280029A41B /* vstring.h */,
+				0B3C2E7A193717280029A41B /* vstringiterator.cpp */,
+				0B3C2E7B193717280029A41B /* vstringiterator.h */,
+			);
+			path = containers;
+			sourceTree = "<group>";
+		};
+		0B3C2E65193717280029A41B /* _unix */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2E66193717280029A41B /* vinstant_platform.cpp */,
+			);
+			path = _unix;
+			sourceTree = "<group>";
+		};
+		0B3C2E7C193717280029A41B /* files */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2E7D193717280029A41B /* _unix */,
+				0B3C2E81193717280029A41B /* vabstractfilestream.cpp */,
+				0B3C2E82193717280029A41B /* vabstractfilestream.h */,
+				0B3C2E83193717280029A41B /* vbufferedfilestream.cpp */,
+				0B3C2E84193717280029A41B /* vbufferedfilestream.h */,
+				0B3C2E85193717280029A41B /* vdirectiofilestream.cpp */,
+				0B3C2E86193717280029A41B /* vdirectiofilestream.h */,
+				0B3C2E87193717280029A41B /* vfilewriter.cpp */,
+				0B3C2E88193717280029A41B /* vfilewriter.h */,
+				0B3C2E89193717280029A41B /* vfsnode.cpp */,
+				0B3C2E8A193717280029A41B /* vfsnode.h */,
+			);
+			path = files;
+			sourceTree = "<group>";
+		};
+		0B3C2E7D193717280029A41B /* _unix */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2E7E193717280029A41B /* vfsnode_platform.cpp */,
+			);
+			path = _unix;
+			sourceTree = "<group>";
+		};
+		0B3C2E8B193717280029A41B /* server */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2E8C193717280029A41B /* vclientsession.cpp */,
+				0B3C2E8D193717280029A41B /* vclientsession.h */,
+				0B3C2E8E193717280029A41B /* vlistenersocket.cpp */,
+				0B3C2E8F193717280029A41B /* vlistenersocket.h */,
+				0B3C2E90193717280029A41B /* vlistenerthread.cpp */,
+				0B3C2E91193717280029A41B /* vlistenerthread.h */,
+				0B3C2E92193717280029A41B /* vmanagementinterface.h */,
+				0B3C2E93193717280029A41B /* vmessage.cpp */,
+				0B3C2E94193717280029A41B /* vmessage.h */,
+				0B3C2E95193717280029A41B /* vmessagehandler.cpp */,
+				0B3C2E96193717280029A41B /* vmessagehandler.h */,
+				0B3C2E97193717280029A41B /* vmessageinputthread.cpp */,
+				0B3C2E98193717280029A41B /* vmessageinputthread.h */,
+				0B3C2E99193717280029A41B /* vmessageoutputthread.cpp */,
+				0B3C2E9A193717280029A41B /* vmessageoutputthread.h */,
+				0B3C2E9B193717280029A41B /* vmessagequeue.cpp */,
+				0B3C2E9C193717280029A41B /* vmessagequeue.h */,
+				0B3C2E9D193717280029A41B /* vserver.cpp */,
+				0B3C2E9E193717280029A41B /* vserver.h */,
+			);
+			path = server;
+			sourceTree = "<group>";
+		};
+		0B3C2E9F193717280029A41B /* sockets */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2EA0193717280029A41B /* _unix */,
+				0B3C2EA6193717280029A41B /* vsocket.cpp */,
+				0B3C2EA7193717280029A41B /* vsocket.h */,
+				0B3C2EA8193717280029A41B /* vsocketfactory.cpp */,
+				0B3C2EA9193717280029A41B /* vsocketfactory.h */,
+				0B3C2EAA193717280029A41B /* vsocketstream.cpp */,
+				0B3C2EAB193717280029A41B /* vsocketstream.h */,
+				0B3C2EAC193717280029A41B /* vsocketthread.cpp */,
+				0B3C2EAD193717280029A41B /* vsocketthread.h */,
+				0B3C2EAE193717280029A41B /* vsocketthreadfactory.h */,
+			);
+			path = sockets;
+			sourceTree = "<group>";
+		};
+		0B3C2EA0193717280029A41B /* _unix */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2EA1193717280029A41B /* vsocket_platform.cpp */,
+				0B3C2EA2193717280029A41B /* vsocket_platform.h */,
+			);
+			path = _unix;
+			sourceTree = "<group>";
+		};
+		0B3C2EAF193717280029A41B /* streams */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2EB0193717280029A41B /* vbinaryiostream.cpp */,
+				0B3C2EB1193717280029A41B /* vbinaryiostream.h */,
+				0B3C2EB2193717280029A41B /* viostream.cpp */,
+				0B3C2EB3193717280029A41B /* viostream.h */,
+				0B3C2EB4193717280029A41B /* vmemorystream.cpp */,
+				0B3C2EB5193717280029A41B /* vmemorystream.h */,
+				0B3C2EB6193717280029A41B /* vstream.cpp */,
+				0B3C2EB7193717280029A41B /* vstream.h */,
+				0B3C2EB8193717280029A41B /* vstreamcopier.cpp */,
+				0B3C2EB9193717280029A41B /* vstreamcopier.h */,
+				0B3C2EBA193717280029A41B /* vtextiostream.cpp */,
+				0B3C2EBB193717280029A41B /* vtextiostream.h */,
+				0B3C2EBC193717280029A41B /* vwritebufferedstream.cpp */,
+				0B3C2EBD193717280029A41B /* vwritebufferedstream.h */,
+			);
+			path = streams;
+			sourceTree = "<group>";
+		};
+		0B3C2EBE193717280029A41B /* threads */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2EBF193717280029A41B /* _unix */,
+				0B3C2EC5193717280029A41B /* vmutex.cpp */,
+				0B3C2EC6193717280029A41B /* vmutex.h */,
+				0B3C2EC7193717280029A41B /* vmutexlocker.cpp */,
+				0B3C2EC8193717280029A41B /* vmutexlocker.h */,
+				0B3C2EC9193717280029A41B /* vsemaphore.cpp */,
+				0B3C2ECA193717280029A41B /* vsemaphore.h */,
+				0B3C2ECB193717280029A41B /* vthread.cpp */,
+				0B3C2ECC193717280029A41B /* vthread.h */,
+			);
+			path = threads;
+			sourceTree = "<group>";
+		};
+		0B3C2EBF193717280029A41B /* _unix */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2EC0193717280029A41B /* vthread_platform.cpp */,
+				0B3C2EC1193717280029A41B /* vthread_platform.h */,
+			);
+			path = _unix;
+			sourceTree = "<group>";
+		};
+		0B3C2ECD193717280029A41B /* toolbox */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2ECE193717280029A41B /* vassert.cpp */,
+				0B3C2ECF193717280029A41B /* vassert.h */,
+				0B3C2ED0193717280029A41B /* vclassregistry.cpp */,
+				0B3C2ED1193717280029A41B /* vclassregistry.h */,
+				0B3C2ED2193717280029A41B /* vhex.cpp */,
+				0B3C2ED3193717280029A41B /* vhex.h */,
+				0B3C2ED4193717280029A41B /* vlogger.cpp */,
+				0B3C2ED5193717280029A41B /* vlogger.h */,
+				0B3C2ED6193717280029A41B /* vmemorytracker.cpp */,
+				0B3C2ED7193717280029A41B /* vsettings.cpp */,
+				0B3C2ED8193717280029A41B /* vsettings.h */,
+				0B3C2ED9193717280029A41B /* vshutdownregistry.cpp */,
+				0B3C2EDA193717280029A41B /* vshutdownregistry.h */,
+				0B3C2EDB193717280029A41B /* vsingleton.h */,
+			);
+			path = toolbox;
+			sourceTree = "<group>";
+		};
+		0B3C2EDC193717280029A41B /* unittest */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2EDD193717280029A41B /* vassertunit.cpp */,
+				0B3C2EDE193717280029A41B /* vassertunit.h */,
+				0B3C2EDF193717280029A41B /* vbentounit.cpp */,
+				0B3C2EE0193717280029A41B /* vbentounit.h */,
+				0B3C2EE1193717280029A41B /* vbinaryiounit.cpp */,
+				0B3C2EE2193717280029A41B /* vbinaryiounit.h */,
+				0B3C2EE3193717280029A41B /* vcharunit.cpp */,
+				0B3C2EE4193717280029A41B /* vcharunit.h */,
+				0B3C2EE5193717280029A41B /* vclassregistryunit.cpp */,
+				0B3C2EE6193717280029A41B /* vclassregistryunit.h */,
+				0B3C2EE7193717280029A41B /* vcolorunit.cpp */,
+				0B3C2EE8193717280029A41B /* vcolorunit.h */,
+				0B3C2EE9193717280029A41B /* vexceptionunit.cpp */,
+				0B3C2EEA193717280029A41B /* vexceptionunit.h */,
+				0B3C2EEB193717280029A41B /* vfsnodeunit.cpp */,
+				0B3C2EEC193717280029A41B /* vfsnodeunit.h */,
+				0B3C2EED193717280029A41B /* vgeometryunit.cpp */,
+				0B3C2EEE193717280029A41B /* vgeometryunit.h */,
+				0B3C2EEF193717280029A41B /* vhexunit.cpp */,
+				0B3C2EF0193717280029A41B /* vhexunit.h */,
+				0B3C2EF1193717280029A41B /* vinstantunit.cpp */,
+				0B3C2EF2193717280029A41B /* vinstantunit.h */,
+				0B3C2EF3193717280029A41B /* vloggerunit.cpp */,
+				0B3C2EF4193717280029A41B /* vloggerunit.h */,
+				0B3C2EF5193717280029A41B /* vmessageunit.cpp */,
+				0B3C2EF6193717280029A41B /* vmessageunit.h */,
+				0B3C2EF7193717280029A41B /* vplatformcheck_main.cpp */,
+				0B3C2EF8193717280029A41B /* vplatformunit.cpp */,
+				0B3C2EF9193717280029A41B /* vplatformunit.h */,
+				0B3C2EFA193717280029A41B /* vstreamsunit.cpp */,
+				0B3C2EFB193717280029A41B /* vstreamsunit.h */,
+				0B3C2EFC193717280029A41B /* vstringunit.cpp */,
+				0B3C2EFD193717280029A41B /* vstringunit.h */,
+				0B3C2EFE193717280029A41B /* vthreadsunit.cpp */,
+				0B3C2EFF193717280029A41B /* vthreadsunit.h */,
+				0B3C2F00193717280029A41B /* vunit.cpp */,
+				0B3C2F01193717280029A41B /* vunit.h */,
+				0B3C2F02193717280029A41B /* vunitrunall.cpp */,
+				0B3C2F03193717280029A41B /* vunitrunall.h */,
+			);
+			path = unittest;
+			sourceTree = "<group>";
+		};
+		0B3C2F08193717280029A41B /* vtypes */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2F09193717280029A41B /* _mac */,
+				0B3C2F17193717280029A41B /* vtypes.cpp */,
+				0B3C2F18193717280029A41B /* vtypes.h */,
+				0B3C2F19193717280029A41B /* vtypes_internal.cpp */,
+				0B3C2F1A193717280029A41B /* vtypes_internal.h */,
+			);
+			path = vtypes;
+			sourceTree = "<group>";
+		};
+		0B3C2F09193717280029A41B /* _mac */ = {
+			isa = PBXGroup;
+			children = (
+				0B3C2F0A193717280029A41B /* vtypes_internal_platform.h */,
+				0B3C2F0B193717280029A41B /* vtypes_platform.cpp */,
+				0B3C2F0C193717280029A41B /* vtypes_platform.h */,
+				0B3C2F0D193717280029A41B /* vtypes_platform_objc.mm */,
+			);
+			path = _mac;
+			sourceTree = "<group>";
+		};
+		0B87B844193710D80026F4A1 = {
+			isa = PBXGroup;
+			children = (
+				0B3C2E63193717280029A41B /* source */,
+				0B3C2E62193714210029A41B /* vconfigure.h */,
+				0B87B84F193710D80026F4A1 /* VaultPlatformCheck */,
+				0B87B84E193710D80026F4A1 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		0B87B84E193710D80026F4A1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0B87B84D193710D80026F4A1 /* VaultPlatformCheck */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0B87B84F193710D80026F4A1 /* VaultPlatformCheck */ = {
+			isa = PBXGroup;
+			children = (
+				0B87B852193710D80026F4A1 /* VaultPlatformCheck.1 */,
+			);
+			path = VaultPlatformCheck;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0B87B84C193710D80026F4A1 /* VaultPlatformCheck */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0B87B856193710D80026F4A1 /* Build configuration list for PBXNativeTarget "VaultPlatformCheck" */;
+			buildPhases = (
+				0B87B849193710D80026F4A1 /* Sources */,
+				0B87B84A193710D80026F4A1 /* Frameworks */,
+				0B87B84B193710D80026F4A1 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = VaultPlatformCheck;
+			productName = VaultPlatformCheck;
+			productReference = 0B87B84D193710D80026F4A1 /* VaultPlatformCheck */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0B87B845193710D80026F4A1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0510;
+				ORGANIZATIONNAME = "___FULLUSERNAME___";
+			};
+			buildConfigurationList = 0B87B848193710D80026F4A1 /* Build configuration list for PBXProject "VaultPlatformCheck" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 0B87B844193710D80026F4A1;
+			productRefGroup = 0B87B84E193710D80026F4A1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0B87B84C193710D80026F4A1 /* VaultPlatformCheck */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0B87B849193710D80026F4A1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0B3C2F48193717280029A41B /* vthread.cpp in Sources */,
+				0B3C2F5D193717280029A41B /* vplatformcheck_main.cpp in Sources */,
+				0B3C2F68193717280029A41B /* vtypes.cpp in Sources */,
+				0B3C2F63193717280029A41B /* vunitrunall.cpp in Sources */,
+				0B3C2F45193717280029A41B /* vmutex.cpp in Sources */,
+				0B3C2F1E193717280029A41B /* vchar.cpp in Sources */,
+				0B3C2F43193717280029A41B /* vthread_platform.cpp in Sources */,
+				0B3C2F3C193717280029A41B /* vbinaryiostream.cpp in Sources */,
+				0B3C2F20193717280029A41B /* vcolor.cpp in Sources */,
+				0B3C2F25193717280029A41B /* vstringiterator.cpp in Sources */,
+				0B3C2F56193717280029A41B /* vexceptionunit.cpp in Sources */,
+				0B3C2F61193717280029A41B /* vthreadsunit.cpp in Sources */,
+				0B3C2F55193717280029A41B /* vcolorunit.cpp in Sources */,
+				0B3C2F62193717280029A41B /* vunit.cpp in Sources */,
+				0B3C2F30193717280029A41B /* vmessage.cpp in Sources */,
+				0B3C2F4F193717280029A41B /* vshutdownregistry.cpp in Sources */,
+				0B3C2F31193717280029A41B /* vmessagehandler.cpp in Sources */,
+				0B3C2F5B193717280029A41B /* vloggerunit.cpp in Sources */,
+				0B3C2F2D193717280029A41B /* vclientsession.cpp in Sources */,
+				0B3C2F2C193717280029A41B /* vfsnode.cpp in Sources */,
+				0B3C2F40193717280029A41B /* vstreamcopier.cpp in Sources */,
+				0B3C2F26193717280029A41B /* vfsnode_platform.cpp in Sources */,
+				0B3C2F38193717280029A41B /* vsocket.cpp in Sources */,
+				0B3C2F54193717280029A41B /* vclassregistryunit.cpp in Sources */,
+				0B3C2F35193717280029A41B /* vserver.cpp in Sources */,
+				0B3C2F2A193717280029A41B /* vdirectiofilestream.cpp in Sources */,
+				0B3C2F4E193717280029A41B /* vsettings.cpp in Sources */,
+				0B3C2F34193717280029A41B /* vmessagequeue.cpp in Sources */,
+				0B3C2F58193717280029A41B /* vgeometryunit.cpp in Sources */,
+				0B3C2F3A193717280029A41B /* vsocketstream.cpp in Sources */,
+				0B3C2F49193717280029A41B /* vassert.cpp in Sources */,
+				0B3C2F1F193717280029A41B /* vcodepoint.cpp in Sources */,
+				0B3C2F57193717280029A41B /* vfsnodeunit.cpp in Sources */,
+				0B3C2F4C193717280029A41B /* vlogger.cpp in Sources */,
+				0B3C2F3E193717280029A41B /* vmemorystream.cpp in Sources */,
+				0B3C2F2F193717280029A41B /* vlistenerthread.cpp in Sources */,
+				0B3C2F2E193717280029A41B /* vlistenersocket.cpp in Sources */,
+				0B3C2F3D193717280029A41B /* viostream.cpp in Sources */,
+				0B3C2F69193717280029A41B /* vtypes_internal.cpp in Sources */,
+				0B3C2F3B193717280029A41B /* vsocketthread.cpp in Sources */,
+				0B3C2F5A193717280029A41B /* vinstantunit.cpp in Sources */,
+				0B3C2F24193717280029A41B /* vstring.cpp in Sources */,
+				0B3C2F41193717280029A41B /* vtextiostream.cpp in Sources */,
+				0B3C2F4A193717280029A41B /* vclassregistry.cpp in Sources */,
+				0B3C2F21193717280029A41B /* vexception.cpp in Sources */,
+				0B3C2F22193717280029A41B /* vgeometry.cpp in Sources */,
+				0B3C2F53193717280029A41B /* vcharunit.cpp in Sources */,
+				0B3C2F3F193717280029A41B /* vstream.cpp in Sources */,
+				0B3C2F1D193717280029A41B /* vbento.cpp in Sources */,
+				0B3C2F42193717280029A41B /* vwritebufferedstream.cpp in Sources */,
+				0B3C2F28193717280029A41B /* vabstractfilestream.cpp in Sources */,
+				0B3C2F64193717280029A41B /* vtypes_platform.cpp in Sources */,
+				0B3C2F4D193717280029A41B /* vmemorytracker.cpp in Sources */,
+				0B3C2F32193717280029A41B /* vmessageinputthread.cpp in Sources */,
+				0B3C2F4B193717280029A41B /* vhex.cpp in Sources */,
+				0B3C2F46193717280029A41B /* vmutexlocker.cpp in Sources */,
+				0B3C2F50193717280029A41B /* vassertunit.cpp in Sources */,
+				0B3C2F60193717280029A41B /* vstringunit.cpp in Sources */,
+				0B3C2F5E193717280029A41B /* vplatformunit.cpp in Sources */,
+				0B3C2F2B193717280029A41B /* vfilewriter.cpp in Sources */,
+				0B3C2F47193717280029A41B /* vsemaphore.cpp in Sources */,
+				0B3C2F33193717280029A41B /* vmessageoutputthread.cpp in Sources */,
+				0B3C2F65193717280029A41B /* vtypes_platform_objc.mm in Sources */,
+				0B3C2F52193717280029A41B /* vbinaryiounit.cpp in Sources */,
+				0B3C2F39193717280029A41B /* vsocketfactory.cpp in Sources */,
+				0B3C2F59193717280029A41B /* vhexunit.cpp in Sources */,
+				0B3C2F1B193717280029A41B /* vinstant_platform.cpp in Sources */,
+				0B3C2F29193717280029A41B /* vbufferedfilestream.cpp in Sources */,
+				0B3C2F23193717280029A41B /* vinstant.cpp in Sources */,
+				0B3C2F5C193717280029A41B /* vmessageunit.cpp in Sources */,
+				0B3C2F51193717280029A41B /* vbentounit.cpp in Sources */,
+				0B3C2F5F193717280029A41B /* vstreamsunit.cpp in Sources */,
+				0B3C2F36193717280029A41B /* vsocket_platform.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0B87B854193710D80026F4A1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				EXCLUDED_RECURSIVE_SEARCH_PATH_SUBDIRECTORIES = "*.nib *.lproj *.framework *.gch *.xcode* (*) .DS_Store CVS .svn .git .hg _win ../../../../source/vtypes/_unix";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"../../../../source/**",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				ONLY_ACTIVE_ARCH = YES;
+				SCAN_ALL_SOURCE_FILES_FOR_INCLUDES = NO;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		0B87B855193710D80026F4A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				EXCLUDED_RECURSIVE_SEARCH_PATH_SUBDIRECTORIES = "*.nib *.lproj *.framework *.gch *.xcode* (*) .DS_Store CVS .svn .git .hg _win ../../../../source/vtypes/_unix";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"../../../../source/**",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				SCAN_ALL_SOURCE_FILES_FOR_INCLUDES = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		0B87B857193710D80026F4A1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		0B87B858193710D80026F4A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0B87B848193710D80026F4A1 /* Build configuration list for PBXProject "VaultPlatformCheck" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0B87B854193710D80026F4A1 /* Debug */,
+				0B87B855193710D80026F4A1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0B87B856193710D80026F4A1 /* Build configuration list for PBXNativeTarget "VaultPlatformCheck" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0B87B857193710D80026F4A1 /* Debug */,
+				0B87B858193710D80026F4A1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0B87B845193710D80026F4A1 /* Project object */;
+}
