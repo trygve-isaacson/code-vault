@@ -37,17 +37,12 @@ Finally, proceed with everything else.
 // Boost seems to require being included first.
 // If using shared_ptr, must include before our vtypes.h redefines new.
 #ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
-    #define V_INCLUDE_BOOST_CORE
+    #include <boost/format.hpp>
 #endif
 #ifdef VAULT_BOOST_SHARED_PTR_INCLUDE
-    #define V_INCLUDE_BOOST_CORE
-#endif
-#ifdef V_INCLUDE_BOOST_CORE
-    #include <boost/format.hpp>
     #include <boost/shared_ptr.hpp>
     #include <boost/weak_ptr.hpp>
     #include <boost/enable_shared_from_this.hpp>
-    // Unfortunately GCC does not have a save/restore diagnostic state pragma.
 #endif
 
 #include <math.h>

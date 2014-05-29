@@ -186,6 +186,7 @@ set up for this platform build.
 */
 #include "vtypes_platform.h"
 
+#include <memory> // C++11 shared_ptr
 #include <vector>
 #include <stdarg.h>
 #include <vector>
@@ -193,6 +194,7 @@ set up for this platform build.
 #include <deque>
 #include <map>
 #include <limits>
+#include <unistd.h>
 
 /*
 We choose to define just the basic specific-sized data types. Most
@@ -654,11 +656,13 @@ class VAutoreleasePool {
         void* mPool; // "void*" so as not to add a type dependency on includers.
 };
 
-// vconfigure.h tells us via this symbol whether we are using boost::shared_ptr.
-// If not indicated, then we are using C++11 std::shared_ptr. Any necessary boost
-// includes and related compatibility stuff was done above in vtypes_platform.h,
-// so here we finally define the library-neutral names for these things:
+// In vconfigure.h this symbol's presence or lack thereof tells us whether we are
+// using the C++11 or Boost implementations of various smart pointer templates.
+// Any necessary boost includes and related compatibility stuff was done above in
+// vtypes_platform.h, so here we finally define the library-neutral names for
+// these things. The C++11 types are already made available by including <memory>.
 #ifdef VAULT_BOOST_SHARED_PTR_INCLUDE
+    #define VUniquePtr              boost::scoped_ptr
     #define VSharedPtr              boost::shared_ptr
     #define VWeakPtr                boost::weak_ptr
     #define VEnableSharedFromThis   boost::enable_shared_from_this
@@ -666,6 +670,7 @@ class VAutoreleasePool {
     #define VDynamicPtrCast         boost::dynamic_pointer_cast
     #define VConstPtrCast           boost::const_pointer_cast
 #else
+    #define VUniquePtr              std::unique_ptr
     #define VSharedPtr              std::shared_ptr
     #define VWeakPtr                std::weak_ptr
     #define VEnableSharedFromThis   std::enable_shared_from_this

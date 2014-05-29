@@ -93,12 +93,18 @@ Finally, proceed with everything else.
         #pragma warning(push)
         #pragma warning(disable : 4996)
     #endif
+#endif
 
+#ifdef VAULT_BOOST_STRING_FORMATTING_SUPPORT
     #include <boost/format.hpp>
+#endif
+#ifdef VAULT_BOOST_SHARED_PTR_INCLUDE
     #include <boost/shared_ptr.hpp>
     #include <boost/weak_ptr.hpp>
     #include <boost/enable_shared_from_this.hpp>
+#endif
 
+#ifdef V_INCLUDE_BOOST_CORE
     #if _MSC_VER >= 1400
         #pragma warning(pop)
     #endif

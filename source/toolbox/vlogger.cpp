@@ -15,8 +15,6 @@ License: MIT. See LICENSE.md in the Vault top level directory.
 #include "vbento.h"
 #include "vchar.h"
 
-#include <boost/scoped_ptr.hpp>
-
 static const VNamedLoggerPtr NULL_NAMED_LOGGER_PTR;
 static const VLogAppenderPtr NULL_LOG_APPENDER_PTR;
 
@@ -728,7 +726,7 @@ VString VLogger::commandGetInfoString() {
 
 // static
 VString VLogger::_commandGetInfoString() {
-    boost::scoped_ptr<VBentoNode> bento(VLogger::_commandGetInfo());
+    VUniquePtr<VBentoNode> bento(VLogger::_commandGetInfo());
     VString s;
     bento->writeToBentoTextString(s, true);
     return s;
