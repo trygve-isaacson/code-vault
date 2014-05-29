@@ -2151,7 +2151,7 @@ void VString::_assignFromUTF16WideString(const std::wstring& utf16WideString) {
 
     *this = VString::EMPTY();
 
-    int numCodeUnits = utf16WideString.length();
+    int numCodeUnits = (int) utf16WideString.length();
     for (int i = 0; i < numCodeUnits; ++i) {
         VCodePoint cp(utf16WideString, i);
         if (cp.getUTF16Length() == 2) {
