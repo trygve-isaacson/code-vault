@@ -64,7 +64,7 @@ VString VPlatformAPI::getcwd() {
         throw VException(VSystemError(), "Call to getcwd failed.");
     }
     
-    result.postflight(::strlen(cwdResult));
+    result.postflight((int) ::strlen(cwdResult));
     return result;
 }
 
