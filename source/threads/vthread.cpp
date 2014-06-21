@@ -247,7 +247,7 @@ void VThread::stopThread(VThreadID_Type threadID) {
 #ifndef VAULT_USER_STACKCRAWL_SUPPORT
 // static
 void VThread::logStackCrawl(const VString& headerMessage, VNamedLoggerPtr logger, bool /*verbose*/) {
-    if (logger == NULL) {
+    if (logger == nullptr) {
         VLOGGER_ERROR(VSTRING_FORMAT("%s (VThread::logStackCrawl: User stack crawl not implemented.)", headerMessage.chars()));
     } else {
         logger->emitStackCrawlLine(VSTRING_FORMAT("%s (VThread::logStackCrawl: User stack crawl not implemented.)", headerMessage.chars()));

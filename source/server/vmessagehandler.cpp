@@ -55,7 +55,7 @@ VMessageHandler::VMessageHandler(const VString& name, VMessagePtr m, VServer* se
     , mSessionName() // initialized below if session or thread was supplied
     {
 
-    if (session != NULL) { // A message handler doesn't need to be related to a session object.
+    if (session != nullptr) { // A message handler doesn't need to be related to a session object.
         mSessionName = session->getName();
     } else if (mThread != NULL) { // Thread may be null for test case or other purposes.
         mSessionName = mThread->getName();
@@ -80,26 +80,26 @@ VMessagePtr VMessageHandler::getMessage(VMessageID messageID) {
 }
 
 void VMessageHandler::logMessageContentRecord(const VString& details, VNamedLoggerPtr logger) const {
-    if (logger == NULL)
+    if (logger == nullptr)
         logger = this->_getMessageContentRecordLogger();
 
-    if (logger != NULL)
+    if (logger != nullptr)
         logger->log(VMessage::kMessageContentRecordingLevel, details);
 }
 
 void VMessageHandler::logMessageContentFields(const VString& details, VNamedLoggerPtr logger) const {
-    if (logger == NULL)
+    if (logger == nullptr)
         logger = this->_getMessageContentFieldsLogger();
 
-    if (logger != NULL)
+    if (logger != nullptr)
         logger->log(VMessage::kMessageContentFieldsLevel, details);
 }
 
 void VMessageHandler::logMessageDetailsFields(const VString& details, VNamedLoggerPtr logger) const {
-    if (logger == NULL)
+    if (logger == nullptr)
         logger = VLogger::findNamedLoggerForLevel(mLoggerName, VMessage::kMessageTrafficDetailsLevel);
 
-    if (logger != NULL)
+    if (logger != nullptr)
         logger->log(VMessage::kMessageTrafficDetailsLevel, details);
 }
 

@@ -197,7 +197,7 @@ void VClientSession::_moveStandbyMessagesToAsyncOutputQueue() {
     // so we don't want to do the locking.
     VMessagePtr m = mStartupStandbyQueue.getNextMessage();
 
-    while (m != NULL) {
+    while (m != nullptr) {
         VLOGGER_NAMED_TRACE(mLoggerName, VSTRING_FORMAT("[%s] VClientSession::_moveStandbyMessagesToAsyncOutputQueue: Moving message message@0x%08X from standby queue to output queue.", this->getName().chars(), m.get()));
         this->_postStandbyMessageToAsyncOutputQueue(m);
         m = mStartupStandbyQueue.getNextMessage();

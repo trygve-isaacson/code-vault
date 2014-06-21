@@ -32,7 +32,7 @@ VMessageInputThread::~VMessageInputThread() {
     // If we have a session, it is responsible for deleting the mSocket, not us.
     // This is because a session has input and output threads, the order of whose
     // destruction is unpredictable; so we cannot let our base class delete the mSocket.
-    if (mSession != NULL) {
+    if (mSession != nullptr) {
         mSocket = NULL;
     }
 
@@ -76,7 +76,7 @@ void VMessageInputThread::run() {
         }
     }
 
-    if (mSession != NULL) {
+    if (mSession != nullptr) {
         mSession->shutdown(this);
     }
 

@@ -226,8 +226,8 @@ class VBentoNode;
 #define VLOGGER_WOULD_LOG(level) (VLogger::isDefaultLogLevelActive(level))
 
 // This set of macros sends output to a specified named logger.
-#define VLOGGER_NAMED_LEVEL(loggername, level, message) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != NULL) nl->log(level, NULL, 0, message, loggername); } while (false)
-#define VLOGGER_NAMED_LEVEL_FILELINE(loggername, level, message, file, line) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != NULL) nl->log(level, file, line, message, loggername); } while (false)
+#define VLOGGER_NAMED_LEVEL(loggername, level, message) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != nullptr) nl->log(level, NULL, 0, message, loggername); } while (false)
+#define VLOGGER_NAMED_LEVEL_FILELINE(loggername, level, message, file, line) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != nullptr) nl->log(level, file, line, message, loggername); } while (false)
 #define VLOGGER_NAMED_LINE(loggername, level, message) VLOGGER_NAMED_LEVEL_FILELINE(loggername, level, message, __FILE__, __LINE__)
 #define VLOGGER_NAMED_FATAL(loggername, message) VLOGGER_NAMED_LEVEL_FILELINE(loggername, VLoggerLevel::FATAL, message, __FILE__, __LINE__)
 #define VLOGGER_NAMED_ERROR(loggername, message) VLOGGER_NAMED_LEVEL_FILELINE(loggername, VLoggerLevel::ERROR, message, __FILE__, __LINE__)
@@ -235,8 +235,8 @@ class VBentoNode;
 #define VLOGGER_NAMED_INFO(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLoggerLevel::INFO, message)
 #define VLOGGER_NAMED_DEBUG(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLoggerLevel::DEBUG, message)
 #define VLOGGER_NAMED_TRACE(loggername, message) VLOGGER_NAMED_LEVEL(loggername, VLoggerLevel::TRACE, message)
-#define VLOGGER_NAMED_HEXDUMP(loggername, level, message, buffer, length) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != NULL) nl->logHexDump(level, message, loggername, buffer, length); } while (false)
-#define VLOGGER_NAMED_WOULD_LOG(loggername, level) (VLogger::isLogLevelActive(level) && (VLogger::findNamedLoggerForLevel(loggername, level) != NULL))
+#define VLOGGER_NAMED_HEXDUMP(loggername, level, message, buffer, length) do { if (!VLogger::isLogLevelActive(level)) break; VNamedLoggerPtr nl = VLogger::findNamedLoggerForLevel(loggername, level); if (nl != nullptr) nl->logHexDump(level, message, loggername, buffer, length); } while (false)
+#define VLOGGER_NAMED_WOULD_LOG(loggername, level) (VLogger::isLogLevelActive(level) && (VLogger::findNamedLoggerForLevel(loggername, level) != nullptr))
 
 #define VLOGGER_APPENDER_EMIT(appender, level, message) do { (appender).emit(level, (level <= VLoggerLevel::ERROR) ? __FILE__ : NULL, (level <= VLoggerLevel::ERROR) ? __LINE__ : 0, true, message, VString::EMPTY(), VString::EMPTY(), false, VString::EMPTY()); } while (false)
 #define VLOGGER_APPENDER_EMIT_FILELINE(appender, level, message, file, line) do { (appender).emit(level, file, line, true, message, VString::EMPTY(), VString::EMPTY(), false, VString::EMPTY()); } while (false)

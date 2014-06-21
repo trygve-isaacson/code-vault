@@ -11,6 +11,7 @@ License: MIT. See LICENSE.md in the Vault top level directory.
 #include "vclientsession.h"
 #include "vsocket.h"
 #include "vmessageinputthread.h"
+#include "vlogger.h"
 
 // VMessageOutputThread -------------------------------------------------------
 
@@ -80,7 +81,7 @@ void VMessageOutputThread::run() {
         }
     }
 
-    if (mSession != NULL) {
+    if (mSession != nullptr) {
         mSession->shutdown(this);
     }
 
@@ -174,10 +175,10 @@ bool VMessageOutputThread::isOutputQueueOverLimit(int& currentQueueSize, Vs64& c
 void VMessageOutputThread::_processNextOutboundMessage() {
     VMessagePtr message = mOutputQueue.blockUntilNextMessage();
 
-    if (message == NULL) {
+    if (message == nullptr) {
         // OK -- means we were awakened from block but w/o a message actually available
     } else {
-        if (mSession != NULL) {
+        if (mSession != nullptr) {
             mSession->sendMessageToClient(message, mName, mOutputStream);
         } else {
             // We are just a client. No "session". Just send.

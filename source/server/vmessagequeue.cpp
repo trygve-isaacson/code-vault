@@ -35,7 +35,7 @@ void VMessageQueue::postMessage(VMessagePtr message) {
     mQueuedMessages.push_back(message);
     mLastMessagePostTime.setNow();
 
-    if (message != NULL) {
+    if (message != nullptr) {
         mQueuedMessagesDataSize += message->getMessageDataLength();
     }
 
@@ -46,7 +46,7 @@ void VMessageQueue::postMessage(VMessagePtr message) {
 VMessagePtr VMessageQueue::blockUntilNextMessage() {
     // If there is a message on the queue, we can simply return it.
     VMessagePtr message = this->getNextMessage();
-    if (message != NULL) {
+    if (message != nullptr) {
         return message;
     }
 
@@ -66,13 +66,13 @@ VMessagePtr VMessageQueue::getNextMessage() {
         message = mQueuedMessages.front();
         mQueuedMessages.pop_front();
 
-        if (message != NULL) {
+        if (message != nullptr) {
             mQueuedMessagesDataSize -= message->getMessageDataLength();
         }
 
     }
 
-    if ((message != NULL) && (gVMessageQueueLagLoggingThreshold >= VDuration::ZERO())) {
+    if ((message != nullptr) && (gVMessageQueueLagLoggingThreshold >= VDuration::ZERO())) {
         VInstant now;
         VDuration delayInterval = now - mLastMessagePostTime;
         if (delayInterval >= gVMessageQueueLagLoggingThreshold) {
@@ -104,7 +104,7 @@ void VMessageQueue::releaseAllMessages() {
         VMessagePtr message = mQueuedMessages.front();
         mQueuedMessages.pop_front();
 
-        if (message != NULL) {
+        if (message != nullptr) {
             mQueuedMessagesDataSize -= message->getMessageDataLength();
         }
     }
