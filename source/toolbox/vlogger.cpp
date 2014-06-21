@@ -241,32 +241,32 @@ class VStringVectorLogAppenderFactory : public VLogAppenderFactory {
 // This style of static mutex declaration and access ensures correct
 // initialization if accessed during the static initialization phase.
 static VMutex* _mutexInstance() {
-    static VMutex gVLoggerMutex("gVLoggerMutex", true/*suppress logging of the logger mutex*/);
-    return &gVLoggerMutex;
+    static VMutex* gVLoggerMutex = new VMutex("gVLoggerMutex", true/*suppress logging of the logger mutex*/);
+    return gVLoggerMutex;
 }
 
 // _mutexInstance() must be used internally whenever referencing these static accessors:
 
 typedef std::map<VString, VNamedLoggerPtr> VNamedLoggerMap;
 static VNamedLoggerMap& _getLoggerMap() {
-    static VNamedLoggerMap gLoggerMap;
-    return gLoggerMap;
+    static VNamedLoggerMap* gLoggerMap = new VNamedLoggerMap();
+    return *gLoggerMap;
 };
 
 typedef std::map<VString, VLogAppenderPtr> VLogAppendersMap;
 static VLogAppendersMap& _getAppendersMap() {
-    static VLogAppendersMap gAppendersMap;
-    return gAppendersMap;
+    static VLogAppendersMap* gAppendersMap = new VLogAppendersMap();
+    return *gAppendersMap;
 }
 static VLogAppendersMap& _getGlobalAppendersMap() {
-    static VLogAppendersMap gGlobalAppendersMap;
-    return gGlobalAppendersMap;
+    static VLogAppendersMap* gGlobalAppendersMap = new VLogAppendersMap();
+    return *gGlobalAppendersMap;
 }
 
 typedef std::map<VString, VLogAppenderFactoryPtr> VLogAppenderFactoriesMap;
 static VLogAppenderFactoriesMap& _getAppenderFactoriesMap() {
-    static VLogAppenderFactoriesMap gAppenderFactoriesMap;
-    return gAppenderFactoriesMap;
+    static VLogAppenderFactoriesMap* gAppenderFactoriesMap = new VLogAppenderFactoriesMap();
+    return *gAppenderFactoriesMap;
 }
 
 // static
@@ -482,7 +482,7 @@ void VLogger::deregisterLogAppender(VLogAppenderPtr appender) {
 // static
 void VLogger::deregisterLogAppender(const VString& name) {
     VLogAppenderPtr appender = VLogger::findAppender(name);
-    if (appender != NULL) {
+    if (appender != nullptr) {
         VLogger::deregisterLogAppender(appender);
     }
 }
@@ -506,7 +506,7 @@ void VLogger::deregisterLogger(VNamedLoggerPtr namedLogger) {
 // static
 void VLogger::deregisterLogger(const VString& name) {
     VNamedLoggerPtr logger = VLogger::findNamedLogger(name);
-    if (logger != NULL) {
+    if (logger != nullptr) {
         VLogger::deregisterLogger(logger);
     }
 }
@@ -526,7 +526,7 @@ bool VLogger::isLogLevelActive(int level) {
 VNamedLoggerPtr VLogger::getDefaultLogger() {
     VMutexLocker locker(_mutexInstance(), "VLogger::getDefaultLogger");
 
-    if (gDefaultLogger == NULL) {
+    if (gDefaultLogger == nullptr) {
         VLogger::_registerLogger(VNamedLoggerPtr(new VNamedLogger("auto-default-logger", VLoggerLevel::INFO, VStringVector())), true);
     }
 
@@ -536,7 +536,7 @@ VNamedLoggerPtr VLogger::getDefaultLogger() {
 #ifdef VLOGGER_INTERNAL_DEBUGGING
 // static
 void VLogger::_reportLoggerChange(bool before, const VString& label, const VNamedLoggerPtr& was, const VNamedLoggerPtr& is) {
-    VString wasName = (was == NULL) ? "null" : was->getName();
+    VString wasName = (was == nullptr) ? "null" : was->getName();
     VString isName = is->getName();
     VString msg(VSTRING_ARGS("_reportLoggerChange %s %s: was '%s', is '%s'", (before ? "before" : "after"), label.chars(), wasName.chars(), isName.chars()));
     std::cout << msg << std::endl;
@@ -555,7 +555,7 @@ void VLogger::setDefaultLogger(VNamedLoggerPtr namedLogger) {
 VNamedLoggerPtr VLogger::getLogger(const VString& name) {
     VNamedLoggerPtr logger = findNamedLogger(name);
 
-    if (logger == NULL) {
+    if (logger == nullptr) {
         logger = VLogger::getDefaultLogger();
     }
 
@@ -572,7 +572,7 @@ VNamedLoggerPtr VLogger::findDefaultLogger() {
 VNamedLoggerPtr VLogger::findDefaultLoggerForLevel(int level) {
     VMutexLocker locker(_mutexInstance(), "VLogger::findDefaultLoggerForLevel");
 
-    if (gDefaultLogger == NULL) {
+    if (gDefaultLogger == nullptr) {
         VLogger::_registerLogger(VNamedLoggerPtr(new VNamedLogger("default", VLoggerLevel::INFO, VStringVector())), true);
     }
 
@@ -595,12 +595,12 @@ VNamedLoggerPtr VLogger::findNamedLoggerForLevel(const VString& name, int level)
     VNamedLoggerPtr logger = VLogger::findNamedLogger(name);
 
     // If found but level is too high, return null so it won't log.
-    if ((logger != NULL) && (logger->getLevel() < level)) {
+    if ((logger != nullptr) && (logger->getLevel() < level)) {
         return NULL_NAMED_LOGGER_PTR;
     }
 
     // If not found, get the default logger with a level check (returns null if level is too high).
-    if (logger == NULL) {
+    if (logger == nullptr) {
         logger = VLogger::findDefaultLoggerForLevel(level);
     }
 
@@ -610,7 +610,7 @@ VNamedLoggerPtr VLogger::findNamedLoggerForLevel(const VString& name, int level)
 #ifdef VLOGGER_INTERNAL_DEBUGGING
 // static
 void VLogger::_reportAppenderChange(bool before, const VString& label, const VLogAppenderPtr& was, const VLogAppenderPtr& is) {
-    VString wasName = (was == NULL) ? "null" : was->getName();
+    VString wasName = (was == nullptr) ? "null" : was->getName();
     VString isName = is->getName();
     VString msg(VSTRING_ARGS("_reportAppenderChange %s %s: was '%s', is '%s'", (before ? "before" : "after"), label.chars(), wasName.chars(), isName.chars()));
     std::cout << msg << std::endl;
@@ -621,7 +621,7 @@ void VLogger::_reportAppenderChange(bool before, const VString& label, const VLo
 VLogAppenderPtr VLogger::getDefaultAppender() {
     VMutexLocker locker(_mutexInstance(), "VLogger::getDefaultAppender");
 
-    if (gDefaultAppender == NULL) {
+    if (gDefaultAppender == nullptr) {
         VLogger::_registerAppender(VLogAppenderPtr(new VCoutLogAppender("auto-default-cout-appender", VLogAppender::DO_FORMAT_OUTPUT, VString::EMPTY(), VString::EMPTY())), true);
     }
 
@@ -789,7 +789,7 @@ void VLogger::_registerAppender(VLogAppenderPtr appender, bool asDefaultAppender
 
     VLogger::_reportAppenderChange(true, "_registerAppender", gDefaultAppender, appender);
 
-    if (asDefaultAppender || (gDefaultAppender == NULL)) {
+    if (asDefaultAppender || (gDefaultAppender == nullptr)) {
         gDefaultAppender = appender;
     }
 
@@ -809,7 +809,7 @@ void VLogger::_registerLogger(VNamedLoggerPtr namedLogger, bool asDefaultLogger)
 
     VLogger::_reportLoggerChange(true, "_registerLogger", gDefaultLogger, namedLogger);
 
-    if (asDefaultLogger || (gDefaultLogger == NULL)) {
+    if (asDefaultLogger || (gDefaultLogger == nullptr)) {
         gDefaultLogger = namedLogger;
     }
 
@@ -894,7 +894,7 @@ VNamedLoggerPtr VLogger::_findNamedLoggerFromPathName(const VString& pathName) {
 
     while (nextNameToSearch.contains('.')) {
         VNamedLoggerPtr foundLogger = VLogger::_findNamedLoggerFromExactName(nextNameToSearch);
-        if (foundLogger != NULL) {
+        if (foundLogger != nullptr) {
             return foundLogger;
         }
 
