@@ -1,1 +1,5 @@
 xcuserdata
+build
+*.pbxuser
+*.mode1v3
+*.vcxproj.user

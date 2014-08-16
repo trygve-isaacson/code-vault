@@ -1,0 +1,236 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E3A2FE6C-8B0A-4DCE-A7EB-182E6EAD60FC}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>VaultPlatformCheck</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>..\..\..\..\build\$(ProjectName)\win\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\..\build\$(ProjectName)\win\$(Configuration)\intermediate\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>..\..\..\..\build\$(ProjectName)\win\$(Configuration)\</OutDir>
+    <IntDir>..\..\..\..\build\$(ProjectName)\win\$(Configuration)\intermediate\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..;..\..\..\..\source;..\..\..\..\source\vtypes;..\..\..\..\source\vtypes\_win;..\..\..\..\source\containers;..\..\..\..\source\containers\_win;..\..\..\..\source\files;..\..\..\..\source\files\_win;..\..\..\..\source\server;..\..\..\..\source\sockets;..\..\..\..\source\sockets\_win;..\..\..\..\source\streams;..\..\..\..\source\threads;..\..\..\..\source\threads\_win;..\..\..\..\source\toolbox;..\..\..\..\source\unittest;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>wsock32.lib;Psapi.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..;..\..\..\..\source;..\..\..\..\source\vtypes;..\..\..\..\source\vtypes\_win;..\..\..\..\source\containers;..\..\..\..\source\containers\_win;..\..\..\..\source\files;..\..\..\..\source\files\_win;..\..\..\..\source\server;..\..\..\..\source\sockets;..\..\..\..\source\sockets\_win;..\..\..\..\source\streams;..\..\..\..\source\threads;..\..\..\..\source\threads\_win;..\..\..\..\source\toolbox;..\..\..\..\source\unittest;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\source\containers\vbento.cpp" />
+    <ClCompile Include="..\..\..\..\source\containers\vchar.cpp" />
+    <ClCompile Include="..\..\..\..\source\containers\vcodepoint.cpp" />
+    <ClCompile Include="..\..\..\..\source\containers\vcolor.cpp" />
+    <ClCompile Include="..\..\..\..\source\containers\vexception.cpp" />
+    <ClCompile Include="..\..\..\..\source\containers\vgeometry.cpp" />
+    <ClCompile Include="..\..\..\..\source\containers\vinstant.cpp" />
+    <ClCompile Include="..\..\..\..\source\containers\vstring.cpp" />
+    <ClCompile Include="..\..\..\..\source\containers\vstringiterator.cpp" />
+    <ClCompile Include="..\..\..\..\source\containers\_win\vinstant_platform.cpp" />
+    <ClCompile Include="..\..\..\..\source\files\vabstractfilestream.cpp" />
+    <ClCompile Include="..\..\..\..\source\files\vbufferedfilestream.cpp" />
+    <ClCompile Include="..\..\..\..\source\files\vdirectiofilestream.cpp" />
+    <ClCompile Include="..\..\..\..\source\files\vfilewriter.cpp" />
+    <ClCompile Include="..\..\..\..\source\files\vfsnode.cpp" />
+    <ClCompile Include="..\..\..\..\source\files\_win\vfsnode_platform.cpp" />
+    <ClCompile Include="..\..\..\..\source\server\vclientsession.cpp" />
+    <ClCompile Include="..\..\..\..\source\server\vlistenersocket.cpp" />
+    <ClCompile Include="..\..\..\..\source\server\vlistenerthread.cpp" />
+    <ClCompile Include="..\..\..\..\source\server\vmessage.cpp" />
+    <ClCompile Include="..\..\..\..\source\server\vmessagehandler.cpp" />
+    <ClCompile Include="..\..\..\..\source\server\vmessageinputthread.cpp" />
+    <ClCompile Include="..\..\..\..\source\server\vmessageoutputthread.cpp" />
+    <ClCompile Include="..\..\..\..\source\server\vmessagequeue.cpp" />
+    <ClCompile Include="..\..\..\..\source\server\vserver.cpp" />
+    <ClCompile Include="..\..\..\..\source\sockets\vsocket.cpp" />
+    <ClCompile Include="..\..\..\..\source\sockets\vsocketfactory.cpp" />
+    <ClCompile Include="..\..\..\..\source\sockets\vsocketstream.cpp" />
+    <ClCompile Include="..\..\..\..\source\sockets\vsocketthread.cpp" />
+    <ClCompile Include="..\..\..\..\source\sockets\_win\vsocket_platform.cpp" />
+    <ClCompile Include="..\..\..\..\source\streams\vbinaryiostream.cpp" />
+    <ClCompile Include="..\..\..\..\source\streams\viostream.cpp" />
+    <ClCompile Include="..\..\..\..\source\streams\vmemorystream.cpp" />
+    <ClCompile Include="..\..\..\..\source\streams\vstream.cpp" />
+    <ClCompile Include="..\..\..\..\source\streams\vstreamcopier.cpp" />
+    <ClCompile Include="..\..\..\..\source\streams\vtextiostream.cpp" />
+    <ClCompile Include="..\..\..\..\source\streams\vwritebufferedstream.cpp" />
+    <ClCompile Include="..\..\..\..\source\threads\vmutex.cpp" />
+    <ClCompile Include="..\..\..\..\source\threads\vmutexlocker.cpp" />
+    <ClCompile Include="..\..\..\..\source\threads\vsemaphore.cpp" />
+    <ClCompile Include="..\..\..\..\source\threads\vthread.cpp" />
+    <ClCompile Include="..\..\..\..\source\threads\_win\vthread_platform.cpp" />
+    <ClCompile Include="..\..\..\..\source\toolbox\vassert.cpp" />
+    <ClCompile Include="..\..\..\..\source\toolbox\vclassregistry.cpp" />
+    <ClCompile Include="..\..\..\..\source\toolbox\vhex.cpp" />
+    <ClCompile Include="..\..\..\..\source\toolbox\vlogger.cpp" />
+    <ClCompile Include="..\..\..\..\source\toolbox\vmemorytracker.cpp" />
+    <ClCompile Include="..\..\..\..\source\toolbox\vsettings.cpp" />
+    <ClCompile Include="..\..\..\..\source\toolbox\vshutdownregistry.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vassertunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vbentounit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vbinaryiounit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vcharunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vclassregistryunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vcolorunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vexceptionunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vfsnodeunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vgeometryunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vhexunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vinstantunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vloggerunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vmessageunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vplatformcheck_main.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vplatformunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vstreamsunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vstringunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vthreadsunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vunit.cpp" />
+    <ClCompile Include="..\..\..\..\source\unittest\vunitrunall.cpp" />
+    <ClCompile Include="..\..\..\..\source\vtypes\vtypes.cpp" />
+    <ClCompile Include="..\..\..\..\source\vtypes\vtypes_internal.cpp" />
+    <ClCompile Include="..\..\..\..\source\vtypes\_win\vtypes_platform.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\source\containers\vbento.h" />
+    <ClInclude Include="..\..\..\..\source\containers\vchar.h" />
+    <ClInclude Include="..\..\..\..\source\containers\vcodepoint.h" />
+    <ClInclude Include="..\..\..\..\source\containers\vcolor.h" />
+    <ClInclude Include="..\..\..\..\source\containers\vcompactingdeque.h" />
+    <ClInclude Include="..\..\..\..\source\containers\vexception.h" />
+    <ClInclude Include="..\..\..\..\source\containers\vgeometry.h" />
+    <ClInclude Include="..\..\..\..\source\containers\vinstant.h" />
+    <ClInclude Include="..\..\..\..\source\containers\vstring.h" />
+    <ClInclude Include="..\..\..\..\source\containers\vstringiterator.h" />
+    <ClInclude Include="..\..\..\..\source\files\vabstractfilestream.h" />
+    <ClInclude Include="..\..\..\..\source\files\vbufferedfilestream.h" />
+    <ClInclude Include="..\..\..\..\source\files\vdirectiofilestream.h" />
+    <ClInclude Include="..\..\..\..\source\files\vfilewriter.h" />
+    <ClInclude Include="..\..\..\..\source\files\vfsnode.h" />
+    <ClInclude Include="..\..\..\..\source\server\vclientsession.h" />
+    <ClInclude Include="..\..\..\..\source\server\vlistenersocket.h" />
+    <ClInclude Include="..\..\..\..\source\server\vlistenerthread.h" />
+    <ClInclude Include="..\..\..\..\source\server\vmanagementinterface.h" />
+    <ClInclude Include="..\..\..\..\source\server\vmessage.h" />
+    <ClInclude Include="..\..\..\..\source\server\vmessagehandler.h" />
+    <ClInclude Include="..\..\..\..\source\server\vmessageinputthread.h" />
+    <ClInclude Include="..\..\..\..\source\server\vmessageoutputthread.h" />
+    <ClInclude Include="..\..\..\..\source\server\vmessagequeue.h" />
+    <ClInclude Include="..\..\..\..\source\server\vserver.h" />
+    <ClInclude Include="..\..\..\..\source\sockets\vsocket.h" />
+    <ClInclude Include="..\..\..\..\source\sockets\vsocketfactory.h" />
+    <ClInclude Include="..\..\..\..\source\sockets\vsocketstream.h" />
+    <ClInclude Include="..\..\..\..\source\sockets\vsocketthread.h" />
+    <ClInclude Include="..\..\..\..\source\sockets\vsocketthreadfactory.h" />
+    <ClInclude Include="..\..\..\..\source\sockets\_win\vsocket_platform.h" />
+    <ClInclude Include="..\..\..\..\source\streams\vbinaryiostream.h" />
+    <ClInclude Include="..\..\..\..\source\streams\viostream.h" />
+    <ClInclude Include="..\..\..\..\source\streams\vmemorystream.h" />
+    <ClInclude Include="..\..\..\..\source\streams\vstream.h" />
+    <ClInclude Include="..\..\..\..\source\streams\vstreamcopier.h" />
+    <ClInclude Include="..\..\..\..\source\streams\vtextiostream.h" />
+    <ClInclude Include="..\..\..\..\source\streams\vwritebufferedstream.h" />
+    <ClInclude Include="..\..\..\..\source\threads\vmutex.h" />
+    <ClInclude Include="..\..\..\..\source\threads\vmutexlocker.h" />
+    <ClInclude Include="..\..\..\..\source\threads\vsemaphore.h" />
+    <ClInclude Include="..\..\..\..\source\threads\vthread.h" />
+    <ClInclude Include="..\..\..\..\source\threads\_win\vthread_platform.h" />
+    <ClInclude Include="..\..\..\..\source\toolbox\vassert.h" />
+    <ClInclude Include="..\..\..\..\source\toolbox\vclassregistry.h" />
+    <ClInclude Include="..\..\..\..\source\toolbox\vhex.h" />
+    <ClInclude Include="..\..\..\..\source\toolbox\vlogger.h" />
+    <ClInclude Include="..\..\..\..\source\toolbox\vsettings.h" />
+    <ClInclude Include="..\..\..\..\source\toolbox\vshutdownregistry.h" />
+    <ClInclude Include="..\..\..\..\source\toolbox\vsingleton.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vassertunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vbentounit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vbinaryiounit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vcharunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vclassregistryunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vcolorunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vexceptionunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vfsnodeunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vgeometryunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vhexunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vinstantunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vloggerunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vmessageunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vplatformunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vstreamsunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vstringunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vthreadsunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vunit.h" />
+    <ClInclude Include="..\..\..\..\source\unittest\vunitrunall.h" />
+    <ClInclude Include="..\..\..\..\source\vault.h" />
+    <ClInclude Include="..\..\..\..\source\vtypes\vtypes.h" />
+    <ClInclude Include="..\..\..\..\source\vtypes\vtypes_internal.h" />
+    <ClInclude Include="..\..\..\..\source\vtypes\_win\vtypes_internal_platform.h" />
+    <ClInclude Include="..\..\..\..\source\vtypes\_win\vtypes_platform.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
