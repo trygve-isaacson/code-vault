@@ -53,6 +53,7 @@ Finally, proceed with everything else.
 #include <limits.h> // LONG_MAX
 #include <memory> // auto_ptr
 #include <typeinfo> // std::bad_cast, etc.
+#include <unistd.h>
 
 #ifdef VPLATFORM_UNIX_HPUX
     // On HPUX, std::abs(float) is not defined. For now, we can revert to macro style.

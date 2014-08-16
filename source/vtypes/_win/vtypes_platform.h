@@ -177,6 +177,7 @@ Finally, proceed with everything else.
 #include <windows.h>
 #include <algorithm> // std::find
 #include <math.h>
+#include <stdint.h>
 
 #ifdef VCOMPILER_CODEWARRIOR
     #include <time.h>

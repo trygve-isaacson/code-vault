@@ -53,6 +53,8 @@ Finally, proceed with everything else.
     #include <boost/scoped_ptr.hpp>
 #endif
 
+#include <unistd.h>
+
 #ifndef VLIBRARY_METROWERKS
     #define V_HAVE_REENTRANT_TIME // we can and should use the _r versions of time.h calls
 #endif

@@ -194,7 +194,6 @@ set up for this platform build.
 #include <deque>
 #include <map>
 #include <limits>
-#include <unistd.h>
 
 /*
 We choose to define just the basic specific-sized data types. Most
