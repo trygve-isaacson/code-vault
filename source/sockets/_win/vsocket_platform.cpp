@@ -9,20 +9,15 @@ License: MIT. See LICENSE.md in the Vault top level directory.
 
 #include "vsocket.h"
 
+#include <assert.h>
 #include "vexception.h"
 
 // static
 bool VSocket::_platform_staticInit() {
-    bool    success = true;
-    WORD    versionRequested;
     WSADATA wsaData;
-    int     err;
-
-    versionRequested = MAKEWORD(2, 0);
-
-    err = ::WSAStartup(versionRequested, &wsaData);
-
-    success = (err == 0);
+    WORD versionRequested = MAKEWORD(2, 0);
+    int result = ::WSAStartup(versionRequested, &wsaData);
+    bool success = (result == 0);
 
     assert(success);
 
