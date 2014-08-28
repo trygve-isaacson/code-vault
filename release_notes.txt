@@ -1,5 +1,37 @@
 CODE VAULT RELEASE NOTES
 
+---------- VERSION 4.1 ----------
+Trygve Isaacson, August 2014
+
+See specific 4.0 development release notes below for complete details. Major features summary:
+- Improved Unicode code point support and features.
+- Improved support for date data type in settings.
+- New helper class VFileWriter.
+- Abstract smart ptr definitions for C++11 and Boost.
+- Example IDE projects for Xcode and Visual Studio.
+
+---------- VERSION 4.1d5 ----------
+Trygve Isaacson, June 2014
+
+code-vault#17
+* Use heap allocated logger statics to avoid static destruction problems.
+code-vault#16
+* Use nullptr instead of NULL.
+code-vault#15
+* Fix issue with Boost/C++11 compile time switch.
+code-vault#12
+* Add example IDE projects for Xcode and Visual Studio.
+code-vault#11
+* Update VString interface to favor code points over characters in APIs.
+code-vault#10
+* Fix error handling with mktime() APIs.
+code-vault#8
+* Move all internal character usage to VCodePoint.
+code-vault#7
+* Revise unit tests to use new VUnit assertion macros.
+code-vault#5
+* Fix issue with Windows time conversion with UTC around DST.
+
 ---------- VERSION 4.1d4 ----------
 Trygve Isaacson, February 2014
 
