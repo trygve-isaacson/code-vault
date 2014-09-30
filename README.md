@@ -6,7 +6,7 @@ For more info, see [the Vault home page](http://www.bombaydigital.com/vault/)
 
 (version 4.1)
 
-C++ can give you the best of several worlds: close-to-the-metal performance, high-level object-oriented design, and simple deterministic object lifecycles. But historically the compiler tools, standard libraries, and platform APIs have conspired to make it challenging to create large scale code that compiles and runs right out of the box on any platform. In addition, a whole class of common facilities are only provided by each OS's native APIs, making cross-platform development a big undertaking.
+C++ can give you the best of several worlds: close-to-the-metal performance, high-level object-oriented design, and simple deterministic object lifecycles. But historically the compiler tools, standard libraries, and platform APIs have conspired to make it challenging to create large scale code that compiles and runs right out of the box on any platform. In addition, a variety of basic necessities for programs are only provided by each OS's different low-level native procedural APIs, making cross-platform development a big undertaking.
 
 The Code Vault, or “Vault” for short, provides a cross-platform foundation library under your code that not only protects you from the many little compiler/library/platform quirks, allowing your C++ to easily build and run on multiple platforms, but also provides a powerful toolkit for building cross-platform O-O code for networking, i/o, threading, messaging, logging, and more.
 
