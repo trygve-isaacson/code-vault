@@ -136,7 +136,7 @@ class VColor {
 
         static Vu8 _constrain(int val) { return static_cast<Vu8>(V_CONSTRAIN_MINMAX(val, 0, 255)); }
         void _setStreamValue(Vu32 value) { mRed = (Vu8)((value & 0xFF000000) >> 24); mGreen = (Vu8)((value & 0x00FF0000) >> 16); mBlue = (Vu8)((value & 0x0000FF00) >> 8); mAlpha = (Vu8)(value & 0x000000FF); }
-        Vu32 _getStreamValue() const { return (mRed << 24) | (mGreen << 16) | (mBlue << 8) | mAlpha; }
+        Vu32 _getStreamValue() const { return (Vu32) ((mRed << 24) | (mGreen << 16) | (mBlue << 8) | mAlpha); }
 
         Vu8 mRed;
         Vu8 mGreen;

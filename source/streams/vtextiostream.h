@@ -87,7 +87,7 @@ class VTextIOStream : public VIOStream {
 
         @return    the next code point
         */
-        VCodePoint readUTF8CodePoint();
+        virtual VCodePoint readUTF8CodePoint();
         /**
         Reads the next byte from the stream and returns a VChar to wrap it. Note that
         this is not UTF-8 compatible and should only be used on single-byte streams
@@ -98,7 +98,7 @@ class VTextIOStream : public VIOStream {
         
         @return the next single byte char
         */
-        VChar readCharacterByte();
+        virtual VChar readCharacterByte();
 
         /**
         Primarily useful for reading from an underlying file stream, reads until

@@ -49,7 +49,7 @@ void VTextIOStream::readLine(VString& s, bool includeLineEnding) {
             if (this->available() == 0) {
                 numBytesRead = 0;
             } else {
-                c = VCodePoint(*this);
+                c = this->readUTF8CodePoint();
                 numBytesRead = c.getUTF8Length();
             }
 

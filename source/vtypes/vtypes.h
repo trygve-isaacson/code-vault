@@ -33,6 +33,24 @@ License: MIT. See LICENSE.md in the Vault top level directory.
  * Vault to include the requisite Boost headers; and you need to have the Boost include
  * directory in your project include paths.
  *  
+ * \section gettingstarted_sec Getting Started
+ *
+ * For Mac OS X: open, build, and run the sample Xcode IDE project located at:
+ *   extras/test_projects/mac/VaultPlatformCheck.xcodeproj
+ *
+ * For Windows: open, build, and run the sample Visual Studio IDE project located at:
+ *   extras/test_projects/win/VaultPlatformCheck.sln
+ *
+ * Until a sample Makefile is provided, for Linux you currently need to create a Makefile
+ * that references all of the .cpp and .h files except those in '_mac' or '_win' subdirectories.
+ * The same approach can be used for Makefile-oriented builds on Mac OS X and Windows.
+ *
+ * The sample project has a main function from the 'unittest' subdirectory containing the
+ * supplied unit tests, so running the built application perform's the Vault's self-tests.
+ * You can replace the file 'vplatformcheck_main.cpp' with your own main, remove the 'unittest'
+ * folder from the project (unless you wish to keep and call the unit tests), and then add
+ * your own source code to the project.
+ *
  * \section reference_sec Reference
  *
  * Please refer to the latest documentation for complete information and instructions:
@@ -267,18 +285,18 @@ CONST_U64(12345678901234567890) or CONST_U64(0x0123456789ABCDEF)
 #endif
 
 // Limit constants.
-static const Vs64 V_MIN_S8  = CONST_S64(0xFFFFFFFFFFFFFF80); ///< Smallest signed 8-bit value
-static const Vs64 V_MAX_S8  = CONST_S64(0x000000000000007F); ///< Largest signed 8-bit value
-static const Vs64 V_MAX_U8  = CONST_S64(0x00000000000000FF); ///< Largest unsigned 8-bit value
-static const Vs64 V_MIN_S16 = CONST_S64(0xFFFFFFFFFFFF8000); ///< Smallest signed 16-bit value
-static const Vs64 V_MAX_S16 = CONST_S64(0x0000000000007FFF); ///< Largest signed 16-bit value
-static const Vs64 V_MAX_U16 = CONST_S64(0x000000000000FFFF); ///< Largest unsigned 16-bit value
-static const Vs64 V_MIN_S32 = CONST_S64(0xFFFFFFFF80000000); ///< Smallest signed 32-bit value
-static const Vs64 V_MAX_S32 = CONST_S64(0x000000007FFFFFFF); ///< Largest signed 32-bit value
-static const Vs64 V_MAX_U32 = CONST_S64(0x00000000FFFFFFFF); ///< Largest unsigned 32-bit value
-static const Vs64 V_MIN_S64 = CONST_S64(0x8000000000000000); ///< Smallest signed 64-bit value
-static const Vs64 V_MAX_S64 = CONST_S64(0x7FFFFFFFFFFFFFFF); ///< Largest signed 64-bit value
-static const Vs64 V_MAX_U64 = CONST_S64(0xFFFFFFFFFFFFFFFF); ///< Largest unsigned 64-bit value
+static const Vs64 V_MIN_S8  = (Vs64) CONST_S64(0xFFFFFFFFFFFFFF80); ///< Smallest signed 8-bit value
+static const Vs64 V_MAX_S8  =        CONST_S64(0x000000000000007F); ///< Largest signed 8-bit value
+static const Vs64 V_MAX_U8  =        CONST_S64(0x00000000000000FF); ///< Largest unsigned 8-bit value
+static const Vs64 V_MIN_S16 = (Vs64) CONST_S64(0xFFFFFFFFFFFF8000); ///< Smallest signed 16-bit value
+static const Vs64 V_MAX_S16 =        CONST_S64(0x0000000000007FFF); ///< Largest signed 16-bit value
+static const Vs64 V_MAX_U16 =        CONST_S64(0x000000000000FFFF); ///< Largest unsigned 16-bit value
+static const Vs64 V_MIN_S32 = (Vs64) CONST_S64(0xFFFFFFFF80000000); ///< Smallest signed 32-bit value
+static const Vs64 V_MAX_S32 =        CONST_S64(0x000000007FFFFFFF); ///< Largest signed 32-bit value
+static const Vs64 V_MAX_U32 =        CONST_S64(0x00000000FFFFFFFF); ///< Largest unsigned 32-bit value
+static const Vs64 V_MIN_S64 = (Vs64) CONST_S64(0x8000000000000000); ///< Smallest signed 64-bit value
+static const Vs64 V_MAX_S64 =        CONST_S64(0x7FFFFFFFFFFFFFFF); ///< Largest signed 64-bit value
+static const Vs64 V_MAX_U64 = (Vs64) CONST_S64(0xFFFFFFFFFFFFFFFF); ///< Largest unsigned 64-bit value
 static const size_t V_MAX_SIZE = std::numeric_limits<size_t>::max(); ///< Largest size_t value
 
 namespace vault {

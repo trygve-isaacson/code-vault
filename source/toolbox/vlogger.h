@@ -1069,7 +1069,7 @@ class VSilentLogAppender : public VLogAppender {
         VSilentLogAppender(const VSettingsNode& settings, const VSettingsNode& defaults) : VLogAppender(settings, defaults) {}
         virtual ~VSilentLogAppender() {}
         virtual void addInfo(VBentoNode& infoNode) const;
-        virtual void emit(int /*level*/, const char* /*file*/, int /*line*/, bool /*emitMessage*/, const VString& /*message*/, bool /*emitRawLine*/, const VString& /*rawLine*/) {}
+        virtual void emit(int /*level*/, const char* /*file*/, int /*line*/, bool /*emitMessage*/, const VString& /*message*/, const VString& /*specifiedLoggerName*/, const VString& /*actualLoggerName*/, bool /*emitRawLine*/, const VString& /*rawLine*/) {}
 };
 
 /**

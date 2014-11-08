@@ -313,7 +313,7 @@ void VAssertUnit::_positiveAssertionsForNumericType(const VString& dataTypeName,
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (T)testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (T)(testValue - 5), (T)(testValue + 5)));
 
-#ifndef VPLATFORM_UNIX // GCC Linux correctly warns on these when T is an unsigned type.
+#ifdef VPLATFORM_WIN // GCC on Linux and Mac correctly warn on these when T is an unsigned type.
     TEST_POSITIVE_ASSERTION_CALL(VASSERT(i == (int)testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_EQUAL(i, (int)testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (int)(testValue - 10)));
@@ -324,7 +324,7 @@ void VAssertUnit::_positiveAssertionsForNumericType(const VString& dataTypeName,
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)(testValue - 1)));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)testValue));
     TEST_POSITIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (int)(testValue - 5), (int)(testValue + 5)));
-#endif /* if not unix */
+#endif /* if windows */
 }
 
 template <class T>
@@ -346,7 +346,7 @@ void VAssertUnit::_negativeAssertionsForNumericType(const VString& dataTypeName,
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (T)testValue + 10));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (T)(testValue + 5), (T)(testValue + 10)));
 
-#ifndef VPLATFORM_UNIX // GCC Linux correctly warns on these when T is an unsigned type.
+#ifdef VPLATFORM_WIN // GCC on Linux and Mac correctly warn on these when T is an unsigned type.
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT(x  == (int)testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_EQUAL(x, (int)testValue));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_NOT_EQUAL(i, (int)i));
@@ -356,7 +356,7 @@ void VAssertUnit::_negativeAssertionsForNumericType(const VString& dataTypeName,
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)(testValue + 1)));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_GREATER_THAN_OR_EQUAL(i, (int)testValue + 10));
     TEST_NEGATIVE_ASSERTION_CALL(VASSERT_IN_RANGE(i, (int)(testValue + 5), (int)(testValue + 10)));
-#endif /* if not unix */
+#endif /* if windows */
 }
 
 #ifdef VCOMPILER_MSVC
