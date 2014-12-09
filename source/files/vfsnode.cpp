@@ -153,7 +153,7 @@ VFSNode VFSNode::getExecutable() {
 static VInstantFormatter VFSNODE_SAFE_FILE_NAME_INSTANT_FORMATTER("yMMddHHmmssSSS");
 
 // static
-void VFSNode::safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinaryIOStream& dataStream) {
+void VFSNode::safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinaryIOStream& dataStream, bool keepOld) {
     bool success = true;
     VString errorMessage;
 
@@ -161,10 +161,13 @@ void VFSNode::safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinar
 
     VInstant now;
     VString temporaryFileName = now.getLocalString(VFSNODE_SAFE_FILE_NAME_INSTANT_FORMATTER) + "_tmp_" + targetFileName;
+    VString keptFileName = now.getLocalString(VFSNODE_SAFE_FILE_NAME_INSTANT_FORMATTER) + "_ver_" + targetFileName;
 
     VFSNode directoryNode;
     target.getParentNode(directoryNode);
+    VFSNode originalTargetNode(target);
     VFSNode temporaryFileNode(directoryNode, temporaryFileName);
+    VFSNode keptFileNode(directoryNode, keptFileName);
 
     // Create and write to the temp file within a scope block to ensure file is closed when scope is exited.
     /* stream scope */ {
@@ -190,25 +193,40 @@ void VFSNode::safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinar
     }
 
     /*
-    If we succeeded, delete the original file and rename the temporary file to replace it.
+    If we succeeded, delete or rename the original file, and rename the temporary file to the original location.
     If we failed, delete the temporary file.
     Do this itself in separate phases, so that if the delete/rename fails, we still delete the temporary file.
     */
     // 1. Remove target. (It might not exist yet.)
     if (success && target.exists()) {
-        if (! target.rm()) {
-            success = false;
-            errorMessage = VSTRING_FORMAT("Unable to remove target file '%s'.", target.getPath().chars());
+    
+        if (keepOld) {
+        
+            try {
+                target.renameToNode(keptFileNode);
+            } catch (const VException& ex) {
+                success = false;
+                errorMessage = VSTRING_FORMAT("Failed renaming '%s' to '%s': %s", target.getPath().chars(), keptFileNode.getPath().chars(), ex.what());
+            }
+
+        } else {
+
+            if (! target.rm()) {
+                success = false;
+                errorMessage = VSTRING_FORMAT("Unable to remove target file '%s'.", target.getPath().chars());
+            }
+
         }
+    
     }
 
-    // 2. Rename temporary to target.
+    // 2. Rename temporary to (original) target.
     if (success) {
         try {
-            temporaryFileNode.renameToNode(target);
+            temporaryFileNode.renameToNode(originalTargetNode);
         } catch (const VException& ex) {
             success = false;
-            errorMessage = VSTRING_FORMAT("Failed renaming '%s' to '%s': %s", temporaryFileNode.getPath().chars(), target.getPath().chars(), ex.what());
+            errorMessage = VSTRING_FORMAT("Failed renaming '%s' to '%s': %s", temporaryFileNode.getPath().chars(), originalTargetNode.getPath().chars(), ex.what());
         }
     }
 

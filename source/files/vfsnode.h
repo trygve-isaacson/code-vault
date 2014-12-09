@@ -247,15 +247,20 @@ class VFSNode {
         file is intact if the write fails. Specifically, the sequence is:
         1. create a temporary file next to the target file (named uniquely via current timestamp string)
         2. write to the temporary file
-        3. delete the target file (it's OK if it doesn't exist)
+        3. delete (or rename if keeping) the target file (it's OK if it doesn't exist)
         4. rename the temporary file to the target file's name
         If steps 1, 2, or 3 fails, the original remains and the temporary is deleted.
         If there is a failure, a VException is thrown.
+        The temporary file is initially named "<timestamp>_tmp_<originalfilename>", before being renamed
+        to the original file name.
+        If keepOld is specified, the original file is not deleted, but rather is renamed to the following
+        file name: "<timestamp>_ver_<originalfilename>"
         @param  target      the file node to be overwritten (if it exists)
         @param  dataLength  the length of the data to be written
         @param  dataStream  the stream to be written to the file
+        @param  keepOld     if true, the original file is not deleted, but rather renamed to a variant of the temporary file name
         */
-        static void safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinaryIOStream& dataStream);
+        static void safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinaryIOStream& dataStream, bool keepOld=false);
 
         /**
         Constructs an undefined VFSNode object (you will have to set its path
