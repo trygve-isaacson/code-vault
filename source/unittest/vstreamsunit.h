@@ -34,6 +34,14 @@ class VStreamsUnit : public VUnit {
         */
         virtual void run();
 
+    private:
+
+        void _testWriteBufferedStream();
+        void _testStreamCopier();
+        void _testBufferOwnership();
+        void _testReadOnlyStream();
+        void _testOverloadedStreamCopyAPIs();
+        void _testStreamTailer();
 };
 
 #endif /* vstreamsunit_h */

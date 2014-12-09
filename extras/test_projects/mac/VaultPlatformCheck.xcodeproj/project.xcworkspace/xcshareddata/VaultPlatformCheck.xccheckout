@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>134E1FFD-4743-4D2C-B73F-83C0EACA620F</string>
+	<key>IDESourceControlProjectName</key>
+	<string>VaultPlatformCheck</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>874EE3BC569776130E87F6B1FCE30DAF30159880</key>
+		<string>github.com:trygve-isaacson/code-vault.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>extras/test_projects/mac/VaultPlatformCheck.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>874EE3BC569776130E87F6B1FCE30DAF30159880</key>
+		<string>../../../../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>github.com:trygve-isaacson/code-vault.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>874EE3BC569776130E87F6B1FCE30DAF30159880</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>874EE3BC569776130E87F6B1FCE30DAF30159880</string>
+			<key>IDESourceControlWCCName</key>
+			<string>code-vault-git</string>
+		</dict>
+	</array>
+</dict>
+</plist>
