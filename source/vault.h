@@ -43,6 +43,7 @@ This set of includes is enough to pull in all vault header files.
 #include "vmessagehandler.h"
 #include "vmessageinputthread.h"
 #include "vmessageoutputthread.h"
+#include "vtextstreamtailer.h"
 
 #endif
 

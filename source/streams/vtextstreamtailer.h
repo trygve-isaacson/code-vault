@@ -12,74 +12,102 @@ License: MIT. See LICENSE.md in the Vault top level directory.
 
 #include "vtextiostream.h"
 #include "vthread.h"
-#include "vchar.h"
+#include "vmutexlocker.h"
 
 /**
     @ingroup viostream_derived
 */
 
-class VTextStreamTailer;
-
-// This class works only in conjunction with a VTextStreamTailer object.
-class VTailingTextInputStream : public VTextIOStream {
+/**
+This class defines the interface that you must implement to handle VTextTailRunner data.
+If you are doing line-by-line tailing, provide an implementation of processLine(), which will be
+called for each tailed line.
+If you are doing codepoint-by-codepoint tailing, provide an implementation of processCodePoint(),
+which will be called for each tailed code point.
+Only one of the functions will be called, based on what you specify for the processByLine parameter
+of the VTextTailRunner constructor.
+*/
+class VTailHandler {
     public:
-        VTailingTextInputStream(VStream& rawStream, int lineEndingsWriteKind = kUseNativeLineEndings);
-        virtual ~VTailingTextInputStream();
-    
-        void attachTailer(VTextStreamTailer* tailer);
+        VTailHandler() {}
+        virtual ~VTailHandler() {}
 
-        // We just override the two ways of reading bytes; if desired bytes are not yet available, we sleep.
-        virtual void readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead);
-        virtual Vu8 readGuaranteedByte();
-
-    private:
-    
-        VTextStreamTailer* mTailer;
+        /**
+        Called to process a complete tailed line, if tailing by line. The call is executed
+        on the tail runner's separate thread.
+        Line endings are not included when tailing by line.
+        @param  line    the line to process
+        */
+        virtual void processLine(const VString& /*line*/) {}
+        /**
+        Called to process a code point, if tailing by code point. The call is executed
+        on the tail runner's separate thread.
+        Line endings are included when tailing by code point.
+        @param  c   the code point to process
+        */
+        virtual void processCodePoint(const VCodePoint& /*c*/) {}
 };
 
+// VTailRunnerTextInputStream is privately implemented; use VSharedPtr since we can't embed.
+class VTailRunnerTextInputStream;
+typedef VSharedPtr<VTailRunnerTextInputStream> VTailRunnerTextInputStreamPtr;
+
 /**
-VTextStreamTailer is a utility class that will 'tail' a text stream (such as a
-text file on disk). It is an abstract base class; you implement the two callback
-methods to process the tailed data.
-
-A separate thread is used, and it will call you with each line or character
-(as you specify). Whenever there is no more data ready to read on the input stream,
-the tailer will sleep for a configurable amount of time before attempting to read
-again. Thus, the callbacks will be called as soon as data is ready, with a certain
-amount of latency.
+This class manages tailing an input stream (such as a file). You instantiate it and then start it running.
+While running, it will call your handler, on a separate thread, with either the lines or code points
+of the input stream, starting at the initial stream offset, and over time as further data exists or is
+appended to the stream. This allows you to, for example, either set the input stream offset to the start
+of a file in order to read and tail the entire file and any data that is subsequently appended to the file,
+or set the offset to the end of the file in order to tail only the data that is subsequently appended to
+the file.
 */
-class VTextStreamTailer : public VThread {
+class VTextTailRunner {
     public:
-
         /**
-        Constructs the object with an underlying input stream that will be tailed.
+        Constructs a tail runner for an arbitrary input stream.
         @param  inputStream     the stream to tail
-        @param  processLines    if true, each line tailed will be passed to the
-            processLine() callback; if false, each codepoint tailed will be
-            passed to the processCodePoint() callback
-        @param  sleepInterval   duration to sleep before each attempt to read more data
-        @param  loggerName      logger to which any errors will be logged
+        @param  handler         the handler to call with tailed lines or code points
+        @param  processByLine   true if lines are to be handled; false if individual code points are to be handled
+        @param  sleepDuration   the interval to sleep when there is no data available to read
+        @param  loggerName      the logger name to be used when emitting log output
         */
-        VTextStreamTailer(VTailingTextInputStream& inputStream, bool processLines=true, VDuration sleepInterval=VDuration::SECOND(), const VString& loggerName=VString::EMPTY());
+        VTextTailRunner(VStream& inputStream, VTailHandler& handler, bool processByLine=true, VDuration sleepDuration=VDuration::SECOND(), const VString& loggerName=VString::EMPTY());
         /**
-        Destructor.
+        Constructs a tail runner for an input file.
+        @param  inputFile       the file to tail
+        @param  handler         the handler to call with tailed lines or code points
+        @param  processByLine   true if lines are to be handled; false if individual code points are to be handled
+        @param  sleepDuration   the interval to sleep when there is no data available to read
+        @param  loggerName      the logger name to be used when emitting log output
         */
-        virtual ~VTextStreamTailer();
+        VTextTailRunner(const VFSNode& inputFile, VTailHandler& handler, bool processByLine=true, VDuration sleepDuration=VDuration::SECOND(), const VString& loggerName=VString::EMPTY());
+        virtual ~VTextTailRunner();
 
-        virtual void start();
-        virtual void stop();
-        virtual void run();
-
-        VDuration getSleepInterval() const { return mSleepInterval; }
-    
-        virtual void processLine(const VString& line) = 0;
-        virtual void processCodePoint(const VCodePoint& c) = 0;
+        /**
+        Starts the tailing thread.
+        */
+        void start();
+        /**
+        Stops the tailing thread, which will subsequently destruct.
+        */
+        void stop();
+        /**
+        Returns true if the tailing thread is running.
+        */
+        bool isRunning() const;
 
     private:
     
-        VTailingTextInputStream&    mInputStream;
-        bool                        mProcessLines;
-        VDuration                   mSleepInterval;
+        VBufferedFileStream             mInputFileStream;   ///< The file stream, if VFSNode constructor form was used.
+        VTailRunnerTextInputStreamPtr   mInputStream;       ///< The input stream, either as supplied or for the file.
+        VTailHandler&                   mHandler;           ///< The handler to be called with each line or code point tailed.
+        bool                            mProcessByLine;     ///< True if we are tailing line-by-line, vs. by code point.
+        VDuration                       mSleepDuration;     ///< The interval to sleep when there is no data available to read.
+        VString                         mLoggerName;        ///< The logger name to be used when emitting log output.
+    
+        mutable VMutex                  mMutex;             ///< Synchronizes access to mTailThread.
+        VThread*                        mTailThread;        ///< The thread that does the actual tailing.
+    
 };
 
 #endif /* vtextstreamtailer_h */

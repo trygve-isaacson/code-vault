@@ -298,10 +298,10 @@ void VStreamsUnit::_testOverloadedStreamCopyAPIs() {
     VUNIT_ASSERT_EQUAL_LABELED(whatWasCopied, whatShouldHaveBeenCopied, "correct substring was copied");
 }
 
-class TestTailer : public VTextStreamTailer {
+class TestTailHandler : public VTailHandler {
     public:
-        TestTailer(VTailingTextInputStream& inputStream, bool processLines);
-        virtual ~TestTailer() {}
+        TestTailHandler();
+        virtual ~TestTailHandler() {}
 
         virtual void processLine(const VString& line);
         virtual void processCodePoint(const VCodePoint& c);
@@ -319,56 +319,55 @@ class TestTailer : public VTextStreamTailer {
         VString         mCollectedCodePoints;
 };
 
-TestTailer::TestTailer(VTailingTextInputStream& inputStream, bool processLines)
-    : VTextStreamTailer(inputStream, processLines)
-    , mMutex("TestTailer")
+TestTailHandler::TestTailHandler()
+    : VTailHandler()
+    , mMutex("TestTailHandler")
     , mCollectedLines()
     , mCollectedCodePoints()
     {
 }
 
-void TestTailer::processLine(const VString& line) {
-    VMutexLocker locker(&mMutex, "TestTailer::processLine");
+void TestTailHandler::processLine(const VString& line) {
+    VMutexLocker locker(&mMutex, "TestTailHandler::processLine");
     mCollectedLines.push_back(line);
     //std::cout << "TAILED: '" << line << "'" << std::endl;
 }
 
-void TestTailer::processCodePoint(const VCodePoint& c) {
-    VMutexLocker locker(&mMutex, "TestTailer::processCodePoint");
+void TestTailHandler::processCodePoint(const VCodePoint& c) {
+    VMutexLocker locker(&mMutex, "TestTailHandler::processCodePoint");
     mCollectedCodePoints += c;
 }
 
-int TestTailer::getNumProcessedLines() const {
-    VMutexLocker locker(&mMutex, "TestTailer::getNumProcessedLines");
+int TestTailHandler::getNumProcessedLines() const {
+    VMutexLocker locker(&mMutex, "TestTailHandler::getNumProcessedLines");
     return (int) mCollectedLines.size();
 }
 
-int TestTailer::getNumProcessedCodePoints() const {
-    VMutexLocker locker(&mMutex, "TestTailer::getNumProcessedCodePoints");
+int TestTailHandler::getNumProcessedCodePoints() const {
+    VMutexLocker locker(&mMutex, "TestTailHandler::getNumProcessedCodePoints");
     return mCollectedCodePoints.getNumCodePoints();
 }
 
-VString TestTailer::getProcessedLine(int index) const {
-    VMutexLocker locker(&mMutex, "TestTailer::getProcessedLine");
+VString TestTailHandler::getProcessedLine(int index) const {
+    VMutexLocker locker(&mMutex, "TestTailHandler::getProcessedLine");
     return mCollectedLines[index];
 }
 
-VCodePoint TestTailer::getProcessedCodePoint(int index) const {
-    VMutexLocker locker(&mMutex, "TestTailer::getProcessedCodePoint");
+VCodePoint TestTailHandler::getProcessedCodePoint(int index) const {
+    VMutexLocker locker(&mMutex, "TestTailHandler::getProcessedCodePoint");
     return *(mCollectedCodePoints.begin() + index);
 }
 
 void VStreamsUnit::_testStreamTailer() {
-    /* example: how to tail the system log for a minute:
+    /* example: how to tail the system log for a minute: */
+    
+    /*
     VFSNode f("/var/log/system.log");
-    VBufferedFileStream fin(f);
-    fin.openReadOnly();
-    fin.seek(0, SEEK_END);
-    VTailingTextInputStream in(fin);
-    TestTailer tailer(in);
-    tailer.startTailing();
-    VThread::sleep(VDuration::MINUTE());
-    tailer.stopTailing();
+    TestTailHandler sysLogTestHandler;
+    VTextTailRunner sysLogTailRunner(f, sysLogTestHandler);
+    sysLogTailRunner.start();
+    VThread::sleep(10 * VDuration::SECOND());
+    sysLogTailRunner.stop(); // Calling stop() is optional; can just destruct.
     */
 
     VFSNode tempDir = VFSNode::getKnownDirectoryNode(VFSNode::CACHED_DATA_DIRECTORY, "vault", "unittest");
@@ -380,7 +379,7 @@ void VStreamsUnit::_testStreamTailer() {
     VFSNode testFileNode(testDirRoot, "tailed_file.txt");
     VBufferedFileStream outputFileStream(testFileNode);
     outputFileStream.openWrite();
-    VTextIOStream outputStream(outputFileStream);
+    VTextIOStream outputStream(outputFileStream, VTextIOStream::kUseUnixLineEndings); // assertions below assume 1 code point written for line endings, so don't write DOS 2-byte line endings even on Windows
     
     // First, write 3 lines of initial content.
     outputStream.writeLine("zero");
@@ -391,25 +390,26 @@ void VStreamsUnit::_testStreamTailer() {
     // Open the file read-only and create an input text stream for it.
     VBufferedFileStream inputFileStream(testFileNode);
     inputFileStream.openReadOnly();
-    VTailingTextInputStream inputStream(inputFileStream);
-    
+
     // Now create a file tailer.
     // It should "immediately" (separate thread) read the existing data (since our read mark is at the start).
-    bool processLines = true; // switch to test other mode
-    TestTailer tailer(inputStream, processLines);
-    tailer.start();
+    bool processByLine = true; // switch to test other mode
+    bool callStop = false;     // switch to test other mode
+    TestTailHandler testHandler;
+    VTextTailRunner tailRunner(inputFileStream, testHandler, processByLine);
+    tailRunner.start();
     
     VThread::sleep(VDuration::SECOND());
-    if (processLines) {
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getNumProcessedLines(), 3, "3 initial lines");
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getProcessedLine(0), "zero", "line zero");
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getProcessedLine(1), "one", "line one");
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getProcessedLine(2), "two", "line two");
+    if (processByLine) {
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getNumProcessedLines(), 3, "3 initial lines");
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getProcessedLine(0), "zero", "line zero");
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getProcessedLine(1), "one", "line one");
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getProcessedLine(2), "two", "line two");
     } else {
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getNumProcessedCodePoints(), 13, "13 initial code points");
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getProcessedCodePoint(0), VCodePoint('z'), "code point [0]");
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getProcessedCodePoint(5), VCodePoint('o'), "code point [5]");
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getProcessedCodePoint(9), VCodePoint('t'), "code point [9]");
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getNumProcessedCodePoints(), 13, "13 initial code points");
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getProcessedCodePoint(0), VCodePoint('z'), "code point [0]");
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getProcessedCodePoint(5), VCodePoint('o'), "code point [5]");
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getProcessedCodePoint(9), VCodePoint('t'), "code point [9]");
     }
     
     // Write two more lines and verify they are processed.
@@ -418,15 +418,18 @@ void VStreamsUnit::_testStreamTailer() {
     outputStream.flush();
 
     VThread::sleep(2 * VDuration::SECOND());
-    if (processLines) {
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getNumProcessedLines(), 5, "5 total lines");
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getProcessedLine(3), "three", "line three");
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getProcessedLine(4), "four", "line four");
+    if (processByLine) {
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getNumProcessedLines(), 5, "5 total lines");
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getProcessedLine(3), "three", "line three");
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getProcessedLine(4), "four", "line four");
     } else {
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getNumProcessedCodePoints(), 24, "24 initial code points");
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getProcessedCodePoint(13), VCodePoint('t'), "code point [13]");
-        VUNIT_ASSERT_EQUAL_LABELED(tailer.getProcessedCodePoint(19), VCodePoint('f'), "code point [19]");
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getNumProcessedCodePoints(), 24, "24 initial code points");
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getProcessedCodePoint(13), VCodePoint('t'), "code point [13]");
+        VUNIT_ASSERT_EQUAL_LABELED(testHandler.getProcessedCodePoint(19), VCodePoint('f'), "code point [19]");
     }
     
-    tailer.stop();
+    if (callStop) {
+        tailRunner.stop(); // Calling stop() is optional; can just destruct.
+    }
+
 }

@@ -11,88 +11,156 @@ License: MIT. See LICENSE.md in the Vault top level directory.
 
 #include "vexception.h"
 
-VTailingTextInputStream::VTailingTextInputStream(VStream& rawStream, int lineEndingsWriteKind)
-    : VTextIOStream(rawStream, lineEndingsWriteKind)
-    {
-}
+// VTailRunnerTextInputStream ------------------------------
 
-VTailingTextInputStream::~VTailingTextInputStream() {
-    mTailer = NULL;
-}
+class VTailRunnerTextInputStream : public VTextIOStream {
+    public:
+        VTailRunnerTextInputStream(VTextTailRunner* runner, VStream& rawStream, VDuration sleepDuration, int lineEndingsWriteKind = kUseNativeLineEndings);
+        virtual ~VTailRunnerTextInputStream();
+    
+        // We just override the two ways of reading bytes; if desired bytes are not yet available, we sleep.
+        virtual void readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead);
+        virtual Vu8 readGuaranteedByte();
 
-void VTailingTextInputStream::attachTailer(VTextStreamTailer* tailer) {
-    mTailer = tailer;
-}
+    private:
+    
+        VTextTailRunner*    mRunner;
+        VDuration           mSleepDuration;
+};
 
-void VTailingTextInputStream::readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead) {
-    while (mTailer->isRunning()) {
-        if (this->available() >= numBytesToRead) {
-            return VTextIOStream::readGuaranteed(targetBuffer, numBytesToRead);
-        } else {
-            VThread::sleep(mTailer->getSleepInterval());
-        }
-    }
+// VTextTailRunnerThread ------------------------------
 
-    throw VEOFException(VString::EMPTY());
-}
+class VTailRunnerThread : public VThread {
+    public:
+    
+        VTailRunnerThread(VTailRunnerTextInputStreamPtr inputStream, VTailHandler& handler, bool processByLine, VDuration sleepDuration);
+        virtual ~VTailRunnerThread() {}
+    
+        virtual void run();
 
-Vu8 VTailingTextInputStream::readGuaranteedByte() {
-    while (mTailer->isRunning()) {
-        if (this->available() > 0) {
-            return VTextIOStream::readGuaranteedByte();
-        } else {
-            VThread::sleep(mTailer->getSleepInterval());
-        }
-    }
+    private:
+    
+        VTailRunnerTextInputStreamPtr   mInputStream;
+        VTailHandler&                   mHandler;
+        bool                            mProcessByLine;
+        VDuration                       mSleepDuration;
+};
 
-    throw VEOFException(VString::EMPTY());
-}
+// VTextTailRunnerThread ------------------------------
 
-// ---------------
-
-
-VTextStreamTailer::VTextStreamTailer(VTailingTextInputStream& inputStream, bool processLines, VDuration sleepInterval, const VString& loggerName)
-    : VThread("VTextStreamTailer", loggerName, kDontDeleteSelfAtEnd, kCreateThreadDetached, nullptr)
+VTailRunnerThread::VTailRunnerThread(VTailRunnerTextInputStreamPtr inputStream, VTailHandler& handler, bool processByLine, VDuration sleepDuration)
+    : VThread("VTailRunnerThread", VString::EMPTY(), kDeleteSelfAtEnd, kCreateThreadJoinable, nullptr)
     , mInputStream(inputStream)
-    , mProcessLines(processLines)
-    , mSleepInterval(sleepInterval)
+    , mHandler(handler)
+    , mProcessByLine(processByLine)
+    , mSleepDuration(sleepDuration)
     {
 }
 
-VTextStreamTailer::~VTextStreamTailer() {
-    if (this->isRunning()) {
-        this->stop();
-    }
-}
-
-void VTextStreamTailer::start() {
-    mInputStream.attachTailer(this);
-    VThread::start();
-}
-
-void VTextStreamTailer::stop() {
-    VThread::stop();
-    VThread::sleep(this->getSleepInterval());
-}
-
-void VTextStreamTailer::run() {
+void VTailRunnerThread::run() {
     VString line;
     while (this->isRunning()) {
         try {
-            if (mProcessLines) {
-                mInputStream.readLine(line);
-                this->processLine(line);
+            if (mProcessByLine) {
+                mInputStream->readLine(line);
+                mHandler.processLine(line);
             } else {
-                this->processCodePoint(mInputStream.readUTF8CodePoint());
+                VCodePoint c = mInputStream->readUTF8CodePoint();
+                mHandler.processCodePoint(c);
             }
         } catch (const VEOFException&) { // just keep trying
-            VThread::sleep(this->getSleepInterval());
-            // normal end when someone calls stopTailing
-            // if still running, something is wrong
-            //if (this->isRunning()) {
-            //    this->stop();
-            //    VLOGGER_ERROR("EOF in tailer while still running");
-            //}
+            VThread::sleep(mSleepDuration);
         }
     }
+}
+
+// VTailRunnerTextInputStream ------------------------------
+
+VTailRunnerTextInputStream::VTailRunnerTextInputStream(VTextTailRunner* runner, VStream& rawStream, VDuration sleepDuration, int lineEndingsWriteKind)
+    : VTextIOStream(rawStream, lineEndingsWriteKind)
+    , mRunner(runner)
+    , mSleepDuration(sleepDuration)
+    {
+}
+
+VTailRunnerTextInputStream::~VTailRunnerTextInputStream() {
+    mRunner = nullptr;
+}
+
+void VTailRunnerTextInputStream::readGuaranteed(Vu8* targetBuffer, Vs64 numBytesToRead) {
+    while (mRunner->isRunning()) {
+        if (this->available() >= numBytesToRead) {
+            return VTextIOStream::readGuaranteed(targetBuffer, numBytesToRead);
+        } else {
+            VThread::sleep(mSleepDuration);
+        }
+    }
+
+    throw VEOFException(VString::EMPTY());
+}
+
+Vu8 VTailRunnerTextInputStream::readGuaranteedByte() {
+    while (mRunner->isRunning()) {
+        if (this->available() > 0) {
+            return VTextIOStream::readGuaranteedByte();
+        } else {
+            VThread::sleep(mSleepDuration);
+        }
+    }
+
+    throw VEOFException(VString::EMPTY());
+}
+
+
+// VTextTailRunner ------------------------------
+
+VTextTailRunner::VTextTailRunner(VStream& inputStream, VTailHandler& handler, bool processByLine, VDuration sleepDuration, const VString& loggerName)
+    : mInputFileStream()
+    , mInputStream(new VTailRunnerTextInputStream(this, inputStream, sleepDuration))
+    , mHandler(handler)
+    , mProcessByLine(processByLine)
+    , mSleepDuration(sleepDuration)
+    , mLoggerName(loggerName)
+    , mMutex("VTextTailRunner")
+    , mTailThread(nullptr)
+    {
+}
+
+VTextTailRunner::VTextTailRunner(const VFSNode& inputFile, VTailHandler& handler, bool processByLine, VDuration sleepDuration, const VString& loggerName)
+    : mInputFileStream(inputFile)
+    , mInputStream()
+    , mHandler(handler)
+    , mProcessByLine(processByLine)
+    , mSleepDuration(sleepDuration)
+    , mLoggerName(loggerName)
+    , mMutex("VTextTailRunner")
+    , mTailThread(nullptr)
+    {
+    mInputFileStream.openReadOnly();
+    mInputFileStream.seek0();
+    
+    mInputStream = VTailRunnerTextInputStreamPtr(new VTailRunnerTextInputStream(this, mInputFileStream, sleepDuration));
+}
+
+VTextTailRunner::~VTextTailRunner() {
+    this->stop();
+    VThread::sleep(mSleepDuration + (250 * VDuration::MILLISECOND())); // Allow mTailThread to wake and wind down before we destruct our raw mInputFileStream.
+}
+
+void VTextTailRunner::start() {
+    mTailThread = new VTailRunnerThread(mInputStream, mHandler, mProcessByLine, mSleepDuration);
+    mTailThread->start();
+}
+
+void VTextTailRunner::stop() {
+    VMutexLocker locker(&mMutex, "VTextTailRunner::stop");
+    if (mTailThread != nullptr) {
+        mTailThread->stop();
+        mTailThread = nullptr;
+    }
+}
+
+bool VTextTailRunner::isRunning() const {
+    VMutexLocker locker(&mMutex, "VTextTailRunner::isRunning");
+    return (mTailThread != nullptr) && mTailThread->isRunning();
 }
