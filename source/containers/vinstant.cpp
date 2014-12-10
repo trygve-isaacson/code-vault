@@ -1056,8 +1056,6 @@ bool VInstant::isTimeFrozen() {
     #endif
 #endif
 
-const VCodePoint VDate::kLocalDateSeparator('/');
-
 // static
 VDate VDate::createFromDateString(const VString& dateString, const VCodePoint& delimiter) {
     VStringVector parts = dateString.split(delimiter);
@@ -1180,14 +1178,26 @@ void VDate::setDay(int day) {
     ASSERT_INVARIANT();
 }
 
+static VInstantFormatter VDATE_FORMATTER_DEFAULT("y-MM-dd");
+
+VString VDate::getDateString() const {
+    return this->getDateString(VDATE_FORMATTER_DEFAULT);
+}
+
+VString VDate::getDateString(const VInstantFormatter& formatter) const {
+    return formatter.formatDateString(*this);
+}
+
+VInstantStruct VDate::getDateFields() const {
+    return VInstantStruct(*this, VTimeOfDay());
+}
+
 void VDate::_assertInvariant() const {
     VASSERT_IN_RANGE(mMonth, 0, 12);
     VASSERT_IN_RANGE(mDay, 0, 32);
 }
 
 // VTimeOfDay ----------------------------------------------------------------
-
-const VCodePoint VTimeOfDay::kLocalTimeSeparator(':');
 
 VTimeOfDay::VTimeOfDay()
     : mHour(0)
@@ -1309,6 +1319,20 @@ void VTimeOfDay::setMillisecond(int millisecond) {
 void VTimeOfDay::setToStartOfDay() {
     // No need for ASSERT_INVARIANT, since set() will call it.
     this->set(0, 0, 0, 0);
+}
+
+static VInstantFormatter VTIMEOFDAY_FORMATTER_DEFAULT("HH:mm:ss.SSS");
+
+VString VTimeOfDay::getTimeOfDayString() const {
+    return this->getTimeOfDayString(VTIMEOFDAY_FORMATTER_DEFAULT);
+}
+
+VString VTimeOfDay::getTimeOfDayString(const VInstantFormatter& formatter) const {
+    return formatter.formatTimeOfDayString(*this);
+}
+
+VInstantStruct VTimeOfDay::getTimeOfDayFields() const {
+    return VInstantStruct(VDate(), *this);
 }
 
 void VTimeOfDay::_assertInvariant() const {
@@ -1433,6 +1457,14 @@ VString VInstantFormatter::formatLocalString(const VInstant& when) const {
 
 VString VInstantFormatter::formatUTCString(const VInstant& when) const {
     return this->_format(when.getUTCInstantFields(), 0);
+}
+
+VString VInstantFormatter::formatDateString(const VDate& date) const {
+    return this->_format(date.getDateFields(), 0);
+}
+
+VString VInstantFormatter::formatTimeOfDayString(const VTimeOfDay& timeOfDay) const {
+    return this->_format(timeOfDay.getTimeOfDayFields(), 0);
 }
 
 VString VInstantFormatter::_format(const VInstantStruct& when, int utcOffsetMilliseconds) const {

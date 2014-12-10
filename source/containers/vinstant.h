@@ -1026,33 +1026,26 @@ class VDate {
         @param    day    the day of the month (1 to 31*)
         */
         void setDay(int day);
-
-        // These static functions can be extended in the future to
-        // return values based on the locale.
-
+    
         /**
-        Returns the date separator for the locale.
-        (Currently just returns a slash.)
-        @return the date separator character constant
+        Returns a string for this date in the format "y-MM-dd".
+        @return obvious
         */
-        static const VCodePoint& getLocalDateSeparator() { return kLocalDateSeparator; }
-
-        enum {
-            kYMD,   ///< Year/Month/Day
-            kYDM,   ///< Year/Day/Month
-            kMYD,   ///< Month/Year/Day
-            kMDY,   ///< Year/Day/Month
-            kDYM,   ///< Day/Year/Month
-            kDMY    ///< Day/Month/Year
-        };
-
+        VString getDateString() const;
         /**
-        Returns the date string element order for the locale.
-        (Currently just returns a kMDY.)
-        @return the date string format order
+        Returns a string for this date in the specified format.
+        @param  formatter   the formatter to use
+        @return obvious
         */
-        static int getLocalDateOrder() { return kMDY; }
+        VString getDateString(const VInstantFormatter& formatter) const;
+        /**
+        Returns an object holding the broken-down fields that this date represents.
+        This is primarily for use by VInstantFormatter when formatting a string.
+        @return the y/m/d values for this date, with other fields default constructed from VTimeOfDay()
+        */
+        VInstantStruct getDateFields() const;
 
+        // Values returned by getDayOfWeek().
         enum {
             kSunday = 0,
             kMonday,
@@ -1079,7 +1072,6 @@ class VDate {
         int mMonth; ///< The month (1 to 12).
         int mDay;   ///< The day of the month (1 to 31*).
 
-        static const VCodePoint kLocalDateSeparator; ///< The character to separate M/D/Y
 };
 
 inline bool operator==(const VDate& lhs, const VDate& rhs) { return (lhs.mYear == rhs.mYear) && (lhs.mMonth == rhs.mMonth) && (lhs.mDay == rhs.mDay); }
@@ -1180,15 +1172,23 @@ class VTimeOfDay {
         */
         void setToStartOfDay();
 
-        // These static functions can be extended in the future to
-        // return values based on the locale.
-
         /**
-        Returns the time separator for the locale.
-        (Currently just returns a colon.)
-        @return the time separator character constant
+        Returns a string for this time of day in the format "HH:mm:ss.SSS".
+        @return obvious
         */
-        static const VCodePoint& getLocalTimeSeparator() { return kLocalTimeSeparator; }
+        VString getTimeOfDayString() const;
+        /**
+        Returns a string for this time of day in the specified format.
+        @param  formatter   the formatter to use
+        @return obvious
+        */
+        VString getTimeOfDayString(const VInstantFormatter& formatter) const;
+        /**
+        Returns an object holding the broken-down fields that this time of day represents.
+        This is primarily for use by VInstantFormatter when formatting a string.
+        @return the h/m/s/ms values for this time of day, with other fields defaulted from VDate()
+        */
+        VInstantStruct getTimeOfDayFields() const;
 
         friend inline bool operator==(const VTimeOfDay& t1, const VTimeOfDay& t2);
 
@@ -1202,7 +1202,6 @@ class VTimeOfDay {
         int mSecond;        ///< The second of the minute (0 to 59).
         int mMillisecond;   ///< The millisecond of the second (0 to 999).
 
-        static const VCodePoint kLocalTimeSeparator;    ///< The character to separate HH:MM:SS
 };
 
 inline bool operator==(const VTimeOfDay& t1, const VTimeOfDay& t2) { return (t1.mHour == t2.mHour) && (t1.mMinute == t2.mMinute) && (t1.mSecond == t2.mSecond) && (t1.mMillisecond == t2.mMillisecond); }
@@ -1355,7 +1354,21 @@ class VInstantFormatter {
         indicate UTC in a form such as "Z" or "+0:00" depending on the particular specifier.
         */
         VString formatUTCString(const VInstant& when) const;
-        
+        /**
+        Builds and returns a date string for the specified date, according to the locale
+        and format specifier supplied to the constructor of this formatter. It is important
+        to use the correct formatter: don't simply re-use one that has field specifiers for time
+        components within a day, because it would cause values to be included for those components.
+        */
+        VString formatDateString(const VDate& date) const;
+        /**
+        Builds and returns a time string for the specified time of day, according to the locale
+        and format specifier supplied to the constructor of this formatter. It is important
+        to use the correct formatter: don't simply re-use one that has field specifiers for date
+        components, because it would cause values to be included for those components.
+        */
+        VString formatTimeOfDayString(const VTimeOfDay& timeOfDay) const;
+    
         // Getter, for debugging use.
         VString getFormatSpecifier() const { return mFormatSpecifier; }
 
