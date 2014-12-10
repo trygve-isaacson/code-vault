@@ -21,23 +21,28 @@ V_STATIC_INIT_TRACE
 
 #undef strlen
 
+static VString _INDENT_STRING("    ");
+
 // VSettingsNode ------------------------------------------------------------------
 
-VSettingsNode::VSettingsNode(VSettingsTag* parent, const VString& name)
+VSettingsNode::VSettingsNode(VSettingsTag* parent, const VString& name, bool preferCDATA)
     : mParent(parent)
     , mName(name)
+    , mPreferCDATA(preferCDATA)
     {
 }
 
 VSettingsNode::VSettingsNode(const VSettingsNode& other)
     : mParent(other.mParent)
     , mName(other.mName)
+    , mPreferCDATA(other.mPreferCDATA)
     {
 }
 
 VSettingsNode& VSettingsNode::operator=(const VSettingsNode& other) {
     mParent = other.mParent;
     mName = other.mName;
+    mPreferCDATA = other.mPreferCDATA;
 
     return *this;
 }
@@ -445,6 +450,30 @@ void VSettingsNode::addColorValue(const VString& path, const VColor& value) {
     this->addStringValue(path, valueString);
 }
 
+void VSettingsNode::addInstantValue(const VString& path, const VInstant& value, int format) {
+    VString valueString;
+    switch (format) {
+        case VSettingsCDATA::UTC_OFFSET:
+            valueString = VSTRING_S64(value.getValue());
+            break;
+        case VSettingsCDATA::UTC_STRING:
+            valueString = value.getUTCString();
+            break;
+        case VSettingsCDATA::LOCAL_STRING:
+            valueString = value.getLocalString();
+            break;
+        default:
+            valueString = VSTRING_S64(value.getValue());
+            break;
+    }
+    
+    this->addStringValue(path, valueString);
+}
+
+void VSettingsNode::addDateValue(const VString& path, const VDate& value) {
+    this->addStringValue(path, value.getDateString(VInstantFormatter("y-dd-MM")));
+}
+
 void VSettingsNode::addDurationValue(const VString& path, const VDuration& value) {
     VString valueString(VSTRING_ARGS(VSTRING_FORMATTER_S64 "ms", value.getDurationMilliseconds()));
     this->addStringValue(path, valueString);
@@ -556,6 +585,11 @@ void VSettingsNode::addValue(const VString& path) {
 
 void VSettingsNode::addChildNode(VSettingsNode* /*node*/) {
     throw VStackTraceException(VSTRING_FORMAT("VSettingsNode::addChildNode called for invalid object at '%s'", this->getPath().chars()));
+}
+
+VSettingsTag* VSettingsNode::addNewChildTag(VSettingsTag* node) {
+    this->addChildNode(node);
+    return node;
 }
 
 VSettingsTag* VSettingsNode::getParent() {
@@ -868,7 +902,7 @@ VSettingsTag::~VSettingsTag() {
 
 void VSettingsTag::writeToStream(VTextIOStream& outputStream, int indentLevel) const {
     for (int i = 0; i < indentLevel; ++i)
-        outputStream.writeString(" ");
+        outputStream.writeString(_INDENT_STRING);
 
     VString beginTag(VSTRING_ARGS("<%s", mName.chars()));
     outputStream.writeString(beginTag);
@@ -884,6 +918,12 @@ void VSettingsTag::writeToStream(VTextIOStream& outputStream, int indentLevel) c
     if (mChildNodes.empty()) {
         // Just close the tag and we're done.
         outputStream.writeLine(" />");
+    } else if ((mChildNodes.size() == 1) && (dynamic_cast<VSettingsCDATA*>(mChildNodes[0]) != nullptr)) {
+        // The tag has only a CDATA child, so render the tag and contents on one line.
+        outputStream.writeString(">");
+        outputStream.writeString(mChildNodes[0]->getStringValue());
+        VString endTag(VSTRING_ARGS("</%s>", mName.chars()));
+        outputStream.writeLine(endTag);
     } else {
         // Close the opening tag.
         outputStream.writeLine(">");
@@ -895,7 +935,7 @@ void VSettingsTag::writeToStream(VTextIOStream& outputStream, int indentLevel) c
 
         // Write a closing tag.
         for (int i = 0; i < indentLevel; ++i) {
-            outputStream.writeString(" ");
+            outputStream.writeString(_INDENT_STRING);
         }
 
         VString endTag(VSTRING_ARGS("</%s>", mName.chars()));
@@ -1144,10 +1184,17 @@ VSettingsTag* VSettingsTag::_findChildTag(const VString& name) const {
 }
 
 void VSettingsTag::_addLeafValue(const VString& name, bool hasValue, const VString& value) {
-    if (hasValue)
-        this->addAttribute(new VSettingsAttribute(this, name, value));
-    else
+    if (hasValue) {
+        if (mPreferCDATA) {
+            VSettingsTag* tag = new VSettingsTag(NULL, name);
+            tag->addChildNode(new VSettingsCDATA(tag, value));
+            this->addChildNode(tag);
+        } else {
+            this->addAttribute(new VSettingsAttribute(this, name, value));
+        }
+    } else {
         this->addAttribute(new VSettingsAttribute(this, name));
+    }
 }
 
 void VSettingsTag::_removeAttribute(VSettingsAttribute* attribute) {
@@ -1249,7 +1296,19 @@ VInstant VSettingsAttribute::getInstantValue() const {
     if (mValue.contains("UTC")) {
         when.setUTCString(mValue);
     } else {
-        when.setLocalString(mValue);
+        bool isNumeric = true;
+        for (VString::const_iterator i = mValue.begin(); i != mValue.end(); ++i) {
+            if (! (*i).isNumeric()) {
+                isNumeric = false;
+                break;
+            }
+        }
+    
+        if (isNumeric) {
+            when = VInstant::instantFromRawValue(mValue.parseS64());
+        } else {
+            when.setLocalString(mValue);
+        }
     }
     return when;
 }
@@ -1273,7 +1332,7 @@ VSettingsCDATA::VSettingsCDATA(VSettingsTag* parent, const VString& cdata) :
 void VSettingsCDATA::writeToStream(VTextIOStream& outputStream, int indentLevel) const {
     if (indentLevel > 1) {  // at indent level 1 we're just a top-level item, indenting is detrimental
         for (int i = 0; i < indentLevel; ++i) {
-            outputStream.writeString(" ");
+            outputStream.writeString(_INDENT_STRING);
         }
     }
 

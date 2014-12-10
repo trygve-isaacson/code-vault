@@ -687,6 +687,11 @@ void VInstantUnit::_runInstantFormatterTests() {
         VUNIT_ASSERT_EQUAL_LABELED(s, "1998-06-03 15:56:37", "getLocalString(s, false, false)");
         whenLocal.getLocalString(s, true, false);
         VUNIT_ASSERT_EQUAL_LABELED(s, "19980603155637", "getLocalString(s, true, false)");
+        
+        VUNIT_ASSERT_EQUAL_LABELED(VDate(1998, 6, 3).getDateString(), "1998-06-03", "getDateString");
+        VUNIT_ASSERT_EQUAL_LABELED(VDate(1998, 6, 3).getDateString(VInstantFormatter("M/d/yy")), "6/3/98", "getDateString with format");
+        VUNIT_ASSERT_EQUAL_LABELED(VTimeOfDay(15, 56, 37, 444).getTimeOfDayString(), "15:56:37.444", "getTimeOfDayString");
+        VUNIT_ASSERT_EQUAL_LABELED(VTimeOfDay(15, 56, 37, 444).getTimeOfDayString(VInstantFormatter("HH:mm:ss,SSS")), "15:56:37,444", "getTimeOfDayString with format");
     
     }
     
