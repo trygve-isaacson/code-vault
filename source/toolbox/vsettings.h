@@ -50,8 +50,13 @@ or a CDATA node.
 */
 class VSettingsNode {
     public:
+    
+        // constants for addInstantValue:
+        static const int UTC_OFFSET = 0;
+        static const int UTC_STRING = 1;
+        static const int LOCAL_STRING = 2;
 
-        VSettingsNode(VSettingsTag* parent, const VString& name);
+        VSettingsNode(VSettingsTag* parent, const VString& name, bool preferCDATA=true);
         VSettingsNode(const VSettingsNode& other);
         virtual ~VSettingsNode() {}
 
@@ -123,6 +128,8 @@ class VSettingsNode {
         virtual void addRectValue(const VString& path, const VRect& value);
         virtual void addPolygonValue(const VString& path, const VPolygon& value);
         virtual void addColorValue(const VString& path, const VColor& value);
+        virtual void addInstantValue(const VString& path, const VInstant& value, int format);
+        virtual void addDateValue(const VString& path, const VDate& value);
         virtual void addDurationValue(const VString& path, const VDuration& value);
         virtual void addItem(const VString& path);
         virtual void setIntValue(const VString& path, int value);
@@ -142,6 +149,7 @@ class VSettingsNode {
         virtual void addValue(const VString& value);
 
         virtual void addChildNode(VSettingsNode* node);
+        virtual VSettingsTag* addNewChildTag(VSettingsTag* node);
 
         VSettingsTag* getParent();
 
@@ -159,6 +167,7 @@ class VSettingsNode {
 
         VSettingsTag*   mParent;
         VString         mName;
+        bool            mPreferCDATA;   ///< If true, leaf attributes will be added as tags with CDATA rather than attribute/value.
 };
 
 /**
