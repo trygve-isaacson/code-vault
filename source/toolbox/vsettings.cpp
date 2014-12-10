@@ -471,7 +471,8 @@ void VSettingsNode::addInstantValue(const VString& path, const VInstant& value, 
 }
 
 void VSettingsNode::addDateValue(const VString& path, const VDate& value) {
-    this->addStringValue(path, value.getDateString(VInstantFormatter("y-dd-MM")));
+    // Don't rely on default date formatter, which might change in the future. This format is what we parse.
+    this->addStringValue(path, value.getDateString(VInstantFormatter("y-MM-dd")));
 }
 
 void VSettingsNode::addDurationValue(const VString& path, const VDuration& value) {
