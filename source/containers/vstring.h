@@ -17,6 +17,14 @@ License: MIT. See LICENSE.md in the Vault top level directory.
 
 class VChar;
 
+#ifdef VAULT_CORE_FOUNDATION_SUPPORT
+#ifdef __OBJC__
+@class NSString;
+#else
+typedef void NSString; // fwd for ns() return type; see vstring.mm for implementation
+#endif
+#endif
+
 /**
 VStringVector is simply a vector of VString objects. Note that the vector
 elements are objects, not pointers to objects.
@@ -772,6 +780,14 @@ class VString {
         @return the CFStringRef
         */
         CFStringRef cfstring() const;
+        /**
+        Returns a pointer to an NSString built from the VString. This is just
+        a cast from cfstring() since they are toll-free-bridged. As with cfstring(),
+        the returned value must be released at some point by the caller since it is a
+        new object.
+        @return the NSString*
+        */
+        NSString* ns() const;
 #endif
 
         /**

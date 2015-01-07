@@ -51,3 +51,11 @@ VString _V_NSHomeDirectory() {
     VString path((CFStringRef) currentUserHomePath);
     return path;
 }
+
+
+
+#ifdef VAULT_CORE_FOUNDATION_SUPPORT
+NSString* VString::ns() const {
+    return (NSString*) this->cfstring();
+}
+#endif
