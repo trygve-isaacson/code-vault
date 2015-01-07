@@ -52,10 +52,15 @@ VString _V_NSHomeDirectory() {
     return path;
 }
 
-
+// VString --------------------------------------------------------------------
 
 #ifdef VAULT_CORE_FOUNDATION_SUPPORT
-NSString* VString::ns() const {
+
+NSString* VString::nsstring() const {
     return (NSString*) this->cfstring();
 }
+VString::operator NSString*() const {
+    return (NSString*) this->cfstring();
+}
+
 #endif

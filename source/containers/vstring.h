@@ -769,7 +769,8 @@ class VString {
         Returns a QString built from the VString.
         @return the QString
         */
-        QString qstring() const;
+        operator QString() const;   // type-cast version
+        QString qstring() const;    // explicit function name version
 #endif
 
 #ifdef VAULT_CORE_FOUNDATION_SUPPORT
@@ -779,7 +780,8 @@ class VString {
         new object.
         @return the CFStringRef
         */
-        CFStringRef cfstring() const;
+        operator CFStringRef() const;   // type-cast version
+        CFStringRef cfstring() const;   // explicit function name version
         /**
         Returns a pointer to an NSString built from the VString. This is just
         a cast from cfstring() since they are toll-free-bridged. As with cfstring(),
@@ -787,7 +789,8 @@ class VString {
         new object.
         @return the NSString*
         */
-        NSString* ns() const;
+        operator NSString*() const; // type-cast version
+        NSString* nsstring() const; // explicit function name version
 #endif
 
         /**

@@ -1044,6 +1044,9 @@ QString VString::qstring() const {
 
     return QString::fromUtf8(this->chars(), this->length());
 }
+VString::operator QString() const {
+    return this->qstring();
+}
 #endif /* VAULT_QT_SUPPORT */
 
 #ifdef VAULT_CORE_FOUNDATION_SUPPORT
@@ -1051,6 +1054,9 @@ CFStringRef VString::cfstring() const {
     ASSERT_INVARIANT();
 
     return CFStringCreateWithCString(NULL, this->chars(), kCFStringEncodingUTF8);
+}
+VString::operator CFStringRef() const {
+    return this->cfstring();
 }
 #endif /* VAULT_CORE_FOUNDATION_SUPPORT */
 
