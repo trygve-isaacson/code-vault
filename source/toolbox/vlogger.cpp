@@ -1052,7 +1052,10 @@ VString VLogAppender::_formatMessage(int level, const char* file, int line, cons
     }
 
     if (mFormatUsesThread) {
-        formattedMessage.replace("$thread", VThread::getCurrentThreadName());
+        try {
+            formattedMessage.replace("$thread", VThread::getCurrentThreadName());
+        } catch (...) {
+        }
     }
 
     if (mFormatUsesSpecifiedLoggerName) {
