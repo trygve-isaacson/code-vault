@@ -56,9 +56,28 @@ VString _V_NSHomeDirectory() {
 
 #ifdef VAULT_CORE_FOUNDATION_SUPPORT
 
+VString::VString(const NSString* s) {
+    this->_construct();
+    
+    this->_assignFromCFString((CFStringRef)s);
+    
+    ASSERT_INVARIANT();
+}
+
+VString& VString::operator=(const NSString* s) {
+    ASSERT_INVARIANT();
+
+    this->_assignFromCFString((CFStringRef)s);
+
+    ASSERT_INVARIANT();
+
+    return *this;
+}
+
 NSString* VString::nsstring() const {
     return (NSString*) this->cfstring();
 }
+
 VString::operator NSString*() const {
     return (NSString*) this->cfstring();
 }

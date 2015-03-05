@@ -304,6 +304,11 @@ class VString {
         @param    s    the CFStringRef to copy
         */
         VString(const CFStringRef& s);
+        /**
+        Constructs a string from an NSString.
+        @param    s    the NSString* to copy
+        */
+        VString(const NSString* s);
 #endif
         /**
         Constructs a string from a Unicode code point (a single character value).
@@ -345,10 +350,15 @@ class VString {
 
 #ifdef VAULT_CORE_FOUNDATION_SUPPORT
         /**
-        Assign from CFStringRef.
-        @param    s    the CFStringRef to copy
-        */
+         Assign from CFStringRef.
+         @param    s    the CFStringRef to copy
+         */
         VString& operator=(const CFStringRef& s);
+        /**
+         Assign from NSString.
+         @param    s    the NSString* to copy
+         */
+        VString& operator=(const NSString* s);
 #endif
         /**
         Assigns from a Unicode code point (a single character value).
