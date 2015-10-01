@@ -710,7 +710,11 @@ void* operator new[](size_t size, const char* file, int line);
 void operator delete[](void* p, const char* file, int line);
 void operator delete[](void* p) throw();
 #define V_NEW new(__FILE__, __LINE__)
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-macro"
 #define new V_NEW
+#pragma clang diagnostic pop
 
 class VTextIOStream;
 class VString;
