@@ -98,7 +98,6 @@ void VExceptionUnit::_testCatchHierarchy() {
 
     try {
         throw VException("throw/catch VException");
-        VUNIT_ASSERT_FAILURE("throw/catch VException");
     } catch (const VException& /*ex*/) {
         VUNIT_ASSERT_SUCCESS("throw/catch VException");
     } catch (...) {
@@ -107,7 +106,6 @@ void VExceptionUnit::_testCatchHierarchy() {
 
     try {
         throw VException("throw VException / catch std::exception");
-        VUNIT_ASSERT_FAILURE("throw VException / catch std::exception");
     } catch (const std::exception& /*ex*/) {
         VUNIT_ASSERT_SUCCESS("throw VException / catch std::exception");
     } catch (...) {
@@ -116,7 +114,6 @@ void VExceptionUnit::_testCatchHierarchy() {
 
     try {
         throw VEOFException("throw/catch VEOFException");
-        VUNIT_ASSERT_FAILURE("throw/catch VEOFException");
     } catch (const VEOFException& /*ex*/) {
         VUNIT_ASSERT_SUCCESS("throw/catch VEOFException");
     } catch (...) {
@@ -125,7 +122,6 @@ void VExceptionUnit::_testCatchHierarchy() {
 
     try {
         throw VUnimplementedException("throw/catch VUnimplementedException");
-        VUNIT_ASSERT_FAILURE("throw/catch VUnimplementedException");
     } catch (const VUnimplementedException& /*ex*/) {
         VUNIT_ASSERT_SUCCESS("throw/catch VUnimplementedException");
     } catch (...) {
@@ -134,7 +130,6 @@ void VExceptionUnit::_testCatchHierarchy() {
 
     try {
         throw VEOFException("throw VEOFException / catch VException");
-        VUNIT_ASSERT_FAILURE("throw VEOFException / catch VException");
     } catch (const VException& /*ex*/) {
         VUNIT_ASSERT_SUCCESS("throw VEOFException / catch VException");
     } catch (...) {
@@ -143,7 +138,6 @@ void VExceptionUnit::_testCatchHierarchy() {
 
     try {
         throw VEOFException("throw VEOFException / catch std::exception");
-        VUNIT_ASSERT_FAILURE("throw VEOFException / catch std::exception");
     } catch (const std::exception& /*ex*/) {
         VUNIT_ASSERT_SUCCESS("throw VEOFException / catch std::exception");
     } catch (...) {
