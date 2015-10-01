@@ -23,11 +23,12 @@ License: MIT. See LICENSE.md in the Vault top level directory.
 // 64-bit constant is not portable either because that overflows in 32 bits.
 #ifdef VCOMPILER_MSVC
     #pragma warning(disable: 6001)  // VS2010 static analysis is confused by our byte swapping functions.
+    #pragma warning(push)
     #pragma warning(disable: 4312)
 #endif
 const void* const VCPP_DEBUG_BAD_POINTER_VALUE = reinterpret_cast<const void*>(0xFEEEFEEE);
 #ifdef VCOMPILER_MSVC
-    #pragma warning(default: 4312)
+    #pragma warning(pop)
 #endif
 
 Vu16 vault::VbyteSwap16(Vu16 a16BitValue) {
