@@ -231,6 +231,9 @@
     <ClCompile Include="..\..\..\..\source\vtypes\vtypes_internal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\streams\vtextstreamtailer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\source\server\vmanagementinterface.h">
@@ -453,6 +456,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\source\streams\vwritebufferedstream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\streams\vtextstreamtailer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
