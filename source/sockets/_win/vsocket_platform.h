@@ -14,7 +14,7 @@ License: MIT. See LICENSE.md in the Vault top level directory.
 // any platform-specific declarations or includes.
 
 #ifdef VCOMPILER_MSVC
-    #pragma warning(disable: 6386)  // the library file doesn't past muster
+    #pragma warning(disable: 6386)  // the following system header emits warnings
 #endif
 #include <ws2tcpip.h> // For the WSA calls in enumerateNetworkInterfaces(), and addrinfo in vsocketbase.cpp when on Windows.
 #ifdef VCOMPILER_MSVC

@@ -13,7 +13,7 @@ License: MIT. See LICENSE.md in the Vault top level directory.
 #include "vexception.h"
 #include "vthread.h"
 #ifdef VCOMPILER_MSVC
-    #pragma warning(disable: 6387)  // the library file doesn't past muster
+    #pragma warning(disable: 6387)  // the following system header emits warnings
 #endif
 #include <shlobj.h>
 #ifdef VCOMPILER_MSVC
