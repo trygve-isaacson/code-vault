@@ -32,7 +32,10 @@ static void _addThreadToMap(VThreadID_Type threadID, HANDLE threadHandle) {
 
 static void _removeThreadFromMap(VThreadID_Type threadID) {
     VMutexLocker locker(&gWindowsThreadMapMutex, "_removeThreadFromMap");
-    gWindowsThreadIDToHandleMap[threadID] = 0;
+    WindowsThreadIDToHandleMap::iterator position = gWindowsThreadIDToHandleMap.find(threadID);
+    if (position != gWindowsThreadIDToHandleMap.end()) {
+        gWindowsThreadIDToHandleMap.erase(position);
+    }
 }
 
 static HANDLE _lookupThreadHandle(VThreadID_Type threadID) {
