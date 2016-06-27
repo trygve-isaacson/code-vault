@@ -204,6 +204,11 @@ set up for this platform build.
 */
 #include "vtypes_platform.h"
 
+// Platform-independent compiler detection:
+#ifdef __clang__
+    #define VCOMPILER_CLANG
+#endif
+
 #include <memory> // C++11 shared_ptr
 #include <vector>
 #include <stdarg.h>
@@ -711,10 +716,14 @@ void operator delete[](void* p, const char* file, int line);
 void operator delete[](void* p) throw();
 #define V_NEW new(__FILE__, __LINE__)
 
+#ifdef VCOMPILER_CLANG
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 #define new V_NEW
 #pragma clang diagnostic pop
+#else
+#define new V_NEW
+#endif
 
 class VTextIOStream;
 class VString;
