@@ -120,6 +120,9 @@ bool VFSNodeFindCallback::handleNextNode(const VFSNode& node) {
 
 // VFSNode -------------------------------------------------------------------
 
+const char VFSNode::PATH_SEPARATOR_CHAR = '/';
+const char* VFSNode::PATH_SEPARATOR_CHARS = "/";
+
 // static
 VString VFSNode::normalizePath(const VString& path) {
     return VFSNode::_platform_normalizePath(path);
@@ -288,10 +291,26 @@ const VString& VFSNode::getPath() const {
     return mPath;
 }
 
+static int _lastNonTrailingIndexOfPathSeparator(const VString& s, int& lengthWithoutTrailingSeparator) {
+    bool hasTrailingPathSeparator = s.endsWith(VFSNode::PATH_SEPARATOR_CHAR);
+    if (!hasTrailingPathSeparator) {
+        lengthWithoutTrailingSeparator = s.length();
+        return s.lastIndexOf(VFSNode::PATH_SEPARATOR_CHAR);
+    }
+
+    VString stripped;
+    s.getSubstring(stripped, s.begin(), s.end() - 1);
+    lengthWithoutTrailingSeparator = stripped.length();
+    return stripped.lastIndexOf(VFSNode::PATH_SEPARATOR_CHAR);
+}
+
 void VFSNode::getName(VString& name) const {
+    int lengthWithoutTrailingSeparator;
+    int lastSeparatorIndex = _lastNonTrailingIndexOfPathSeparator(mPath, lengthWithoutTrailingSeparator);
     // The following works even if lastIndexOf returns -1 "not found",
     // because we add 1 to get the correct startIndex parameter.
-    name.copyFromBuffer(mPath.chars(), mPath.lastIndexOf('/') + 1, mPath.length());
+    name.copyFromBuffer(mPath.chars(), lastSeparatorIndex + 1, lengthWithoutTrailingSeparator);
+    return;
 }
 
 VString VFSNode::getName() const {
@@ -301,15 +320,24 @@ VString VFSNode::getName() const {
 }
 
 void VFSNode::setName(const VString& name) {
-    VString parentPath;
-    this->getParentPath(parentPath);
+    VFSNode parentNode;
+    this->getParentNode(parentNode);
 
-    VString newPath(VSTRING_ARGS("%s/%s", parentPath.chars(), name.chars()));
+    VString newPath = parentNode.getChildPath(name);
     this->setPath(newPath);
 }
 
 void VFSNode::getParentPath(VString& parentPath) const {
-    parentPath.copyFromBuffer(mPath.chars(), 0, mPath.lastIndexOf('/'));
+    int lengthWithoutTrailingSeparator;
+    int lastSeparatorIndex = _lastNonTrailingIndexOfPathSeparator(mPath, lengthWithoutTrailingSeparator);
+    parentPath.copyFromBuffer(mPath.chars(), 0, lastSeparatorIndex);
+    return;
+}
+
+VString VFSNode::getParentPath() const {
+    VString parentPath;
+    this->getParentPath(parentPath);
+    return parentPath;
 }
 
 void VFSNode::getParentNode(VFSNode& parent) const {
@@ -320,7 +348,16 @@ void VFSNode::getParentNode(VFSNode& parent) const {
 }
 
 void VFSNode::getChildPath(const VString& childName, VString& childPath) const {
-    childPath.format("%s/%s", mPath.chars(), childName.chars());
+    // TODO: Should we throw an exception if childName is empty? It would generate a nonsensical childPath.
+    childPath.format("%s%s%s", mPath.chars(),
+        (mPath.endsWith(PATH_SEPARATOR_CHAR) ? "" : PATH_SEPARATOR_CHARS), // don't add another slash if already trailing
+        childName.chars());
+}
+
+VString VFSNode::getChildPath(const VString& childName) const {
+    VString childPath;
+    this->getChildPath(childName, childPath);
+    return childPath;
 }
 
 void VFSNode::getChildNode(const VString& childName, VFSNode& child) const {
