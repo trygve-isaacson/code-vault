@@ -211,7 +211,7 @@ bool VFSNode::_platform_getNodeInfo(VFSNodeInfo& info) const {
         info.mCreationDate = CONST_S64(1000) * static_cast<Vs64>(statData.st_ctime);
         info.mModificationDate = CONST_S64(1000) * static_cast<Vs64>(statData.st_mtime);
         info.mFileSize = statData.st_size;
-        DWORD attributes = ::GetFileAttributesW(mPath.toUTF16().c_str());
+        DWORD attributes = ::GetFileAttributesW(VFSNode::denormalizePath(mPath).toUTF16().c_str());
         info.mIsFile = ((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0);
         info.mIsDirectory = ((attributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
         info.mErrNo = 0;
