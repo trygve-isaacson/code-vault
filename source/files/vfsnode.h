@@ -139,6 +139,13 @@ class VFSNode {
         @return the denormalized form of the path
         */
         static VString denormalizePath(const VString& path);
+        /**
+        This constant is used internally when constructing or parsing path strings.
+        It is the internal (normalized) path separator. It's a char type for speed.
+        There is a version typed as a char* for APIs that work better with that.
+        */
+        static const char PATH_SEPARATOR_CHAR;
+        static const char* PATH_SEPARATOR_CHARS;
 
         /**
         These values identify different known folders whose location you can
@@ -333,6 +340,12 @@ class VFSNode {
         */
         void getParentPath(VString& parentPath) const;
         /**
+        Alternate convenience function for getParentPath(). May require an
+        extra string copy.
+        @return    the parent node's path
+        */
+        VString getParentPath() const;
+        /**
         Gets a VFSNode of the node's parent.
         @param    parent    the object to set
         */
@@ -343,6 +356,13 @@ class VFSNode {
         @param    childPath    the string to set
         */
         void getChildPath(const VString& childName, VString& childPath) const;
+        /**
+        Alternate convenience function for getParentPath(). May require an
+        extra string copy.
+        @param    childName    the name of the child file or directory
+        @return   the child node's path
+        */
+        VString getChildPath(const VString& childName) const;
         /**
         Gets the node of a child of the node (the node must be a directory).
         @param    childName    the name of the child file or directory
@@ -538,7 +558,7 @@ class VFSNode {
 
         /**
         Converts a path string from the platform native form into "normalized"
-        form. The normalized form uses forward slash '/' to separate segments
+        form. The normalized form uses forward slash to separate segments
         in the path. On Unix, there's nothing to do because it is the normalized
         form, but on Windows, we must convert backslash to slash, etc.
         @param path the path string to be modified

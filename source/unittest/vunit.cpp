@@ -92,7 +92,7 @@ void VUnit::logExceptionalEnd(const VString& exceptionMessage) {
 
 void VUnit::assertSuccess(const VString& labelSuffix, const VString& filePath, int lineNumber) {
     VString fileName;
-    filePath.getSubstring(fileName, filePath.lastIndexOf('/') + 1);
+    filePath.getSubstring(fileName, filePath.lastIndexOf(VFSNode::PATH_SEPARATOR_CHAR) + 1);
     VString testName(VSTRING_ARGS("%s:%d %s", fileName.chars(), lineNumber, labelSuffix.chars()));
 
     mLastTestDescription = testName;
@@ -104,7 +104,7 @@ void VUnit::assertSuccess(const VString& labelSuffix, const VString& filePath, i
 
 void VUnit::assertFailure(const VString& labelSuffix, const VString& filePath, int lineNumber) {
     VString fileName;
-    filePath.getSubstring(fileName, filePath.lastIndexOf('/') + 1);
+    filePath.getSubstring(fileName, filePath.lastIndexOf(VFSNode::PATH_SEPARATOR_CHAR) + 1);
     VString testName(VSTRING_ARGS("%s:%d %s", fileName.chars(), lineNumber, labelSuffix.chars()));
 
     mLastTestDescription = testName;
@@ -116,7 +116,7 @@ void VUnit::assertFailure(const VString& labelSuffix, const VString& filePath, i
 
 void VUnit::testAssertion(bool successful, const VString& filePath, int lineNumber, const VString& labelSuffix, const VString& expectedDescription) {
     VString fileName;
-    filePath.getSubstring(fileName, filePath.lastIndexOf('/') + 1);
+    filePath.getSubstring(fileName, filePath.lastIndexOf(VFSNode::PATH_SEPARATOR_CHAR) + 1);
     VString testName(VSTRING_ARGS("%s:%d %s", fileName.chars(), lineNumber, labelSuffix.chars()));
 
     mLastTestDescription = testName;

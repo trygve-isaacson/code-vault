@@ -174,6 +174,17 @@ void VFSNodeUnit::run() {
     VFSNode testPath0Node(testPath0);
     VUNIT_ASSERT_EQUAL_LABELED(testPath0, "", "parent of level 1 path");
 
+    // Test oddities with DOS driver letters and mapped drives. Trailing slash on drive letter may or may be present.
+#ifdef VPLATFORM_WIN
+    // These tests assume that C: and C:Windows exist; some installations may use a different drive letter, in which case skip the test.
+    const VString DRIVE_LETTER("C");
+    const VString CHILD_NODE_NAME("Windows");
+    if (VFSNode(VSTRING_FORMAT("%s:/%s", DRIVE_LETTER.chars(), CHILD_NODE_NAME.chars())).exists()) {
+        this->_testWindowsDrivePaths(DRIVE_LETTER, CHILD_NODE_NAME, false, true);
+        this->_testWindowsDrivePaths(DRIVE_LETTER, CHILD_NODE_NAME, true, true);
+    }
+#endif
+
     // Test assignment operator.
     VFSNode someNode("a/b/c/d");
     VFSNode copiedNode;
@@ -413,3 +424,30 @@ void VFSNodeUnit::_writeKnownDirectoryTestFile(VFSNode::KnownDirectoryIdentifier
     this->logStatus(VSTRING_FORMAT("Wrote to file '%s'.", fileNode.getPath().chars()));
 }
 
+void VFSNodeUnit::_testWindowsDrivePaths(const VString& driveLetter, const VString& childNodeName, bool adornedWithSlash, bool childIsDirectory) {
+    VString driveLetterNodeName(VSTRING_ARGS("%s:", driveLetter.chars()));
+    VString adornedDriveLetterPath(VSTRING_ARGS("%s:%s", driveLetter.chars(), (adornedWithSlash ? VFSNode::PATH_SEPARATOR_CHARS : "")));
+
+    VFSNode driveLetterNode(adornedDriveLetterPath);
+    this->logStatus(VSTRING_FORMAT("Testing '%s'...", adornedDriveLetterPath.chars()));
+    VUNIT_ASSERT_EQUAL_LABELED(driveLetterNode.getName(), driveLetterNodeName, "drive letter node name");
+    VUNIT_ASSERT_EQUAL_LABELED(driveLetterNode.getParentPath(), "", "drive letter node parent path");
+    VUNIT_ASSERT_EQUAL_LABELED(driveLetterNode.isDirectory(), true, "drive letter node is dir"); // this test assumes that drive C: exists; not true in some installations
+    VUNIT_ASSERT_EQUAL_LABELED(driveLetterNode.isFile(), false, "drive letter node is not file");
+
+    VString adornedChildNodePath(VSTRING_ARGS("%s:%s%s", driveLetter.chars(), (adornedWithSlash ? VFSNode::PATH_SEPARATOR_CHARS : ""), childNodeName.chars()));
+    VFSNode childNode(driveLetterNode, childNodeName);
+    this->logStatus(VSTRING_FORMAT("Testing '%s'...", adornedChildNodePath.chars()));
+    VUNIT_ASSERT_EQUAL_LABELED(childNode.getName(), childNodeName, "drive letter child node name");
+    VUNIT_ASSERT_EQUAL_LABELED(childNode.getParentPath(), driveLetterNodeName, "drive letter child node parent path");
+    VUNIT_ASSERT_EQUAL_LABELED(childNode.isDirectory(), childIsDirectory, "drive letter child node is/not dir check"); // this test assumes that C:Windows dir exists; not true in some installations
+    VUNIT_ASSERT_EQUAL_LABELED(childNode.isFile(), !childIsDirectory, "drive letter child node is/not file check");
+
+    VString childFileName("child.txt");
+    VString expectedChildPath(VSTRING_ARGS("%s:%c%s", driveLetter.chars(), VFSNode::PATH_SEPARATOR_CHAR, childFileName.chars()));
+    VFSNode childFileNode(driveLetterNode, childFileName);
+    this->logStatus(VSTRING_FORMAT("Testing '%s + %s'...", adornedDriveLetterPath.chars(), childFileName.chars()));
+    VUNIT_ASSERT_EQUAL_LABELED(childFileNode.getName(), childFileName, "drive letter child file node name");
+    VUNIT_ASSERT_EQUAL_LABELED(childFileNode.getParentPath(), driveLetterNodeName, "drive letter child file node parent path");
+    VUNIT_ASSERT_EQUAL_LABELED(childFileNode.getPath(), expectedChildPath, "drive letter child file node path");
+}

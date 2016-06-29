@@ -43,6 +43,7 @@ class VFSNodeUnit : public VUnit {
         void _testBinaryFileIO(const VString& seriesLabel, VFSNode& node, VAbstractFileStream& fileStream);
         void _testDirectoryIteration(const VFSNode& dir);
         void _writeKnownDirectoryTestFile(VFSNode::KnownDirectoryIdentifier id, const VString& fileName);
+        void _testWindowsDrivePaths(const VString& driveLetter, const VString& childNodeName, bool adornedWithSlash, bool childIsDirectory);
 
         VStringVector   mTextFileLines;
         VString         mTextFileContents;

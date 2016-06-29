@@ -86,6 +86,24 @@ $   Dollar sign
 _   Underscore
 */
 
+static const char _DOS_DRIVE_LETTER_SUFFIX_CHAR = ':';
+static const char _DOS_PATH_SEPARATOR_CHAR = '\\';
+static const char* _DOS_PATH_SEPARATOR_CHARS = "\\"; // The first backslash is a compiler escape for the second one. The string is length 1.
+
+static bool _pathIsDriveLetterVolume(const VString& path) {
+    // Example: "C:"
+    if ((path.length() == 2) && (path[1] == _DOS_DRIVE_LETTER_SUFFIX_CHAR)) {
+        return true;
+    }
+
+    // Example: "C:/"
+    if ((path.length() == 3) && (path[1] == _DOS_DRIVE_LETTER_SUFFIX_CHAR) && (path[2] == VFSNode::PATH_SEPARATOR_CHAR)) {
+        return true;
+    }
+
+    return false;
+}
+
 // static
 VString VFSNode::_platform_normalizePath(const VString& path) {
     // For the moment, we get almost all the functionality we need by
@@ -94,7 +112,7 @@ VString VFSNode::_platform_normalizePath(const VString& path) {
     // have to deal with ':'. DOS drive letters and Mac OS 9 root/relative
     // paths would complicate things a little for things like getParentPath.
     VString normalized(path);
-    normalized.replace("\\", "/");
+    normalized.replace(_DOS_PATH_SEPARATOR_CHARS, PATH_SEPARATOR_CHARS);
     return normalized;
 }
 
@@ -102,7 +120,7 @@ VString VFSNode::_platform_normalizePath(const VString& path) {
 VString VFSNode::_platform_denormalizePath(const VString& path) {
     // See comments above.
     VString denormalized(path);
-    denormalized.replace("/", "\\");
+    denormalized.replace(PATH_SEPARATOR_CHARS, _DOS_PATH_SEPARATOR_CHARS);
     return denormalized;
 }
 
@@ -204,6 +222,19 @@ VFSNode VFSNode::_platform_getExecutable() {
 }
 
 bool VFSNode::_platform_getNodeInfo(VFSNodeInfo& info) const {
+    
+    // _wstat does not work on volumes; if we know the path is a drive letter, use alternate API to check just the existence
+    if (_pathIsDriveLetterVolume(mPath)) {
+        // GetVolumeInformationW() requires trailing backslash. Add if not present.
+        std::wstring denormalizedWidePath = VFSNode::denormalizePath(mPath).toUTF16();
+        if (!mPath.endsWith(PATH_SEPARATOR_CHAR)) {
+            denormalizedWidePath += _DOS_PATH_SEPARATOR_CHAR;
+        }
+        bool exists = ::GetVolumeInformationW(denormalizedWidePath.c_str(), NULL, 0, NULL, NULL, NULL, NULL, 0) ? true : false; // BOOL to bool conversion
+        info.mIsDirectory = exists;
+        return exists;
+    }
+
     struct stat statData;
     int result = VFileSystem::stat(mPath, &statData);
 
@@ -211,7 +242,7 @@ bool VFSNode::_platform_getNodeInfo(VFSNodeInfo& info) const {
         info.mCreationDate = CONST_S64(1000) * static_cast<Vs64>(statData.st_ctime);
         info.mModificationDate = CONST_S64(1000) * static_cast<Vs64>(statData.st_mtime);
         info.mFileSize = statData.st_size;
-        DWORD attributes = ::GetFileAttributesW(mPath.toUTF16().c_str());
+        DWORD attributes = ::GetFileAttributesW(VFSNode::denormalizePath(mPath).toUTF16().c_str());
         info.mIsFile = ((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0);
         info.mIsDirectory = ((attributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
         info.mErrNo = 0;
