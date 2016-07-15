@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- INSTRUCTIONS
+Place this file in: .../My Documents/Visual Studio 2013/Visualizers
+(Or whatever version-based path is appropriate. This works starting with VS2012.)
+It will be reloaded by the debugger at the start of each debugging session.
+It provides for a better shorthand variable summary display of the classes defined here.
+-->
+
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+	<Type Name="VChar">
+		<DisplayString>{mValue,c}</DisplayString>
+	</Type>
+
+	<Type Name="VCodePoint">
+		<DisplayString Condition="mUTF8Length == 1">{mIntValue,c}</DisplayString>
+		<DisplayString>value={mIntValue,X}</DisplayString>
+	</Type>
+
+	<Type Name="VString">
+		<DisplayString Condition="mU.mI.mUsingInternalBuffer">[{mU.mI.mInternalBuffer,s8}]</DisplayString>
+		<DisplayString>{mU.mX.mHeapBufferPtr,s8}</DisplayString>
+	</Type>
+
+	<Type Name="VDuration">
+		<DisplayString Condition="mDurationMilliseconds == -9223372036854775808">(negative infinity)</DisplayString>
+		<DisplayString Condition="mDurationMilliseconds == 0x7FFFFFFFFFFFFFFE">(infinity)</DisplayString>
+		<DisplayString Condition="mDurationMilliseconds == 0x7FFFFFFFFFFFFFFF">(unspecified)</DisplayString>
+		<DisplayString>{mDurationMilliseconds} (ms)</DisplayString>
+	</Type>
+
+	<Type Name="VInstant">
+		<DisplayString Condition="mValue == 0">(1970 UTC)</DisplayString>
+		<DisplayString Condition="mValue == -9223372036854775808">(infinite past)</DisplayString>
+		<DisplayString Condition="mValue == 0x7FFFFFFFFFFFFFFE">(infinite future)</DisplayString>
+		<DisplayString Condition="mValue == 0x7FFFFFFFFFFFFFFF">(never occurred)</DisplayString>
+		<DisplayString>{mValue} (ms utc)</DisplayString>
+	</Type>
+
+	<Type Name="VColor">
+		<DisplayString>r={mRed}, g={mGreen}, b={mBlue}, a={mAlpha}</DisplayString>
+	</Type>
+
+	<Type Name="VSizeT&lt;*&gt;">
+		<DisplayString>({mWidth}, {mHeight})</DisplayString>
+	</Type>
+
+	<Type Name="VPointT&lt;*&gt;">
+		<DisplayString>({mX}, {mY})</DisplayString>
+	</Type>
+
+	<Type Name="VPoint3DT&lt;*&gt;">
+		<DisplayString>({mX}, {mY}, {mZ})</DisplayString>
+	</Type>
+
+	<Type Name="VLineT&lt;*&gt;">
+		<DisplayString>p1={mP1}, p2={mP2}</DisplayString>
+	</Type>
+
+	<Type Name="VRectT&lt;*&gt;">
+		<DisplayString>mLeftTop={mLeftTop}, mSize={mSize}</DisplayString>
+	</Type>
+
+	<Type Name="VFSNode">
+		<DisplayString>{mPath}</DisplayString>
+	</Type>
+
+	<Type Name="VBufferedFileStream">
+		<DisplayString>stream name={mName}</DisplayString>
+	</Type>
+
+	<Type Name="VDirectIOFileStream">
+		<DisplayString>stream name={mName}</DisplayString>
+	</Type>
+
+	<Type Name="VStream">
+		<DisplayString>stream name={mName}</DisplayString>
+	</Type>
+
+	<Type Name="VIOStream">
+		<DisplayString>stream name={mRawStream.mName}</DisplayString>
+	</Type>
+
+	<Type Name="VBinaryIOStream">
+		<DisplayString>stream name={mRawStream.mName}</DisplayString>
+	</Type>
+
+	<Type Name="VTextIOStream">
+		<DisplayString>stream name={mRawStream.mName}</DisplayString>
+	</Type>
+
+	<Type Name="VMemoryStream">
+		<DisplayString>[{mBufferSize}] @{mIOOffset} of {mEOFOffset}</DisplayString>
+	</Type>
+
+	<Type Name="VThread">
+		<DisplayString>{mName}</DisplayString>
+	</Type>
+
+	<Type Name="VMutex">
+		<DisplayString>{mName}</DisplayString>
+	</Type>
+
+	<Type Name="VMutexLocker">
+		<DisplayString>{mName}</DisplayString>
+	</Type>
+
+	<Type Name="VClientSession">
+		<DisplayString>{mName}</DisplayString>
+	</Type>
+
+	<Type Name="VSocket">
+		<DisplayString>host={mHostName}, port={mPortNumber}</DisplayString>
+	</Type>
+
+	<Type Name="VMessage">
+		<DisplayString>id={mMessageID}</DisplayString>
+	</Type>
+
+	<Type Name="VMessageHandler">
+		<DisplayString>{mName}</DisplayString>
+	</Type>
+
+	<Type Name="VDate">
+		<DisplayString>y={mYear}, m={mMonth}, d={mDay}</DisplayString>
+	</Type>
+
+	<Type Name="VTimeOfDay">
+		<DisplayString>h={mHour}, m={mMinute}, s={mSecond}, ms={mMillisecond}</DisplayString>
+	</Type>
+
+	<Type Name="VDateAndTime">
+		<DisplayString>y={mDate.mYear}, m={mDate.mMonth}, d={mDate.mDay}, h={mTimeOfDay.mHour}, m={mTimeOfDay.mMinute}, s={mTimeOfDay.mSecond}, ms={mTimeOfDay.mMillisecond}</DisplayString>
+	</Type>
+
+	<Type Name="VInstantStruct">
+		<DisplayString>y={mYear}, m={mMonth}, d={mDay}, h={mHour}, m={mMinute}, s={mSecond}, ms={mMillisecond}, dow={mDayOfWeek}</DisplayString>
+	</Type>
+
+	<Type Name="VUnit">
+		<DisplayString>{mName}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoNode">
+		<DisplayString>{mName}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoAttribute">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoS8">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoU8">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoS16">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoU16">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoS32">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoU32">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoS64">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoU64">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoBool">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoString">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoChar">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoFloat">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoDouble">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoDuration">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoInstant">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoStringArray">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoSize">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoISize">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoPoint">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoIPoint">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoLine">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoILine">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoRect">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoIRect">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoIPolygon">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoPolygon">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoColor">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+	<Type Name="VBentoBinary">
+		<DisplayString>{mName}:{mValue}</DisplayString>
+	</Type>
+
+</AutoVisualizer>
+
