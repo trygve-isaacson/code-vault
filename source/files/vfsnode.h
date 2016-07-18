@@ -270,6 +270,34 @@ class VFSNode {
         static void safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinaryIOStream& dataStream, bool keepOld=false);
 
         /**
+        This function copies an existing file, overwriting the target file if it already exists, or creating it if not.
+        The target directory must already exist. No meta data about the file is managed (the file is created using default
+        permissions of the process).
+        @param  source  the source file node
+        @param  dest    the destination file node, in an existing directory
+        @throws any exception that occurs while opening, reading, and writing the file data
+        */
+        static void copyFile(const VFSNode& source, const VFSNode& dest);
+    
+        /**
+        This function copies an entire directory structure, creating the destination if it does not yet exist.
+        Files already existing in the destination are left in place unless they are overwritten by the corresponding
+        source file. No meta data about the files and directories is managed (files and directories are created using
+        default permissions of the process). A rudimentary check is performed to prevent accidentally doing a recursive
+        copy of the source into a subdirectory of itself (which could cause an infinite loop of subdirectory copying).
+        It is only a check on the path strings of the source and destination, and does not cover things like aliases or
+        drive letter mapping where the same directory might be reachable by two different paths.
+        @param  source      the source directory node to be copied
+        @param  dest        the destination directory node to create if non-existent, and then into which source's contents
+                            are copied
+        @param  recursive   true if the source's subdirectories are to be recursively copied; false if only the
+                            top level files in the source directory are to be copied
+        @throws any exception thrown by the individual file copy operations; a VException if the destination
+                            node's path is a child of the source node's path
+        */
+        static void copyDirectory(const VFSNode& source, const VFSNode& dest, bool recursive);
+
+        /**
         Constructs an undefined VFSNode object (you will have to set its path
         with a subsequent call to setPath()).
         */

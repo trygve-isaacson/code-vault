@@ -133,9 +133,37 @@ void VFSNodeUnit::run() {
     VUNIT_ASSERT_TRUE_LABELED(copyTest5.exists(), "test5 exists");
 
     copyTest5.renameToName("test5.txt"); // should throw
+    
+    VFSNode dirCopyTarget(tempDir, "vfsnodetest_temp_copy");
+    VFSNode::copyDirectory(testDirRoot, dirCopyTarget, true);
+    // Verify that expected files now exist. Very dependent on file operations performed in tests above.
+    VUNIT_ASSERT_TRUE_LABELED(VFSNode(tempDirPath + "/vfsnodetest_temp_copy/one/two/test5.txt").isFile(), "copied directory, spot check test5.txt");
+    VUNIT_ASSERT_TRUE_LABELED(VFSNode(tempDirPath + "/vfsnodetest_temp_copy/one/two/three/four/iter_test_0.txt").isFile(), "copied directory, spot check iter_test_0.txt");
+    VUNIT_ASSERT_TRUE_LABELED(VFSNode(tempDirPath + "/vfsnodetest_temp_copy/one/two/three/four/iter_test_1.txt").isFile(), "copied directory, spot check iter_test_1.txt");
+    VUNIT_ASSERT_TRUE_LABELED(VFSNode(tempDirPath + "/vfsnodetest_temp_copy/one/two/three/four/iter_test_2.txt").isFile(), "copied directory, spot check iter_test_2.txt");
+    VUNIT_ASSERT_TRUE_LABELED(VFSNode(tempDirPath + "/vfsnodetest_temp_copy/one/two/three/four/iter_test_3.txt").isFile(), "copied directory, spot check iter_test_3.txt");
+    
+    // Verify that a non-recursive copy of source into a subdirectory of itself is allowed.
+    VFSNode nrcSource(tempDirPath + "/vfsnodetest_temp/one/two");
+    VFSNode nrcDest(tempDirPath + "/vfsnodetest_temp/one/two/non-recursive-copy-of-two");
+    VFSNode::copyDirectory(nrcSource, nrcDest, false);
+    VUNIT_ASSERT_TRUE_LABELED(VFSNode(tempDirPath + "/vfsnodetest_temp/one/two/non-recursive-copy-of-two/test5.txt").isFile(), "non-recursive nested copy succeeds on child file");
+    
+    // Verify that a recursive copy of source into a subdirectory of itself yields an
+    // exception (rather than an infinite loop copying until disk is full!).
+    try {
+        VFSNode rcSource(tempDirPath + "/vfsnodetest_temp/one/two");
+        VFSNode rcDest(tempDirPath + "/vfsnodetest_temp/one/two/recursive-copy-of-two");
+        VFSNode::copyDirectory(nrcSource, nrcDest, true);
+        VUNIT_ASSERT_FAILURE("Recursive nested copy was improperly allowed");
+    } catch (const VException& ex) {
+        VUNIT_ASSERT_SUCCESS("Recursive nested copy threw an exception as expected");
+    }
 
     // Clean up our litter.
     (void) copyTest5.rm();
+    (void) dirCopyTarget.rm();
+    (void) nrcDest.rm();
 
     // Done with exercising file i/o and streams and directory stuff. Clean up our litter.
 
