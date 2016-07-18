@@ -246,6 +246,54 @@ void VFSNode::safelyOverwriteFile(const VFSNode& target, Vs64 dataLength, VBinar
     }
 }
 
+// static
+void VFSNode::copyFile(const VFSNode& source, const VFSNode& dest) {
+    VBufferedFileStream fs(source);
+    fs.openReadOnly();
+    VBinaryIOStream in(fs);
+    VFSNode::safelyOverwriteFile(dest, source.size(), in);
+}
+
+// Helper class used by VFSNode::copyDirectory as callback. Copies the supplied node.
+// If the node is a file, it is copied. If the node is a directory and recursion is on, the directory is copied.
+class VFSNodeCopyDirectoryCallback : public VDirectoryIterationCallback {
+    public:
+        VFSNodeCopyDirectoryCallback(const VFSNode& destDir, bool recursive) : mDestDir(destDir), mRecursive(recursive) {}
+        virtual ~VFSNodeCopyDirectoryCallback() {}
+        virtual bool handleNextNode(const VFSNode& node);
+    private:
+        VFSNode mDestDir;
+        bool mRecursive;
+};
+
+bool VFSNodeCopyDirectoryCallback::handleNextNode(const VFSNode& source) {
+    VFSNode dest(mDestDir, source.getName());
+    if (source.isFile()) {
+        VFSNode::copyFile(source, dest);
+    } else if (mRecursive) {
+        VFSNode::copyDirectory(source, dest, mRecursive);
+    }
+    
+    return true;
+}
+
+// static
+void VFSNode::copyDirectory(const VFSNode& source, const VFSNode& dest, bool recursive) {
+    if (recursive) {
+        VString sourcePathWithTrailingSeparator = source.getPath() + (source.getPath().endsWith(PATH_SEPARATOR_CHAR) ? "" : PATH_SEPARATOR_CHARS);
+        if (dest.getPath().startsWith(sourcePathWithTrailingSeparator)) {
+            throw VException(VSTRING_FORMAT("Attempt to recursively copy '%s' into '%s'.", source.getPath().chars(), dest.getPath().chars()));
+        }
+    }
+
+    if (!dest.exists()) {
+        dest.mkdirs();
+    }
+    
+    VFSNodeCopyDirectoryCallback copyDirectoryCallback(dest, recursive);
+    source.iterate(copyDirectoryCallback);
+}
+
 VFSNode::VFSNode()
     : mPath()
     {
