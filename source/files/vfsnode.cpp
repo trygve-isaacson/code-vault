@@ -279,9 +279,11 @@ bool VFSNodeCopyDirectoryCallback::handleNextNode(const VFSNode& source) {
 
 // static
 void VFSNode::copyDirectory(const VFSNode& source, const VFSNode& dest, bool recursive) {
-    VString sourcePathWithTrailingSeparator = source.getPath() + (source.getPath().endsWith('/') ? "" : "/");
-    if (recursive && dest.getPath().startsWith(sourcePathWithTrailingSeparator)) {
-        throw VException(VSTRING_FORMAT("Attempt to recursively copy '%s' into '%s'.", source.getPath().chars(), dest.getPath().chars()));
+    if (recursive) {
+        VString sourcePathWithTrailingSeparator = source.getPath() + (source.getPath().endsWith(PATH_SEPARATOR_CHAR) ? "" : PATH_SEPARATOR_CHARS);
+        if (dest.getPath().startsWith(sourcePathWithTrailingSeparator)) {
+            throw VException(VSTRING_FORMAT("Attempt to recursively copy '%s' into '%s'.", source.getPath().chars(), dest.getPath().chars()));
+        }
     }
 
     if (!dest.exists()) {
