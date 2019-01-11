@@ -322,7 +322,7 @@ Notes:
 
 #ifdef VPLATFORM_MAC
     #define TIME_APIS_SUPPORT_1776 false
-    #define TIME_APIS_SUPPORT_1900 false
+    #define TIME_APIS_SUPPORT_1900 true
     #define TIME_APIS_SUPPORT_1906 true
     #define TIME_APIS_SUPPORT_1969 true
     #define TIME_APIS_SUPPORT_2039 VCOMPILER_IS_64BIT
