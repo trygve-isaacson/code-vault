@@ -1,3 +1,5 @@
+[![Build status](https://build.appcenter.ms/v0.1/apps/a95edd61-8e4a-4045-866c-8bad3c65890c/branches/master/badge)](https://appcenter.ms) (`master` branch)
+
 C++ Code Vault
 ==========
 A  C++ cross-platform library.
